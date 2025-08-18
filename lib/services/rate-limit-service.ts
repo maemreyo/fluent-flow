@@ -9,9 +9,9 @@ export class RateLimitService {
 
   constructor() {
     // Clean up old request records every minute
-    this.cleanupInterval = window.setInterval(() => {
+    this.cleanupInterval = setInterval(() => {
       this.cleanup()
-    }, 60000)
+    }, 60000) as any
   }
 
   canMakeRequest(
