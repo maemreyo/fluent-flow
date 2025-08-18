@@ -927,19 +927,25 @@ class FluentFlowContentScript {
     this.loopState.startTime = currentTime
     this.loopState.isActive = true
     
+    // Update button states for new button group
+    this.updateButtonState('fluent-flow-loop-start', 'active')
+    
     if (this.loopState.endTime) {
       this.loopState.mode = 'complete'
       this.loopState.isLooping = true
       this.currentButtonStates.loop = 'active'
-      this.updateButtonState('fluent-flow-loop', 'active')
+      this.updateButtonState('fluent-flow-loop-toggle', 'active')
     } else {
       this.loopState.mode = 'setting-end'
       this.currentButtonStates.loop = 'setting-start'
-      this.updateButtonState('fluent-flow-loop', 'setting')
+      this.updateButtonState('fluent-flow-loop-toggle', 'setting')
     }
 
+    // Update backward compatibility button
+    this.updateButtonState('fluent-flow-loop', this.currentButtonStates.loop)
     this.updateLoopButton()
     this.updateProgressMarkers()
+    this.updateLoopButtonTooltips()
     this.showToast(`Loop start: ${this.formatTime(currentTime)}`)
   }
 
@@ -958,28 +964,114 @@ class FluentFlowContentScript {
     this.loopState.endTime = currentTime
     this.loopState.isActive = true
     
+    // Update button states for new button group
+    this.updateButtonState('fluent-flow-loop-end', 'active')
+    
     if (this.loopState.startTime) {
       this.loopState.mode = 'complete'
       this.loopState.isLooping = true
       this.currentButtonStates.loop = 'active'
-      this.updateButtonState('fluent-flow-loop', 'active')
+      this.updateButtonState('fluent-flow-loop-toggle', 'active')
     } else {
       this.loopState.mode = 'setting-start'
       this.currentButtonStates.loop = 'setting'
-      this.updateButtonState('fluent-flow-loop', 'setting')
+      this.updateButtonState('fluent-flow-loop-toggle', 'setting')
     }
 
+    // Update backward compatibility button
+    this.updateButtonState('fluent-flow-loop', this.currentButtonStates.loop)
     this.updateLoopButton()
     this.updateProgressMarkers()
+    this.updateLoopButtonTooltips()
     this.showToast(`Loop end: ${this.formatTime(currentTime)}`)
   }
 
   private clearLoop() {
     this.resetLoopState()
     this.currentButtonStates.loop = 'inactive'
+    
+    // Update all button states
     this.updateButtonState('fluent-flow-loop', 'inactive')
+    this.updateButtonState('fluent-flow-loop-start', 'inactive')  
+    this.updateButtonState('fluent-flow-loop-toggle', 'inactive')
+    this.updateButtonState('fluent-flow-loop-end', 'inactive')
+    
     this.updateLoopButton()
+    this.updateLoopButtonTooltips()
     this.showToast('Loop cleared')
+  }
+
+  private toggleLoopPlayback() {
+    if (!this.loopState.isActive || this.loopState.startTime === null || this.loopState.endTime === null) {
+      this.showToast('Please set both loop start and end points first')
+      return
+    }
+
+    if (this.loopState.mode !== 'complete') {
+      this.showToast('Loop setup not complete')
+      return
+    }
+
+    // Toggle loop playback
+    this.loopState.isLooping = !this.loopState.isLooping
+    
+    // Update button states
+    this.currentButtonStates.loop = this.loopState.isLooping ? 'active' : 'paused'
+    this.updateButtonState('fluent-flow-loop-toggle', this.loopState.isLooping ? 'active' : 'paused')
+    
+    // Update the old loop button state for backward compatibility
+    this.updateButtonState('fluent-flow-loop', this.loopState.isLooping ? 'active' : 'paused')
+    
+    // Show feedback
+    const startTime = this.formatTime(this.loopState.startTime)
+    const endTime = this.formatTime(this.loopState.endTime)
+    const status = this.loopState.isLooping ? 'resumed' : 'paused'
+    this.showToast(`Loop ${status}: ${startTime} - ${endTime}`)
+    
+    // Update button tooltips
+    this.updateLoopButtonTooltips()
+  }
+
+  private updateLoopButtonTooltips() {
+    // Update Set Start button tooltip
+    const startButton = document.getElementById('fluent-flow-loop-start')
+    if (startButton) {
+      const hasStart = this.loopState.startTime !== null
+      const startTooltip = hasStart 
+        ? `Loop Start: ${this.formatTime(this.loopState.startTime)} (Alt+Shift+1 to change)`
+        : 'Set Loop Start (Alt+Shift+1)'
+      startButton.title = startTooltip
+      startButton.setAttribute('data-tooltip-title', startTooltip)
+      startButton.setAttribute('aria-label', startTooltip)
+    }
+
+    // Update Play/Pause button tooltip  
+    const toggleButton = document.getElementById('fluent-flow-loop-toggle')
+    if (toggleButton) {
+      let toggleTooltip = 'Play/Pause Loop (Alt+L)'
+      if (this.loopState.isActive && this.loopState.startTime !== null && this.loopState.endTime !== null) {
+        const status = this.loopState.isLooping ? 'Pause' : 'Resume'
+        const range = `${this.formatTime(this.loopState.startTime)} - ${this.formatTime(this.loopState.endTime)}`
+        toggleTooltip = `${status} Loop: ${range} (Alt+L)`
+      } else if (this.loopState.startTime !== null || this.loopState.endTime !== null) {
+        toggleTooltip = 'Set both start and end points to enable loop playback'
+      }
+      toggleButton.title = toggleTooltip
+      toggleButton.setAttribute('data-tooltip-title', toggleTooltip)
+      toggleButton.setAttribute('aria-label', toggleTooltip)
+    }
+
+    // Update Set End button tooltip
+    const endButton = document.getElementById('fluent-flow-loop-end')  
+    if (endButton) {
+      const hasEnd = this.loopState.endTime !== null
+      const endTooltip = hasEnd
+        ? `Loop End: ${this.formatTime(this.loopState.endTime)} (Alt+Shift+2 to change)`
+        : 'Set Loop End (Alt+Shift+2)'
+      endButton.title = endTooltip
+      endButton.setAttribute('data-tooltip-title', endTooltip)
+      endButton.setAttribute('aria-label', endTooltip)
+    }
   }
 
   private updateLoopButton() {
@@ -1113,124 +1205,6 @@ class FluentFlowContentScript {
     }, 2000)
   }
 
-  private showLoopContextMenu() {
-    // Remove existing context menu
-    const existingMenu = document.getElementById('fluent-flow-context-menu')
-    if (existingMenu) {
-      existingMenu.remove()
-    }
-
-    const menu = document.createElement('div')
-    menu.id = 'fluent-flow-context-menu'
-    menu.style.cssText = `
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: rgba(0, 0, 0, 0.9);
-      border: 1px solid rgba(255, 255, 255, 0.2);
-      border-radius: 8px;
-      padding: 8px;
-      z-index: 10001;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      color: white;
-      min-width: 200px;
-    `
-
-    const menuItems = [
-      { text: 'Set Loop Start (Alt+Shift+1)', action: () => this.setLoopStart() },
-      { text: 'Set Loop End (Alt+Shift+2)', action: () => this.setLoopEnd() },
-      { text: 'Clear Loop (Alt+Shift+X)', action: () => this.clearLoop() },
-      { text: '─────────────────', action: null },
-      { 
-        text: `Current: ${this.formatTime(this.getCurrentTime())}`, 
-        action: null,
-        disabled: true 
-      }
-    ]
-
-    if (this.loopState.mode !== 'none') {
-      menuItems.splice(-2, 0, {
-        text: `Start: ${this.formatTime(this.loopState.startTime)}`,
-        action: () => this.seekTo(this.loopState.startTime!),
-        disabled: this.loopState.startTime === null
-      })
-      
-      if (this.loopState.endTime !== null) {
-        menuItems.splice(-2, 0, {
-          text: `End: ${this.formatTime(this.loopState.endTime)}`,
-          action: () => this.seekTo(this.loopState.endTime!),
-          disabled: false
-        })
-      }
-    }
-
-    menuItems.forEach(item => {
-      if (item.text === '─────────────────') {
-        const separator = document.createElement('div')
-        separator.style.cssText = `
-          height: 1px;
-          background: rgba(255, 255, 255, 0.2);
-          margin: 4px 0;
-        `
-        menu.appendChild(separator)
-        return
-      }
-
-      const menuItem = document.createElement('div')
-      menuItem.style.cssText = `
-        padding: 8px 12px;
-        cursor: ${item.action && !item.disabled ? 'pointer' : 'default'};
-        border-radius: 4px;
-        transition: background 0.2s;
-        opacity: ${item.disabled ? '0.6' : '1'};
-      `
-      
-      menuItem.textContent = item.text
-      
-      if (item.action && !item.disabled) {
-        menuItem.addEventListener('mouseenter', () => {
-          menuItem.style.background = 'rgba(255, 255, 255, 0.1)'
-        })
-        
-        menuItem.addEventListener('mouseleave', () => {
-          menuItem.style.background = 'transparent'
-        })
-        
-        menuItem.addEventListener('click', () => {
-          item.action!()
-          menu.remove()
-        })
-      }
-      
-      menu.appendChild(menuItem)
-    })
-
-    document.body.appendChild(menu)
-
-    // Close menu when clicking outside
-    const closeMenu = (e: Event) => {
-      if (!menu.contains(e.target as Node)) {
-        menu.remove()
-        document.removeEventListener('click', closeMenu)
-        document.removeEventListener('keydown', closeMenuOnEscape)
-      }
-    }
-
-    const closeMenuOnEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        menu.remove()
-        document.removeEventListener('click', closeMenu)
-        document.removeEventListener('keydown', closeMenuOnEscape)
-      }
-    }
-
-    setTimeout(() => {
-      document.addEventListener('click', closeMenu)
-      document.addEventListener('keydown', closeMenuOnEscape)
-    }, 100)
-  }
 
 }
 
