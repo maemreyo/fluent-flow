@@ -14,6 +14,7 @@ export class FluentFlowOrchestrator {
   private comparisonFeature: ComparisonFeature
   private playerService: YouTubePlayerService
   private uiUtilities: UIUtilities
+  private isApplyingLoop: boolean = false
 
   constructor() {
     // Initialize services and utilities first
@@ -250,7 +251,13 @@ export class FluentFlowOrchestrator {
           return true
 
         case 'APPLY_LOOP':
+          // Set flag from message or default to true when applying loop
+          this.isApplyingLoop = message.isApplyingLoop !== undefined ? message.isApplyingLoop : true
           this.loopFeature.applyLoop(message.data)
+          // Clear the flag after a delay to ensure loop application is complete
+          setTimeout(() => {
+            this.isApplyingLoop = false
+          }, 1000)
           sendResponse({ success: true })
           return true
 
@@ -271,8 +278,12 @@ export class FluentFlowOrchestrator {
     this.playerService.onVideoChange((videoInfo: VideoInfo) => {
       console.log('FluentFlow: Video changed', videoInfo)
       
-      // Reset features for new video
-      this.loopFeature.clearLoop()
+      // Reset features for new video, but skip loop clearing if we're applying a loop
+      if (!this.isApplyingLoop) {
+        this.loopFeature.clearLoop()
+      } else {
+        console.log('FluentFlow: Skipping loop clear - loop application in progress')
+      }
       this.recordingFeature.clearRecording()
       this.comparisonFeature.destroy()
       

@@ -78,7 +78,8 @@ export default function FluentFlowSidePanel() {
         // Same video - apply directly
         chrome.tabs.sendMessage(currentTab.id!, {
           type: 'APPLY_LOOP',
-          data: loop
+          data: loop,
+          isApplyingLoop: true
         })
         setApplyingLoopId(null) // Clear immediately for same tab
       } else {
@@ -96,7 +97,8 @@ export default function FluentFlowSidePanel() {
           try {
             await chrome.tabs.sendMessage(newTab.id!, {
               type: 'APPLY_LOOP',
-              data: loop
+              data: loop,
+              isApplyingLoop: true
             })
             console.log('FluentFlow: Loop applied successfully')
             setApplyingLoopId(null)
