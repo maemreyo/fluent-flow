@@ -1,333 +1,414 @@
-// Side Panel Component - Extended UI for more complex interactions
-// Provides more space and features than popup
-
 import { useState, useEffect } from "react"
-import { useFeatureProcessing } from "./hooks/use-feature-processing"
-import { useStorageData } from "./hooks/use-storage-data"
-import type { FeatureData, ProcessResult } from "./lib/types"
+import { useFluentFlowStore } from "./lib/stores/fluent-flow-store"
+import type { 
+  PracticeSession, 
+  AudioRecording, 
+  YouTubeVideoInfo,
+  FluentFlowSettings 
+} from "./lib/types/fluent-flow-types"
 
 import "./styles/sidepanel.css"
 
-export default function SidePanel() {
-  const [inputText, setInputText] = useState("")
-  const [history, setHistory] = useState<ProcessResult[]>([])
-  const [activeTab, setActiveTab] = useState<'process' | 'history' | 'settings'>('process')
-
-  const { 
-    processFeature, 
-    isLoading, 
-    result, 
-    error,
-    clearResult 
-  } = useFeatureProcessing()
+export default function FluentFlowSidePanel() {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'recordings' | 'analytics' | 'settings'>('dashboard')
+  const [selectedSession, setSelectedSession] = useState<PracticeSession | null>(null)
+  const [playingRecording, setPlayingRecording] = useState<string | null>(null)
 
   const {
-    data: storageData,
-    updateData: updateStorageData
-  } = useStorageData()
+    allSessions,
+    statistics,
+    settings,
+    updateSettings,
+    currentSession,
+    currentVideo
+  } = useFluentFlowStore()
 
-  // Listen for messages from background script
-  useEffect(() => {
-    const messageListener = (message: any) => {
-      if (message.type === "SIDEPANEL_DATA" && message.selectedText) {
-        setInputText(message.selectedText)
-        setActiveTab('process')
-      }
-    }
-
-    chrome.runtime.onMessage.addListener(messageListener)
-    return () => chrome.runtime.onMessage.removeListener(messageListener)
-  }, [])
-
-  // Load history from storage
-  useEffect(() => {
-    const loadHistory = async () => {
-      try {
-        const response = await chrome.runtime.sendMessage({
-          type: "STORAGE_OPERATION",
-          operation: "get",
-          key: "processing_history"
-        })
-
-        if (response.success && response.data.processing_history) {
-          setHistory(response.data.processing_history)
-        }
-      } catch (error) {
-        console.error("Failed to load history:", error)
-      }
-    }
-
-    loadHistory()
-  }, [])
-
-  // Save result to history
-  useEffect(() => {
-    if (result) {
-      const newHistory = [result, ...history.slice(0, 49)] // Keep last 50 items
-      setHistory(newHistory)
-
-      // Save to storage
-      chrome.runtime.sendMessage({
-        type: "STORAGE_OPERATION",
-        operation: "set",
-        key: "processing_history",
-        value: newHistory
-      }).catch(console.error)
-    }
-  }, [result])
-
-  const handleProcess = async () => {
-    if (!inputText.trim()) return
-
-    const featureData: FeatureData = {
-      input: inputText.trim(),
-      options: {
-        priority: 'normal',
-        timeout: 30000
-      }
-    }
-
-    await processFeature(featureData)
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  const handleClearHistory = async () => {
-    setHistory([])
+  const formatDate = (date: Date): string => {
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date)
+  }
+
+  const playRecording = async (recording: AudioRecording) => {
+    if (playingRecording === recording.id) {
+      setPlayingRecording(null)
+      return
+    }
+
     try {
-      await chrome.runtime.sendMessage({
-        type: "STORAGE_OPERATION",
-        operation: "remove",
-        key: "processing_history"
-      })
+      const audioURL = URL.createObjectURL(recording.audioData)
+      const audio = new Audio(audioURL)
+      
+      audio.onended = () => {
+        URL.revokeObjectURL(audioURL)
+        setPlayingRecording(null)
+      }
+      
+      audio.onerror = () => {
+        URL.revokeObjectURL(audioURL)
+        setPlayingRecording(null)
+      }
+
+      setPlayingRecording(recording.id)
+      await audio.play()
     } catch (error) {
-      console.error("Failed to clear history:", error)
+      console.error('Failed to play recording:', error)
+      setPlayingRecording(null)
     }
   }
 
-  const handleExportHistory = () => {
-    const dataStr = JSON.stringify(history, null, 2)
-    const dataBlob = new Blob([dataStr], { type: 'application/json' })
-    const url = URL.createObjectURL(dataBlob)
-    
-    const link = document.createElement('a')
-    link.href = url
-    link.download = `extension-history-${new Date().toISOString().split('T')[0]}.json`
-    link.click()
-    
-    URL.revokeObjectURL(url)
+  const deleteRecording = (sessionId: string, recordingId: string) => {
+    // This would need to be implemented in the store
+    console.log('Delete recording:', recordingId, 'from session:', sessionId)
   }
 
-  const renderProcessTab = () => (
-    <div className="tab-content">
-      <div className="input-section">
-        <label htmlFor="sidepanel-input" className="input-label">
-          Enter text to process:
-        </label>
-        <textarea
-          id="sidepanel-input"
-          value={inputText}
-          onChange={(e) => setInputText(e.target.value)}
-          placeholder="Type or paste text here..."
-          className="input-textarea large"
-          rows={6}
-          disabled={isLoading}
-        />
-      </div>
+  const exportRecording = async (recording: AudioRecording) => {
+    try {
+      const audioURL = URL.createObjectURL(recording.audioData)
+      const a = document.createElement('a')
+      a.href = audioURL
+      a.download = `fluent-flow-recording-${recording.id}.webm`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(audioURL)
+    } catch (error) {
+      console.error('Failed to export recording:', error)
+    }
+  }
 
-      <div className="actions-section">
-        <button
-          onClick={handleProcess}
-          disabled={!inputText.trim() || isLoading}
-          className="primary-button"
-        >
-          {isLoading ? (
-            <>
-              <span className="spinner-small"></span>
-              Processing...
-            </>
-          ) : (
-            'Process Text'
-          )}
-        </button>
-
-        {result && (
-          <button
-            onClick={clearResult}
-            className="secondary-button"
-          >
-            Clear Result
-          </button>
+  const renderDashboard = () => (
+    <div className="sidepanel-dashboard">
+      <div className="dashboard-header">
+        <h2>Practice Dashboard</h2>
+        {currentVideo && (
+          <div className="current-video-banner">
+            <div className="video-indicator">🔴 Currently Practicing</div>
+            <div className="video-title">{currentVideo.title}</div>
+            <div className="video-channel">{currentVideo.channel}</div>
+          </div>
         )}
       </div>
 
-      {error && (
-        <div className="error-section">
-          <div className="error-message">
-            <strong>Error:</strong> {error}
-          </div>
+      <div className="stats-overview">
+        <div className="stat-card">
+          <div className="stat-value">{statistics.totalSessions}</div>
+          <div className="stat-label">Total Sessions</div>
         </div>
-      )}
-
-      {result && (
-        <div className="result-section">
-          <h3>Result:</h3>
-          <div className="result-content">
-            <div className="result-item">
-              <label>Input:</label>
-              <div className="result-text">{result.input}</div>
-            </div>
-            <div className="result-item">
-              <label>Output:</label>
-              <div className="result-text">{result.output.result}</div>
-            </div>
-            {result.output.metadata && (
-              <div className="result-metadata">
-                <small>
-                  Processed at: {new Date(result.timestamp).toLocaleString()} • 
-                  Processing time: {Math.round(result.output.metadata.processingTime)}ms
-                </small>
-              </div>
-            )}
-          </div>
+        <div className="stat-card">
+          <div className="stat-value">{formatTime(statistics.totalPracticeTime)}</div>
+          <div className="stat-label">Practice Time</div>
         </div>
-      )}
-    </div>
-  )
-
-  const renderHistoryTab = () => (
-    <div className="tab-content">
-      <div className="history-header">
-        <h3>Processing History</h3>
-        <div className="history-actions">
-          <button onClick={handleExportHistory} className="secondary-button">
-            Export
-          </button>
-          <button onClick={handleClearHistory} className="danger-button">
-            Clear All
-          </button>
+        <div className="stat-card">
+          <div className="stat-value">{statistics.totalRecordings}</div>
+          <div className="stat-label">Recordings</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-value">{formatTime(statistics.averageSessionDuration)}</div>
+          <div className="stat-label">Avg Session</div>
         </div>
       </div>
 
-      {history.length === 0 ? (
-        <div className="empty-state">
-          <p>No processing history yet.</p>
-          <p>Process some text to see results here.</p>
-        </div>
-      ) : (
-        <div className="history-list">
-          {history.map((item, index) => (
-            <div key={item.id} className="history-item">
-              <div className="history-item-header">
-                <span className="history-index">#{history.length - index}</span>
-                <span className="history-timestamp">
-                  {new Date(item.timestamp).toLocaleString()}
-                </span>
-              </div>
-              <div className="history-item-content">
-                <div className="history-input">
-                  <label>Input:</label>
-                  <p>{item.input}</p>
-                </div>
-                <div className="history-output">
-                  <label>Output:</label>
-                  <p>{item.output.result}</p>
-                </div>
-              </div>
-              <div className="history-item-actions">
-                <button
-                  onClick={() => setInputText(item.input)}
-                  className="small-button"
-                >
-                  Reuse Input
-                </button>
+      <div className="recent-sessions">
+        <h3>Recent Practice Sessions</h3>
+        {allSessions.slice(0, 5).map(session => (
+          <div 
+            key={session.id} 
+            className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
+            onClick={() => setSelectedSession(session)}
+          >
+            <div className="session-video">
+              <div className="session-title">{session.videoTitle}</div>
+              <div className="session-meta">
+                {formatDate(session.createdAt)} • {session.segments.length} segments • {session.recordings.length} recordings
               </div>
             </div>
-          ))}
+            <div className="session-stats">
+              <div className="practice-time">{formatTime(session.totalPracticeTime)}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="quick-actions">
+        <h3>Quick Actions</h3>
+        <div className="action-buttons">
+          <button 
+            className="action-btn primary"
+            onClick={() => setActiveTab('recordings')}
+          >
+            📚 View All Recordings
+          </button>
+          <button 
+            className="action-btn secondary"
+            onClick={() => setActiveTab('analytics')}
+          >
+            📊 View Analytics
+          </button>
         </div>
-      )}
+      </div>
     </div>
   )
 
-  const renderSettingsTab = () => (
-    <div className="tab-content">
-      <h3>Settings</h3>
+  const renderRecordings = () => (
+    <div className="sidepanel-recordings">
+      <div className="recordings-header">
+        <h2>Recording Library</h2>
+        <div className="recordings-stats">
+          {statistics.totalRecordings} recordings across {allSessions.length} sessions
+        </div>
+      </div>
+
+      <div className="recordings-list">
+        {allSessions.map(session => (
+          session.recordings.length > 0 && (
+            <div key={session.id} className="session-recordings">
+              <div className="session-header">
+                <h3>{session.videoTitle}</h3>
+                <div className="session-date">{formatDate(session.createdAt)}</div>
+              </div>
+              
+              {session.recordings.map(recording => (
+                <div key={recording.id} className="recording-item">
+                  <div className="recording-info">
+                    <div className="recording-title">
+                      Recording {recording.id.slice(-6)}
+                    </div>
+                    <div className="recording-meta">
+                      {formatTime(recording.duration)} • {formatDate(recording.createdAt)}
+                    </div>
+                  </div>
+                  
+                  <div className="recording-controls">
+                    <button 
+                      className={`control-btn ${playingRecording === recording.id ? 'playing' : ''}`}
+                      onClick={() => playRecording(recording)}
+                    >
+                      {playingRecording === recording.id ? '⏸️' : '▶️'}
+                    </button>
+                    <button 
+                      className="control-btn"
+                      onClick={() => exportRecording(recording)}
+                    >
+                      💾
+                    </button>
+                    <button 
+                      className="control-btn danger"
+                      onClick={() => deleteRecording(session.id, recording.id)}
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderAnalytics = () => (
+    <div className="sidepanel-analytics">
+      <h2>Practice Analytics</h2>
+      
+      <div className="analytics-cards">
+        <div className="analytics-card">
+          <h3>Weekly Progress</h3>
+          <div className="progress-chart">
+            {statistics.weeklyProgress.slice(-7).map(day => (
+              <div key={day.date} className="progress-bar">
+                <div 
+                  className="progress-fill"
+                  style={{ height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%` }}
+                ></div>
+                <div className="progress-label">{day.date.slice(-2)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="analytics-card">
+          <h3>Most Practiced Videos</h3>
+          <div className="top-videos">
+            {statistics.mostPracticedVideos.slice(0, 5).map(video => (
+              <div key={video.videoId} className="video-rank">
+                <div className="video-info">
+                  <div className="video-title">{video.title}</div>
+                  <div className="video-channel">{video.channel}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="analytics-card">
+          <h3>Practice Streaks</h3>
+          <div className="streak-info">
+            <div className="streak-current">
+              <div className="streak-number">7</div>
+              <div className="streak-label">Day Streak</div>
+            </div>
+            <div className="streak-best">
+              <div className="streak-number">21</div>
+              <div className="streak-label">Best Streak</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const renderSettings = () => (
+    <div className="sidepanel-settings">
+      <h2>Settings</h2>
       
       <div className="settings-section">
-        <h4>Processing Options</h4>
+        <h3>Audio Settings</h3>
         <div className="setting-item">
-          <label>
-            <input type="checkbox" defaultChecked />
-            Enable caching
-          </label>
-          <p className="setting-description">
-            Cache results to improve performance
-          </p>
+          <label>Recording Quality</label>
+          <select 
+            value={settings.audioQuality}
+            onChange={(e) => updateSettings({ audioQuality: e.target.value as 'low' | 'medium' | 'high' })}
+          >
+            <option value="low">Low (32kbps)</option>
+            <option value="medium">Medium (64kbps)</option>
+            <option value="high">High (128kbps)</option>
+          </select>
         </div>
+        
         <div className="setting-item">
-          <label>
-            <input type="checkbox" defaultChecked />
-            Auto-save to history
-          </label>
-          <p className="setting-description">
-            Automatically save all processed results
-          </p>
-        </div>
-      </div>
-
-      <div className="settings-section">
-        <h4>Storage</h4>
-        <div className="setting-item">
-          <button className="secondary-button">
-            Clear All Data
-          </button>
-          <p className="setting-description">
-            Remove all stored data and reset extension
-          </p>
+          <label>Max Recording Duration</label>
+          <select
+            value={settings.maxRecordingDuration}
+            onChange={(e) => updateSettings({ maxRecordingDuration: parseInt(e.target.value) })}
+          >
+            <option value="60">1 minute</option>
+            <option value="180">3 minutes</option>
+            <option value="300">5 minutes</option>
+            <option value="600">10 minutes</option>
+          </select>
         </div>
       </div>
 
       <div className="settings-section">
-        <h4>About</h4>
-        <div className="about-info">
-          <p><strong>Chrome Extension Starter</strong></p>
-          <p>Version: 1.0.0</p>
-          <p>Clean architecture template for Chrome extensions</p>
+        <h3>UI Preferences</h3>
+        <div className="setting-item">
+          <label>Panel Position</label>
+          <select
+            value={settings.panelPosition}
+            onChange={(e) => updateSettings({ panelPosition: e.target.value as any })}
+          >
+            <option value="top-right">Top Right</option>
+            <option value="top-left">Top Left</option>
+            <option value="bottom-right">Bottom Right</option>
+            <option value="bottom-left">Bottom Left</option>
+          </select>
+        </div>
+        
+        <div className="setting-item checkbox">
+          <input
+            type="checkbox"
+            id="autoSave"
+            checked={settings.autoSaveRecordings}
+            onChange={(e) => updateSettings({ autoSaveRecordings: e.target.checked })}
+          />
+          <label htmlFor="autoSave">Auto-save recordings</label>
+        </div>
+        
+        <div className="setting-item checkbox">
+          <input
+            type="checkbox"
+            id="visualFeedback"
+            checked={settings.showVisualFeedback}
+            onChange={(e) => updateSettings({ showVisualFeedback: e.target.checked })}
+          />
+          <label htmlFor="visualFeedback">Show visual feedback</label>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Keyboard Shortcuts</h3>
+        <div className="shortcuts-list">
+          <div className="shortcut-item">
+            <span>Set Loop Points</span>
+            <kbd>{settings.keyboardShortcuts.toggleLoop}</kbd>
+          </div>
+          <div className="shortcut-item">
+            <span>Start/Stop Recording</span>
+            <kbd>{settings.keyboardShortcuts.toggleRecording}</kbd>
+          </div>
+          <div className="shortcut-item">
+            <span>Compare Audio</span>
+            <kbd>{settings.keyboardShortcuts.compareAudio}</kbd>
+          </div>
+          <div className="shortcut-item">
+            <span>Toggle Panel</span>
+            <kbd>{settings.keyboardShortcuts.togglePanel}</kbd>
+          </div>
+        </div>
+      </div>
+
+      <div className="settings-section">
+        <h3>Data Management</h3>
+        <div className="data-actions">
+          <button className="action-btn secondary">Export All Data</button>
+          <button className="action-btn secondary">Import Data</button>
+          <button className="action-btn danger">Clear All Data</button>
         </div>
       </div>
     </div>
   )
 
   return (
-    <div className="sidepanel-container">
-      <header className="sidepanel-header">
-        <h1>Extension Starter</h1>
-      </header>
+    <div className="fluent-flow-sidepanel">
+      <div className="sidepanel-header">
+        <h1>FluentFlow</h1>
+        <div className="sidepanel-subtitle">YouTube Language Learning</div>
+      </div>
 
-      <nav className="sidepanel-nav">
-        <button
-          className={`nav-button ${activeTab === 'process' ? 'active' : ''}`}
-          onClick={() => setActiveTab('process')}
+      <div className="sidepanel-tabs">
+        <button 
+          className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dashboard')}
         >
-          Process
+          📊 Dashboard
         </button>
-        <button
-          className={`nav-button ${activeTab === 'history' ? 'active' : ''}`}
-          onClick={() => setActiveTab('history')}
+        <button 
+          className={`tab ${activeTab === 'recordings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('recordings')}
         >
-          History ({history.length})
+          🎵 Recordings
         </button>
-        <button
-          className={`nav-button ${activeTab === 'settings' ? 'active' : ''}`}
+        <button 
+          className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
+          onClick={() => setActiveTab('analytics')}
+        >
+          📈 Analytics
+        </button>
+        <button 
+          className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
           onClick={() => setActiveTab('settings')}
         >
-          Settings
+          ⚙️ Settings
         </button>
-      </nav>
+      </div>
 
-      <main className="sidepanel-main">
-        {activeTab === 'process' && renderProcessTab()}
-        {activeTab === 'history' && renderHistoryTab()}
-        {activeTab === 'settings' && renderSettingsTab()}
-      </main>
+      <div className="sidepanel-content">
+        {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'recordings' && renderRecordings()}
+        {activeTab === 'analytics' && renderAnalytics()}
+        {activeTab === 'settings' && renderSettings()}
+      </div>
     </div>
   )
 }
