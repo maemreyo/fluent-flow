@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useFluentFlowStore } from "./lib/stores/fluent-flow-store"
+import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
 import type { 
   PracticeSession, 
   AudioRecording, 

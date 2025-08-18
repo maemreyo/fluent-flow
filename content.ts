@@ -2,7 +2,7 @@ import type { PlasmoContentScript } from "plasmo"
 import { YouTubeService } from './lib/services/youtube-service'
 import { RecordingService } from './lib/services/recording-service'
 import { AudioComparisonService } from './lib/services/audio-comparison-service'
-import { useFluentFlowStore } from './lib/stores/fluent-flow-store'
+import { useFluentFlowSupabaseStore as useFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
 import type {
   FluentFlowMessage,
   YouTubeVideoInfo,
