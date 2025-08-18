@@ -458,35 +458,144 @@ export class LoopFeature {
     marker.style.cssText = `
       position: absolute;
       left: ${percentage}%;
-      bottom: 120%;
+      top: 120%;
       transform: translateX(-50%);
-      background: linear-gradient(135deg, ${colorSet.primary} 0%, ${colorSet.secondary} 100%);
+      background: linear-gradient(135deg, ${colorSet.primary}cc 0%, ${colorSet.secondary}cc 100%);
+      backdrop-filter: blur(8px);
       color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
+      padding: 2.5px 5px;
+      border-radius: 10px;
+      font-size: 11px;
       font-weight: 600;
       white-space: nowrap;
-      cursor: pointer;
+      cursor: grab;
       pointer-events: auto;
       z-index: 15;
-      box-shadow: 0 4px 12px ${colorSet.shadow}, 0 2px 4px rgba(0, 0, 0, 0.1);
-      transition: all 0.3s ease;
+      box-shadow: 0 4px 16px ${colorSet.shadow}, 0 2px 6px rgba(0, 0, 0, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      min-height: 36px;
+      min-width: 70px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0.75;
     `
 
     marker.innerHTML = `
-      <div style="display: flex; align-items: center; gap: 6px;">
-        <span style="font-size: 14px; font-weight: 700;">${arrow}</span>
-        <span style="font-size: 11px;">${this.ui.formatTime(time)}</span>
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: relative;
+        width: 100%;
+        height: 100%;
+      ">
+        <span style="font-size: 14px; font-weight: 700; opacity: 0.9;">${arrow}</span>
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.3px;">${this.ui.formatTime(time)}</span>
+        <button class="ff-marker-remove" style="
+          width: 18px;
+          height: 18px;
+          background: linear-gradient(135deg, #ef4444, #dc2626);
+          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          border-radius: 50%;
+          color: white;
+          font-size: 10px;
+          font-weight: 700;
+          line-height: 1;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+          z-index: 10;
+          opacity: 0.75;
+          transform: scale(1);
+          box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+        " title="Remove ${type} point">×</button>
       </div>
     `
 
+    // Add enhanced hover effects - markers become bold/opaque on hover
+    marker.addEventListener('mouseenter', () => {
+      if (!marker.classList.contains('dragging')) {
+        // Make marker bold and fully opaque
+        marker.style.opacity = '1'
+        marker.style.transform = 'translateX(-50%) scale(1.08) translateY(-2px)'
+        marker.style.boxShadow = `0 6px 20px ${colorSet.shadow}, 0 3px 12px rgba(0, 0, 0, 0.2)`
+        marker.style.cursor = 'grab'
+      }
+    })
+
+    marker.addEventListener('mouseleave', () => {
+      if (!marker.classList.contains('dragging')) {
+        // Reset to muted/default state
+        marker.style.opacity = '0.75'
+        marker.style.transform = 'translateX(-50%) scale(1) translateY(0px)'
+        marker.style.boxShadow = `0 4px 16px ${colorSet.shadow}, 0 2px 6px rgba(0, 0, 0, 0.1)`
+      }
+    })
+
     // Add click to seek functionality
-    marker.addEventListener('click', () => {
+    marker.addEventListener('click', (e) => {
+      // Don't seek if clicking on X button area
+      if ((e.target as HTMLElement).classList.contains('ff-marker-remove')) {
+        return
+      }
+      
       this.player.seekTo(time)
       this.ui.showToast(`Jumped to ${type}: ${this.ui.formatTime(time)}`)
     })
+    
+    // Add X button functionality with enhanced effects
+    const removeBtn = marker.querySelector('.ff-marker-remove') as HTMLElement
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        this.removeMarkerPoint(type)
+      })
+
+      removeBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        e.preventDefault()
+      })
+
+      // Enhanced X button hover effects  
+      removeBtn.addEventListener('mouseenter', (e) => {
+        e.stopPropagation()
+        removeBtn.style.background = 'linear-gradient(135deg, #f87171, #ef4444)'
+        removeBtn.style.transform = 'scale(1.1)'
+        removeBtn.style.boxShadow = '0 3px 10px rgba(239, 68, 68, 0.6)'
+      })
+
+      removeBtn.addEventListener('mouseleave', (e) => {
+        e.stopPropagation()
+        removeBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'
+        removeBtn.style.transform = 'scale(1)'
+        removeBtn.style.boxShadow = '0 2px 6px rgba(239, 68, 68, 0.4)'
+      })
+    }
+
+    // Add arrow pointing up to progress bar
+    const arrowPointer = document.createElement('div')
+    arrowPointer.style.cssText = `
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 6px solid ${colorSet.secondary};
+      filter: drop-shadow(0 -1px 2px ${colorSet.shadow});
+    `
+    marker.appendChild(arrowPointer)
 
     return marker
   }
@@ -558,6 +667,38 @@ export class LoopFeature {
         ? `Loop End: ${this.ui.formatTime(context.data.endTime)} (Alt+Shift+2 to change)`
         : 'Set Loop End (Alt+Shift+2)'
       endButton.title = tooltip
+    }
+  }
+
+  private removeMarkerPoint(type: 'start' | 'end'): void {
+    const context = this.stateMachine.getContext()
+    
+    if (type === 'start') {
+      // Remove start point
+      const newData = { ...context.data, startTime: null }
+      
+      if (newData.endTime !== null) {
+        // Still have end point - go to setting-start
+        this.stateMachine.transition('setting-start', newData)
+      } else {
+        // No points left - go to idle
+        this.stateMachine.transition('idle', newData)
+      }
+      
+      this.ui.showToast('Start point removed')
+    } else {
+      // Remove end point
+      const newData = { ...context.data, endTime: null }
+      
+      if (newData.startTime !== null) {
+        // Still have start point - go to setting-end
+        this.stateMachine.transition('setting-end', newData)
+      } else {
+        // No points left - go to idle
+        this.stateMachine.transition('idle', newData)
+      }
+      
+      this.ui.showToast('End point removed')
     }
   }
 }

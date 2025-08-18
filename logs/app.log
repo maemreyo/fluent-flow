@@ -1,0 +1,29 @@
+<div class="ytp-progress-bar" tabindex="0" role="slider" aria-label="Thanh trượt tìm kiếm" draggable="true" aria-valuemin="0" aria-valuemax="325" aria-valuenow="225" aria-valuetext="3 Phút 45 Giây / 5 Phút 25 Giây" style="touch-action: none;"><div class="ytp-chapters-container"><div class="ytp-chapter-hover-container" style="width: 2134px;"><div class="ytp-progress-bar-padding"></div><div class="ytp-progress-list"><div class="ytp-play-progress ytp-swatch-background-color" style="left: 0px; transform: scaleX(0.690967); background-size: 2134px; background-position-x: 0px;"></div><div class="ytp-progress-linear-live-buffer"></div><div class="ytp-load-progress" style="left: 0px; transform: scaleX(0.899767);"></div><div class="ytp-hover-progress ytp-hover-progress-light" style="left: 1474.52px; transform: scaleX(0.107535);"></div><div class="ytp-ad-progress-list"></div></div></div></div><div class="ytp-timed-markers-container"></div><div class="ytp-clip-start-exclude" style="width: 0%;"></div><div class="ytp-clip-end-exclude" style="left: 100%; width: 0%;"></div><div class="ytp-scrubber-container" style="transform: translateX(1474.52px);"><div class="ytp-scrubber-button ytp-swatch-background-color"><div class="ytp-scrubber-pull-indicator"></div><img class="ytp-decorated-scrubber-button"></div></div><div class="fluent-flow-markers" style="position: absolute; top: 0px; left: 0px; width: 100%; height: 100%; pointer-events: none; z-index: 10;"><div class="fluent-flow-marker fluent-flow-marker-start" style="position: absolute; left: 43.938%; top: 120%; transform: translateX(-50%) scale(1) translateY(0px); background: linear-gradient(135deg, rgba(16, 185, 129, 0.8) 0%, rgba(5, 150, 105, 0.8) 100%); backdrop-filter: blur(8px); color: white; padding: 2.5px 5px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: grab; pointer-events: auto; z-index: 15; box-shadow: rgba(16, 185, 129, 0.3) 0px 4px 16px, rgba(0, 0, 0, 0.1) 0px 2px 6px; transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1); user-select: none; border: 1px solid rgba(255, 255, 255, 0.2); min-height: 36px; min-width: 70px; display: flex; align-items: center; justify-content: center; opacity: 0.75;">
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: relative;
+        width: 100%;
+        height: 100%;
+      ">
+        <span style="font-size: 14px; font-weight: 700; opacity: 0.9;">→</span>
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.3px;">2:23</span>
+        <button class="ff-marker-remove" style="width: 18px; height: 18px; background: linear-gradient(135deg, rgb(239, 68, 68), rgb(220, 38, 38)); border: 1.5px solid rgba(255, 255, 255, 0.9); border-radius: 50%; color: white; font-size: 10px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; opacity: 0.75; transform: scale(1); box-shadow: rgba(239, 68, 68, 0.4) 0px 2px 6px;" title="Remove start point">×</button>
+      </div>
+    <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: 0px; height: 0px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid rgb(5, 150, 105); filter: drop-shadow(rgba(16, 185, 129, 0.3) 0px -1px 2px);"></div></div><div class="fluent-flow-marker fluent-flow-marker-end" style="position: absolute; left: 57.5553%; top: 120%; transform: translateX(-50%) scale(1) translateY(0px); background: linear-gradient(135deg, rgba(245, 158, 11, 0.8) 0%, rgba(217, 119, 6, 0.8) 100%); backdrop-filter: blur(8px); color: white; padding: 2.5px 5px; border-radius: 10px; font-size: 11px; font-weight: 600; white-space: nowrap; cursor: grab; pointer-events: auto; z-index: 15; box-shadow: rgba(245, 158, 11, 0.3) 0px 4px 16px, rgba(0, 0, 0, 0.1) 0px 2px 6px; transition: 0.25s cubic-bezier(0.4, 0, 0.2, 1); user-select: none; border: 1px solid rgba(255, 255, 255, 0.2); min-height: 36px; min-width: 70px; display: flex; align-items: center; justify-content: center; opacity: 0.75;">
+      <div style="
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        position: relative;
+        width: 100%;
+        height: 100%;
+      ">
+        <span style="font-size: 14px; font-weight: 700; opacity: 0.9;">←</span>
+        <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.3px;">3:07</span>
+        <button class="ff-marker-remove" style="width: 18px; height: 18px; background: linear-gradient(135deg, rgb(239, 68, 68), rgb(220, 38, 38)); border: 1.5px solid rgba(255, 255, 255, 0.9); border-radius: 50%; color: white; font-size: 10px; font-weight: 700; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1); z-index: 10; opacity: 0.75; transform: scale(1); box-shadow: rgba(239, 68, 68, 0.4) 0px 2px 6px;" title="Remove end point">×</button>
+      </div>
+    <div style="position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); width: 0px; height: 0px; border-left: 6px solid transparent; border-right: 6px solid transparent; border-bottom: 6px solid rgb(217, 119, 6); filter: drop-shadow(rgba(245, 158, 11, 0.3) 0px -1px 2px);"></div></div><div class="fluent-flow-loop-region" style="position: absolute; left: 43.938%; top: 0px; width: 13.6173%; height: 100%; background: linear-gradient(90deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.25) 50%, rgba(245, 158, 11, 0.15) 100%); border-width: 1px 2px; border-style: solid; border-color: rgba(16, 185, 129, 0.4) rgb(245, 158, 11) rgba(16, 185, 129, 0.4) rgb(16, 185, 129); border-image: initial; pointer-events: none; z-index: 5;"></div></div></div>
