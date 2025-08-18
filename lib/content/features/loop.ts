@@ -458,7 +458,7 @@ export class LoopFeature {
     marker.style.cssText = `
       position: absolute;
       left: ${percentage}%;
-      top: 300%;
+      bottom: 300%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, ${colorSet.primary}cc 0%, ${colorSet.secondary}cc 100%);
       backdrop-filter: blur(8px);
@@ -590,14 +590,14 @@ export class LoopFeature {
     const arrowPointer = document.createElement('div')
     arrowPointer.style.cssText = `
       position: absolute;
-      bottom: 100%;
+      top: 100%;
       left: 50%;
       transform: translateX(-50%);
       width: 0;
       height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-bottom: 6px solid ${colorSet.secondary};
+      border-top: 6px solid ${colorSet.secondary};
       filter: drop-shadow(0 -1px 2px ${colorSet.shadow});
     `
     marker.appendChild(arrowPointer)
