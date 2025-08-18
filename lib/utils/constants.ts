@@ -188,7 +188,7 @@ export const REGEX_PATTERNS = {
   
   // Security patterns
   SUSPICIOUS_SCRIPT: /<script|javascript:|on\w+\s*=/i,
-  SQL_INJECTION: /('|(\\')|(;)|(\\;)|(--)|(\s|%20)+(or|OR)\s/,
+  SQL_INJECTION: /(\'|\\\'|;|\\;|--)|(\s|%20)+(or|OR)\s+/i,
   XSS_ATTEMPT: /<[^>]*on\w+\s*=|javascript:|<script/i
 } as const
 

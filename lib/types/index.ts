@@ -84,6 +84,9 @@ export interface ValidationResult {
   data?: any
 }
 
+// FluentFlow - YouTube Language Learning Extension Types
+export * from './fluent-flow-types'
+
 // Message types
 export interface ExtensionMessage {
   type: string

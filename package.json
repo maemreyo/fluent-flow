@@ -1,9 +1,9 @@
 {
-  "name": "chrome-extension-starter",
-  "displayName": "Chrome Extension Starter - Clean Architecture",
+  "name": "fluent-flow",
+  "displayName": "FluentFlow - YouTube Language Learning",
   "version": "1.0.0",
-  "description": "A Chrome extension starter with clean architecture patterns, TypeScript, React, and best practices",
-  "author": "Chrome Extension Team",
+  "description": "Transform YouTube into a professional speaking practice room for language learners with A/B looping, voice recording, and audio comparison",
+  "author": "FluentFlow Team",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",
@@ -79,7 +79,8 @@
   },
   "manifest": {
     "host_permissions": [
-      "https://*/*"
+      "https://www.youtube.com/*",
+      "https://youtube.com/*"
     ],
     "permissions": [
       "storage",
@@ -89,16 +90,44 @@
       "tabs"
     ],
     "commands": {
-      "main-action": {
+      "toggle-loop": {
         "suggested_key": {
-          "default": "Alt+Shift+E"
+          "default": "Alt+L"
         },
-        "description": "Execute main extension action"
+        "description": "Set A/B loop points"
+      },
+      "toggle-recording": {
+        "suggested_key": {
+          "default": "Alt+R"
+        },
+        "description": "Start/stop voice recording"
+      },
+      "compare-audio": {
+        "suggested_key": {
+          "default": "Alt+C"
+        },
+        "description": "Compare original vs recorded audio"
+      },
+      "toggle-panel": {
+        "suggested_key": {
+          "default": "Alt+Shift+F"
+        },
+        "description": "Toggle FluentFlow panel"
       }
     },
     "side_panel": {
       "default_path": "sidepanel.html"
     },
-    "options_page": "options.html"
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "assets/*"
+        ],
+        "matches": [
+          "https://www.youtube.com/*",
+          "https://youtube.com/*"
+        ]
+      }
+    ]
   }
 }
