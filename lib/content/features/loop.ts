@@ -233,6 +233,31 @@ export class LoopFeature {
     if (markerContainer) {
       markerContainer.remove()
     }
+
+    // Clean up drag guides and related styles
+    const dragGuide = document.getElementById('fluent-flow-drag-guide')
+    if (dragGuide) {
+      dragGuide.remove()
+    }
+
+    const dragGuideStyles = document.getElementById('drag-guide-styles')
+    if (dragGuideStyles) {
+      dragGuideStyles.remove()
+    }
+
+    const dragGuideSlideUpStyles = document.getElementById('drag-guide-slideup-styles')
+    if (dragGuideSlideUpStyles) {
+      dragGuideSlideUpStyles.remove()
+    }
+
+    // Reset loop state
+    this.loopState = {
+      isActive: false,
+      isLooping: false,
+      startTime: null,
+      endTime: null,
+      mode: 'none'
+    }
   }
 
   // Getters for external access
@@ -317,86 +342,346 @@ export class LoopFeature {
     marker.className = `fluent-flow-marker fluent-flow-marker-${type}`
     
     const percentage = (time / duration) * 100
-    const color = type === 'start' ? '#22c55e' : '#ef4444' // Green for start, red for end
-    const label = type === 'start' ? 'START' : 'END'
     
-    // Create tooltip-style marker
+    // Professional color palette
+    const colors = {
+      start: {
+        primary: '#10b981',    // Emerald-500 
+        secondary: '#059669',  // Emerald-600
+        shadow: 'rgba(16, 185, 129, 0.3)'
+      },
+      end: {
+        primary: '#f59e0b',    // Amber-500
+        secondary: '#d97706',  // Amber-600  
+        shadow: 'rgba(245, 158, 11, 0.3)'
+      }
+    }
+    
+    const colorSet = colors[type]
+    const arrow = type === 'start' ? '→' : '←'
+    
+    // Create draggable tooltip-style marker
     marker.style.cssText = `
       position: absolute;
       left: ${percentage}%;
       bottom: 120%;
       transform: translateX(-50%);
-      background: ${color};
+      background: linear-gradient(135deg, ${colorSet.primary} 0%, ${colorSet.secondary} 100%);
       color: white;
-      padding: 6px 10px;
-      border-radius: 6px;
-      font-size: 11px;
-      font-weight: bold;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
       white-space: nowrap;
-      cursor: pointer;
+      cursor: grab;
       pointer-events: auto;
       z-index: 15;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px ${colorSet.shadow}, 0 2px 4px rgba(0, 0, 0, 0.1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
     `
 
-    // Add content with time
+    // Add content with arrow and time
     marker.innerHTML = `
-      <div style="text-align: center;">
-        <div>${label}</div>
-        <div style="font-size: 10px; opacity: 0.9;">${this.ui.formatTime(time)}</div>
+      <div style="
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        text-align: center;
+      ">
+        <span style="font-size: 14px; font-weight: 700;">${arrow}</span>
+        <span style="font-size: 11px; opacity: 0.95;">${this.ui.formatTime(time)}</span>
       </div>
     `
 
-    // Add arrow pointing down
-    const arrow = document.createElement('div')
-    arrow.style.cssText = `
+    // Add arrow pointing down with gradient
+    const arrow_pointer = document.createElement('div')
+    arrow_pointer.style.cssText = `
       position: absolute;
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
       width: 0;
       height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 6px solid ${color};
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 8px solid ${colorSet.secondary};
+      filter: drop-shadow(0 2px 4px ${colorSet.shadow});
     `
-    marker.appendChild(arrow)
+    marker.appendChild(arrow_pointer)
 
-    // Add hover effect
+    // Add enhanced hover effects
     marker.addEventListener('mouseenter', () => {
-      marker.style.transform = 'translateX(-50%) scale(1.1)'
-      marker.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.4)'
+      marker.style.transform = 'translateX(-50%) scale(1.08) translateY(-2px)'
+      marker.style.boxShadow = `0 8px 20px ${colorSet.shadow}, 0 4px 8px rgba(0, 0, 0, 0.15)`
+      marker.style.cursor = 'grab'
     })
 
     marker.addEventListener('mouseleave', () => {
-      marker.style.transform = 'translateX(-50%) scale(1)'
-      marker.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.3)'
+      if (!marker.classList.contains('dragging')) {
+        marker.style.transform = 'translateX(-50%) scale(1) translateY(0px)'
+        marker.style.boxShadow = `0 4px 12px ${colorSet.shadow}, 0 2px 4px rgba(0, 0, 0, 0.1)`
+      }
     })
 
-    // Add click to seek
+    // Add click to seek functionality
     marker.addEventListener('click', (e) => {
       e.stopPropagation()
-      this.player.seekTo(time)
-      this.ui.showToast(`Jumped to ${type}: ${this.ui.formatTime(time)}`)
+      if (!marker.classList.contains('dragging')) {
+        this.player.seekTo(time)
+        this.ui.showToast(`Jumped to ${type === 'start' ? 'start' : 'end'}: ${this.ui.formatTime(time)}`)
+      }
     })
 
-    // Add vertical line connecting to progress bar
+    // Add drag functionality
+    this.addDragFunctionality(marker, type, time, duration)
+
+    // Add vertical line connecting to progress bar with gradient
     const line = document.createElement('div')
     line.style.cssText = `
       position: absolute;
       top: 100%;
       left: 50%;
       transform: translateX(-50%);
-      width: 2px;
-      height: 20px;
-      background: ${color};
-      opacity: 0.7;
+      width: 3px;
+      height: 22px;
+      background: linear-gradient(to bottom, ${colorSet.secondary}, ${colorSet.primary});
+      opacity: 0.8;
+      border-radius: 2px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     `
     marker.appendChild(line)
 
     return marker
+  }
+
+  private addDragFunctionality(marker: HTMLElement, type: 'start' | 'end', initialTime: number, duration: number): void {
+    let isDragging = false
+    let dragStartX = 0
+    let initialPercentage = (initialTime / duration) * 100
+
+    const onMouseDown = (e: MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      
+      isDragging = true
+      dragStartX = e.clientX
+      initialPercentage = (initialTime / duration) * 100
+      
+      marker.classList.add('dragging')
+      marker.style.cursor = 'grabbing'
+      marker.style.transform = 'translateX(-50%) scale(1.1) translateY(-4px)'
+      marker.style.zIndex = '20'
+      
+      // Add visual feedback for dragging
+      marker.style.boxShadow = '0 12px 24px rgba(0, 0, 0, 0.3), 0 6px 12px rgba(0, 0, 0, 0.15)'
+      
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+      
+      // Show temporary guide
+      this.showDragGuide(type)
+    }
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !this.progressBar) return
+
+      const progressRect = this.progressBar.getBoundingClientRect()
+      const deltaX = e.clientX - dragStartX
+      const deltaPercentage = (deltaX / progressRect.width) * 100
+      let newPercentage = initialPercentage + deltaPercentage
+
+      // Constrain within bounds
+      newPercentage = Math.max(0, Math.min(100, newPercentage))
+      
+      // Prevent start/end overlap with 1% minimum gap
+      const otherTime = type === 'start' ? this.loopState.endTime : this.loopState.startTime
+      if (otherTime !== null) {
+        const otherPercentage = (otherTime / duration) * 100
+        if (type === 'start' && newPercentage >= otherPercentage - 1) {
+          newPercentage = otherPercentage - 1
+        } else if (type === 'end' && newPercentage <= otherPercentage + 1) {
+          newPercentage = otherPercentage + 1
+        }
+      }
+
+      // Update marker position
+      marker.style.left = `${newPercentage}%`
+      
+      // Calculate and show preview time
+      const newTime = (newPercentage / 100) * duration
+      const timeDisplay = marker.querySelector('span:last-child') as HTMLElement
+      if (timeDisplay) {
+        timeDisplay.textContent = this.ui.formatTime(newTime)
+      }
+      
+      // Update drag guide
+      this.updateDragGuide(newTime)
+    }
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (!isDragging || !this.progressBar) return
+
+      isDragging = false
+      marker.classList.remove('dragging')
+      
+      // Calculate final position
+      const progressRect = this.progressBar.getBoundingClientRect()
+      const deltaX = e.clientX - dragStartX
+      const deltaPercentage = (deltaX / progressRect.width) * 100
+      let newPercentage = initialPercentage + deltaPercentage
+
+      // Constrain within bounds  
+      newPercentage = Math.max(0, Math.min(100, newPercentage))
+      
+      // Prevent overlap
+      const otherTime = type === 'start' ? this.loopState.endTime : this.loopState.startTime
+      if (otherTime !== null) {
+        const otherPercentage = (otherTime / duration) * 100
+        if (type === 'start' && newPercentage >= otherPercentage - 1) {
+          newPercentage = otherPercentage - 1
+        } else if (type === 'end' && newPercentage <= otherPercentage + 1) {
+          newPercentage = otherPercentage + 1
+        }
+      }
+
+      const newTime = (newPercentage / 100) * duration
+
+      // Update loop state
+      if (type === 'start') {
+        this.loopState.startTime = newTime
+      } else {
+        this.loopState.endTime = newTime
+      }
+
+      // Reset visual state
+      marker.style.cursor = 'grab'
+      marker.style.transform = 'translateX(-50%) scale(1) translateY(0px)'
+      marker.style.zIndex = '15'
+      marker.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2), 0 2px 4px rgba(0, 0, 0, 0.1)'
+
+      // Clean up event listeners
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+
+      // Update progress markers and show feedback
+      this.updateProgressMarkers()
+      this.updateLoopButtonTooltips()
+      this.ui.showToast(`${type === 'start' ? 'Start' : 'End'} time updated: ${this.ui.formatTime(newTime)}`)
+      
+      // Hide drag guide
+      this.hideDragGuide()
+    }
+
+    // Add event listeners
+    marker.addEventListener('mousedown', onMouseDown)
+    
+    // Touch support for mobile
+    marker.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0]
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      })
+      onMouseDown(mouseEvent)
+    })
+  }
+
+  private showDragGuide(type: 'start' | 'end'): void {
+    // Remove existing guide
+    const existingGuide = document.getElementById('fluent-flow-drag-guide')
+    if (existingGuide) {
+      existingGuide.remove()
+    }
+
+    const guide = document.createElement('div')
+    guide.id = 'fluent-flow-drag-guide'
+    guide.style.cssText = `
+      position: fixed;
+      top: 60px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      z-index: 10000;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      animation: slideDown 0.3s ease-out;
+    `
+
+    const arrow = type === 'start' ? '→' : '←'
+    guide.innerHTML = `
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font-size: 14px;">${arrow}</span>
+        <span>Dragging ${type} point</span>
+        <span id="drag-time-preview">--:--</span>
+      </div>
+    `
+
+    // Add slide down animation
+    if (!document.getElementById('drag-guide-styles')) {
+      const style = document.createElement('style')
+      style.id = 'drag-guide-styles'
+      style.textContent = `
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
+
+    document.body.appendChild(guide)
+  }
+
+  private updateDragGuide(time: number): void {
+    const timePreview = document.getElementById('drag-time-preview')
+    if (timePreview) {
+      timePreview.textContent = this.ui.formatTime(time)
+    }
+  }
+
+  private hideDragGuide(): void {
+    const guide = document.getElementById('fluent-flow-drag-guide')
+    if (guide) {
+      guide.style.animation = 'slideUp 0.3s ease-out forwards'
+      
+      // Add slide up animation if not exists
+      if (!document.getElementById('drag-guide-slideup-styles')) {
+        const style = document.createElement('style')
+        style.id = 'drag-guide-slideup-styles'
+        style.textContent = `
+          @keyframes slideUp {
+            from {
+              opacity: 1;
+              transform: translateX(-50%) translateY(0);
+            }
+            to {
+              opacity: 0;
+              transform: translateX(-50%) translateY(-10px);
+            }
+          }
+        `
+        document.head.appendChild(style)
+      }
+
+      setTimeout(() => {
+        guide.remove()
+      }, 300)
+    }
   }
 
   private createLoopRegion(startTime: number, endTime: number, duration: number): HTMLElement {
@@ -413,10 +698,17 @@ export class LoopFeature {
       top: 0;
       width: ${width}%;
       height: 100%;
-      background: rgba(34, 197, 94, 0.2);
-      border: 1px solid rgba(34, 197, 94, 0.5);
+      background: linear-gradient(90deg, 
+        rgba(16, 185, 129, 0.15) 0%, 
+        rgba(16, 185, 129, 0.25) 50%, 
+        rgba(245, 158, 11, 0.15) 100%
+      );
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      border-left: 2px solid #10b981;
+      border-right: 2px solid #f59e0b;
       pointer-events: none;
       z-index: 5;
+      backdrop-filter: blur(1px);
     `
 
     return region
