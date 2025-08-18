@@ -33,7 +33,7 @@ export class LoopStateMachine {
     'setting-start': ['idle', 'setting-start', 'setting-end', 'configured'],
     'setting-end': ['idle', 'setting-start', 'setting-end', 'configured'], 
     'configured': ['idle', 'active', 'setting-start', 'setting-end', 'configured'], // Allow self-updates
-    'active': ['idle', 'paused', 'configured', 'active'], // Allow self-transitions
+    'active': ['idle', 'paused', 'configured', 'active', "setting-start", "setting-end"], // Allow self-transitions
     'paused': ['idle', 'active', 'configured', 'paused']
   }
 

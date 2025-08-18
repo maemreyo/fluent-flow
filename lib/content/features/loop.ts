@@ -458,12 +458,12 @@ export class LoopFeature {
     marker.style.cssText = `
       position: absolute;
       left: ${percentage}%;
-      top: 120%;
+      top: 300%;
       transform: translateX(-50%);
       background: linear-gradient(135deg, ${colorSet.primary}cc 0%, ${colorSet.secondary}cc 100%);
       backdrop-filter: blur(8px);
       color: white;
-      padding: 2.5px 5px;
+      padding: 0px 14px;
       border-radius: 10px;
       font-size: 11px;
       font-weight: 600;
@@ -475,12 +475,12 @@ export class LoopFeature {
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       user-select: none;
       border: 1px solid rgba(255, 255, 255, 0.2);
-      min-height: 36px;
+      min-height: 28px;
       min-width: 70px;
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.75;
+      opacity: 0.85;
     `
 
     marker.innerHTML = `
@@ -496,22 +496,23 @@ export class LoopFeature {
         <span style="font-size: 14px; font-weight: 700; opacity: 0.9;">${arrow}</span>
         <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.3px;">${this.ui.formatTime(time)}</span>
         <button class="ff-marker-remove" style="
-          width: 18px;
-          height: 18px;
+          width: 16px;
+          height: 16px;
           background: linear-gradient(135deg, #ef4444, #dc2626);
-          border: 1.5px solid rgba(255, 255, 255, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.9);
           border-radius: 50%;
           color: white;
-          font-size: 10px;
-          font-weight: 700;
+          font-size: 14px;
+          font-weight: 400;
           line-height: 1;
           cursor: pointer;
-          display: flex;
+          display: flex
+      ;
           align-items: center;
           justify-content: center;
           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
           z-index: 10;
-          opacity: 0.75;
+          opacity: 0.85;
           transform: scale(1);
           box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
         " title="Remove ${type} point">×</button>
@@ -623,9 +624,9 @@ export class LoopFeature {
         rgba(16, 185, 129, 0.25) 50%, 
         rgba(245, 158, 11, 0.15) 100%
       );
-      border: 1px solid rgba(16, 185, 129, 0.4);
-      border-left: 2px solid #10b981;
-      border-right: 2px solid #f59e0b;
+      border: 4px solid rgba(16, 185, 129, 0.4);
+      border-left: 4px solid #10b981;
+      border-right: 4px solid #f59e0b;
       pointer-events: none;
       z-index: 5;
     `
