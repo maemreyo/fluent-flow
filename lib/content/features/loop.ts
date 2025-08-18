@@ -1,6 +1,8 @@
 // Loop Feature Module - A/B Loop functionality with progress markers
 // Clean separation from other features following SoC principles
 
+import type { SavedLoop } from '../../types/fluent-flow-types'
+
 interface LoopState {
   isActive: boolean
   isLooping: boolean
@@ -17,6 +19,8 @@ export interface YouTubePlayerIntegration {
   getCurrentTime(): number | null
   seekTo(time: number): boolean
   getVideoDuration(): number
+  getVideoInfo(): { id: string | null, title: string | null, url: string | null }
+  updateVideoInfo?(): void
 }
 
 export interface UIUtilities {
@@ -269,6 +273,109 @@ export class LoopFeature {
   // Getters for external access
   public getLoopState(): Readonly<LoopState> {
     return { ...this.loopState }
+  }
+
+  public exportCurrentLoop(title?: string, description?: string): SavedLoop | null {
+    if (this.loopState.startTime === null || this.loopState.endTime === null) {
+      this.ui.showToast('No loop to export - please set start and end points first')
+      return null
+    }
+
+    // Try to get video info, with retries if needed
+    let videoInfo = this.player.getVideoInfo()
+    
+    // If video info is missing, try to refresh it
+    if (!videoInfo.id || !videoInfo.title) {
+      console.log('FluentFlow: Video info missing, attempting to refresh...')
+      
+      // Force update video info
+      if (this.player.updateVideoInfo) {
+        this.player.updateVideoInfo()
+        videoInfo = this.player.getVideoInfo()
+      }
+      
+      // Still no info? Use fallbacks
+      if (!videoInfo.id || !videoInfo.title) {
+        // Try to get video ID from URL directly
+        const urlParams = new URLSearchParams(window.location.search)
+        const videoId = urlParams.get('v')
+        
+        // Try to get title from document title
+        const docTitle = document.title
+        const fallbackTitle = docTitle && docTitle !== 'YouTube' 
+          ? docTitle.replace(/ - YouTube$/, '').trim() 
+          : 'Unknown Video'
+        
+        if (!videoId) {
+          this.ui.showToast('Cannot export - unable to detect YouTube video')
+          return null
+        }
+        
+        // Use fallback values
+        videoInfo = {
+          id: videoId,
+          title: fallbackTitle,
+          url: window.location.href
+        }
+        
+        console.log('FluentFlow: Using fallback video info:', videoInfo)
+      }
+    }
+
+    const savedLoop: SavedLoop = {
+      id: `loop_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      title: title || `Loop ${this.ui.formatTime(this.loopState.startTime)}-${this.ui.formatTime(this.loopState.endTime)}`,
+      videoId: videoInfo.id,
+      videoTitle: videoInfo.title,
+      videoUrl: videoInfo.url || window.location.href,
+      startTime: this.loopState.startTime,
+      endTime: this.loopState.endTime,
+      description,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    }
+
+    // Send to background for storage
+    chrome.runtime.sendMessage({
+      type: 'SAVE_LOOP',
+      data: savedLoop
+    })
+
+    this.ui.showToast(`Loop exported: ${savedLoop.title}`)
+    return savedLoop
+  }
+
+  public applyLoop(savedLoop: SavedLoop): void {
+    console.log('FluentFlow: Applying saved loop', savedLoop)
+    
+    // Check if we're on the correct video
+    const currentVideoInfo = this.player.getVideoInfo()
+    if (currentVideoInfo.id !== savedLoop.videoId) {
+      this.ui.showToast('Wrong video - need to navigate to correct video')
+      // This will be handled by the sidepanel for cross-tab navigation
+      return
+    }
+
+    // Clear current loop
+    this.clearLoop()
+
+    // Set loop times
+    this.loopState.startTime = savedLoop.startTime
+    this.loopState.endTime = savedLoop.endTime
+    this.loopState.mode = 'complete'
+    this.loopState.isLooping = false
+
+    // Update UI
+    this.updateProgressMarkers()
+    this.ui.updateButtonState('fluent-flow-loop-start', 'active')
+    this.ui.updateButtonState('fluent-flow-loop-end', 'active')
+    this.ui.updateButtonState('fluent-flow-loop-toggle', 'inactive')
+    this.ui.updateButtonState('fluent-flow-loop', 'active')
+
+    // Seek to start time
+    this.player.seekTo(savedLoop.startTime)
+    
+    this.ui.showToast(`Applied loop: ${savedLoop.title}`)
   }
 
   // Private methods

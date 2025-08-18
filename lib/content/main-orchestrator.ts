@@ -2,11 +2,11 @@
 // Clean architecture implementation following Separation of Concerns
 // Coordinates between features without mixing business logic
 
-import { LoopFeature } from './features/loop'
-import { RecordingFeature } from './features/recording'  
 import { ComparisonFeature } from './features/comparison'
-import { YouTubePlayerService, VideoInfo } from './integrations/youtube-player'
-import { UIUtilities, ButtonConfig } from './ui/utilities'
+import { LoopFeature } from './features/loop'
+import { RecordingFeature } from './features/recording'
+import { YouTubePlayerService, type VideoInfo } from './integrations/youtube-player'
+import { UIUtilities, type ButtonConfig } from './ui/utilities'
 
 export class FluentFlowOrchestrator {
   private loopFeature: LoopFeature
@@ -29,7 +29,7 @@ export class FluentFlowOrchestrator {
     this.initialize()
   }
 
-  private async initialize(): void {
+  private async initialize(): Promise<void> {
     console.log('FluentFlow: Initializing content script orchestrator')
 
     try {
@@ -107,6 +107,14 @@ export class FluentFlowOrchestrator {
         action: () => this.loopFeature.setLoopEnd(),
         group: 'loop'
       },
+      {
+        id: 'fluent-flow-loop-export',
+        title: 'Export Current Loop (Alt+E)',
+        icon: this.uiUtilities.getExportIcon(),
+        action: () => this.exportCurrentLoop(),
+        rightClick: () => this.exportCurrentLoopWithPrompt(),
+        group: 'loop'
+      },
       
       // Other features group
       {
@@ -170,6 +178,11 @@ export class FluentFlowOrchestrator {
             event.stopPropagation()
             this.handleComparisonAction()
             break
+          case 'e':
+            event.preventDefault()
+            event.stopPropagation()
+            this.exportCurrentLoop()
+            break
         }
       }
 
@@ -214,6 +227,11 @@ export class FluentFlowOrchestrator {
             event.stopPropagation()
             this.loopFeature.clearLoop()
             break
+          case 'e':
+            event.preventDefault()
+            event.stopPropagation()
+            this.exportCurrentLoopWithPrompt()
+            break
         }
       }
     })
@@ -229,6 +247,11 @@ export class FluentFlowOrchestrator {
             success: true, 
             videoInfo: this.playerService.getVideoInfo()
           })
+          return true
+
+        case 'APPLY_LOOP':
+          this.loopFeature.applyLoop(message.data)
+          sendResponse({ success: true })
           return true
 
         case 'TOGGLE_PANEL':
@@ -285,6 +308,29 @@ export class FluentFlowOrchestrator {
       type: 'OPEN_SIDE_PANEL',
       videoInfo: this.playerService.getVideoInfo()
     })
+  }
+
+  private exportCurrentLoop(): void {
+    const exported = this.loopFeature.exportCurrentLoop()
+    if (exported) {
+      this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+      setTimeout(() => {
+        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
+      }, 2000)
+    }
+  }
+
+  private exportCurrentLoopWithPrompt(): void {
+    const title = prompt('Enter a title for this loop (optional):')
+    const description = prompt('Enter a description for this loop (optional):')
+    
+    const exported = this.loopFeature.exportCurrentLoop(title || undefined, description || undefined)
+    if (exported) {
+      this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+      setTimeout(() => {
+        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
+      }, 2000)
+    }
   }
 
   // Cleanup method for extension unload

@@ -262,6 +262,14 @@ export class UIUtilities {
     `
   }
 
+  public getExportIcon(): string {
+    return `
+      <svg height="20" width="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M5,20H19V18H5M19,9H15V3H9V9H5L12,16L19,9Z"/>
+      </svg>
+    `
+  }
+
   // Private utility methods
   private async waitForYouTubeControls(): Promise<HTMLElement> {
     return new Promise<HTMLElement>((resolve) => {

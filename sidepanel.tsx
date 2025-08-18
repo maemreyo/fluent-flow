@@ -4,15 +4,18 @@ import type {
   PracticeSession, 
   AudioRecording, 
   YouTubeVideoInfo,
-  FluentFlowSettings 
+  FluentFlowSettings,
+  SavedLoop 
 } from "./lib/types/fluent-flow-types"
 
 import "./styles/sidepanel.css"
 
 export default function FluentFlowSidePanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'recordings' | 'analytics' | 'settings'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'analytics' | 'settings'>('dashboard')
   const [selectedSession, setSelectedSession] = useState<PracticeSession | null>(null)
   const [playingRecording, setPlayingRecording] = useState<string | null>(null)
+  const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
+  const [loadingLoops, setLoadingLoops] = useState(false)
 
   const {
     allSessions,
@@ -22,6 +25,95 @@ export default function FluentFlowSidePanel() {
     currentSession,
     currentVideo
   } = useFluentFlowStore()
+
+  // Load saved loops on component mount
+  useEffect(() => {
+    loadSavedLoops()
+  }, [])
+
+  const loadSavedLoops = async () => {
+    setLoadingLoops(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'LIST_LOOPS'
+      })
+      
+      if (response.success) {
+        setSavedLoops(response.data)
+      } else {
+        console.error('Failed to load loops:', response.error)
+      }
+    } catch (error) {
+      console.error('Error loading loops:', error)
+    } finally {
+      setLoadingLoops(false)
+    }
+  }
+
+  const deleteLoop = async (loopId: string) => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'DELETE_LOOP',
+        data: { id: loopId }
+      })
+      
+      if (response.success) {
+        setSavedLoops(loops => loops.filter(loop => loop.id !== loopId))
+      } else {
+        console.error('Failed to delete loop:', response.error)
+      }
+    } catch (error) {
+      console.error('Error deleting loop:', error)
+    }
+  }
+
+  const applyLoop = async (loop: SavedLoop) => {
+    try {
+      // Check if we need to navigate to the video
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const currentTab = tabs[0]
+      
+      if (currentTab && currentTab.url && currentTab.url.includes(loop.videoId)) {
+        // Same video - apply directly
+        chrome.tabs.sendMessage(currentTab.id!, {
+          type: 'APPLY_LOOP',
+          data: loop
+        })
+      } else {
+        // Different video - open new tab and apply
+        const newTab = await chrome.tabs.create({ url: loop.videoUrl })
+        
+        // Wait for tab to load then apply loop
+        setTimeout(() => {
+          chrome.tabs.sendMessage(newTab.id!, {
+            type: 'APPLY_LOOP',
+            data: loop
+          })
+        }, 3000) // Wait 3 seconds for YouTube to load
+      }
+    } catch (error) {
+      console.error('Error applying loop:', error)
+    }
+  }
+
+  const exportLoop = async (loop: SavedLoop) => {
+    try {
+      const data = JSON.stringify(loop, null, 2)
+      const blob = new Blob([data], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `fluent-flow-loop-${loop.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      
+      URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error('Failed to export loop:', error)
+    }
+  }
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -217,6 +309,83 @@ export default function FluentFlowSidePanel() {
     </div>
   )
 
+  const renderLoops = () => (
+    <div className="sidepanel-loops">
+      <div className="loops-header">
+        <h2>Saved Loops</h2>
+        <div className="loops-stats">
+          {savedLoops.length} saved loops
+        </div>
+        <button 
+          className="action-btn secondary"
+          onClick={loadSavedLoops}
+          disabled={loadingLoops}
+        >
+          {loadingLoops ? '⟳ Loading...' : '🔄 Refresh'}
+        </button>
+      </div>
+
+      <div className="loops-list">
+        {loadingLoops && (
+          <div className="loading-state">Loading loops...</div>
+        )}
+        
+        {!loadingLoops && savedLoops.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">🔁</div>
+            <div className="empty-title">No loops saved yet</div>
+            <div className="empty-description">
+              Create loops on YouTube videos to save them here for later use
+            </div>
+          </div>
+        )}
+
+        {!loadingLoops && savedLoops.map(loop => (
+          <div key={loop.id} className="loop-item">
+            <div className="loop-info">
+              <div className="loop-title">{loop.title}</div>
+              <div className="loop-video">{loop.videoTitle}</div>
+              <div className="loop-time">
+                {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
+                {' '} • Duration: {formatTime(loop.endTime - loop.startTime)}
+              </div>
+              <div className="loop-meta">
+                Created: {formatDate(new Date(loop.createdAt))}
+              </div>
+              {loop.description && (
+                <div className="loop-description">{loop.description}</div>
+              )}
+            </div>
+            
+            <div className="loop-controls">
+              <button 
+                className="control-btn primary"
+                onClick={() => applyLoop(loop)}
+                title="Apply this loop"
+              >
+                ▶️ Apply
+              </button>
+              <button 
+                className="control-btn"
+                onClick={() => exportLoop(loop)}
+                title="Export loop as JSON"
+              >
+                💾 Export
+              </button>
+              <button 
+                className="control-btn danger"
+                onClick={() => deleteLoop(loop.id)}
+                title="Delete loop"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
   const renderAnalytics = () => (
     <div className="sidepanel-analytics">
       <h2>Practice Analytics</h2>
@@ -384,6 +553,12 @@ export default function FluentFlowSidePanel() {
           📊 Dashboard
         </button>
         <button 
+          className={`tab ${activeTab === 'loops' ? 'active' : ''}`}
+          onClick={() => setActiveTab('loops')}
+        >
+          🔁 Loops
+        </button>
+        <button 
           className={`tab ${activeTab === 'recordings' ? 'active' : ''}`}
           onClick={() => setActiveTab('recordings')}
         >
@@ -405,6 +580,7 @@ export default function FluentFlowSidePanel() {
 
       <div className="sidepanel-content">
         {activeTab === 'dashboard' && renderDashboard()}
+        {activeTab === 'loops' && renderLoops()}
         {activeTab === 'recordings' && renderRecordings()}
         {activeTab === 'analytics' && renderAnalytics()}
         {activeTab === 'settings' && renderSettings()}

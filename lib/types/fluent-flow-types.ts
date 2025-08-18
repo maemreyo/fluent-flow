@@ -8,6 +8,19 @@ export interface LoopSegment {
   updatedAt: Date
 }
 
+export interface SavedLoop {
+  id: string
+  title: string
+  videoId: string
+  videoTitle: string
+  videoUrl: string
+  startTime: number
+  endTime: number
+  description?: string
+  createdAt: Date
+  updatedAt: Date
+}
+
 export interface AudioRecording {
   id: string
   segmentId?: string

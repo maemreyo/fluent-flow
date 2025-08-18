@@ -5,6 +5,7 @@
 import { handleFeatureMessage } from "./lib/background/feature-handler"
 import { handleApiMessage } from "./lib/background/api-handler"
 import { handleStorageMessage } from "./lib/background/storage-handler"
+import { handleLoopMessage } from "./lib/background/loop-handler"
 
 console.log("Chrome Extension Starter background script loaded")
 
@@ -51,6 +52,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "STORAGE_OPERATION":
       handleStorageMessage(message.operation, message.key, message.value, sendResponse)
+      return true
+
+    case "SAVE_LOOP":
+      handleLoopMessage('save', message.data, sendResponse)
+      return true
+
+    case "LOAD_LOOP":
+      handleLoopMessage('load', message.data, sendResponse)
+      return true
+
+    case "DELETE_LOOP":
+      handleLoopMessage('delete', message.data, sendResponse)
+      return true
+
+    case "LIST_LOOPS":
+      handleLoopMessage('list', message.data, sendResponse)
+      return true
+
+    case "APPLY_LOOP":
+      handleLoopMessage('apply', message.data, sendResponse)
       return true
 
     case "OPEN_SIDE_PANEL":
