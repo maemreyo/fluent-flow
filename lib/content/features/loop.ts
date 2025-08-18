@@ -356,26 +356,31 @@ export class LoopFeature {
       return
     }
 
-    // Clear current loop
+    // Clear current loop first
     this.clearLoop()
 
-    // Set loop times
+    // Set loop times and state properly
     this.loopState.startTime = savedLoop.startTime
     this.loopState.endTime = savedLoop.endTime
     this.loopState.mode = 'complete'
-    this.loopState.isLooping = false
+    this.loopState.isLooping = false // Ready to loop, but not actively looping
+    this.loopState.isActive = true   // Loop is set up and ready
 
-    // Update UI
+    // Update visual markers
     this.updateProgressMarkers()
+    
+    // Update button states to show loop is ready
     this.ui.updateButtonState('fluent-flow-loop-start', 'active')
-    this.ui.updateButtonState('fluent-flow-loop-end', 'active')
-    this.ui.updateButtonState('fluent-flow-loop-toggle', 'inactive')
+    this.ui.updateButtonState('fluent-flow-loop-end', 'active') 
+    this.ui.updateButtonState('fluent-flow-loop-toggle', 'active') // Ready to play loop
     this.ui.updateButtonState('fluent-flow-loop', 'active')
+    this.ui.updateButtonState('fluent-flow-loop-export', 'inactive')
 
     // Seek to start time
     this.player.seekTo(savedLoop.startTime)
     
-    this.ui.showToast(`Applied loop: ${savedLoop.title}`)
+    this.ui.showToast(`Loop ready: ${savedLoop.title}`)
+    console.log('FluentFlow: Loop state after apply:', this.loopState)
   }
 
   // Private methods

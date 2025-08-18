@@ -1,11 +1,9 @@
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
-import type { 
-  PracticeSession, 
-  AudioRecording, 
-  YouTubeVideoInfo,
-  FluentFlowSettings,
-  SavedLoop 
+import type {
+  AudioRecording,
+  PracticeSession,
+  SavedLoop
 } from "./lib/types/fluent-flow-types"
 
 import "./styles/sidepanel.css"
@@ -16,6 +14,7 @@ export default function FluentFlowSidePanel() {
   const [playingRecording, setPlayingRecording] = useState<string | null>(null)
   const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
   const [loadingLoops, setLoadingLoops] = useState(false)
+  const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
 
   const {
     allSessions,
@@ -68,6 +67,8 @@ export default function FluentFlowSidePanel() {
   }
 
   const applyLoop = async (loop: SavedLoop) => {
+    setApplyingLoopId(loop.id)
+    
     try {
       // Check if we need to navigate to the video
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
@@ -79,6 +80,7 @@ export default function FluentFlowSidePanel() {
           type: 'APPLY_LOOP',
           data: loop
         })
+        setApplyingLoopId(null) // Clear immediately for same tab
       } else {
         // Different video - open new tab and apply with proper waiting
         const newTab = await chrome.tabs.create({ url: loop.videoUrl })
@@ -87,6 +89,7 @@ export default function FluentFlowSidePanel() {
         const applyWithRetry = async (attempts = 0) => {
           if (attempts > 10) {
             console.error('FluentFlow: Failed to apply loop after multiple attempts')
+            setApplyingLoopId(null)
             return
           }
           
@@ -96,6 +99,7 @@ export default function FluentFlowSidePanel() {
               data: loop
             })
             console.log('FluentFlow: Loop applied successfully')
+            setApplyingLoopId(null)
           } catch (error) {
             console.log(`FluentFlow: Apply attempt ${attempts + 1} failed, retrying...`)
             setTimeout(() => applyWithRetry(attempts + 1), 2000)
@@ -107,6 +111,7 @@ export default function FluentFlowSidePanel() {
       }
     } catch (error) {
       console.error('Error applying loop:', error)
+      setApplyingLoopId(null)
     }
   }
 
@@ -375,9 +380,10 @@ export default function FluentFlowSidePanel() {
               <button 
                 className="control-btn primary"
                 onClick={() => applyLoop(loop)}
-                title="Apply this loop"
+                disabled={applyingLoopId === loop.id}
+                title={applyingLoopId === loop.id ? "Applying loop..." : "Apply this loop"}
               >
-                ▶️ Apply
+                {applyingLoopId === loop.id ? '⟳ Applying...' : '▶️ Apply'}
               </button>
               <button 
                 className="control-btn"
