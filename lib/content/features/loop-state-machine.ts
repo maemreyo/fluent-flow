@@ -29,12 +29,12 @@ export class LoopStateMachine {
 
   // Valid state transitions - Made more flexible for user scenarios
   private readonly validTransitions: Record<LoopStateType, LoopStateType[]> = {
-    'idle': ['setting-start', 'setting-end', 'configured'], // Allow direct transitions
-    'setting-start': ['idle', 'setting-end', 'configured'],
-    'setting-end': ['idle', 'setting-start', 'configured'], // Allow going back to setting-start
-    'configured': ['idle', 'active', 'setting-start', 'setting-end'], // Allow re-editing
-    'active': ['idle', 'paused', 'configured'],
-    'paused': ['idle', 'active', 'configured']
+    'idle': ['idle', 'setting-start', 'setting-end', 'configured'], // Allow self-transitions
+    'setting-start': ['idle', 'setting-start', 'setting-end', 'configured'],
+    'setting-end': ['idle', 'setting-start', 'setting-end', 'configured'], 
+    'configured': ['idle', 'active', 'setting-start', 'setting-end', 'configured'], // Allow self-updates
+    'active': ['idle', 'paused', 'configured', 'active'], // Allow self-transitions
+    'paused': ['idle', 'active', 'configured', 'paused']
   }
 
   public getContext(): LoopStateContext {

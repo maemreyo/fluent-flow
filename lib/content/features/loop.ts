@@ -160,7 +160,7 @@ export class LoopFeature {
     switch (context.state) {
       case 'configured':
         // Start looping - ONLY place where active looping begins
-        this.stateMachine.transition('active')
+        this.stateMachine.transition('active', context.data)  // Preserve data!
         const startTime = this.ui.formatTime(context.data.startTime)
         const endTime = this.ui.formatTime(context.data.endTime)
         this.ui.showToast(`Loop started: ${startTime} - ${endTime}`)
@@ -168,13 +168,13 @@ export class LoopFeature {
         
       case 'active':
         // Pause looping
-        this.stateMachine.transition('paused')
+        this.stateMachine.transition('paused', context.data)  // Preserve data!
         this.ui.showToast('Loop paused')
         break
         
       case 'paused':
         // Resume looping
-        this.stateMachine.transition('active')
+        this.stateMachine.transition('active', context.data)  // Preserve data!
         this.ui.showToast('Loop resumed')
         break
         
@@ -184,7 +184,7 @@ export class LoopFeature {
   }
 
   public clearLoop(): void {
-    this.stateMachine.transition('idle')
+    this.stateMachine.transition('idle', { startTime: null, endTime: null })  // Explicitly clear data
     this.ui.showToast('Loop cleared')
   }
 
@@ -220,17 +220,17 @@ export class LoopFeature {
         break
 
       case 'configured':
-        this.stateMachine.transition('active')
+        this.stateMachine.transition('active', context.data)  // Preserve data!
         this.ui.showToast('Loop started')
         break
         
       case 'active':
-        this.stateMachine.transition('paused')
+        this.stateMachine.transition('paused', context.data)  // Preserve data!
         this.ui.showToast('Loop paused')
         break
         
       case 'paused':
-        this.stateMachine.transition('active')
+        this.stateMachine.transition('active', context.data)  // Preserve data!
         this.ui.showToast('Loop resumed')
         break
     }
@@ -538,10 +538,11 @@ export class LoopFeature {
       }
     })
 
-    // Add click to seek functionality
+    // Add click to seek functionality - only if not dragging
     marker.addEventListener('click', (e) => {
-      // Don't seek if clicking on X button area
-      if ((e.target as HTMLElement).classList.contains('ff-marker-remove')) {
+      // Don't seek if clicking on X button area or if we just finished dragging
+      if ((e.target as HTMLElement).classList.contains('ff-marker-remove') || 
+          marker.classList.contains('dragging')) {
         return
       }
       
@@ -580,6 +581,9 @@ export class LoopFeature {
         removeBtn.style.boxShadow = '0 2px 6px rgba(239, 68, 68, 0.4)'
       })
     }
+
+    // Add drag functionality
+    this.addDragFunctionality(marker, type, time, duration)
 
     // Add arrow pointing up to progress bar
     const arrowPointer = document.createElement('div')
@@ -700,5 +704,151 @@ export class LoopFeature {
       
       this.ui.showToast('End point removed')
     }
+  }
+
+  private addDragFunctionality(marker: HTMLElement, type: 'start' | 'end', initialTime: number, duration: number): void {
+    let isDragging = false
+    let dragStartX = 0
+    let initialPercentage = (initialTime / duration) * 100
+    let hasMoved = false
+
+    const onMouseDown = (e: MouseEvent) => {
+      // Don't start drag if clicking on X button
+      if ((e.target as HTMLElement).classList.contains('ff-marker-remove')) {
+        return
+      }
+
+      e.preventDefault()
+      e.stopPropagation()
+      
+      isDragging = true
+      hasMoved = false
+      dragStartX = e.clientX
+      initialPercentage = (initialTime / duration) * 100
+      
+      marker.classList.add('dragging')
+      marker.style.cursor = 'grabbing'
+      marker.style.transform = 'translateX(-50%) scale(1.1)'
+      marker.style.zIndex = '20'
+      
+      document.addEventListener('mousemove', onMouseMove)
+      document.addEventListener('mouseup', onMouseUp)
+    }
+
+    const onMouseMove = (e: MouseEvent) => {
+      if (!isDragging || !this.progressBar) return
+      
+      hasMoved = true
+      const progressRect = this.progressBar.getBoundingClientRect()
+      const deltaX = e.clientX - dragStartX
+      const deltaPercentage = (deltaX / progressRect.width) * 100
+      let newPercentage = initialPercentage + deltaPercentage
+
+      // Constrain within bounds
+      newPercentage = Math.max(0, Math.min(100, newPercentage))
+      
+      // Prevent start/end overlap with minimum gap
+      const context = this.stateMachine.getContext()
+      const otherTime = type === 'start' ? context.data.endTime : context.data.startTime
+      if (otherTime !== null) {
+        const otherPercentage = (otherTime / duration) * 100
+        if (type === 'start' && newPercentage >= otherPercentage - 1) {
+          newPercentage = otherPercentage - 1
+        } else if (type === 'end' && newPercentage <= otherPercentage + 1) {
+          newPercentage = otherPercentage + 1
+        }
+      }
+
+      // Update marker position
+      marker.style.left = `${newPercentage}%`
+      
+      // Update preview time in marker
+      const newTime = (newPercentage / 100) * duration
+      const timeDisplay = marker.querySelector('span:last-child') as HTMLElement
+      if (timeDisplay) {
+        timeDisplay.textContent = this.ui.formatTime(newTime)
+      }
+    }
+
+    const onMouseUp = (e: MouseEvent) => {
+      if (!isDragging || !this.progressBar) return
+
+      isDragging = false
+      marker.classList.remove('dragging')
+      
+      // Calculate final position
+      const progressRect = this.progressBar.getBoundingClientRect()
+      const deltaX = e.clientX - dragStartX
+      const deltaPercentage = (deltaX / progressRect.width) * 100
+      let newPercentage = initialPercentage + deltaPercentage
+
+      // Constrain within bounds
+      newPercentage = Math.max(0, Math.min(100, newPercentage))
+      
+      // Prevent overlap
+      const context = this.stateMachine.getContext()
+      const otherTime = type === 'start' ? context.data.endTime : context.data.startTime
+      if (otherTime !== null) {
+        const otherPercentage = (otherTime / duration) * 100
+        if (type === 'start' && newPercentage >= otherPercentage - 1) {
+          newPercentage = otherPercentage - 1
+        } else if (type === 'end' && newPercentage <= otherPercentage + 1) {
+          newPercentage = otherPercentage + 1
+        }
+      }
+
+      const newTime = (newPercentage / 100) * duration
+
+      // Update loop state through state machine
+      const newData = { ...context.data }
+      if (type === 'start') {
+        newData.startTime = newTime
+      } else {
+        newData.endTime = newTime
+      }
+      
+      // Determine appropriate state
+      if (newData.startTime !== null && newData.endTime !== null) {
+        this.stateMachine.transition('configured', newData)
+      } else {
+        this.stateMachine.transition(type === 'start' ? 'setting-end' : 'setting-start', newData)
+      }
+
+      // Reset visual state
+      marker.style.cursor = 'grab'
+      marker.style.transform = 'translateX(-50%) scale(1)'
+      marker.style.zIndex = '15'
+
+      // Clean up event listeners
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+
+      // Smart video seeking based on drag type
+      if (hasMoved) {
+        if (type === 'end') {
+          // Seek to end point minus 2-3 seconds for preview
+          const previewTime = Math.max(0, newTime - 2.5)
+          this.player.seekTo(previewTime)
+          this.ui.showToast(`End point updated: ${this.ui.formatTime(newTime)}`)  
+        } else {
+          // Seek to start point for immediate feedback
+          this.player.seekTo(newTime)
+          this.ui.showToast(`Start point updated: ${this.ui.formatTime(newTime)}`)
+        }
+      }
+    }
+
+    // Add event listeners
+    marker.addEventListener('mousedown', onMouseDown)
+    
+    // Touch support for mobile
+    marker.addEventListener('touchstart', (e) => {
+      const touch = e.touches[0]
+      const mouseEvent = new MouseEvent('mousedown', {
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      })
+      onMouseDown(mouseEvent)
+    })
   }
 }
