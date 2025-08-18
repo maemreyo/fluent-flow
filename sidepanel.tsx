@@ -80,16 +80,30 @@ export default function FluentFlowSidePanel() {
           data: loop
         })
       } else {
-        // Different video - open new tab and apply
+        // Different video - open new tab and apply with proper waiting
         const newTab = await chrome.tabs.create({ url: loop.videoUrl })
         
-        // Wait for tab to load then apply loop
-        setTimeout(() => {
-          chrome.tabs.sendMessage(newTab.id!, {
-            type: 'APPLY_LOOP',
-            data: loop
-          })
-        }, 3000) // Wait 3 seconds for YouTube to load
+        // Wait for tab to load then apply loop with retry mechanism
+        const applyWithRetry = async (attempts = 0) => {
+          if (attempts > 10) {
+            console.error('FluentFlow: Failed to apply loop after multiple attempts')
+            return
+          }
+          
+          try {
+            await chrome.tabs.sendMessage(newTab.id!, {
+              type: 'APPLY_LOOP',
+              data: loop
+            })
+            console.log('FluentFlow: Loop applied successfully')
+          } catch (error) {
+            console.log(`FluentFlow: Apply attempt ${attempts + 1} failed, retrying...`)
+            setTimeout(() => applyWithRetry(attempts + 1), 2000)
+          }
+        }
+        
+        // Start applying after initial delay
+        setTimeout(() => applyWithRetry(), 4000)
       }
     } catch (error) {
       console.error('Error applying loop:', error)
