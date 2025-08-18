@@ -64,14 +64,17 @@ export class LoopFeature {
     if (this.loopState.endTime) {
       this.loopState.mode = 'complete'
       this.loopState.isLooping = true
+      
+      // Update ALL button states when loop is complete
+      this.ui.updateButtonState('fluent-flow-loop-end', 'active')    // ← Missing fix!
       this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')
+      this.ui.updateButtonState('fluent-flow-loop', 'active')
     } else {
       this.loopState.mode = 'setting-end'
       this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop', 'setting')
     }
 
-    // Update backward compatibility button
-    this.ui.updateButtonState('fluent-flow-loop', this.loopState.isLooping ? 'active' : 'setting')
     this.updateProgressMarkers()
     this.updateLoopButtonTooltips()
     this.ui.showToast(`Loop start: ${this.ui.formatTime(currentTime)}`)
@@ -98,14 +101,17 @@ export class LoopFeature {
     if (this.loopState.startTime) {
       this.loopState.mode = 'complete'
       this.loopState.isLooping = true
+      
+      // Update ALL button states when loop is complete
+      this.ui.updateButtonState('fluent-flow-loop-start', 'active')  // ← Missing fix!
       this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')
+      this.ui.updateButtonState('fluent-flow-loop', 'active')
     } else {
       this.loopState.mode = 'setting-start'
       this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop', 'setting')
     }
 
-    // Update backward compatibility button
-    this.ui.updateButtonState('fluent-flow-loop', this.loopState.isLooping ? 'active' : 'setting')
     this.updateProgressMarkers()
     this.updateLoopButtonTooltips()
     this.ui.showToast(`Loop end: ${this.ui.formatTime(currentTime)}`)
@@ -245,7 +251,7 @@ export class LoopFeature {
       dragGuideStyles.remove()
     }
 
-    const dragGuideSlideUpStyles = document.getElementById('drag-guide-slideup-styles')
+    const dragGuideSlideUpStyles = document.getElementById('drag-guide-slide-up-styles')
     if (dragGuideSlideUpStyles) {
       dragGuideSlideUpStyles.remove()
     }
@@ -383,16 +389,37 @@ export class LoopFeature {
       border: 1px solid rgba(255, 255, 255, 0.2);
     `
 
-    // Add content with arrow and time
+    // Add content with arrow, time, and hover remove button
     marker.innerHTML = `
       <div style="
         display: flex;
         align-items: center;
         gap: 6px;
         text-align: center;
+        position: relative;
       ">
         <span style="font-size: 14px; font-weight: 700;">${arrow}</span>
         <span style="font-size: 11px; opacity: 0.95;">${this.ui.formatTime(time)}</span>
+        <button class="ff-marker-remove" style="
+          position: absolute;
+          top: -6px;
+          right: -6px;
+          width: 16px;
+          height: 16px;
+          background: rgba(239, 68, 68, 0.9);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          border-radius: 50%;
+          color: white;
+          font-size: 10px;
+          font-weight: bold;
+          line-height: 1;
+          cursor: pointer;
+          display: none;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.2s ease;
+          z-index: 10;
+        " title="Remove ${type} point">×</button>
       </div>
     `
 
@@ -412,17 +439,31 @@ export class LoopFeature {
     `
     marker.appendChild(arrow_pointer)
 
-    // Add enhanced hover effects
+    // Add enhanced hover effects with remove button
     marker.addEventListener('mouseenter', () => {
-      marker.style.transform = 'translateX(-50%) scale(1.08) translateY(-2px)'
-      marker.style.boxShadow = `0 8px 20px ${colorSet.shadow}, 0 4px 8px rgba(0, 0, 0, 0.15)`
-      marker.style.cursor = 'grab'
+      if (!marker.classList.contains('dragging')) {
+        marker.style.transform = 'translateX(-50%) scale(1.08) translateY(-2px)'
+        marker.style.boxShadow = `0 8px 20px ${colorSet.shadow}, 0 4px 8px rgba(0, 0, 0, 0.15)`
+        marker.style.cursor = 'grab'
+        
+        // Show remove button
+        const removeBtn = marker.querySelector('.ff-marker-remove') as HTMLElement
+        if (removeBtn) {
+          removeBtn.style.display = 'flex'
+        }
+      }
     })
 
     marker.addEventListener('mouseleave', () => {
       if (!marker.classList.contains('dragging')) {
         marker.style.transform = 'translateX(-50%) scale(1) translateY(0px)'
         marker.style.boxShadow = `0 4px 12px ${colorSet.shadow}, 0 2px 4px rgba(0, 0, 0, 0.1)`
+        
+        // Hide remove button
+        const removeBtn = marker.querySelector('.ff-marker-remove') as HTMLElement
+        if (removeBtn) {
+          removeBtn.style.display = 'none'
+        }
       }
     })
 
@@ -434,6 +475,38 @@ export class LoopFeature {
         this.ui.showToast(`Jumped to ${type === 'start' ? 'start' : 'end'}: ${this.ui.formatTime(time)}`)
       }
     })
+
+    // Add remove button functionality
+    const removeBtn = marker.querySelector('.ff-marker-remove') as HTMLElement
+    if (removeBtn) {
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        e.preventDefault()
+        this.removeMarkerPoint(type)
+      })
+
+      removeBtn.addEventListener('mousedown', (e) => {
+        e.stopPropagation()
+        e.stopImmediatePropagation()
+        e.preventDefault()
+      })
+
+      // Add hover effects for remove button
+      removeBtn.addEventListener('mouseenter', (e) => {
+        e.stopPropagation()
+        removeBtn.style.background = 'rgba(239, 68, 68, 1)'
+        removeBtn.style.transform = 'scale(1.2)'
+        removeBtn.style.zIndex = '25'
+      })
+
+      removeBtn.addEventListener('mouseleave', (e) => {
+        e.stopPropagation()
+        removeBtn.style.background = 'rgba(239, 68, 68, 0.9)'
+        removeBtn.style.transform = 'scale(1)'
+        removeBtn.style.zIndex = '10'
+      })
+    }
 
     // Add drag functionality
     this.addDragFunctionality(marker, type, time, duration)
@@ -566,10 +639,54 @@ export class LoopFeature {
       document.removeEventListener('mousemove', onMouseMove)
       document.removeEventListener('mouseup', onMouseUp)
 
-      // Update progress markers and show feedback
+      // Smart video seeking based on drag type
+      if (type === 'end') {
+        // Seek to end point minus 2-3 seconds for preview
+        const previewTime = Math.max(0, newTime - 2.5)
+        this.player.seekTo(previewTime)
+        this.ui.showToast(`End point updated: ${this.ui.formatTime(newTime)} (previewing from ${this.ui.formatTime(previewTime)})`)
+      } else {
+        // Seek to start point for immediate feedback
+        this.player.seekTo(newTime)
+        this.ui.showToast(`Start point updated: ${this.ui.formatTime(newTime)}`)
+      }
+
+      // Update button states based on current loop state
+      if (type === 'start') {
+        this.ui.updateButtonState('fluent-flow-loop-start', 'active')
+        if (this.loopState.endTime !== null) {
+          // Complete loop - update all button states
+          this.loopState.mode = 'complete'
+          this.loopState.isLooping = true
+          this.ui.updateButtonState('fluent-flow-loop-end', 'active')
+          this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')
+          this.ui.updateButtonState('fluent-flow-loop', 'active')
+        } else {
+          // Partial loop - setting mode
+          this.loopState.mode = 'setting-end'
+          this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+          this.ui.updateButtonState('fluent-flow-loop', 'setting')
+        }
+      } else {
+        this.ui.updateButtonState('fluent-flow-loop-end', 'active')
+        if (this.loopState.startTime !== null) {
+          // Complete loop - update all button states
+          this.loopState.mode = 'complete'
+          this.loopState.isLooping = true
+          this.ui.updateButtonState('fluent-flow-loop-start', 'active')
+          this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')
+          this.ui.updateButtonState('fluent-flow-loop', 'active')
+        } else {
+          // Partial loop - setting mode
+          this.loopState.mode = 'setting-start'
+          this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+          this.ui.updateButtonState('fluent-flow-loop', 'setting')
+        }
+      }
+
+      // Update progress markers and tooltips
       this.updateProgressMarkers()
       this.updateLoopButtonTooltips()
-      this.ui.showToast(`${type === 'start' ? 'Start' : 'End'} time updated: ${this.ui.formatTime(newTime)}`)
       
       // Hide drag guide
       this.hideDragGuide()
@@ -660,9 +777,9 @@ export class LoopFeature {
       guide.style.animation = 'slideUp 0.3s ease-out forwards'
       
       // Add slide up animation if not exists
-      if (!document.getElementById('drag-guide-slideup-styles')) {
+      if (!document.getElementById('drag-guide-slide-up-styles')) {
         const style = document.createElement('style')
-        style.id = 'drag-guide-slideup-styles'
+        style.id = 'drag-guide-slide-up-styles'
         style.textContent = `
           @keyframes slideUp {
             from {
@@ -682,6 +799,49 @@ export class LoopFeature {
         guide.remove()
       }, 300)
     }
+  }
+
+  private removeMarkerPoint(type: 'start' | 'end'): void {
+    // Remove the specific marker point
+    if (type === 'start') {
+      this.loopState.startTime = null
+      this.ui.showToast('Start point removed')
+    } else {
+      this.loopState.endTime = null
+      this.ui.showToast('End point removed')
+    }
+
+    // Update loop state based on remaining markers
+    if (this.loopState.startTime === null && this.loopState.endTime === null) {
+      // No markers left - reset completely
+      this.loopState.mode = 'none'
+      this.loopState.isActive = false
+      this.loopState.isLooping = false
+      this.ui.updateButtonState('fluent-flow-loop', 'inactive')
+      this.ui.updateButtonState('fluent-flow-loop-start', 'inactive')
+      this.ui.updateButtonState('fluent-flow-loop-toggle', 'inactive')
+      this.ui.updateButtonState('fluent-flow-loop-end', 'inactive')
+    } else if (this.loopState.startTime !== null && this.loopState.endTime === null) {
+      // Only start marker remains
+      this.loopState.mode = 'setting-end'
+      this.loopState.isLooping = false
+      this.ui.updateButtonState('fluent-flow-loop', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop-start', 'active')
+      this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop-end', 'inactive')
+    } else if (this.loopState.startTime === null && this.loopState.endTime !== null) {
+      // Only end marker remains
+      this.loopState.mode = 'setting-start'
+      this.loopState.isLooping = false
+      this.ui.updateButtonState('fluent-flow-loop', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop-start', 'inactive')
+      this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
+      this.ui.updateButtonState('fluent-flow-loop-end', 'active')
+    }
+
+    // Update visual elements
+    this.updateProgressMarkers()
+    this.updateLoopButtonTooltips()
   }
 
   private createLoopRegion(startTime: number, endTime: number, duration: number): HTMLElement {
@@ -745,6 +905,9 @@ export class LoopFeature {
       }
       this.loopState.startTime = time
       this.ui.showToast(`Loop start set: ${this.ui.formatTime(time)}`)
+      
+      // Update start button state
+      this.ui.updateButtonState('fluent-flow-loop-start', 'active')
     } else {
       if (this.loopState.startTime && time <= this.loopState.startTime) {
         this.ui.showToast('End time cannot be before start time')
@@ -752,17 +915,29 @@ export class LoopFeature {
       }
       this.loopState.endTime = time
       this.ui.showToast(`Loop end set: ${this.ui.formatTime(time)}`)
+      
+      // Update end button state
+      this.ui.updateButtonState('fluent-flow-loop-end', 'active')
     }
 
-    // Update state machine
+    // Update state machine and all button states
     if (this.loopState.startTime !== null && this.loopState.endTime !== null) {
       this.loopState.mode = 'complete'
       this.loopState.isLooping = true
       this.loopState.isActive = true
+      
+      // Update all button states for complete loop
       this.ui.updateButtonState('fluent-flow-loop', 'active')
+      this.ui.updateButtonState('fluent-flow-loop-start', 'active')
+      this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')
+      this.ui.updateButtonState('fluent-flow-loop-end', 'active')
+    } else {
+      // Partial loop - update toggle button to setting state
+      this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
     }
 
     this.updateProgressMarkers()
+    this.updateLoopButtonTooltips()
   }
 
   private updateLoopButtonTooltips(): void {
