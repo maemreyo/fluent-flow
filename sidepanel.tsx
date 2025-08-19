@@ -47,7 +47,9 @@ export default function FluentFlowSidePanel() {
     currentSession,
     currentVideo,
     getAllUserLoops,
-    deleteLoop: deleteLoopFromStore
+    deleteLoop: deleteLoopFromStore,
+    getAllUserRecordings,
+    deleteUserRecording
   } = useFluentFlowStore()
 
   // Load saved loops and recordings on component mount
@@ -84,15 +86,9 @@ export default function FluentFlowSidePanel() {
   const loadSavedRecordings = async () => {
     setLoadingRecordings(true)
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'LIST_RECORDINGS'
-      })
-      
-      if (response.success) {
-        setSavedRecordings(response.data)
-      } else {
-        console.error('Failed to load recordings:', response.error)
-      }
+      // Use Supabase store instead of chrome.runtime.sendMessage
+      const recordings = await getAllUserRecordings()
+      setSavedRecordings(recordings)
     } catch (error) {
       console.error('Error loading recordings:', error)
     } finally {
@@ -215,15 +211,13 @@ export default function FluentFlowSidePanel() {
 
   const deleteRecording = async (recordingId: string) => {
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'DELETE_RECORDING',
-        data: { id: recordingId }
-      })
+      // Use Supabase store instead of chrome.runtime.sendMessage
+      const success = await deleteUserRecording(recordingId)
       
-      if (response.success) {
+      if (success) {
         setSavedRecordings(recordings => recordings.filter(rec => rec.id !== recordingId))
       } else {
-        console.error('Failed to delete recording:', response.error)
+        console.error('Failed to delete recording: Recording not found or user not authenticated')
       }
     } catch (error) {
       console.error('Error deleting recording:', error)

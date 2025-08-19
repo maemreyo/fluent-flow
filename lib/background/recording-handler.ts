@@ -103,6 +103,16 @@ async function saveRecording(recordingData: {
   timestamp?: number
 }): Promise<SavedRecording> {
   try {
+    // Check if user is authenticated first
+    const authHandler = getAuthHandler()
+    const authState = await authHandler.refreshAuthState()
+    
+    console.log('FluentFlow: Auth state in recording handler:', {
+      isAuthenticated: authState.isAuthenticated,
+      hasUser: !!authState.user,
+      userId: authState.user?.id
+    })
+
     const recordingId = `recording_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const fileName = `recording_${Date.now()}.webm`
     
@@ -123,7 +133,43 @@ async function saveRecording(recordingData: {
       updatedAt: new Date()
     }
 
-    // Store in chrome.storage.local for persistence
+    // If user is authenticated, try to save to Supabase
+    if (authState.isAuthenticated && authState.user && recordingData.sessionId) {
+      try {
+        console.log('FluentFlow: Saving recording to Supabase for user:', authState.user.id)
+        
+        // Get Supabase store service
+        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
+        const store = getFluentFlowStore()
+        
+        // Convert to AudioRecording format expected by supabase service
+        const audioRecording = {
+          id: recordingId,
+          videoId: recordingData.videoId,
+          audioData: audioData,
+          duration: recordingData.duration,
+          createdAt: savedRecording.createdAt,
+          updatedAt: savedRecording.updatedAt
+        }
+
+        // Save to Supabase
+        const supabaseRecordingId = await store.supabaseService.saveRecording(
+          recordingData.sessionId,
+          audioRecording
+        )
+        
+        console.log('FluentFlow: Recording saved to Supabase successfully:', supabaseRecordingId)
+        return savedRecording
+        
+      } catch (supabaseError) {
+        console.error('FluentFlow: Failed to save recording to Supabase, falling back to local storage:', supabaseError)
+        // Fall through to local storage backup
+      }
+    } else {
+      console.log('FluentFlow: User not authenticated or no session ID, using local storage')
+    }
+
+    // Fallback to local storage (for unauthenticated users or when Supabase fails)
     const storageKey = `fluent_flow_recording_${recordingId}`
     const storageData = {
       ...savedRecording,
@@ -137,7 +183,7 @@ async function saveRecording(recordingData: {
     // Update recordings index
     await updateRecordingsIndex(savedRecording)
 
-    console.log('FluentFlow: Recording saved successfully', {
+    console.log('FluentFlow: Recording saved to local storage', {
       id: recordingId,
       duration: recordingData.duration,
       size: recordingData.audioSize
@@ -186,6 +232,55 @@ async function loadRecording(recordingId: string): Promise<SavedRecording | null
  */
 async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
   try {
+    // Check if user is authenticated first
+    const authHandler = getAuthHandler()
+    const authState = await authHandler.refreshAuthState()
+    
+    console.log('FluentFlow: Getting recordings - auth state:', {
+      isAuthenticated: authState.isAuthenticated,
+      hasUser: !!authState.user,
+      userId: authState.user?.id
+    })
+
+    // If user is authenticated, try to get recordings from Supabase
+    if (authState.isAuthenticated && authState.user) {
+      try {
+        console.log('FluentFlow: Getting recordings from Supabase for user:', authState.user.id)
+        
+        // Get Supabase store service
+        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
+        const store = getFluentFlowStore()
+        
+        // Get user recordings using the new service method
+        const audioRecordings = await store.supabaseService.getAllUserRecordings(authState.user.id, videoId)
+        
+        // Convert to SavedRecording format
+        const savedRecordings: SavedRecording[] = audioRecordings.map(recording => ({
+          id: recording.id,
+          videoId: recording.videoId,
+          sessionId: '', // Not available in the simplified AudioRecording format
+          audioData: recording.audioData,
+          audioDataBase64: '', // Not available from Supabase directly
+          fileName: recording.id + '.webm',
+          duration: recording.duration,
+          title: `Recording ${new Date(recording.createdAt).toLocaleString()}`,
+          description: '',
+          createdAt: recording.createdAt,
+          updatedAt: recording.updatedAt || recording.createdAt
+        }))
+        
+        console.log('FluentFlow: Retrieved recordings from Supabase:', savedRecordings.length)
+        return savedRecordings
+        
+      } catch (supabaseError) {
+        console.error('FluentFlow: Failed to get recordings from Supabase, falling back to local storage:', supabaseError)
+        // Fall through to local storage backup
+      }
+    } else {
+      console.log('FluentFlow: User not authenticated, using local storage')
+    }
+
+    // Fallback to local storage (for unauthenticated users or when Supabase fails)
     const index = await getRecordingsIndex()
     let recordings = index
 
@@ -204,6 +299,7 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
       }
     }
 
+    console.log('FluentFlow: Retrieved recordings from local storage:', fullRecordings.length)
     return fullRecordings.sort((a, b) => 
       new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
@@ -219,6 +315,46 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
  */
 async function deleteRecording(recordingId: string): Promise<boolean> {
   try {
+    // Check if user is authenticated first
+    const authHandler = getAuthHandler()
+    const authState = await authHandler.refreshAuthState()
+    
+    console.log('FluentFlow: Deleting recording - auth state:', {
+      isAuthenticated: authState.isAuthenticated,
+      hasUser: !!authState.user,
+      userId: authState.user?.id,
+      recordingId: recordingId
+    })
+
+    // If user is authenticated, try to delete from Supabase first
+    if (authState.isAuthenticated && authState.user) {
+      try {
+        console.log('FluentFlow: Deleting recording from Supabase:', recordingId)
+        
+        // Get Supabase store service
+        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
+        const store = getFluentFlowStore()
+        
+        // Delete from Supabase using the new service method
+        const deleted = await store.supabaseService.deleteUserRecording(authState.user.id, recordingId)
+        
+        if (deleted) {
+          console.log('FluentFlow: Recording deleted from Supabase successfully:', recordingId)
+          return true
+        } else {
+          console.log('FluentFlow: Recording not found in Supabase, trying local storage')
+          // Fall through to local storage deletion
+        }
+        
+      } catch (supabaseError) {
+        console.error('FluentFlow: Failed to delete recording from Supabase, trying local storage:', supabaseError)
+        // Fall through to local storage deletion
+      }
+    } else {
+      console.log('FluentFlow: User not authenticated, deleting from local storage')
+    }
+
+    // Fallback to local storage deletion (for unauthenticated users or when Supabase fails)
     const storageKey = `fluent_flow_recording_${recordingId}`
     
     // Remove from storage
@@ -227,7 +363,7 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
     // Update index
     await removeFromRecordingsIndex(recordingId)
     
-    console.log('FluentFlow: Recording deleted successfully', recordingId)
+    console.log('FluentFlow: Recording deleted from local storage successfully:', recordingId)
     return true
 
   } catch (error) {

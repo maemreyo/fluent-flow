@@ -71,6 +71,7 @@ export interface AudioRecording {
   title?: string
   notes?: string
   createdAt: Date
+  updatedAt?: Date
   // New fields for Supabase Storage integration
   fileUrl?: string | null
   filePath?: string | null
@@ -227,6 +228,8 @@ export interface FluentFlowStore {
   getAllUserLoops: () => Promise<SavedLoop[]>
   deleteLoop: (loopId: string) => Promise<boolean>
   saveLoop: (loop: SavedLoop) => Promise<string | null>
+  getAllUserRecordings: (videoId?: string) => Promise<AudioRecording[]>
+  deleteUserRecording: (recordingId: string) => Promise<boolean>
 }
 
 export interface IndexedDBSchema {

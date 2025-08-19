@@ -348,8 +348,8 @@ const supabaseService = {
           id: loop.id,
           title: loop.title,
           description: loop.description,
-          createdAt: loop.createdAt,
-          updatedAt: loop.updatedAt
+          createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
+          updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
         }
       }
     }
@@ -481,6 +481,95 @@ const supabaseService = {
       console.error('Error saving recording:', error)
       throw error
     }
+  },
+
+  async getAllUserRecordings(userId: string, videoId?: string): Promise<AudioRecording[]> {
+    let query = supabase
+      .from('audio_recordings')
+      .select(`
+        id, session_id, segment_id, user_id, file_path, file_size, duration, 
+        audio_format, quality_score, transcription, notes, tags, is_favorite, 
+        metadata, created_at, updated_at,
+        practice_sessions (
+          id, video_id, video_title, video_url
+        )
+      `)
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+
+    if (videoId) {
+      query = query.eq('practice_sessions.video_id', videoId)
+    }
+
+    const { data: recordings, error } = await query
+
+    if (error) {
+      console.error('Error loading user recordings:', error)
+      throw error
+    }
+
+    // Convert to AudioRecording format
+    const audioRecordings: AudioRecording[] = []
+    
+    if (recordings) {
+      for (const recording of recordings) {
+        const session = recording.practice_sessions as any
+        
+        const audioRecording: AudioRecording = {
+          id: recording.id,
+          videoId: session?.video_id || '',
+          audioData: new Blob(), // Will need to be loaded separately from storage
+          duration: recording.duration,
+          createdAt: new Date(recording.created_at),
+          updatedAt: new Date(recording.updated_at)
+        }
+        
+        audioRecordings.push(audioRecording)
+      }
+    }
+
+    return audioRecordings
+  },
+
+  async deleteUserRecording(userId: string, recordingId: string): Promise<boolean> {
+    // First get the recording details to find the file path
+    const { data: recording, error: fetchError } = await supabase
+      .from('audio_recordings')
+      .select('file_path')
+      .eq('id', recordingId)
+      .eq('user_id', userId) // Ensure user owns the recording
+      .single()
+
+    if (fetchError) {
+      console.error('Error fetching recording for deletion:', fetchError)
+      return false
+    }
+
+    // Delete the recording from the database
+    const { error: deleteError } = await supabase
+      .from('audio_recordings')
+      .delete()
+      .eq('id', recordingId)
+      .eq('user_id', userId) // Ensure user owns the recording
+
+    if (deleteError) {
+      console.error('Error deleting recording from database:', deleteError)
+      throw deleteError
+    }
+
+    // If there's a file path, delete the file from Storage
+    if (recording?.file_path) {
+      const { error: storageError } = await supabase.storage
+        .from('audio-recordings')
+        .remove([recording.file_path])
+
+      if (storageError) {
+        console.error('Error deleting audio file from storage:', storageError)
+        // Don't return false here - database deletion succeeded
+      }
+    }
+
+    return true
   },
 
   async updatePracticeStatistics(stats: Partial<PracticeStatistics>): Promise<void> {
@@ -909,6 +998,36 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
           return null
         }
       },
+
+      getAllUserRecordings: async (videoId?: string): Promise<AudioRecording[]> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return []
+          }
+          
+          return await supabaseService.getAllUserRecordings(user.id, videoId)
+        } catch (error) {
+          console.error('Failed to load user recordings:', error)
+          return []
+        }
+      },
+
+      deleteUserRecording: async (recordingId: string): Promise<boolean> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return false
+          }
+          
+          return await supabaseService.deleteUserRecording(user.id, recordingId)
+        } catch (error) {
+          console.error('Failed to delete recording:', error)
+          return false
+        }
+      },
     }),
     {
       name: 'fluent-flow-supabase-storage',
@@ -923,3 +1042,11 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
     }
   )
 )
+
+// Export function to get the store with service
+export const getFluentFlowStore = () => {
+  return {
+    store: useFluentFlowSupabaseStore,
+    supabaseService
+  }
+}
