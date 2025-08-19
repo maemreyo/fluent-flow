@@ -33,14 +33,6 @@ import type {
 
 import "./styles/react-h5-audio-player.css"
 import "./styles/sidepanel.css"
-import globalCssText from "data-text:~styles/globals.css"
-
-export const getStyle = () => {
-  const style = document.createElement("style")
-  // Replace :root with :host for Shadow DOM compatibility
-  style.textContent = globalCssText.replace(/:root/g, ":host")
-  return style
-}
 
 export default function FluentFlowSidePanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'analytics' | 'settings'>('dashboard')
