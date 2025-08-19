@@ -3,7 +3,6 @@
 
 import type { AudioRecording } from '../types/fluent-flow-types'
 import { getAuthHandler } from './auth-handler'
-import { supabase } from '../supabase/client'
 
 export interface SavedRecording extends AudioRecording {
   id: string
@@ -30,7 +29,9 @@ export async function handleRecordingMessage(
   data: any,
   sendResponse?: Function
 ): Promise<void> {
-  console.log('FluentFlow: Handling recording operation:', operation, { dataSize: data?.audioData?.size || 'no-size' })
+  console.log('FluentFlow: Handling recording operation:', operation, {
+    dataSize: data?.audioData?.size || 'no-size'
+  })
 
   try {
     let result: any
@@ -74,10 +75,9 @@ export async function handleRecordingMessage(
         timestamp: Date.now()
       })
     }
-
   } catch (error) {
     console.error('Recording operation failed:', error)
-    
+
     if (sendResponse) {
       sendResponse({
         success: false,
@@ -106,7 +106,7 @@ async function saveRecording(recordingData: {
     // Check if user is authenticated first
     const authHandler = getAuthHandler()
     const authState = await authHandler.refreshAuthState()
-    
+
     console.log('FluentFlow: Auth state in recording handler:', {
       isAuthenticated: authState.isAuthenticated,
       hasUser: !!authState.user,
@@ -115,10 +115,10 @@ async function saveRecording(recordingData: {
 
     const recordingId = `recording_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const fileName = `recording_${Date.now()}.webm`
-    
+
     // Convert base64 back to Blob for immediate use
     const audioData = base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
-    
+
     const savedRecording: SavedRecording = {
       id: recordingId,
       videoId: recordingData.videoId,
@@ -137,11 +137,11 @@ async function saveRecording(recordingData: {
     if (authState.isAuthenticated && authState.user && recordingData.sessionId) {
       try {
         console.log('FluentFlow: Saving recording to Supabase for user:', authState.user.id)
-        
+
         // Get Supabase store service
         const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
-        
+
         // Convert to AudioRecording format expected by supabase service
         const audioRecording = {
           id: recordingId,
@@ -157,12 +157,14 @@ async function saveRecording(recordingData: {
           recordingData.sessionId,
           audioRecording
         )
-        
+
         console.log('FluentFlow: Recording saved to Supabase successfully:', supabaseRecordingId)
         return savedRecording
-        
       } catch (supabaseError) {
-        console.error('FluentFlow: Failed to save recording to Supabase, falling back to local storage:', supabaseError)
+        console.error(
+          'FluentFlow: Failed to save recording to Supabase, falling back to local storage:',
+          supabaseError
+        )
         // Fall through to local storage backup
       }
     } else {
@@ -173,7 +175,7 @@ async function saveRecording(recordingData: {
     const storageKey = `fluent_flow_recording_${recordingId}`
     const storageData = {
       ...savedRecording,
-      audioData: undefined, // Don't store the blob object itself
+      audioData: undefined // Don't store the blob object itself
     }
 
     await chrome.storage.local.set({
@@ -190,7 +192,6 @@ async function saveRecording(recordingData: {
     })
 
     return savedRecording
-
   } catch (error) {
     console.error('Failed to save recording:', error)
     throw new Error('Failed to save recording to storage')
@@ -204,23 +205,22 @@ async function loadRecording(recordingId: string): Promise<SavedRecording | null
   try {
     const storageKey = `fluent_flow_recording_${recordingId}`
     const result = await chrome.storage.local.get(storageKey)
-    
+
     if (!result[storageKey]) {
       return null
     }
 
     const recordingData = result[storageKey]
-    
+
     // Convert base64 back to Blob
     const audioData = base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
-    
+
     return {
       ...recordingData,
       audioData,
       createdAt: new Date(recordingData.createdAt),
       updatedAt: new Date(recordingData.updatedAt)
     }
-
   } catch (error) {
     console.error('Failed to load recording:', error)
     return null
@@ -235,7 +235,7 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
     // Check if user is authenticated first
     const authHandler = getAuthHandler()
     const authState = await authHandler.refreshAuthState()
-    
+
     console.log('FluentFlow: Getting recordings - auth state:', {
       isAuthenticated: authState.isAuthenticated,
       hasUser: !!authState.user,
@@ -246,14 +246,17 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
     if (authState.isAuthenticated && authState.user) {
       try {
         console.log('FluentFlow: Getting recordings from Supabase for user:', authState.user.id)
-        
+
         // Get Supabase store service
         const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
-        
+
         // Get user recordings using the new service method
-        const audioRecordings = await store.supabaseService.getAllUserRecordings(authState.user.id, videoId)
-        
+        const audioRecordings = await store.supabaseService.getAllUserRecordings(
+          authState.user.id,
+          videoId
+        )
+
         // Convert to SavedRecording format
         const savedRecordings: SavedRecording[] = audioRecordings.map(recording => ({
           id: recording.id,
@@ -268,12 +271,14 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
           createdAt: recording.createdAt,
           updatedAt: recording.updatedAt || recording.createdAt
         }))
-        
+
         console.log('FluentFlow: Retrieved recordings from Supabase:', savedRecordings.length)
         return savedRecordings
-        
       } catch (supabaseError) {
-        console.error('FluentFlow: Failed to get recordings from Supabase, falling back to local storage:', supabaseError)
+        console.error(
+          'FluentFlow: Failed to get recordings from Supabase, falling back to local storage:',
+          supabaseError
+        )
         // Fall through to local storage backup
       }
     } else {
@@ -291,7 +296,7 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
 
     // Load full recording data
     const fullRecordings: SavedRecording[] = []
-    
+
     for (const recording of recordings) {
       const fullRecording = await loadRecording(recording.id)
       if (fullRecording) {
@@ -300,10 +305,9 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
     }
 
     console.log('FluentFlow: Retrieved recordings from local storage:', fullRecordings.length)
-    return fullRecordings.sort((a, b) => 
-      new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    return fullRecordings.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     )
-
   } catch (error) {
     console.error('Failed to get recordings:', error)
     return []
@@ -318,7 +322,7 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
     // Check if user is authenticated first
     const authHandler = getAuthHandler()
     const authState = await authHandler.refreshAuthState()
-    
+
     console.log('FluentFlow: Deleting recording - auth state:', {
       isAuthenticated: authState.isAuthenticated,
       hasUser: !!authState.user,
@@ -330,14 +334,17 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
     if (authState.isAuthenticated && authState.user) {
       try {
         console.log('FluentFlow: Deleting recording from Supabase:', recordingId)
-        
+
         // Get Supabase store service
         const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
-        
+
         // Delete from Supabase using the new service method
-        const deleted = await store.supabaseService.deleteUserRecording(authState.user.id, recordingId)
-        
+        const deleted = await store.supabaseService.deleteUserRecording(
+          authState.user.id,
+          recordingId
+        )
+
         if (deleted) {
           console.log('FluentFlow: Recording deleted from Supabase successfully:', recordingId)
           return true
@@ -345,9 +352,11 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
           console.log('FluentFlow: Recording not found in Supabase, trying local storage')
           // Fall through to local storage deletion
         }
-        
       } catch (supabaseError) {
-        console.error('FluentFlow: Failed to delete recording from Supabase, trying local storage:', supabaseError)
+        console.error(
+          'FluentFlow: Failed to delete recording from Supabase, trying local storage:',
+          supabaseError
+        )
         // Fall through to local storage deletion
       }
     } else {
@@ -356,16 +365,15 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
 
     // Fallback to local storage deletion (for unauthenticated users or when Supabase fails)
     const storageKey = `fluent_flow_recording_${recordingId}`
-    
+
     // Remove from storage
     await chrome.storage.local.remove(storageKey)
-    
+
     // Update index
     await removeFromRecordingsIndex(recordingId)
-    
+
     console.log('FluentFlow: Recording deleted from local storage successfully:', recordingId)
     return true
-
   } catch (error) {
     console.error('Failed to delete recording:', error)
     return false
@@ -376,7 +384,7 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
  * Update recording metadata
  */
 async function updateRecording(
-  recordingId: string, 
+  recordingId: string,
   updates: Partial<Pick<SavedRecording, 'title' | 'description'>>
 ): Promise<SavedRecording | null> {
   try {
@@ -395,7 +403,7 @@ async function updateRecording(
     const storageKey = `fluent_flow_recording_${recordingId}`
     const storageData = {
       ...updatedRecording,
-      audioData: undefined, // Don't store the blob object
+      audioData: undefined // Don't store the blob object
     }
 
     await chrome.storage.local.set({
@@ -406,7 +414,6 @@ async function updateRecording(
     await updateRecordingsIndex(updatedRecording)
 
     return updatedRecording
-
   } catch (error) {
     console.error('Failed to update recording:', error)
     throw error
@@ -416,13 +423,15 @@ async function updateRecording(
 /**
  * Manage recordings index for efficient listing
  */
-async function getRecordingsIndex(): Promise<Array<{
-  id: string
-  videoId: string
-  title: string
-  duration: number
-  createdAt: string
-}>> {
+async function getRecordingsIndex(): Promise<
+  Array<{
+    id: string
+    videoId: string
+    title: string
+    duration: number
+    createdAt: string
+  }>
+> {
   try {
     const result = await chrome.storage.local.get('fluent_flow_recordings_index')
     return result.fluent_flow_recordings_index || []
@@ -435,10 +444,10 @@ async function getRecordingsIndex(): Promise<Array<{
 async function updateRecordingsIndex(recording: SavedRecording): Promise<void> {
   try {
     const index = await getRecordingsIndex()
-    
+
     // Remove existing entry if updating
     const filteredIndex = index.filter(r => r.id !== recording.id)
-    
+
     // Add new/updated entry
     const indexEntry = {
       id: recording.id,
@@ -447,16 +456,15 @@ async function updateRecordingsIndex(recording: SavedRecording): Promise<void> {
       duration: recording.duration,
       createdAt: recording.createdAt.toISOString()
     }
-    
+
     filteredIndex.unshift(indexEntry)
-    
+
     // Keep only last 100 recordings to prevent storage bloat
     const trimmedIndex = filteredIndex.slice(0, 100)
-    
+
     await chrome.storage.local.set({
       fluent_flow_recordings_index: trimmedIndex
     })
-
   } catch (error) {
     console.error('Failed to update recordings index:', error)
   }
@@ -466,11 +474,10 @@ async function removeFromRecordingsIndex(recordingId: string): Promise<void> {
   try {
     const index = await getRecordingsIndex()
     const filteredIndex = index.filter(r => r.id !== recordingId)
-    
+
     await chrome.storage.local.set({
       fluent_flow_recordings_index: filteredIndex
     })
-
   } catch (error) {
     console.error('Failed to remove from recordings index:', error)
   }
@@ -496,11 +503,11 @@ function blobToBase64(blob: Blob): Promise<string> {
 function base64ToBlob(base64: string, mimeType: string): Blob {
   const byteCharacters = atob(base64)
   const byteNumbers = new Array(byteCharacters.length)
-  
+
   for (let i = 0; i < byteCharacters.length; i++) {
     byteNumbers[i] = byteCharacters.charCodeAt(i)
   }
-  
+
   const byteArray = new Uint8Array(byteNumbers)
   return new Blob([byteArray], { type: mimeType })
 }
@@ -516,10 +523,10 @@ export async function getStorageUsage(): Promise<{
   try {
     const usage = await chrome.storage.local.getBytesInUse()
     const index = await getRecordingsIndex()
-    
+
     // Chrome storage quota is typically 5MB for local storage
     const quota = 5 * 1024 * 1024 // 5MB
-    
+
     return {
       bytesUsed: usage,
       recordingsCount: index.length,
@@ -539,10 +546,10 @@ export async function cleanupOldRecordings(daysToKeep: number = 30): Promise<num
   try {
     const cutoffDate = new Date()
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep)
-    
+
     const index = await getRecordingsIndex()
     let deletedCount = 0
-    
+
     for (const recording of index) {
       const recordingDate = new Date(recording.createdAt)
       if (recordingDate < cutoffDate) {
@@ -550,10 +557,9 @@ export async function cleanupOldRecordings(daysToKeep: number = 30): Promise<num
         deletedCount++
       }
     }
-    
+
     console.log(`FluentFlow: Cleaned up ${deletedCount} old recordings`)
     return deletedCount
-    
   } catch (error) {
     console.error('Failed to cleanup old recordings:', error)
     return 0
