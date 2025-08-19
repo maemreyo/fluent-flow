@@ -1,0 +1,15 @@
+RotateCookiesPage?origin=https://www.youtube.com&yt_pid=1:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+content.672cac6b.js:487 FluentFlow: YouTube integrations setup complete
+content.672cac6b.js:2880 FluentFlow Notes: Video notes initialized {videoId: 'HXkh7EOqcQ4', videoTitle: 'THẰNG ĐIÊN | JUSTATEE x PHƯƠNG LY | OFFICIAL MV', videoUrl: 'https://www.youtube.com/watch?v=HXkh7EOqcQ4&list=RDu526BVdRwGA&index=6', totalNotes: 0, sessions: Array(0), …}
+content.672cac6b.js:556 FluentFlow: UI setup complete
+content.672cac6b.js:487 FluentFlow: YouTube integrations setup complete
+content.672cac6b.js:2880 FluentFlow Notes: Video notes initialized {videoId: 'HXkh7EOqcQ4', videoTitle: 'THẰNG ĐIÊN | JUSTATEE x PHƯƠNG LY | OFFICIAL MV', videoUrl: 'https://www.youtube.com/watch?v=HXkh7EOqcQ4&list=RDu526BVdRwGA&index=6', totalNotes: 0, sessions: Array(0), …}
+content.672cac6b.js:556 FluentFlow: UI setup complete
+content.672cac6b.js:3037 FluentFlow Notes: Video notes saved {videoId: 'HXkh7EOqcQ4', videoTitle: 'THẰNG ĐIÊN | JUSTATEE x PHƯƠNG LY | OFFICIAL MV', videoUrl: 'https://www.youtube.com/watch?v=HXkh7EOqcQ4&list=RDu526BVdRwGA&index=6', totalNotes: 0, sessions: Array(1), …}
+content.672cac6b.js:2948 FluentFlow Notes: Session ended {videoId: 'HXkh7EOqcQ4', videoTitle: 'THẰNG ĐIÊN | JUSTATEE x PHƯƠNG LY | OFFICIAL MV', videoUrl: 'https://www.youtube.com/watch?v=HXkh7EOqcQ4&list=RDu526BVdRwGA&index=6', totalNotes: 0, sessions: Array(1), …}
+content.672cac6b.js:2108 FluentFlow: Failed to save recording Error: Failed to save recording to storage
+    at RecordingFeature.saveRecordingToStorage (content.672cac6b.js:2106:26)
+    at async recordingState.mediaRecorder.onstop (content.672cac6b.js:2027:17)
+saveRecordingToStorage @ content.672cac6b.js:2108
+await in saveRecordingToStorage
+recordingState.mediaRecorder.onstop @ content.672cac6b.js:2027

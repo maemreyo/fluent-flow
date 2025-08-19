@@ -15,6 +15,8 @@ export default function FluentFlowSidePanel() {
   const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
   const [loadingLoops, setLoadingLoops] = useState(false)
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
+  const [savedRecordings, setSavedRecordings] = useState<any[]>([])
+  const [loadingRecordings, setLoadingRecordings] = useState(false)
 
   const {
     allSessions,
@@ -25,9 +27,10 @@ export default function FluentFlowSidePanel() {
     currentVideo
   } = useFluentFlowStore()
 
-  // Load saved loops on component mount
+  // Load saved loops and recordings on component mount
   useEffect(() => {
     loadSavedLoops()
+    loadSavedRecordings()
   }, [])
 
   const loadSavedLoops = async () => {
@@ -47,6 +50,37 @@ export default function FluentFlowSidePanel() {
     } finally {
       setLoadingLoops(false)
     }
+  }
+
+  const loadSavedRecordings = async () => {
+    setLoadingRecordings(true)
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'LIST_RECORDINGS'
+      })
+      
+      if (response.success) {
+        setSavedRecordings(response.data)
+      } else {
+        console.error('Failed to load recordings:', response.error)
+      }
+    } catch (error) {
+      console.error('Error loading recordings:', error)
+    } finally {
+      setLoadingRecordings(false)
+    }
+  }
+  // Utility function to convert Base64 to Blob
+  const base64ToBlob = (base64: string, mimeType: string): Blob => {
+    const byteCharacters = atob(base64)
+    const byteNumbers = new Array(byteCharacters.length)
+    
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i)
+    }
+    
+    const byteArray = new Uint8Array(byteNumbers)
+    return new Blob([byteArray], { type: mimeType })
   }
 
   const deleteLoop = async (loopId: string) => {
@@ -151,14 +185,20 @@ export default function FluentFlowSidePanel() {
     }).format(date)
   }
 
-  const playRecording = async (recording: AudioRecording) => {
+  const playRecording = async (recording: any) => {
     if (playingRecording === recording.id) {
       setPlayingRecording(null)
       return
     }
 
     try {
-      const audioURL = URL.createObjectURL(recording.audioData)
+      // Convert Base64 to Blob for playback
+      if (!recording.audioDataBase64) {
+        throw new Error('No audio data available for playback')
+      }
+      
+      const audioBlob = base64ToBlob(recording.audioDataBase64, 'audio/webm')
+      const audioURL = URL.createObjectURL(audioBlob)
       const audio = new Audio(audioURL)
       
       audio.onended = () => {
@@ -179,14 +219,32 @@ export default function FluentFlowSidePanel() {
     }
   }
 
-  const deleteRecording = (sessionId: string, recordingId: string) => {
-    // This would need to be implemented in the store
-    console.log('Delete recording:', recordingId, 'from session:', sessionId)
+  const deleteRecording = async (recordingId: string) => {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'DELETE_RECORDING',
+        data: { id: recordingId }
+      })
+      
+      if (response.success) {
+        setSavedRecordings(recordings => recordings.filter(rec => rec.id !== recordingId))
+      } else {
+        console.error('Failed to delete recording:', response.error)
+      }
+    } catch (error) {
+      console.error('Error deleting recording:', error)
+    }
   }
 
-  const exportRecording = async (recording: AudioRecording) => {
+  const exportRecording = async (recording: any) => {
     try {
-      const audioURL = URL.createObjectURL(recording.audioData)
+      // Convert Base64 to Blob for export
+      if (!recording.audioDataBase64) {
+        throw new Error('No audio data available for export')
+      }
+      
+      const audioBlob = base64ToBlob(recording.audioDataBase64, 'audio/webm')
+      const audioURL = URL.createObjectURL(audioBlob)
       const a = document.createElement('a')
       a.href = audioURL
       a.download = `fluent-flow-recording-${recording.id}.webm`
@@ -277,54 +335,70 @@ export default function FluentFlowSidePanel() {
       <div className="recordings-header">
         <h2>Recording Library</h2>
         <div className="recordings-stats">
-          {statistics.totalRecordings} recordings across {allSessions.length} sessions
+          {savedRecordings.length} saved recordings
         </div>
+        <button 
+          className="action-btn secondary"
+          onClick={loadSavedRecordings}
+          disabled={loadingRecordings}
+        >
+          {loadingRecordings ? '⟳ Loading...' : '🔄 Refresh'}
+        </button>
       </div>
 
       <div className="recordings-list">
-        {allSessions.map(session => (
-          session.recordings.length > 0 && (
-            <div key={session.id} className="session-recordings">
-              <div className="session-header">
-                <h3>{session.videoTitle}</h3>
-                <div className="session-date">{formatDate(session.createdAt)}</div>
-              </div>
-              
-              {session.recordings.map(recording => (
-                <div key={recording.id} className="recording-item">
-                  <div className="recording-info">
-                    <div className="recording-title">
-                      Recording {recording.id.slice(-6)}
-                    </div>
-                    <div className="recording-meta">
-                      {formatTime(recording.duration)} • {formatDate(recording.createdAt)}
-                    </div>
-                  </div>
-                  
-                  <div className="recording-controls">
-                    <button 
-                      className={`control-btn ${playingRecording === recording.id ? 'playing' : ''}`}
-                      onClick={() => playRecording(recording)}
-                    >
-                      {playingRecording === recording.id ? '⏸️' : '▶️'}
-                    </button>
-                    <button 
-                      className="control-btn"
-                      onClick={() => exportRecording(recording)}
-                    >
-                      💾
-                    </button>
-                    <button 
-                      className="control-btn danger"
-                      onClick={() => deleteRecording(session.id, recording.id)}
-                    >
-                      🗑️
-                    </button>
-                  </div>
-                </div>
-              ))}
+        {loadingRecordings && (
+          <div className="loading-state">Loading recordings...</div>
+        )}
+        
+        {!loadingRecordings && savedRecordings.length === 0 && (
+          <div className="empty-state">
+            <div className="empty-icon">🎵</div>
+            <div className="empty-title">No recordings saved yet</div>
+            <div className="empty-description">
+              Record audio on YouTube videos to save them here for practice
             </div>
-          )
+          </div>
+        )}
+
+        {!loadingRecordings && savedRecordings.map(recording => (
+          <div key={recording.id} className="recording-item">
+            <div className="recording-info">
+              <div className="recording-title">
+                {recording.title || `Recording ${recording.id.slice(-6)}`}
+              </div>
+              <div className="recording-meta">
+                {formatTime(recording.duration)} • {formatDate(new Date(recording.createdAt))}
+              </div>
+              {recording.description && (
+                <div className="recording-description">{recording.description}</div>
+              )}
+            </div>
+            
+            <div className="recording-controls">
+              <button 
+                className={`control-btn ${playingRecording === recording.id ? 'playing' : ''}`}
+                onClick={() => playRecording(recording)}
+                title={playingRecording === recording.id ? "Pause recording" : "Play recording"}
+              >
+                {playingRecording === recording.id ? '⏸️' : '▶️'}
+              </button>
+              <button 
+                className="control-btn"
+                onClick={() => exportRecording(recording)}
+                title="Export recording as audio file"
+              >
+                💾
+              </button>
+              <button 
+                className="control-btn danger"
+                onClick={() => deleteRecording(recording.id)}
+                title="Delete recording"
+              >
+                🗑️
+              </button>
+            </div>
+          </div>
         ))}
       </div>
     </div>

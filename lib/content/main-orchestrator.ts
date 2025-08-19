@@ -26,7 +26,7 @@ export class FluentFlowOrchestrator {
 
     // Initialize features with their dependencies
     this.loopFeature = new LoopFeature(this.playerService, this.uiUtilities)
-    this.recordingFeature = new RecordingFeature(this.uiUtilities)
+    this.recordingFeature = new RecordingFeature(this.uiUtilities, this.playerService)
     this.comparisonFeature = new ComparisonFeature(this.playerService, this.uiUtilities)
     this.timeBasedNotesFeature = new TimeBasedNotesFeature(this.playerService, this.uiUtilities)
 
@@ -335,8 +335,16 @@ export class FluentFlowOrchestrator {
   }
 
   private setupVideoChangeDetection(): void {
+    let isReInitializing = false
+
     this.playerService.onVideoChange(async (videoInfo: VideoInfo) => {
       console.log('FluentFlow: Video changed', videoInfo)
+      
+      // Prevent duplicate re-initialization if already in progress
+      if (isReInitializing) {
+        console.log('FluentFlow: Skipping video change re-initialization - already in progress')
+        return
+      }
       
       // Handle notes session for video change
       await this.timeBasedNotesFeature.onVideoChange()
@@ -350,12 +358,41 @@ export class FluentFlowOrchestrator {
       this.recordingFeature.clearRecording()
       this.comparisonFeature.destroy()
       
-      // Re-setup integrations after a delay
-      setTimeout(async () => {
-        await this.setupYouTubeIntegrations()
+      // Check if integrations need re-setup by testing if progress bar is still available
+      const progressBarExists = document.querySelector('.ytp-progress-bar')
+      const controlsExists = document.querySelector('.ytp-right-controls')
+      
+      if (!progressBarExists || !controlsExists) {
+        console.log('FluentFlow: YouTube player elements missing, re-initializing...')
+        isReInitializing = true
+        
+        // Re-setup integrations after a delay
+        setTimeout(async () => {
+          try {
+            console.log('FluentFlow: Re-initializing for video change')
+            await this.setupYouTubeIntegrations()
+            await this.timeBasedNotesFeature.initializeVideoNotes()
+            
+            // Only re-setup UI if buttons are missing
+            const buttonContainer = document.querySelector('.fluent-flow-controls')
+            if (!buttonContainer) {
+              await this.setupUI()
+            } else {
+              console.log('FluentFlow: UI already exists, skipping re-setup')
+            }
+            
+            console.log('FluentFlow: Video change re-initialization complete')
+          } catch (error) {
+            console.error('FluentFlow: Failed to re-initialize after video change', error)
+          } finally {
+            isReInitializing = false
+          }
+        }, 1000)
+      } else {
+        console.log('FluentFlow: YouTube player elements present, skipping re-initialization')
+        // Just initialize notes for the new video
         await this.timeBasedNotesFeature.initializeVideoNotes()
-        await this.setupUI()
-      }, 1000)
+      }
     })
 
     console.log('FluentFlow: Video change detection setup complete')

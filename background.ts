@@ -6,6 +6,7 @@ import { handleFeatureMessage } from "./lib/background/feature-handler"
 import { handleApiMessage } from "./lib/background/api-handler"
 import { handleStorageMessage } from "./lib/background/storage-handler"
 import { handleLoopMessage } from "./lib/background/loop-handler"
+import { handleRecordingMessage } from "./lib/background/recording-handler"
 
 console.log("Chrome Extension Starter background script loaded")
 
@@ -72,6 +73,26 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "APPLY_LOOP":
       handleLoopMessage('apply', message.data, sendResponse)
+      return true
+
+    case "SAVE_RECORDING":
+      handleRecordingMessage('save', message.data, sendResponse)
+      return true
+
+    case "LOAD_RECORDING":
+      handleRecordingMessage('load', message.data, sendResponse)
+      return true
+
+    case "LIST_RECORDINGS":
+      handleRecordingMessage('list', message.data, sendResponse)
+      return true
+
+    case "DELETE_RECORDING":
+      handleRecordingMessage('delete', message.data, sendResponse)
+      return true
+
+    case "UPDATE_RECORDING":
+      handleRecordingMessage('update', message.data, sendResponse)
       return true
 
     case "OPEN_SIDE_PANEL":

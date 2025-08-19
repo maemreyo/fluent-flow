@@ -31,7 +31,10 @@ export class RecordingFeature {
   private audioStream: MediaStream | null = null
   private recordingTimer: NodeJS.Timeout | null = null
 
-  constructor(private ui: UIUtilities) {}
+  constructor(
+    private ui: UIUtilities,
+    private playerService?: { getVideoInfo(): { id: string | null, title: string | null, url: string | null } }
+  ) {}
 
   // Public API methods
   public async toggleRecording(): Promise<void> {
@@ -66,12 +69,15 @@ export class RecordingFeature {
         }
       }
 
-      this.recordingState.mediaRecorder.onstop = () => {
-        this.recordingState.audioBlob = new Blob(audioChunks, { 
+      this.recordingState.mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunks, { 
           type: this.getSupportedMimeType() 
         })
-        this.ui.showToast(`Recording saved (${this.formatRecordingDuration()})`)
-        this.ui.updateButtonState('fluent-flow-record', 'inactive')
+        
+        this.recordingState.audioBlob = audioBlob
+        
+        // Save recording to background script
+        await this.saveRecordingToStorage(audioBlob)
         
         // Clean up audio stream
         if (this.audioStream) {
@@ -130,6 +136,52 @@ export class RecordingFeature {
     }
   }
 
+  private async saveRecordingToStorage(audioBlob: Blob): Promise<void> {
+    try {
+      const duration = this.getRecordingDuration() / 1000 // Convert to seconds
+      
+      // Get video info if player service is available
+      let videoInfo = { id: 'unknown', title: 'Unknown Video', url: window.location.href }
+      if (this.playerService) {
+        const playerVideoInfo = this.playerService.getVideoInfo()
+        videoInfo = {
+          id: playerVideoInfo.id || 'unknown',
+          title: playerVideoInfo.title || 'Unknown Video',
+          url: playerVideoInfo.url || window.location.href
+        }
+      }
+
+      // Convert Blob to base64 for message passing
+      const audioDataBase64 = await this.blobToBase64(audioBlob)
+
+      // Save recording via background script
+      const response = await chrome.runtime.sendMessage({
+        type: 'SAVE_RECORDING',
+        data: {
+          audioDataBase64, // Send base64 instead of Blob
+          audioSize: audioBlob.size,
+          videoId: videoInfo.id,
+          duration,
+          title: `Recording from ${videoInfo.title}`,
+          timestamp: Date.now()
+        }
+      })
+
+      if (response.success) {
+        this.ui.showToast(`Recording saved (${this.formatRecordingDuration()})`)
+        this.ui.updateButtonState('fluent-flow-record', 'inactive')
+        console.log('FluentFlow: Recording saved successfully', response.data)
+      } else {
+        throw new Error(response.error || 'Failed to save recording')
+      }
+
+    } catch (error) {
+      console.error('FluentFlow: Failed to save recording', error)
+      this.ui.showToast('Recording failed to save')
+      this.ui.updateButtonState('fluent-flow-record', 'inactive')
+    }
+  }
+
   public getRecordingBlob(): Blob | null {
     return this.recordingState.audioBlob
   }
@@ -158,6 +210,66 @@ export class RecordingFeature {
     this.resetRecordingState()
     this.ui.updateButtonState('fluent-flow-record', 'inactive')
     this.ui.showToast('Recording cleared')
+  }
+
+  // Methods for loading saved recordings
+  public async loadSavedRecordings(videoId?: string): Promise<any[]> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'LIST_RECORDINGS',
+        data: { videoId }
+      })
+
+      if (response.success) {
+        return response.data || []
+      } else {
+        console.error('Failed to load recordings:', response.error)
+        return []
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to load saved recordings', error)
+      return []
+    }
+  }
+
+  public async deleteRecording(recordingId: string): Promise<boolean> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'DELETE_RECORDING',
+        data: { id: recordingId }
+      })
+
+      if (response.success) {
+        this.ui.showToast('Recording deleted')
+        return true
+      } else {
+        this.ui.showToast('Failed to delete recording')
+        return false
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to delete recording', error)
+      this.ui.showToast('Failed to delete recording')
+      return false
+    }
+  }
+
+  public async loadRecording(recordingId: string): Promise<Blob | null> {
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'LOAD_RECORDING',
+        data: { id: recordingId }
+      })
+
+      if (response.success && response.data) {
+        return response.data.audioData
+      } else {
+        console.error('Failed to load recording:', response.error)
+        return null
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to load recording', error)
+      return null
+    }
   }
 
   // State getters
@@ -283,5 +395,19 @@ export class RecordingFeature {
       `
       document.head.appendChild(style)
     }
+  }
+
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        const result = reader.result as string
+        // Remove data URL prefix (data:audio/webm;base64,)
+        const base64 = result.split(',')[1]
+        resolve(base64)
+      }
+      reader.onerror = reject
+      reader.readAsDataURL(blob)
+    })
   }
 }
