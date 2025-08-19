@@ -308,6 +308,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          api_config: Json | null
           avatar_url: string | null
           created_at: string
           email: string | null
@@ -318,8 +319,10 @@ export type Database = {
           settings: Json | null
           subscription_tier: string | null
           updated_at: string
+          user_preferences: Json | null
         }
         Insert: {
+          api_config?: Json | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -330,8 +333,10 @@ export type Database = {
           settings?: Json | null
           subscription_tier?: string | null
           updated_at?: string
+          user_preferences?: Json | null
         }
         Update: {
+          api_config?: Json | null
           avatar_url?: string | null
           created_at?: string
           email?: string | null
@@ -342,6 +347,7 @@ export type Database = {
           settings?: Json | null
           subscription_tier?: string | null
           updated_at?: string
+          user_preferences?: Json | null
         }
         Relationships: []
       }

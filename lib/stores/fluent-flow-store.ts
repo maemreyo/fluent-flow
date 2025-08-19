@@ -12,6 +12,7 @@ import type {
   PracticeSession,
   AudioRecording,
   LoopSegment,
+  SavedLoop,
   PracticeStatistics
 } from '../types/fluent-flow-types'
 
@@ -338,6 +339,31 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
             }
           }))
         }
+      },
+
+      getAllUserLoops: async (): Promise<SavedLoop[]> => {
+        console.warn('getAllUserLoops not implemented in basic store')
+        return []
+      },
+
+      deleteLoop: async (loopId: string): Promise<boolean> => {
+        console.warn('deleteLoop not implemented in basic store')
+        return false
+      },
+
+      saveLoop: async (loop: SavedLoop): Promise<string | null> => {
+        console.warn('saveLoop not implemented in basic store')
+        return null
+      },
+
+      getAllUserRecordings: async (videoId?: string): Promise<AudioRecording[]> => {
+        console.warn('getAllUserRecordings not implemented in basic store')
+        return []
+      },
+
+      deleteUserRecording: async (recordingId: string): Promise<boolean> => {
+        console.warn('deleteUserRecording not implemented in basic store')
+        return false
       }
     }),
     {

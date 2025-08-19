@@ -3,7 +3,7 @@
 
 import { useState, useEffect } from "react"
 import type { UserPreferences, ApiConfig } from "./lib/types"
-import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
+import { useFluentFlowSupabaseStore as useFluentFlowStore, getFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
 import { Button } from "./components/ui/button"
 import { Input } from "./components/ui/input"
@@ -42,6 +42,8 @@ import "./styles/options.css"
 
 export default function OptionsPage() {
   const [activeTab, setActiveTab] = useState('account')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState<any>(null)
   
   const {
     statistics,
@@ -66,18 +68,45 @@ export default function OptionsPage() {
   useEffect(() => {
     const loadSettings = async () => {
       try {
-        const response = await chrome.runtime.sendMessage({
-          type: "STORAGE_OPERATION",
-          operation: "get",
-          key: ["user_preferences", "api_config"]
-        })
-
-        if (response.success) {
-          if (response.data.user_preferences) {
-            setPreferences(response.data.user_preferences)
+        // Check authentication status first
+        const store = getFluentFlowStore()
+        const currentUser = await store.supabaseService.getUserProfile()
+        
+        setIsAuthenticated(!!currentUser)
+        setUser(currentUser)
+        
+        // Load settings from Supabase for authenticated users
+        if (currentUser) {
+          console.log('FluentFlow: Loading settings from Supabase for user:', currentUser.id)
+          
+          // Load user preferences
+          const userPrefs = await store.supabaseService.getUserPreferences()
+          if (userPrefs) {
+            setPreferences(userPrefs)
           }
-          if (response.data.api_config) {
-            setApiConfig(response.data.api_config)
+
+          // Load API config
+          const apiConf = await store.supabaseService.getApiConfig()
+          if (apiConf) {
+            setApiConfig(apiConf)
+          }
+        } else {
+          console.log('FluentFlow: User not authenticated, loading settings from local storage')
+          
+          // Fallback to chrome storage for unauthenticated users
+          const response = await chrome.runtime.sendMessage({
+            type: "STORAGE_OPERATION",
+            operation: "get",
+            key: ["user_preferences", "api_config"]
+          })
+          
+          if (response.success) {
+            if (response.data.user_preferences) {
+              setPreferences(response.data.user_preferences)
+            }
+            if (response.data.api_config) {
+              setApiConfig(response.data.api_config)
+            }
           }
         }
       } catch (error) {
@@ -93,23 +122,40 @@ export default function OptionsPage() {
     setSaveMessage(null)
 
     try {
-      // Save preferences
-      await chrome.runtime.sendMessage({
-        type: "STORAGE_OPERATION",
-        operation: "set",
-        key: "user_preferences",
-        value: preferences
-      })
-
-      // Save API config
-      await chrome.runtime.sendMessage({
-        type: "STORAGE_OPERATION",
-        operation: "set",
-        key: "api_config",
-        value: apiConfig
-      })
-
-      setSaveMessage("Settings saved successfully!")
+      const store = getFluentFlowStore()
+      
+      try {
+        // Try to save to Supabase for authenticated users
+        await Promise.all([
+          store.supabaseService.updateUserPreferences(preferences),
+          store.supabaseService.updateApiConfig(apiConfig)
+        ])
+        
+        setSaveMessage("Settings saved to cloud successfully!")
+        console.log('FluentFlow: Settings saved to Supabase successfully')
+        
+      } catch (supabaseError) {
+        console.warn('FluentFlow: Failed to save to Supabase, falling back to local storage:', supabaseError)
+        
+        // Fallback to chrome storage for unauthenticated users or when Supabase fails
+        await Promise.all([
+          chrome.runtime.sendMessage({
+            type: "STORAGE_OPERATION",
+            operation: "set",
+            key: "user_preferences",
+            value: preferences
+          }),
+          chrome.runtime.sendMessage({
+            type: "STORAGE_OPERATION",
+            operation: "set",
+            key: "api_config",
+            value: apiConfig
+          })
+        ])
+        
+        setSaveMessage("Settings saved locally!")
+      }
+      
       setTimeout(() => setSaveMessage(null), 3000)
 
     } catch (error) {
@@ -222,9 +268,16 @@ export default function OptionsPage() {
                 <div className="space-y-2">
                   <Label>Sync Status</Label>
                   <div className="flex items-center gap-2">
-                    <div className="h-2 w-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm">Connected to cloud storage</span>
+                    <div className={`h-2 w-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <span className="text-sm">
+                      {isAuthenticated ? 'Connected to cloud storage' : 'Using local storage only'}
+                    </span>
                   </div>
+                  {user && (
+                    <p className="text-xs text-muted-foreground">
+                      Signed in as: {user.email || user.full_name || 'User'}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Features Available</Label>

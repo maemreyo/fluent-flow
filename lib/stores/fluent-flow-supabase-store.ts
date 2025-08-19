@@ -17,6 +17,7 @@ import type {
   SavedLoop,
   PracticeStatistics
 } from '../types/fluent-flow-types'
+import type { UserPreferences, ApiConfig } from '../types'
 
 // Database type aliases
 type ProfileRow = Tables<'profiles'>
@@ -165,6 +166,72 @@ const supabaseService = {
 
     if (error) {
       console.error('Error updating user settings:', error)
+      throw error
+    }
+  },
+
+  async getUserPreferences(): Promise<UserPreferences | null> {
+    const user = await getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('user_preferences')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching user preferences:', error)
+      return null
+    }
+
+    return (data?.user_preferences as unknown as UserPreferences) || null
+  },
+
+  async updateUserPreferences(preferences: UserPreferences): Promise<void> {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ user_preferences: preferences as any })
+      .eq('id', user.id)
+
+    if (error) {
+      console.error('Error updating user preferences:', error)
+      throw error
+    }
+  },
+
+  async getApiConfig(): Promise<ApiConfig | null> {
+    const user = await getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('api_config')
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Error fetching API config:', error)
+      return null
+    }
+
+    return (data?.api_config as unknown as ApiConfig) || null
+  },
+
+  async updateApiConfig(config: ApiConfig): Promise<void> {
+    const user = await getCurrentUser()
+    if (!user) return
+
+    const { error } = await supabase
+      .from('profiles')
+      .update({ api_config: config as any })
+      .eq('id', user.id)
+
+    if (error) {
+      console.error('Error updating API config:', error)
       throw error
     }
   },
