@@ -5,13 +5,13 @@ import type {
   PracticeSession,
   SavedLoop
 } from "./lib/types/fluent-flow-types"
+import { AudioPlayer } from "./components/audio-player"
 
 import "./styles/sidepanel.css"
+import "./styles/react-h5-audio-player.css"
 
 export default function FluentFlowSidePanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'analytics' | 'settings'>('dashboard')
-  const [selectedSession, setSelectedSession] = useState<PracticeSession | null>(null)
-  const [playingRecording, setPlayingRecording] = useState<string | null>(null)
   const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
   const [loadingLoops, setLoadingLoops] = useState(false)
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
@@ -185,39 +185,6 @@ export default function FluentFlowSidePanel() {
     }).format(date)
   }
 
-  const playRecording = async (recording: any) => {
-    if (playingRecording === recording.id) {
-      setPlayingRecording(null)
-      return
-    }
-
-    try {
-      // Convert Base64 to Blob for playback
-      if (!recording.audioDataBase64) {
-        throw new Error('No audio data available for playback')
-      }
-      
-      const audioBlob = base64ToBlob(recording.audioDataBase64, 'audio/webm')
-      const audioURL = URL.createObjectURL(audioBlob)
-      const audio = new Audio(audioURL)
-      
-      audio.onended = () => {
-        URL.revokeObjectURL(audioURL)
-        setPlayingRecording(null)
-      }
-      
-      audio.onerror = () => {
-        URL.revokeObjectURL(audioURL)
-        setPlayingRecording(null)
-      }
-
-      setPlayingRecording(recording.id)
-      await audio.play()
-    } catch (error) {
-      console.error('Failed to play recording:', error)
-      setPlayingRecording(null)
-    }
-  }
 
   const deleteRecording = async (recordingId: string) => {
     try {
@@ -295,7 +262,7 @@ export default function FluentFlowSidePanel() {
           <div 
             key={session.id} 
             className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
-            onClick={() => setSelectedSession(session)}
+            onClick={() => {}}
           >
             <div className="session-video">
               <div className="session-title">{session.videoTitle}</div>
@@ -362,42 +329,13 @@ export default function FluentFlowSidePanel() {
         )}
 
         {!loadingRecordings && savedRecordings.map(recording => (
-          <div key={recording.id} className="recording-item">
-            <div className="recording-info">
-              <div className="recording-title">
-                {recording.title || `Recording ${recording.id.slice(-6)}`}
-              </div>
-              <div className="recording-meta">
-                {formatTime(recording.duration)} • {formatDate(new Date(recording.createdAt))}
-              </div>
-              {recording.description && (
-                <div className="recording-description">{recording.description}</div>
-              )}
-            </div>
-            
-            <div className="recording-controls">
-              <button 
-                className={`control-btn ${playingRecording === recording.id ? 'playing' : ''}`}
-                onClick={() => playRecording(recording)}
-                title={playingRecording === recording.id ? "Pause recording" : "Play recording"}
-              >
-                {playingRecording === recording.id ? '⏸️' : '▶️'}
-              </button>
-              <button 
-                className="control-btn"
-                onClick={() => exportRecording(recording)}
-                title="Export recording as audio file"
-              >
-                💾
-              </button>
-              <button 
-                className="control-btn danger"
-                onClick={() => deleteRecording(recording.id)}
-                title="Delete recording"
-              >
-                🗑️
-              </button>
-            </div>
+          <div key={recording.id} className="mb-4">
+            <AudioPlayer
+              recording={recording}
+              onDelete={deleteRecording}
+              onExport={exportRecording}
+              base64ToBlob={base64ToBlob}
+            />
           </div>
         ))}
       </div>

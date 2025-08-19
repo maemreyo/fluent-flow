@@ -47,24 +47,37 @@ export class RecordingFeature {
 
   public async startRecording(): Promise<void> {
     try {
-      // Request microphone access
+      // Request microphone access with better quality settings
       this.audioStream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
-          autoGainControl: true
+          autoGainControl: true,
+          sampleRate: 48000, // Higher sample rate for better quality
+          channelCount: 1 // Mono recording for smaller file size
         } 
       })
 
-      // Create MediaRecorder
+      // Wait for microphone to stabilize to prevent initial crackling
+      await new Promise(resolve => setTimeout(resolve, 200))
+
+      // Create MediaRecorder with better settings
       this.recordingState.mediaRecorder = new MediaRecorder(this.audioStream, {
-        mimeType: this.getSupportedMimeType()
+        mimeType: this.getSupportedMimeType(),
+        audioBitsPerSecond: 128000 // 128kbps for good quality
       })
 
       const audioChunks: Blob[] = []
+      let isFirstChunk = true
 
       this.recordingState.mediaRecorder.ondataavailable = (event) => {
         if (event.data.size > 0) {
+          // Skip the first chunk to avoid initial crackling
+          if (isFirstChunk) {
+            console.log('FluentFlow: Skipping first audio chunk to prevent crackling')
+            isFirstChunk = false
+            return
+          }
           audioChunks.push(event.data)
         }
       }
@@ -93,8 +106,8 @@ export class RecordingFeature {
         this.resetRecordingState()
       }
 
-      // Start recording
-      this.recordingState.mediaRecorder.start(100) // Collect data every 100ms
+      // Start recording with smaller intervals for smoother data collection
+      this.recordingState.mediaRecorder.start(250) // Collect data every 250ms
       this.recordingState.isRecording = true
       this.recordingState.isActive = true
       this.recordingState.recordingStartTime = Date.now()
