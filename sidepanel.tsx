@@ -7,6 +7,7 @@ import type {
 } from "./lib/types/fluent-flow-types"
 import { AudioPlayer } from "./components/audio-player"
 
+import '../styles/globals.css';
 import "./styles/sidepanel.css"
 import "./styles/react-h5-audio-player.css"
 

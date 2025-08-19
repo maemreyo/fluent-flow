@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
 import type { YouTubeVideoInfo, PracticeSession } from "./lib/types/fluent-flow-types"
 
+import '../styles/globals.css';
 import "./styles/popup.css"
 
 export default function FluentFlowPopup() {

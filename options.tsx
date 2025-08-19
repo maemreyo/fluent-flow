@@ -5,6 +5,7 @@ import { useState, useEffect } from "react"
 import { useStorageData } from "./hooks/use-storage-data"
 import type { UserPreferences, ApiConfig } from "./lib/types"
 
+import '../styles/globals.css';
 import "./styles/options.css"
 
 export default function OptionsPage() {
