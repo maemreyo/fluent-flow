@@ -12,7 +12,9 @@ import {
   RefreshCw,
   Repeat,
   Target,
-  Trash2
+  Trash2,
+  User,
+  UserX
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AudioPlayer } from "./components/audio-player"
@@ -21,6 +23,7 @@ import { Button } from "./components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
+import { getCurrentUser } from "./lib/supabase/client"
 import type {
   SavedLoop
 } from "./lib/types/fluent-flow-types"
@@ -35,21 +38,33 @@ export default function FluentFlowSidePanel() {
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [savedRecordings, setSavedRecordings] = useState<any[]>([])
   const [loadingRecordings, setLoadingRecordings] = useState(false)
+  const [user, setUser] = useState<any>(null)
+  const [checkingAuth, setCheckingAuth] = useState(true)
 
   const {
     allSessions,
     statistics,
-    settings,
-    updateSettings,
     currentSession,
     currentVideo
   } = useFluentFlowStore()
 
   // Load saved loops and recordings on component mount
   useEffect(() => {
+    checkAuthStatus()
     loadSavedLoops()
     loadSavedRecordings()
   }, [])
+
+  const checkAuthStatus = async () => {
+    try {
+      const currentUser = await getCurrentUser()
+      setUser(currentUser)
+    } catch (error) {
+      console.error('Error checking auth status:', error)
+    } finally {
+      setCheckingAuth(false)
+    }
+  }
 
   const loadSavedLoops = async () => {
     setLoadingLoops(true)
@@ -555,8 +570,31 @@ export default function FluentFlowSidePanel() {
   return (
     <div className="h-full bg-background">
       <div className="border-b p-4">
-        <h1 className="text-xl font-bold">FluentFlow</h1>
-        <p className="text-sm text-muted-foreground">YouTube Language Learning</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl font-bold">FluentFlow</h1>
+            <p className="text-sm text-muted-foreground">YouTube Language Learning</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {checkingAuth ? (
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+            ) : user ? (
+              <div className="flex items-center gap-2 text-green-600">
+                <User className="h-4 w-4" />
+                <span className="text-xs">Synced</span>
+              </div>
+            ) : (
+              <div 
+                className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
+                onClick={() => chrome.runtime.openOptionsPage()}
+                title="Click to sign in for cloud sync"
+              >
+                <UserX className="h-4 w-4" />
+                <span className="text-xs">Sign in</span>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1">

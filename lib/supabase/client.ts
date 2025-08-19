@@ -1,8 +1,18 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
-const supabaseUrl = 'https://fxawystovhtbuqhllswl.supabase.co'
-const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4YXd5c3Rvdmh0YnVxaGxsc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0ODMwMDIsImV4cCI6MjA3MTA1OTAwMn0.sT26Fks0DfeOKtULF0-rCKqlVsR7CX7JTAPvgStNH58'
+// Get Supabase configuration from environment variables
+const supabaseUrl = process.env.PLASMO_PUBLIC_SUPABASE_URL || 'https://fxawystovhtbuqhllswl.supabase.co'
+const supabaseAnonKey = process.env.PLASMO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4YXd5c3Rvdmh0YnVxaGxsc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0ODMwMDIsImV4cCI6MjA3MTA1OTAwMn0.sT26Fks0DfeOKtULF0-rCKqlVsR7CX7JTAPvgStNH58'
+
+// Validate configuration
+if (!supabaseUrl.startsWith('https://')) {
+  console.error('Invalid Supabase URL. Must start with https://')
+}
+
+if (supabaseAnonKey.length < 100) {
+  console.error('Invalid Supabase anon key. Key appears to be too short.')
+}
 
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {

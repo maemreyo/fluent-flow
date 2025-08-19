@@ -7,8 +7,12 @@ import { handleApiMessage } from "./lib/background/api-handler"
 import { handleStorageMessage } from "./lib/background/storage-handler"
 import { handleLoopMessage } from "./lib/background/loop-handler"
 import { handleRecordingMessage } from "./lib/background/recording-handler"
+import { getAuthHandler } from "./lib/background/auth-handler"
 
 console.log("Chrome Extension Starter background script loaded")
+
+// Initialize auth handler
+const authHandler = getAuthHandler()
 
 // Context menu setup
 chrome.runtime.onInstalled.addListener(() => {
@@ -93,6 +97,14 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
     case "UPDATE_RECORDING":
       handleRecordingMessage('update', message.data, sendResponse)
+      return true
+
+    // Authentication messages
+    case "GET_AUTH_STATE":
+    case "REFRESH_AUTH":
+    case "USER_LOGOUT":
+    case "CHECK_AUTH_STATUS":
+      authHandler.handleAuthMessage(message).then(sendResponse)
       return true
 
     case "OPEN_SIDE_PANEL":
