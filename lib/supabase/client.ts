@@ -2,8 +2,17 @@ import { createClient } from '@supabase/supabase-js'
 import type { Database } from './types'
 
 // Get Supabase configuration from environment variables
-const supabaseUrl = process.env.PLASMO_PUBLIC_SUPABASE_URL || 'https://fxawystovhtbuqhllswl.supabase.co'
-const supabaseAnonKey = process.env.PLASMO_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4YXd5c3Rvdmh0YnVxaGxsc3dsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU0ODMwMDIsImV4cCI6MjA3MTA1OTAwMn0.sT26Fks0DfeOKtULF0-rCKqlVsR7CX7JTAPvgStNH58'
+const supabaseUrl = process.env.PLASMO_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.PLASMO_PUBLIC_SUPABASE_ANON_KEY
+
+// Validate required environment variables
+if (!supabaseUrl) {
+  throw new Error('PLASMO_PUBLIC_SUPABASE_URL is required in environment variables')
+}
+
+if (!supabaseAnonKey) {
+  throw new Error('PLASMO_PUBLIC_SUPABASE_ANON_KEY is required in environment variables')
+}
 
 // Validate configuration
 if (!supabaseUrl.startsWith('https://')) {

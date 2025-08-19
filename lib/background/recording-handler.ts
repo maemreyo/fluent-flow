@@ -2,6 +2,8 @@
 // Manages audio recording storage, retrieval, and deletion
 
 import type { AudioRecording } from '../types/fluent-flow-types'
+import { getAuthHandler } from './auth-handler'
+import { supabase } from '../supabase/client'
 
 export interface SavedRecording extends AudioRecording {
   id: string
