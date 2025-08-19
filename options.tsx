@@ -2,13 +2,37 @@
 // Full-page settings interface
 
 import { useState, useEffect } from "react"
-import { useStorageData } from "./hooks/use-storage-data"
 import type { UserPreferences, ApiConfig } from "./lib/types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
+import { Button } from "./components/ui/button"
+import { Input } from "./components/ui/input"
+import { Label } from "./components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select"
+import { Switch } from "./components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
+import { Badge } from "./components/ui/badge"
+import { Separator } from "./components/ui/separator"
+import { Alert, AlertDescription } from "./components/ui/alert"
+import { 
+  Settings,
+  Palette,
+  Bell,
+  Save,
+  TestTube,
+  Download,
+  Upload,
+  Trash,
+  RotateCcw,
+  ExternalLink,
+  Info,
+  Zap,
+  Database
+} from "lucide-react"
 
 import "./styles/options.css"
 
 export default function OptionsPage() {
-  const [activeSection, setActiveSection] = useState<'general' | 'api' | 'advanced' | 'about'>('general')
+  const [activeTab, setActiveTab] = useState('general')
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: 'light',
     notifications: true,
@@ -121,320 +145,395 @@ export default function OptionsPage() {
     }
   }
 
-  const renderGeneralSection = () => (
-    <div className="settings-section">
-      <h2>General Settings</h2>
-      
-      <div className="setting-group">
-        <h3>Appearance</h3>
-        
-        <div className="setting-item">
-          <label htmlFor="theme-select">Theme:</label>
-          <select
-            id="theme-select"
-            value={preferences.theme}
-            onChange={(e) => setPreferences(prev => ({
-              ...prev,
-              theme: e.target.value as 'light' | 'dark' | 'auto'
-            }))}
-          >
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="auto">Auto (System)</option>
-          </select>
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="language-select">Language:</label>
-          <select
-            id="language-select"
-            value={preferences.language}
-            onChange={(e) => setPreferences(prev => ({
-              ...prev,
-              language: e.target.value
-            }))}
-          >
-            <option value="en">English</option>
-            <option value="es">Español</option>
-            <option value="fr">Français</option>
-            <option value="de">Deutsch</option>
-          </select>
-        </div>
-      </div>
-
-      <div className="setting-group">
-        <h3>Behavior</h3>
-        
-        <div className="setting-item checkbox-item">
-          <label>
-            <input
-              type="checkbox"
-              checked={preferences.notifications}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                notifications: e.target.checked
-              }))}
-            />
-            Enable notifications
-          </label>
-          <p className="setting-description">
-            Show notifications for processing results and errors
-          </p>
-        </div>
-
-        <div className="setting-item checkbox-item">
-          <label>
-            <input
-              type="checkbox"
-              checked={preferences.autoSave}
-              onChange={(e) => setPreferences(prev => ({
-                ...prev,
-                autoSave: e.target.checked
-              }))}
-            />
-            Auto-save results
-          </label>
-          <p className="setting-description">
-            Automatically save processing results to history
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderApiSection = () => (
-    <div className="settings-section">
-      <h2>API Configuration</h2>
-      
-      <div className="setting-group">
-        <h3>API Settings</h3>
-        
-        <div className="setting-item">
-          <label htmlFor="api-base-url">Base URL:</label>
-          <input
-            id="api-base-url"
-            type="url"
-            value={apiConfig.baseUrl}
-            onChange={(e) => setApiConfig(prev => ({
-              ...prev,
-              baseUrl: e.target.value
-            }))}
-            placeholder="https://api.example.com"
-          />
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="api-timeout">Timeout (ms):</label>
-          <input
-            id="api-timeout"
-            type="number"
-            min="1000"
-            max="300000"
-            step="1000"
-            value={apiConfig.timeout || 30000}
-            onChange={(e) => setApiConfig(prev => ({
-              ...prev,
-              timeout: parseInt(e.target.value)
-            }))}
-          />
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="api-key">API Key (optional):</label>
-          <input
-            id="api-key"
-            type="password"
-            value={apiConfig.apiKey || ''}
-            onChange={(e) => setApiConfig(prev => ({
-              ...prev,
-              apiKey: e.target.value || undefined
-            }))}
-            placeholder="Enter your API key"
-          />
-          <p className="setting-description">
-            API key will be stored securely in local storage
-          </p>
-        </div>
-
-        <div className="setting-actions">
-          <button
-            onClick={handleTestApiConnection}
-            className="secondary-button"
-          >
-            Test Connection
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderAdvancedSection = () => (
-    <div className="settings-section">
-      <h2>Advanced Settings</h2>
-      
-      <div className="setting-group">
-        <h3>Performance</h3>
-        
-        <div className="setting-item">
-          <label htmlFor="cache-size">Max Cache Items:</label>
-          <input
-            id="cache-size"
-            type="number"
-            min="10"
-            max="1000"
-            defaultValue="100"
-          />
-        </div>
-
-        <div className="setting-item">
-          <label htmlFor="batch-size">Batch Processing Size:</label>
-          <input
-            id="batch-size"
-            type="number"
-            min="1"
-            max="50"
-            defaultValue="5"
-          />
-        </div>
-      </div>
-
-      <div className="setting-group">
-        <h3>Data Management</h3>
-        
-        <div className="setting-actions">
-          <button className="secondary-button">
-            Export All Data
-          </button>
-          <button className="secondary-button">
-            Import Data
-          </button>
-          <button className="danger-button">
-            Clear All Data
-          </button>
-        </div>
-      </div>
-
-      <div className="setting-group">
-        <h3>Reset</h3>
-        
-        <div className="setting-actions">
-          <button
-            onClick={handleResetSettings}
-            className="danger-button"
-          >
-            Reset All Settings
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-
-  const renderAboutSection = () => (
-    <div className="settings-section">
-      <h2>About</h2>
-      
-      <div className="about-content">
-        <div className="extension-info">
-          <h3>Chrome Extension Starter</h3>
-          <p className="version">Version 1.0.0</p>
-          <p className="description">
-            A clean architecture template for Chrome extensions with TypeScript, 
-            React, and best practices for scalable development.
-          </p>
-        </div>
-
-        <div className="features-list">
-          <h4>Features:</h4>
-          <ul>
-            <li>Clean architecture with separation of concerns</li>
-            <li>TypeScript for type safety</li>
-            <li>React for modern UI development</li>
-            <li>Background script with proper message routing</li>
-            <li>Service layer for business logic</li>
-            <li>Caching and rate limiting</li>
-            <li>Input validation and sanitization</li>
-            <li>Error handling and user feedback</li>
-          </ul>
-        </div>
-
-        <div className="links">
-          <h4>Links:</h4>
-          <p>
-            <a href="https://github.com/example/chrome-extension-starter" target="_blank" rel="noopener noreferrer">
-              GitHub Repository
-            </a>
-          </p>
-          <p>
-            <a href="https://developer.chrome.com/docs/extensions/" target="_blank" rel="noopener noreferrer">
-              Chrome Extension Documentation
-            </a>
-          </p>
-        </div>
-      </div>
-    </div>
-  )
-
   return (
-    <div className="options-container">
-      <header className="options-header">
-        <h1>Chrome Extension Starter - Settings</h1>
-      </header>
+    <div className="min-h-screen bg-background">
+      <div className="max-w-4xl mx-auto p-6 space-y-6">
+        <div className="space-y-2">
+          <h1 className="text-3xl font-bold flex items-center gap-2">
+            <Settings className="h-8 w-8" />
+            FluentFlow Settings
+          </h1>
+          <p className="text-muted-foreground">
+            Configure your YouTube language learning experience
+          </p>
+        </div>
 
-      <div className="options-content">
-        <nav className="options-nav">
-          <button
-            className={`nav-button ${activeSection === 'general' ? 'active' : ''}`}
-            onClick={() => setActiveSection('general')}
-          >
-            General
-          </button>
-          <button
-            className={`nav-button ${activeSection === 'api' ? 'active' : ''}`}
-            onClick={() => setActiveSection('api')}
-          >
-            API
-          </button>
-          <button
-            className={`nav-button ${activeSection === 'advanced' ? 'active' : ''}`}
-            onClick={() => setActiveSection('advanced')}
-          >
-            Advanced
-          </button>
-          <button
-            className={`nav-button ${activeSection === 'about' ? 'active' : ''}`}
-            onClick={() => setActiveSection('about')}
-          >
-            About
-          </button>
-        </nav>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="general" className="flex items-center gap-2">
+              <Palette className="h-4 w-4" />
+              General
+            </TabsTrigger>
+            <TabsTrigger value="api" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              API
+            </TabsTrigger>
+            <TabsTrigger value="advanced" className="flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Advanced
+            </TabsTrigger>
+            <TabsTrigger value="about" className="flex items-center gap-2">
+              <Info className="h-4 w-4" />
+              About
+            </TabsTrigger>
+          </TabsList>
 
-        <main className="options-main">
-          {activeSection === 'general' && renderGeneralSection()}
-          {activeSection === 'api' && renderApiSection()}
-          {activeSection === 'advanced' && renderAdvancedSection()}
-          {activeSection === 'about' && renderAboutSection()}
-        </main>
-      </div>
+          <TabsContent value="general" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Palette className="h-5 w-5" />
+                  Appearance
+                </CardTitle>
+                <CardDescription>
+                  Customize the look and feel of FluentFlow
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="theme-select">Theme</Label>
+                  <Select
+                    value={preferences.theme}
+                    onValueChange={(value) => setPreferences(prev => ({
+                      ...prev,
+                      theme: value as 'light' | 'dark' | 'auto'
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="auto">Auto (System)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
 
-      <footer className="options-footer">
-        {activeSection !== 'about' && (
-          <div className="save-section">
-            <button
-              onClick={handleSaveSettings}
-              disabled={isSaving}
-              className="primary-button"
-            >
-              {isSaving ? 'Saving...' : 'Save Settings'}
-            </button>
-            
-            {saveMessage && (
-              <span className={`save-message ${saveMessage.includes('successfully') ? 'success' : 'error'}`}>
-                {saveMessage}
-              </span>
-            )}
-          </div>
+                <div className="space-y-2">
+                  <Label htmlFor="language-select">Language</Label>
+                  <Select
+                    value={preferences.language}
+                    onValueChange={(value) => setPreferences(prev => ({
+                      ...prev,
+                      language: value
+                    }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">🇺🇸 English</SelectItem>
+                      <SelectItem value="es">🇪🇸 Español</SelectItem>
+                      <SelectItem value="fr">🇫🇷 Français</SelectItem>
+                      <SelectItem value="de">🇩🇪 Deutsch</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Bell className="h-5 w-5" />
+                  Behavior
+                </CardTitle>
+                <CardDescription>
+                  Configure how FluentFlow behaves
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Enable notifications</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Show notifications for processing results and errors
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferences.notifications}
+                    onCheckedChange={(checked) => setPreferences(prev => ({
+                      ...prev,
+                      notifications: checked
+                    }))}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label>Auto-save results</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Automatically save processing results to history
+                    </p>
+                  </div>
+                  <Switch
+                    checked={preferences.autoSave}
+                    onCheckedChange={(checked) => setPreferences(prev => ({
+                      ...prev,
+                      autoSave: checked
+                    }))}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="api" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  API Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure API endpoints and authentication
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="api-base-url">Base URL</Label>
+                  <Input
+                    id="api-base-url"
+                    type="url"
+                    value={apiConfig.baseUrl}
+                    onChange={(e) => setApiConfig(prev => ({
+                      ...prev,
+                      baseUrl: e.target.value
+                    }))}
+                    placeholder="https://api.example.com"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="api-timeout">Timeout (ms)</Label>
+                  <Input
+                    id="api-timeout"
+                    type="number"
+                    min="1000"
+                    max="300000"
+                    step="1000"
+                    value={apiConfig.timeout || 30000}
+                    onChange={(e) => setApiConfig(prev => ({
+                      ...prev,
+                      timeout: parseInt(e.target.value)
+                    }))}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="api-key">API Key (optional)</Label>
+                  <Input
+                    id="api-key"
+                    type="password"
+                    value={apiConfig.apiKey || ''}
+                    onChange={(e) => setApiConfig(prev => ({
+                      ...prev,
+                      apiKey: e.target.value || undefined
+                    }))}
+                    placeholder="Enter your API key"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    API key will be stored securely in local storage
+                  </p>
+                </div>
+
+                <div className="pt-4">
+                  <Button
+                    variant="outline"
+                    onClick={handleTestApiConnection}
+                    className="flex items-center gap-2"
+                  >
+                    <TestTube className="h-4 w-4" />
+                    Test Connection
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="advanced" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Performance
+                </CardTitle>
+                <CardDescription>
+                  Optimize FluentFlow performance
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cache-size">Max Cache Items</Label>
+                  <Input
+                    id="cache-size"
+                    type="number"
+                    min="10"
+                    max="1000"
+                    defaultValue="100"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="batch-size">Batch Processing Size</Label>
+                  <Input
+                    id="batch-size"
+                    type="number"
+                    min="1"
+                    max="50"
+                    defaultValue="5"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Data Management</CardTitle>
+                <CardDescription>
+                  Manage your FluentFlow data
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Download className="h-4 w-4" />
+                    Export All Data
+                  </Button>
+                  <Button variant="outline" className="flex items-center gap-2">
+                    <Upload className="h-4 w-4" />
+                    Import Data
+                  </Button>
+                  <Button variant="destructive" className="flex items-center gap-2">
+                    <Trash className="h-4 w-4" />
+                    Clear All Data
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Reset Settings</CardTitle>
+                <CardDescription>
+                  Reset all settings to their default values
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button
+                  variant="destructive"
+                  onClick={handleResetSettings}
+                  className="flex items-center gap-2"
+                >
+                  <RotateCcw className="h-4 w-4" />
+                  Reset All Settings
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="about" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Info className="h-5 w-5" />
+                  About FluentFlow
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-lg font-semibold">FluentFlow</h3>
+                    <Badge variant="secondary">Version 1.0.0</Badge>
+                  </div>
+                  <p className="text-muted-foreground">
+                    A powerful YouTube language learning tool that helps you practice pronunciation 
+                    by recording and comparing your voice with native speakers.
+                  </p>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-medium">Features:</h4>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    <li>• Audio recording and playback</li>
+                    <li>• Professional audio player interface</li>
+                    <li>• Practice session management</li>
+                    <li>• Keyboard shortcuts for efficiency</li>
+                    <li>• Export audio for further practice</li>
+                    <li>• Modern UI with shadcn/ui components</li>
+                    <li>• Clean architecture with TypeScript</li>
+                  </ul>
+                </div>
+
+                <Separator />
+
+                <div className="space-y-3">
+                  <h4 className="font-medium">Links:</h4>
+                  <div className="space-y-2">
+                    <Button variant="outline" size="sm" asChild>
+                      <a 
+                        href="https://github.com/example/fluent-flow" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        GitHub Repository
+                      </a>
+                    </Button>
+                    <Button variant="outline" size="sm" asChild>
+                      <a 
+                        href="https://developer.chrome.com/docs/extensions/" 
+                        target="_blank" 
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        Chrome Extension Documentation
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {activeTab !== 'about' && (
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex items-center justify-between">
+                <div className="space-y-1">
+                  <p className="font-medium">Save your changes</p>
+                  <p className="text-sm text-muted-foreground">
+                    Changes will be applied immediately across all FluentFlow components
+                  </p>
+                </div>
+                <div className="flex items-center gap-4">
+                  {saveMessage && (
+                    <Alert className={`${saveMessage.includes('successfully') ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} max-w-xs`}>
+                      <AlertDescription className={saveMessage.includes('successfully') ? 'text-green-800' : 'text-red-800'}>
+                        {saveMessage}
+                      </AlertDescription>
+                    </Alert>
+                  )}
+                  <Button
+                    onClick={handleSaveSettings}
+                    disabled={isSaving}
+                    className="flex items-center gap-2"
+                  >
+                    <Save className="h-4 w-4" />
+                    {isSaving ? 'Saving...' : 'Save Settings'}
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
-      </footer>
+      </div>
     </div>
   )
 }

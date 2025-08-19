@@ -1,6 +1,20 @@
 import { useState, useEffect } from "react"
 import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
-import type { YouTubeVideoInfo, PracticeSession } from "./lib/types/fluent-flow-types"
+import type { YouTubeVideoInfo } from "./lib/types/fluent-flow-types"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
+import { Button } from "./components/ui/button"
+import { Badge } from "./components/ui/badge"
+import { Separator } from "./components/ui/separator"
+import { 
+  Tv, 
+  Play, 
+  Pause,
+  History, 
+  Settings,
+  Activity,
+  Clock,
+  Keyboard
+} from "lucide-react"
 
 import "./styles/popup.css"
 
@@ -12,10 +26,8 @@ export default function FluentFlowPopup() {
   const { 
     currentSession,
     statistics,
-    settings,
     uiState,
-    togglePanel,
-    updateSettings
+    togglePanel
   } = useFluentFlowStore()
 
   useEffect(() => {
@@ -66,142 +78,208 @@ export default function FluentFlowPopup() {
 
   if (!isYouTubePage) {
     return (
-      <div className="popup-container">
-        <div className="popup-header">
-          <h1 className="popup-title">FluentFlow</h1>
-          <div className="popup-subtitle">YouTube Language Learning</div>
-        </div>
-        
-        <div className="popup-content">
-          <div className="not-youtube-message">
-            <div className="icon">📺</div>
-            <h3>Not on YouTube</h3>
-            <p>FluentFlow works on YouTube watch pages. Navigate to a YouTube video to start practicing!</p>
-            
-            <div className="quick-actions">
-              <button 
-                className="action-button secondary"
-                onClick={handleOpenSidePanel}
-              >
-                Open Practice History
-              </button>
-              <button 
-                className="action-button secondary"
-                onClick={handleOpenOptions}
-              >
-                Settings
-              </button>
+      <div className="w-80 p-4">
+        <Card>
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center gap-2 justify-center">
+              <Activity className="h-5 w-5 text-primary" />
+              FluentFlow
+            </CardTitle>
+            <CardDescription>YouTube Language Learning</CardDescription>
+          </CardHeader>
+          
+          <CardContent className="space-y-4">
+            <div className="text-center space-y-3">
+              <div className="flex justify-center">
+                <Tv className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-lg">Not on YouTube</h3>
+                <p className="text-sm text-muted-foreground">
+                  FluentFlow works on YouTube watch pages. Navigate to a YouTube video to start practicing!
+                </p>
+              </div>
+              
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={handleOpenSidePanel}
+                >
+                  <History className="h-4 w-4 mr-2" />
+                  Open Practice History
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="w-full"
+                  onClick={handleOpenOptions}
+                >
+                  <Settings className="h-4 w-4 mr-2" />
+                  Settings
+                </Button>
+              </div>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     )
   }
 
   return (
-    <div className="popup-container">
-      <div className="popup-header">
-        <h1 className="popup-title">FluentFlow</h1>
-        <div className="popup-subtitle">YouTube Language Learning</div>
-      </div>
-      
-      <div className="popup-content">
-        {videoInfo && (
-          <div className="current-video">
-            <div className="video-info">
-              <h3 className="video-title">{videoInfo.title}</h3>
-              <div className="video-channel">{videoInfo.channel}</div>
-              <div className="video-duration">{formatTime(videoInfo.duration)}</div>
-            </div>
-          </div>
-        )}
+    <div className="w-80 p-4 space-y-4">
+      <Card>
+        <CardHeader className="text-center pb-3">
+          <CardTitle className="flex items-center gap-2 justify-center">
+            <Activity className="h-5 w-5 text-primary" />
+            FluentFlow
+          </CardTitle>
+          <CardDescription>YouTube Language Learning</CardDescription>
+        </CardHeader>
+        
+        <CardContent className="space-y-4">
+          {videoInfo && (
+            <Card className="bg-muted/50">
+              <CardContent className="p-3">
+                <h3 className="font-medium text-sm line-clamp-2 mb-1">{videoInfo.title}</h3>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{videoInfo.channel}</span>
+                  <Badge variant="secondary" className="text-xs">
+                    <Clock className="h-3 w-3 mr-1" />
+                    {formatTime(videoInfo.duration)}
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-        <div className="practice-status">
-          {currentSession ? (
-            <div className="session-active">
-              <div className="status-indicator active"></div>
-              <div>
-                <div className="status-title">Practice Session Active</div>
-                <div className="status-details">
-                  {currentSession.segments.length} segments • {currentSession.recordings.length} recordings
+          <div className="space-y-3">
+            {currentSession ? (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
+                <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse"></div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm text-green-800">Practice Session Active</div>
+                  <div className="text-xs text-green-600">
+                    {currentSession.segments.length} segments • {currentSession.recordings.length} recordings
+                  </div>
                 </div>
               </div>
+            ) : (
+              <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border">
+                <div className="h-2 w-2 rounded-full bg-muted-foreground"></div>
+                <div className="flex-1">
+                  <div className="font-medium text-sm">Ready to Practice</div>
+                  <div className="text-xs text-muted-foreground">Open panel to start practicing</div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Button 
+              className="w-full"
+              onClick={handleTogglePanel}
+            >
+              {uiState.isPanelVisible ? (
+                <>
+                  <Pause className="h-4 w-4 mr-2" />
+                  Hide Panel
+                </>
+              ) : (
+                <>
+                  <Play className="h-4 w-4 mr-2" />
+                  Show Panel
+                </>
+              )}
+            </Button>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleOpenSidePanel}
+              >
+                <History className="h-4 w-4 mr-2" />
+                History
+              </Button>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleOpenOptions}
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Button>
             </div>
-          ) : (
-            <div className="session-inactive">
-              <div className="status-indicator"></div>
-              <div>
-                <div className="status-title">Ready to Practice</div>
-                <div className="status-details">Open panel to start practicing</div>
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm">Your Progress</h4>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="font-semibold text-lg">{statistics.totalSessions}</div>
+                <div className="text-xs text-muted-foreground">Sessions</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">{statistics.totalRecordings}</div>
+                <div className="text-xs text-muted-foreground">Recordings</div>
+              </div>
+              <div className="text-center">
+                <div className="font-semibold text-lg">{formatTime(statistics.totalPracticeTime)}</div>
+                <div className="text-xs text-muted-foreground">Practice Time</div>
               </div>
             </div>
-          )}
-        </div>
-
-        <div className="quick-actions">
-          <button 
-            className="action-button primary"
-            onClick={handleTogglePanel}
-          >
-            {uiState.isPanelVisible ? 'Hide Panel' : 'Show Panel'}
-          </button>
-          
-          <div className="action-row">
-            <button 
-              className="action-button secondary"
-              onClick={handleOpenSidePanel}
-            >
-              Practice History
-            </button>
-            <button 
-              className="action-button secondary"
-              onClick={handleOpenOptions}
-            >
-              Settings
-            </button>
           </div>
-        </div>
 
-        <div className="statistics-summary">
-          <h4>Your Progress</h4>
-          <div className="stats-grid">
-            <div className="stat-item">
-              <div className="stat-value">{statistics.totalSessions}</div>
-              <div className="stat-label">Sessions</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{statistics.totalRecordings}</div>
-              <div className="stat-label">Recordings</div>
-            </div>
-            <div className="stat-item">
-              <div className="stat-value">{formatTime(statistics.totalPracticeTime)}</div>
-              <div className="stat-label">Practice Time</div>
-            </div>
-          </div>
-        </div>
+          <Separator />
 
-        <div className="keyboard-shortcuts">
-          <h4>Keyboard Shortcuts</h4>
-          <div className="shortcuts-list">
-            <div className="shortcut-item">
-              <kbd>Alt + L</kbd>
-              <span>Set Loop Points</span>
-            </div>
-            <div className="shortcut-item">
-              <kbd>Alt + R</kbd>
-              <span>Start/Stop Recording</span>
-            </div>
-            <div className="shortcut-item">
-              <kbd>Alt + C</kbd>
-              <span>Compare Audio</span>
-            </div>
-            <div className="shortcut-item">
-              <kbd>Alt + Shift + F</kbd>
-              <span>Toggle Panel</span>
+          <div className="space-y-3">
+            <h4 className="font-medium text-sm flex items-center gap-2">
+              <Keyboard className="h-4 w-4" />
+              Keyboard Shortcuts
+            </h4>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex gap-1">
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">Alt</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">L</kbd>
+                </div>
+                <span className="text-muted-foreground">Set Loop Points</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex gap-1">
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">Alt</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">R</kbd>
+                </div>
+                <span className="text-muted-foreground">Start/Stop Recording</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex gap-1">
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">Alt</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">C</kbd>
+                </div>
+                <span className="text-muted-foreground">Compare Audio</span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <div className="flex gap-1">
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">Alt</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">Shift</kbd>
+                  <span>+</span>
+                  <kbd className="px-1.5 py-0.5 text-xs rounded bg-muted border">F</kbd>
+                </div>
+                <span className="text-muted-foreground">Toggle Panel</span>
+              </div>
             </div>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     </div>
   )
 }
