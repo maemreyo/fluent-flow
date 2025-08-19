@@ -124,10 +124,13 @@ const convertSegmentRowToSegment = (segment: SegmentRow): LoopSegment => ({
 
 const convertRecordingRowToRecording = (recording: RecordingRow): AudioRecording => ({
   id: recording.id,
-  videoId: '', // We'll need to get this from the session
-  audioData: new Blob(), // We'll handle file storage separately
+  videoId: (recording.metadata as any)?.originalVideoId || '',
+  audioData: new Blob(), // Will be loaded from URL when needed
   duration: recording.duration,
-  createdAt: new Date(recording.created_at)
+  createdAt: new Date(recording.created_at),
+  // Add metadata for file handling
+  fileUrl: (recording.metadata as any)?.publicUrl || null,
+  filePath: recording.file_path
 })
 
 // Supabase service functions
@@ -249,34 +252,63 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) throw new Error('User not authenticated')
 
-    // For now, we'll store the audio data as a JSON blob
-    // In production, you'd want to upload to Supabase Storage
-    const recordingData: RecordingInsert = {
-      session_id: sessionId,
-      segment_id: segmentId || null,
-      user_id: user.id,
-      duration: recording.duration,
-      audio_format: 'webm',
-      // In production, this would be a file path to Supabase Storage
-      file_path: null,
-      file_size: recording.audioData.size,
-      metadata: {
-        originalVideoId: recording.videoId
+    try {
+      // Generate unique filename for the audio file
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-')
+      const filename = `${user.id}/${sessionId}/${recording.id}_${timestamp}.webm`
+
+      // Upload audio file to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('audio-recordings')
+        .upload(filename, recording.audioData, {
+          contentType: 'audio/webm',
+          upsert: false
+        })
+
+      if (uploadError) {
+        console.error('Error uploading audio file:', uploadError)
+        throw uploadError
       }
-    }
 
-    const { data, error } = await supabase
-      .from('audio_recordings')
-      .insert(recordingData)
-      .select('id')
-      .single()
+      // Get public URL for the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from('audio-recordings')
+        .getPublicUrl(filename)
 
-    if (error) {
+      // Save recording metadata to database
+      const recordingData: RecordingInsert = {
+        session_id: sessionId,
+        segment_id: segmentId || null,
+        user_id: user.id,
+        duration: recording.duration,
+        audio_format: 'webm',
+        file_path: filename, // Store the file path
+        file_size: recording.audioData.size,
+        metadata: {
+          originalVideoId: recording.videoId,
+          publicUrl: publicUrlData.publicUrl
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('audio_recordings')
+        .insert(recordingData)
+        .select('id')
+        .single()
+
+      if (error) {
+        // If database insert fails, try to clean up the uploaded file
+        await supabase.storage
+          .from('audio-recordings')
+          .remove([filename])
+        throw error
+      }
+
+      return data.id
+    } catch (error) {
       console.error('Error saving recording:', error)
       throw error
     }
-
-    return data.id
   },
 
   async updatePracticeStatistics(stats: Partial<PracticeStatistics>): Promise<void> {
@@ -526,19 +558,61 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
         }
       },
 
-      deleteRecording: (recordingId: string) => {
-        // TODO: Implement database deletion
-        set((state) => ({
-          currentSession: state.currentSession
-            ? {
-                ...state.currentSession,
-                recordings: state.currentSession.recordings.filter(
-                  r => r.id !== recordingId
-                ),
-                updatedAt: new Date()
-              }
-            : null
-        }))
+      deleteRecording: async (recordingId: string) => {
+        try {
+          // First get the recording details to find the file path
+          const { data: recording, error: fetchError } = await supabase
+            .from('audio_recordings')
+            .select('file_path')
+            .eq('id', recordingId)
+            .single()
+
+          if (fetchError) {
+            console.error('Error fetching recording for deletion:', fetchError)
+          }
+
+          // Delete the recording from the database
+          const { error: deleteError } = await supabase
+            .from('audio_recordings')
+            .delete()
+            .eq('id', recordingId)
+
+          if (deleteError) {
+            throw deleteError
+          }
+
+          // If there's a file path, delete the file from Storage
+          if (recording?.file_path) {
+            const { error: storageError } = await supabase.storage
+              .from('audio-recordings')
+              .remove([recording.file_path])
+
+            if (storageError) {
+              console.error('Error deleting audio file from storage:', storageError)
+              // Don't throw here - database deletion succeeded
+            }
+          }
+
+          // Update local state
+          set((state) => ({
+            currentSession: state.currentSession
+              ? {
+                  ...state.currentSession,
+                  recordings: state.currentSession.recordings.filter(
+                    r => r.id !== recordingId
+                  ),
+                  updatedAt: new Date()
+                }
+              : null,
+            statistics: {
+              ...state.statistics,
+              totalRecordings: Math.max(0, state.statistics.totalRecordings - 1)
+            }
+          }))
+        } catch (error) {
+          console.error('Failed to delete recording:', error)
+          throw error
+        }
       },
 
       startComparison: (recording: AudioRecording, segment: LoopSegment) => {

@@ -71,6 +71,9 @@ export interface AudioRecording {
   title?: string
   notes?: string
   createdAt: Date
+  // New fields for Supabase Storage integration
+  fileUrl?: string | null
+  filePath?: string | null
 }
 
 export interface PracticeSession {

@@ -129,7 +129,7 @@ async function getFromSupabase(key: string | string[]): Promise<StorageResult> {
     }
 
     // Extract requested keys from profile settings
-    const settings = profile?.settings || {}
+    const settings = (profile?.settings as Record<string, any>) || {}
     for (const k of keys) {
       if (k === 'user_preferences' && settings.user_preferences) {
         result[k] = settings.user_preferences
@@ -174,7 +174,7 @@ async function setInSupabase(key: string, value: any): Promise<StorageResult> {
     }
 
     // Update settings
-    const currentSettings = profile?.settings || {}
+    const currentSettings = (profile?.settings as Record<string, any>) || {}
     const updatedSettings = {
       ...currentSettings,
       [key]: value
@@ -229,7 +229,7 @@ async function removeFromSupabase(key: string | string[]): Promise<StorageResult
     }
 
     // Remove keys from settings
-    const currentSettings = profile?.settings || {}
+    const currentSettings = (profile?.settings as Record<string, any>) || {}
     const updatedSettings = { ...currentSettings }
     
     for (const k of keys) {
