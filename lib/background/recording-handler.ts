@@ -92,6 +92,57 @@ export async function handleRecordingMessage(
 /**
  * Save audio recording to local storage with metadata
  */
+const CHUNK_SIZE = 1024 * 1024 // 1MB chunks for large recordings
+const MAX_MEMORY_SIZE = 10 * 1024 * 1024 // 10MB threshold for chunking
+
+function chunkBase64(base64Data: string, chunkSize: number): string[] {
+  const chunks: string[] = []
+  for (let i = 0; i < base64Data.length; i += chunkSize) {
+    chunks.push(base64Data.slice(i, i + chunkSize))
+  }
+  return chunks
+}
+
+async function saveChunkedRecording(recordingId: string, base64Data: string): Promise<void> {
+  const chunks = chunkBase64(base64Data, CHUNK_SIZE)
+  const chunkPromises = chunks.map((chunk, index) => {
+    const chunkKey = `fluent_flow_recording_chunk_${recordingId}_${index}`
+    return chrome.storage.local.set({ [chunkKey]: chunk })
+  })
+  
+  await Promise.all(chunkPromises)
+  
+  const metaKey = `fluent_flow_recording_meta_${recordingId}`
+  await chrome.storage.local.set({
+    [metaKey]: {
+      chunkCount: chunks.length,
+      totalSize: base64Data.length
+    }
+  })
+}
+
+async function loadChunkedRecording(recordingId: string): Promise<string | null> {
+  try {
+    const metaKey = `fluent_flow_recording_meta_${recordingId}`
+    const metaResult = await chrome.storage.local.get(metaKey)
+    const meta = metaResult[metaKey]
+    
+    if (!meta) return null
+    
+    const chunkKeys = Array.from({ length: meta.chunkCount }, (_, i) => {
+      return `fluent_flow_recording_chunk_${recordingId}_${i}`
+    })
+    
+    const chunksResult = await chrome.storage.local.get(chunkKeys)
+    const chunks = chunkKeys.map(key => chunksResult[key]).filter(Boolean)
+    
+    return chunks.join('')
+  } catch (error) {
+    console.error('Failed to load chunked recording:', error)
+    return null
+  }
+}
+
 async function saveRecording(recordingData: {
   audioDataBase64: string
   audioSize: number
@@ -103,28 +154,29 @@ async function saveRecording(recordingData: {
   timestamp?: number
 }): Promise<SavedRecording> {
   try {
-    // Check if user is authenticated first
     const authHandler = getAuthHandler()
     const authState = await authHandler.refreshAuthState()
-
-    console.log('FluentFlow: Auth state in recording handler:', {
-      isAuthenticated: authState.isAuthenticated,
-      hasUser: !!authState.user,
-      userId: authState.user?.id
-    })
 
     const recordingId = `recording_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
     const fileName = `recording_${Date.now()}.webm`
 
-    // Convert base64 back to Blob for immediate use
-    const audioData = base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
+    // Check if recording is large and needs chunking
+    const shouldChunk = recordingData.audioSize > MAX_MEMORY_SIZE
+
+    let audioData: Blob
+    if (shouldChunk) {
+      // For large recordings, don't keep full Blob in memory
+      audioData = new Blob() // Empty placeholder
+    } else {
+      audioData = base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
+    }
 
     const savedRecording: SavedRecording = {
       id: recordingId,
       videoId: recordingData.videoId,
       sessionId: recordingData.sessionId,
-      audioData, // Blob for immediate use
-      audioDataBase64: recordingData.audioDataBase64, // Base64 for storage
+      audioData,
+      audioDataBase64: shouldChunk ? '' : recordingData.audioDataBase64,
       fileName,
       duration: recordingData.duration,
       title: recordingData.title || `Recording ${new Date().toLocaleString()}`,
@@ -136,61 +188,42 @@ async function saveRecording(recordingData: {
     // If user is authenticated, try to save to Supabase
     if (authState.isAuthenticated && authState.user && recordingData.sessionId) {
       try {
-        console.log('FluentFlow: Saving recording to Supabase for user:', authState.user.id)
-
-        // Get Supabase store service
         const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
 
-        // Convert to AudioRecording format expected by supabase service
         const audioRecording = {
           id: recordingId,
           videoId: recordingData.videoId,
-          audioData: audioData,
+          audioData: shouldChunk ? base64ToBlob(recordingData.audioDataBase64, 'audio/webm') : audioData,
           duration: recordingData.duration,
           createdAt: savedRecording.createdAt,
           updatedAt: savedRecording.updatedAt
         }
 
-        // Save to Supabase
         const supabaseRecordingId = await store.supabaseService.saveRecording(
           recordingData.sessionId,
           audioRecording
         )
 
-        console.log('FluentFlow: Recording saved to Supabase successfully:', supabaseRecordingId)
         return savedRecording
       } catch (supabaseError) {
-        console.error(
-          'FluentFlow: Failed to save recording to Supabase, falling back to local storage:',
-          supabaseError
-        )
-        // Fall through to local storage backup
+        console.error('FluentFlow: Failed to save to Supabase, falling back to local storage:', supabaseError)
       }
+    }
+
+    // Local storage fallback with chunking for large files
+    if (shouldChunk) {
+      await saveChunkedRecording(recordingId, recordingData.audioDataBase64)
     } else {
-      console.log('FluentFlow: User not authenticated or no session ID, using local storage')
+      const storageKey = `fluent_flow_recording_${recordingId}`
+      const storageData = {
+        ...savedRecording,
+        audioData: undefined
+      }
+      await chrome.storage.local.set({ [storageKey]: storageData })
     }
 
-    // Fallback to local storage (for unauthenticated users or when Supabase fails)
-    const storageKey = `fluent_flow_recording_${recordingId}`
-    const storageData = {
-      ...savedRecording,
-      audioData: undefined // Don't store the blob object itself
-    }
-
-    await chrome.storage.local.set({
-      [storageKey]: storageData
-    })
-
-    // Update recordings index
     await updateRecordingsIndex(savedRecording)
-
-    console.log('FluentFlow: Recording saved to local storage', {
-      id: recordingId,
-      duration: recordingData.duration,
-      size: recordingData.audioSize
-    })
-
     return savedRecording
   } catch (error) {
     console.error('Failed to save recording:', error)
@@ -212,12 +245,22 @@ async function loadRecording(recordingId: string): Promise<SavedRecording | null
 
     const recordingData = result[storageKey]
 
-    // Convert base64 back to Blob
-    const audioData = base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
+    // Check if this is a chunked recording
+    let audioDataBase64: string
+    if (!recordingData.audioDataBase64) {
+      // Try to load from chunks
+      audioDataBase64 = await loadChunkedRecording(recordingId) || ''
+    } else {
+      audioDataBase64 = recordingData.audioDataBase64
+    }
+
+    // Convert base64 back to Blob only when needed (lazy loading)
+    const audioData = audioDataBase64 ? base64ToBlob(audioDataBase64, 'audio/webm') : new Blob()
 
     return {
       ...recordingData,
       audioData,
+      audioDataBase64,
       createdAt: new Date(recordingData.createdAt),
       updatedAt: new Date(recordingData.updatedAt)
     }

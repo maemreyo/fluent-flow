@@ -3,16 +3,18 @@ module.exports = {
   testEnvironment: 'jsdom',
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/src/setupTests.ts'],
+  setupFilesAfterEnv: ['<rootDir>/setupTests.ts'],
   
-  // Module paths
-  moduleNameMapping: {
+  // Module paths and static assets
+  moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/$1',
     '^~/(.*)$': '<rootDir>/$1',
     '^lib/(.*)$': '<rootDir>/lib/$1',
     '^components/(.*)$': '<rootDir>/components/$1',
     '^hooks/(.*)$': '<rootDir>/hooks/$1',
-    '^styles/(.*)$': '<rootDir>/styles/$1'
+    '^styles/(.*)$': '<rootDir>/styles/$1',
+    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js'
   },
   
   // File extensions
@@ -59,11 +61,6 @@ module.exports = {
   
   coverageReporters: ['text', 'lcov', 'html'],
   
-  // Mock static assets
-  moduleNameMapping: {
-    '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js'
-  },
   
   // Chrome Extension specific mocks
   setupFiles: ['<rootDir>/__mocks__/chrome.js'],

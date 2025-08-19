@@ -10,6 +10,7 @@ import {
   DialogTitle, 
   DialogFooter 
 } from './ui/dialog'
+import { Card, CardContent } from './ui/card'
 import 'react-h5-audio-player/lib/styles.css'
 
 interface FluentFlowAudioPlayerProps {
@@ -27,10 +28,22 @@ interface FluentFlowAudioPlayerProps {
 }
 
 export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: FluentFlowAudioPlayerProps) {
+  return (
+    <AudioPlayerErrorBoundary>
+      <AudioPlayerContent 
+        recording={recording} 
+        onDelete={onDelete} 
+        onExport={onExport} 
+        base64ToBlob={base64ToBlob} 
+      />
+    </AudioPlayerErrorBoundary>
+  )
+}
+
+function AudioPlayerContent({ recording, onDelete, onExport, base64ToBlob }: FluentFlowAudioPlayerProps) {
   const [audioURL, setAudioURL] = useState<string>('')
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
-  // Initialize audio URL when component mounts
   useEffect(() => {
     if (recording.audioDataBase64) {
       try {
@@ -38,7 +51,6 @@ export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: Flu
         const url = URL.createObjectURL(audioBlob)
         setAudioURL(url)
 
-        // Cleanup function to revoke URL when component unmounts
         return () => {
           URL.revokeObjectURL(url)
         }
@@ -65,7 +77,6 @@ export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: Flu
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-4">
-      {/* Recording Info */}
       <div className="border-b border-border pb-3 mb-4">
         <h4 className="text-sm font-medium text-foreground mb-1 leading-tight">
           {recording.title || `Recording ${recording.id.slice(-6)}`}
@@ -80,7 +91,6 @@ export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: Flu
         )}
       </div>
 
-      {/* React H5 Audio Player */}
       {audioURL && (
         <div className="mb-4">
           <ReactH5AudioPlayer
@@ -92,68 +102,103 @@ export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: Flu
             showFilledProgress={true}
             showFilledVolume={true}
             preload="metadata"
-            onPlay={() => console.log('FluentFlow: Audio playing')}
-            onPause={() => console.log('FluentFlow: Audio paused')}
-            onEnded={() => console.log('FluentFlow: Audio ended')}
             onError={(error: any) => console.error('FluentFlow: Audio error:', error)}
-            onLoadedData={() => console.log('FluentFlow: Audio loaded')}
             layout="stacked-reverse"
-            className="bg-muted rounded-lg border border-border p-3"
+            customProgressBarSection={[]}
+            customControlsSection={[]}
+            customVolumeControls={[]}
           />
         </div>
       )}
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-end gap-2 pt-3 border-t border-border">
+      <div className="flex gap-2">
         <Button
-          onClick={() => onExport(recording)}
           variant="outline"
           size="sm"
-          className="text-blue-600 border-blue-200 bg-blue-50 hover:bg-blue-100 hover:text-blue-700"
+          onClick={() => onExport(recording)}
+          className="flex-1"
         >
           <Download className="h-4 w-4 mr-2" />
           Export
         </Button>
-        
         <Button
-          onClick={() => setShowDeleteDialog(true)}
-          variant="outline"
+          variant="destructive"
           size="sm"
-          className="text-red-600 border-red-200 bg-red-50 hover:bg-red-100 hover:text-red-700"
+          onClick={() => setShowDeleteDialog(true)}
         >
-          <Trash2 className="h-4 w-4 mr-2" />
-          Delete
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
 
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle>Delete Recording</DialogTitle>
-            <DialogDescription>
+      {showDeleteDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-card p-6 rounded-lg border border-border shadow-lg max-w-sm">
+            <h3 className="font-semibold mb-2">Delete Recording</h3>
+            <p className="text-sm text-muted-foreground mb-4">
               Are you sure you want to delete this recording? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setShowDeleteDialog(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                onDelete(recording.id)
-                setShowDeleteDialog(false)
-              }}
-            >
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowDeleteDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  onDelete(recording.id)
+                  setShowDeleteDialog(false)
+                }}
+              >
+                Delete
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
+}
+
+class AudioPlayerErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { hasError: boolean; error?: Error }
+> {
+  constructor(props: { children: React.ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error }
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('AudioPlayer Error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-sm text-red-600">Audio player error occurred</p>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => this.setState({ hasError: false })}
+              className="mt-2"
+            >
+              Retry
+            </Button>
+          </CardContent>
+        </Card>
+      )
+    }
+
+    return this.props.children
+  }
 }

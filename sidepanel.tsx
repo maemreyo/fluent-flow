@@ -157,10 +157,8 @@ export default function FluentFlowSidePanel() {
               data: loop,
               isApplyingLoop: true
             })
-            console.log('FluentFlow: Loop applied successfully')
             setApplyingLoopId(null)
           } catch (error) {
-            console.log(`FluentFlow: Apply attempt ${attempts + 1} failed, retrying...`)
             setTimeout(() => applyWithRetry(attempts + 1), 2000)
           }
         }
