@@ -106,13 +106,14 @@ export function AudioPlayer({ recording, onDelete, onExport, base64ToBlob }: Flu
             showSkipControls={false}
             showDownloadProgress={false}
             showFilledProgress={true}
+            showFilledVolume={true}
+            preload="metadata"
             onPlay={() => console.log('FluentFlow: Audio playing')}
             onPause={() => console.log('FluentFlow: Audio paused')}
             onEnded={() => console.log('FluentFlow: Audio ended')}
             onError={(error: any) => console.error('FluentFlow: Audio error:', error)}
-            customAdditionalControls={[]}
-            customVolumeControls={[]}
-            layout="horizontal-reverse"
+            onLoadedData={() => console.log('FluentFlow: Audio loaded')}
+            layout="stacked-reverse"
             style={{
               backgroundColor: '#f9fafb',
               borderRadius: '8px',
