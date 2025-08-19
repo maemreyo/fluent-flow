@@ -270,11 +270,19 @@ export class UIUtilities {
     `
   }
 
+  public getNotesIcon(): string {
+    return `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M3 3v18h18V7.83L16.17 3H3zm15 16H6V5h9v4h3v10zm-2-6H8v-2h8v2zm0 2H8v2h8v-2z"/>
+      </svg>
+    `
+  }
+
   // Private utility methods
   private async waitForYouTubeControls(): Promise<HTMLElement> {
     return new Promise<HTMLElement>((resolve) => {
       const checkForControls = () => {
-        const controls = document.querySelector('.ytp-right-controls') as HTMLElement
+        const controls = document.querySelector('.ytp-left-controls') as HTMLElement
         if (controls) {
           resolve(controls)
         } else {
@@ -290,11 +298,6 @@ export class UIUtilities {
       const style = document.createElement('style')
       style.id = 'fluent-flow-styles'
       style.textContent = `
-        .ytp-right-controls {
-          display: flex !important;
-          align-items: center;
-        }
-        
         .fluent-flow-button {
           transition: all 0.2s ease;
         }

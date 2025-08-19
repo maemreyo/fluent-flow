@@ -8,10 +8,13 @@ import { RecordingFeature } from './features/recording'
 import { YouTubePlayerService, type VideoInfo } from './integrations/youtube-player'
 import { UIUtilities, type ButtonConfig } from './ui/utilities'
 
+import { TimeBasedNotesFeature } from './features/time-based-notes'
+
 export class FluentFlowOrchestrator {
   private loopFeature: LoopFeature
   private recordingFeature: RecordingFeature
   private comparisonFeature: ComparisonFeature
+  private timeBasedNotesFeature: TimeBasedNotesFeature
   private playerService: YouTubePlayerService
   private uiUtilities: UIUtilities
   private isApplyingLoop: boolean = false
@@ -25,6 +28,7 @@ export class FluentFlowOrchestrator {
     this.loopFeature = new LoopFeature(this.playerService, this.uiUtilities)
     this.recordingFeature = new RecordingFeature(this.uiUtilities)
     this.comparisonFeature = new ComparisonFeature(this.playerService, this.uiUtilities)
+    this.timeBasedNotesFeature = new TimeBasedNotesFeature(this.playerService, this.uiUtilities)
 
     // Start initialization
     this.initialize()
@@ -39,6 +43,9 @@ export class FluentFlowOrchestrator {
 
       // Setup YouTube integrations
       await this.setupYouTubeIntegrations()
+
+      // Initialize notes for current video
+      await this.timeBasedNotesFeature.initializeVideoNotes()
 
       // Setup UI components
       await this.setupUI()
@@ -117,14 +124,24 @@ export class FluentFlowOrchestrator {
         group: 'loop'
       },
       
-      // Other features group
+      // Recording and notes group
       {
         id: 'fluent-flow-record',
         title: 'Voice Recording (Alt+R)', 
         icon: this.uiUtilities.getRecordIcon(),
-        action: () => this.recordingFeature.toggleRecording(),
-        group: 'other'
+        action: () => this.toggleRecordingWithNotes(),
+        group: 'record'
       },
+      {
+        id: 'fluent-flow-notes',
+        title: 'Add Note (Alt+N)',
+        icon: this.uiUtilities.getNotesIcon(),
+        action: () => this.timeBasedNotesFeature.toggleNoteTakingMode(),
+        rightClick: () => this.timeBasedNotesFeature.showNotesOverlay(),
+        group: 'record'
+      },
+      
+      // Other features group
       {
         id: 'fluent-flow-compare',
         title: 'Audio Compare (Alt+C)',
@@ -172,7 +189,12 @@ export class FluentFlowOrchestrator {
           case 'r':
             event.preventDefault()
             event.stopPropagation()
-            this.recordingFeature.toggleRecording()
+            this.toggleRecordingWithNotes()
+            break
+          case 'n':
+            event.preventDefault()
+            event.stopPropagation()
+            this.timeBasedNotesFeature.toggleNoteTakingMode()
             break
           case 'c':
             event.preventDefault()
@@ -183,6 +205,11 @@ export class FluentFlowOrchestrator {
             event.preventDefault()
             event.stopPropagation()
             this.exportCurrentLoop()
+            break
+          case 'v':
+            event.preventDefault()
+            event.stopPropagation()
+            this.timeBasedNotesFeature.showNotesOverlay()
             break
         }
       }
@@ -205,7 +232,12 @@ export class FluentFlowOrchestrator {
           case 'r':
             event.preventDefault()
             event.stopPropagation()
-            this.recordingFeature.toggleRecording()
+            this.toggleRecordingWithNotes()
+            break
+          case 'n':
+            event.preventDefault()
+            event.stopPropagation()
+            this.timeBasedNotesFeature.toggleNoteTakingMode()
             break
         }
       }
@@ -234,6 +266,19 @@ export class FluentFlowOrchestrator {
             this.exportCurrentLoopWithPrompt()
             break
         }
+      }
+
+      // Notes shortcuts: Double-tap N for quick note
+      if (!useOptionKey && !event.shiftKey && !event.metaKey && !event.ctrlKey && event.key.toLowerCase() === 'n') {
+        // Detect double-tap N for quick note
+        const now = Date.now()
+        const lastNTap = (window as any)._ffLastNTap || 0
+        if (now - lastNTap < 500) {
+          event.preventDefault()
+          event.stopPropagation()
+          this.quickAddNote()
+        }
+        ;(window as any)._ffLastNTap = now
       }
     })
 
@@ -266,6 +311,21 @@ export class FluentFlowOrchestrator {
           sendResponse({ success: true })
           return true
 
+        case 'GET_NOTES':
+          sendResponse({
+            success: true,
+            notes: this.timeBasedNotesFeature.getCurrentVideoNotes()
+          })
+          return true
+
+        case 'EXPORT_NOTES':
+          const notesText = this.timeBasedNotesFeature.exportNotesToText()
+          sendResponse({
+            success: true,
+            notesText
+          })
+          return true
+
         default:
           return false
       }
@@ -275,8 +335,11 @@ export class FluentFlowOrchestrator {
   }
 
   private setupVideoChangeDetection(): void {
-    this.playerService.onVideoChange((videoInfo: VideoInfo) => {
+    this.playerService.onVideoChange(async (videoInfo: VideoInfo) => {
       console.log('FluentFlow: Video changed', videoInfo)
+      
+      // Handle notes session for video change
+      await this.timeBasedNotesFeature.onVideoChange()
       
       // Reset features for new video, but skip loop clearing if we're applying a loop
       if (!this.isApplyingLoop) {
@@ -290,6 +353,7 @@ export class FluentFlowOrchestrator {
       // Re-setup integrations after a delay
       setTimeout(async () => {
         await this.setupYouTubeIntegrations()
+        await this.timeBasedNotesFeature.initializeVideoNotes()
         await this.setupUI()
       }, 1000)
     })
@@ -313,11 +377,32 @@ export class FluentFlowOrchestrator {
     }
   }
 
+  // Enhanced recording with notes integration
+  private async toggleRecordingWithNotes(): Promise<void> {
+    if (this.recordingFeature.isRecording()) {
+      // Stop recording and notes session
+      await this.recordingFeature.stopRecording()
+      await this.timeBasedNotesFeature.endNotesSession()
+    } else {
+      // Start recording and notes session
+      this.timeBasedNotesFeature.startNotesSession()
+      await this.recordingFeature.startRecording()
+    }
+  }
+
+  private async quickAddNote(): Promise<void> {
+    const noteText = prompt('Quick note at current time:')
+    if (noteText && noteText.trim()) {
+      await this.timeBasedNotesFeature.addTimestampedNote(noteText.trim())
+    }
+  }
+
   private openSidePanel(): void {
     console.log('FluentFlow: Opening side panel')
     chrome.runtime.sendMessage({
       type: 'OPEN_SIDE_PANEL',
-      videoInfo: this.playerService.getVideoInfo()
+      videoInfo: this.playerService.getVideoInfo(),
+      notes: this.timeBasedNotesFeature.getCurrentVideoNotes()
     })
   }
 
@@ -351,6 +436,7 @@ export class FluentFlowOrchestrator {
     this.loopFeature.destroy()
     this.recordingFeature.destroy()
     this.comparisonFeature.destroy()
+    this.timeBasedNotesFeature.destroy()
 
     // Clean up UI elements
     const fluentFlowControls = document.querySelector('.fluent-flow-controls')

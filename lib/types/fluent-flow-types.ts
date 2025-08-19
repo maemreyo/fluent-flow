@@ -21,6 +21,47 @@ export interface SavedLoop {
   updatedAt: Date
 }
 
+// Time-based Notes Feature Types
+export interface TimestampedNote {
+  id: string
+  videoId: string
+  timestamp: number  // Video time in seconds
+  content: string   // Note text content
+  type: 'observation' | 'question' | 'vocabulary' | 'grammar' | 'pronunciation'
+  tags?: string[]   // Optional tags for categorization
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface RecordingSession {
+  id: string
+  videoId: string
+  videoTitle: string
+  videoUrl: string
+  audioBlob?: Blob
+  duration: number
+  notes: TimestampedNote[]  // Notes taken during this session
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface NoteCategory {
+  id: string
+  name: string
+  color: string
+  icon: string
+}
+
+export interface VideoNotes {
+  videoId: string
+  videoTitle: string
+  videoUrl: string
+  totalNotes: number
+  sessions: RecordingSession[]
+  allNotes: TimestampedNote[]  // Aggregated notes from all sessions
+  lastUpdated: Date
+}
+
 export interface AudioRecording {
   id: string
   segmentId?: string
