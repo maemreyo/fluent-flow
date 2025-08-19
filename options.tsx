@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from "react"
 import type { UserPreferences, ApiConfig } from "./lib/types"
+import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
 import { Button } from "./components/ui/button"
 import { Input } from "./components/ui/input"
@@ -26,13 +27,25 @@ import {
   ExternalLink,
   Info,
   Zap,
-  Database
+  Database,
+  TrendingUp,
+  Activity,
+  Eye,
+  PlayCircle,
+  Volume2,
+  Headphones
 } from "lucide-react"
 
 import "./styles/options.css"
 
 export default function OptionsPage() {
   const [activeTab, setActiveTab] = useState('general')
+  
+  const {
+    statistics,
+    settings: fluentFlowSettings,
+    updateSettings: updateFluentFlowSettings
+  } = useFluentFlowStore()
   const [preferences, setPreferences] = useState<UserPreferences>({
     theme: 'light',
     notifications: true,
@@ -159,7 +172,7 @@ export default function OptionsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="general" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               General
@@ -167,6 +180,14 @@ export default function OptionsPage() {
             <TabsTrigger value="api" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               API
+            </TabsTrigger>
+            <TabsTrigger value="fluent-settings" className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              FluentFlow
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Analytics
             </TabsTrigger>
             <TabsTrigger value="advanced" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />

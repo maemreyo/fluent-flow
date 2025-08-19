@@ -4,21 +4,15 @@ import {
   Calendar,
   Clock,
   Download,
-  Eye,
   FileAudio,
-  Headphones,
   Loader2,
   Mic,
   Music,
   Play,
-  PlayCircle,
   RefreshCw,
   Repeat,
-  Settings,
   Target,
-  Trash2,
-  TrendingUp,
-  Volume2
+  Trash2
 } from "lucide-react"
 import { useEffect, useState } from "react"
 import { AudioPlayer } from "./components/audio-player"
@@ -35,7 +29,7 @@ import "./styles/react-h5-audio-player.css"
 import "./styles/sidepanel.css"
 
 export default function FluentFlowSidePanel() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'analytics' | 'settings'>('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings'>('dashboard')
   const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
   const [loadingLoops, setLoadingLoops] = useState(false)
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
@@ -364,10 +358,10 @@ export default function FluentFlowSidePanel() {
           <Button 
             className="w-full justify-start"
             variant="outline"
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => chrome.runtime.openOptionsPage()}
           >
             <BarChart3 className="h-4 w-4 mr-2" />
-            View Analytics
+            View Analytics & Settings
           </Button>
         </CardContent>
       </Card>
@@ -557,210 +551,6 @@ export default function FluentFlowSidePanel() {
     </div>
   )
 
-  const renderAnalytics = () => (
-    <div className="space-y-6">
-      <div className="grid gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5" />
-              Weekly Progress
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-end justify-between h-32 gap-2">
-              {statistics.weeklyProgress.slice(-7).map(day => (
-                <div key={day.date} className="flex flex-col items-center flex-1">
-                  <div className="bg-blue-500 rounded-t" style={{ 
-                    height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%`,
-                    minHeight: '4px',
-                    width: '100%'
-                  }}></div>
-                  <span className="text-xs text-muted-foreground mt-2">{day.date.slice(-2)}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" />
-              Most Practiced Videos
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {statistics.mostPracticedVideos.slice(0, 5).map(video => (
-              <div key={video.videoId} className="flex items-center gap-3 p-2 rounded-lg border">
-                <PlayCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{video.title}</p>
-                  <p className="text-xs text-muted-foreground truncate">{video.channel}</p>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Activity className="h-5 w-5" />
-              Practice Streaks
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 rounded-lg bg-green-50 border-green-200 border">
-                <div className="text-2xl font-bold text-green-600">7</div>
-                <div className="text-sm text-green-700">Day Streak</div>
-              </div>
-              <div className="text-center p-4 rounded-lg bg-blue-50 border-blue-200 border">
-                <div className="text-2xl font-bold text-blue-600">21</div>
-                <div className="text-sm text-blue-700">Best Streak</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
-
-  const renderSettings = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Volume2 className="h-5 w-5" />
-            Audio Settings
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Recording Quality</label>
-            <select 
-              className="w-full p-2 border rounded-md bg-background"
-              value={settings.audioQuality}
-              onChange={(e) => updateSettings({ audioQuality: e.target.value as 'low' | 'medium' | 'high' })}
-            >
-              <option value="low">Low (32kbps)</option>
-              <option value="medium">Medium (64kbps)</option>
-              <option value="high">High (128kbps)</option>
-            </select>
-          </div>
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Max Recording Duration</label>
-            <select
-              className="w-full p-2 border rounded-md bg-background"
-              value={settings.maxRecordingDuration}
-              onChange={(e) => updateSettings({ maxRecordingDuration: parseInt(e.target.value) })}
-            >
-              <option value="60">1 minute</option>
-              <option value="180">3 minutes</option>
-              <option value="300">5 minutes</option>
-              <option value="600">10 minutes</option>
-            </select>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Eye className="h-5 w-5" />
-            UI Preferences
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="space-y-2">
-            <label className="text-sm font-medium">Panel Position</label>
-            <select
-              className="w-full p-2 border rounded-md bg-background"
-              value={settings.panelPosition}
-              onChange={(e) => updateSettings({ panelPosition: e.target.value as any })}
-            >
-              <option value="top-right">Top Right</option>
-              <option value="top-left">Top Left</option>
-              <option value="bottom-right">Bottom Right</option>
-              <option value="bottom-left">Bottom Left</option>
-            </select>
-          </div>
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="autoSave"
-              className="rounded border border-input"
-              checked={settings.autoSaveRecordings}
-              onChange={(e) => updateSettings({ autoSaveRecordings: e.target.checked })}
-            />
-            <label htmlFor="autoSave" className="text-sm font-medium cursor-pointer">Auto-save recordings</label>
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="visualFeedback"
-              className="rounded border border-input"
-              checked={settings.showVisualFeedback}
-              onChange={(e) => updateSettings({ showVisualFeedback: e.target.checked })}
-            />
-            <label htmlFor="visualFeedback" className="text-sm font-medium cursor-pointer">Show visual feedback</label>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Headphones className="h-5 w-5" />
-            Keyboard Shortcuts
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Set Loop Points</span>
-            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.toggleLoop}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Start/Stop Recording</span>
-            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.toggleRecording}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Compare Audio</span>
-            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.compareAudio}</Badge>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm">Toggle Panel</span>
-            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.togglePanel}</Badge>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Download className="h-5 w-5" />
-            Data Management
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button variant="outline" className="w-full justify-start">
-            <Download className="h-4 w-4 mr-2" />
-            Export All Data
-          </Button>
-          <Button variant="outline" className="w-full justify-start">
-            <Download className="h-4 w-4 mr-2" />
-            Import Data
-          </Button>
-          <Button variant="destructive" className="w-full justify-start">
-            <Trash2 className="h-4 w-4 mr-2" />
-            Clear All Data
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
-  )
 
   return (
     <div className="h-full bg-background">
@@ -770,26 +560,18 @@ export default function FluentFlowSidePanel() {
       </div>
 
       <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1">
-        <TabsList className="grid w-full grid-cols-5 m-4">
+        <TabsList className="grid w-full grid-cols-3 m-4">
           <TabsTrigger value="dashboard" className="text-xs">
             <BarChart3 className="h-4 w-4 mr-1" />
             Dashboard
           </TabsTrigger>
           <TabsTrigger value="loops" className="text-xs">
             <Repeat className="h-4 w-4 mr-1" />
-            Loops
+            Loop
           </TabsTrigger>
           <TabsTrigger value="recordings" className="text-xs">
             <Music className="h-4 w-4 mr-1" />
             Records
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="text-xs">
-            <TrendingUp className="h-4 w-4 mr-1" />
-            Analytics
-          </TabsTrigger>
-          <TabsTrigger value="settings" className="text-xs">
-            <Settings className="h-4 w-4 mr-1" />
-            Settings
           </TabsTrigger>
         </TabsList>
 
@@ -797,8 +579,6 @@ export default function FluentFlowSidePanel() {
           <TabsContent value="dashboard" className="mt-0">{renderDashboard()}</TabsContent>
           <TabsContent value="loops" className="mt-0">{renderLoops()}</TabsContent>
           <TabsContent value="recordings" className="mt-0">{renderRecordings()}</TabsContent>
-          <TabsContent value="analytics" className="mt-0">{renderAnalytics()}</TabsContent>
-          <TabsContent value="settings" className="mt-0">{renderSettings()}</TabsContent>
         </div>
       </Tabs>
     </div>
