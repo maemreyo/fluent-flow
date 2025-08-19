@@ -14,6 +14,7 @@ import type {
   PracticeSession,
   AudioRecording,
   LoopSegment,
+  SavedLoop,
   PracticeStatistics
 } from '../types/fluent-flow-types'
 
@@ -246,6 +247,177 @@ const supabaseService = {
     }
 
     return data.id
+  },
+
+  async getAllUserLoops(userId: string): Promise<SavedLoop[]> {
+    const { data: sessions, error } = await supabase
+      .from('practice_sessions')
+      .select(`
+        id,
+        video_id,
+        video_title,
+        video_url,
+        metadata,
+        created_at,
+        updated_at,
+        loop_segments (
+          id,
+          start_time,
+          end_time,
+          label,
+          description,
+          created_at,
+          updated_at
+        )
+      `)
+      .eq('user_id', userId)
+      .not('metadata->savedLoop', 'is', null)
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error loading user loops:', error)
+      throw error
+    }
+
+    // Convert Supabase data to SavedLoop format
+    const savedLoops: SavedLoop[] = []
+    
+    sessions?.forEach(session => {
+      const loopMetadata = session.metadata as any
+      const segment = session.loop_segments?.[0] // Get first segment
+
+      if (loopMetadata?.savedLoop && segment) {
+        const savedLoop: SavedLoop = {
+          id: loopMetadata.savedLoop.id,
+          title: segment.label || loopMetadata.savedLoop.title || 'Untitled Loop',
+          videoId: session.video_id,
+          videoTitle: session.video_title,
+          videoUrl: session.video_url,
+          startTime: segment.start_time,
+          endTime: segment.end_time,
+          description: segment.description || loopMetadata.savedLoop.description,
+          createdAt: new Date(loopMetadata.savedLoop.createdAt || session.created_at),
+          updatedAt: new Date(loopMetadata.savedLoop.updatedAt || session.updated_at)
+        }
+        savedLoops.push(savedLoop)
+      }
+    })
+
+    return savedLoops
+  },
+
+  async deleteLoop(userId: string, loopId: string): Promise<boolean> {
+    const { data: sessions, error: selectError } = await supabase
+      .from('practice_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('metadata->savedLoop->>id', loopId)
+
+    if (selectError) {
+      console.error('Error finding loop to delete:', selectError)
+      throw selectError
+    }
+
+    if (!sessions || sessions.length === 0) {
+      return false // Loop not found
+    }
+
+    // Delete the practice session (this will cascade delete loop_segments)
+    const { error: deleteError } = await supabase
+      .from('practice_sessions')
+      .delete()
+      .eq('id', sessions[0].id)
+
+    if (deleteError) {
+      console.error('Error deleting loop:', deleteError)
+      throw deleteError
+    }
+
+    return true
+  },
+
+  async saveLoop(userId: string, loop: SavedLoop): Promise<string> {
+    // Save to Supabase: create or update practice session with loop segment
+    const sessionData = {
+      user_id: userId,
+      video_id: loop.videoId,
+      video_title: loop.videoTitle,
+      video_url: loop.videoUrl,
+      metadata: {
+        savedLoop: {
+          id: loop.id,
+          title: loop.title,
+          description: loop.description,
+          createdAt: loop.createdAt,
+          updatedAt: loop.updatedAt
+        }
+      }
+    }
+
+    // Check if session already exists for this video and user
+    const { data: existingSessions } = await supabase
+      .from('practice_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('video_id', loop.videoId)
+      .eq('metadata->savedLoop->>id', loop.id)
+
+    let sessionId: string
+
+    if (existingSessions && existingSessions.length > 0) {
+      // Update existing session
+      sessionId = existingSessions[0].id
+      await supabase
+        .from('practice_sessions')
+        .update({
+          ...sessionData,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sessionId)
+    } else {
+      // Create new session
+      const { data: newSession, error: sessionError } = await supabase
+        .from('practice_sessions')
+        .insert(sessionData)
+        .select('id')
+        .single()
+
+      if (sessionError) throw sessionError
+      sessionId = newSession.id
+    }
+
+    // Create or update loop segment
+    const { data: existingSegments } = await supabase
+      .from('loop_segments')
+      .select('id')
+      .eq('session_id', sessionId)
+
+    if (existingSegments && existingSegments.length > 0) {
+      // Update existing segment
+      await supabase
+        .from('loop_segments')
+        .update({
+          start_time: loop.startTime,
+          end_time: loop.endTime,
+          label: loop.title,
+          description: loop.description,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', existingSegments[0].id)
+    } else {
+      // Create new segment
+      await supabase
+        .from('loop_segments')
+        .insert({
+          session_id: sessionId,
+          start_time: loop.startTime,
+          end_time: loop.endTime,
+          label: loop.title,
+          description: loop.description
+        })
+    }
+
+    return sessionId
   },
 
   async saveRecording(sessionId: string, recording: AudioRecording, segmentId?: string): Promise<string> {
@@ -691,7 +863,52 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
         } catch (error) {
           console.error('Failed to save session:', error)
         }
-      }
+      },
+
+      getAllUserLoops: async (): Promise<SavedLoop[]> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return []
+          }
+          
+          return await supabaseService.getAllUserLoops(user.id)
+        } catch (error) {
+          console.error('Failed to load user loops:', error)
+          return []
+        }
+      },
+
+      deleteLoop: async (loopId: string): Promise<boolean> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return false
+          }
+          
+          return await supabaseService.deleteLoop(user.id, loopId)
+        } catch (error) {
+          console.error('Failed to delete loop:', error)
+          return false
+        }
+      },
+
+      saveLoop: async (loop: SavedLoop): Promise<string | null> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return null
+          }
+          
+          return await supabaseService.saveLoop(user.id, loop)
+        } catch (error) {
+          console.error('Failed to save loop:', error)
+          return null
+        }
+      },
     }),
     {
       name: 'fluent-flow-supabase-storage',

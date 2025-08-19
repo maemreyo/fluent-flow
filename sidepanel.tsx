@@ -45,7 +45,9 @@ export default function FluentFlowSidePanel() {
     allSessions,
     statistics,
     currentSession,
-    currentVideo
+    currentVideo,
+    getAllUserLoops,
+    deleteLoop: deleteLoopFromStore
   } = useFluentFlowStore()
 
   // Load saved loops and recordings on component mount
@@ -69,15 +71,9 @@ export default function FluentFlowSidePanel() {
   const loadSavedLoops = async () => {
     setLoadingLoops(true)
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'LIST_LOOPS'
-      })
-      
-      if (response.success) {
-        setSavedLoops(response.data)
-      } else {
-        console.error('Failed to load loops:', response.error)
-      }
+      // Use Supabase store instead of chrome.runtime.sendMessage
+      const loops = await getAllUserLoops()
+      setSavedLoops(loops)
     } catch (error) {
       console.error('Error loading loops:', error)
     } finally {
@@ -118,15 +114,13 @@ export default function FluentFlowSidePanel() {
 
   const deleteLoop = async (loopId: string) => {
     try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'DELETE_LOOP',
-        data: { id: loopId }
-      })
+      // Use Supabase store instead of chrome.runtime.sendMessage
+      const success = await deleteLoopFromStore(loopId)
       
-      if (response.success) {
+      if (success) {
         setSavedLoops(loops => loops.filter(loop => loop.id !== loopId))
       } else {
-        console.error('Failed to delete loop:', response.error)
+        console.error('Failed to delete loop: Loop not found or user not authenticated')
       }
     } catch (error) {
       console.error('Error deleting loop:', error)

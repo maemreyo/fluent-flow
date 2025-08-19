@@ -224,6 +224,9 @@ export interface FluentFlowStore {
   updateSettings: (settings: Partial<FluentFlowSettings>) => void
   loadSession: (videoId: string) => Promise<PracticeSession | null>
   saveSession: () => Promise<void>
+  getAllUserLoops: () => Promise<SavedLoop[]>
+  deleteLoop: (loopId: string) => Promise<boolean>
+  saveLoop: (loop: SavedLoop) => Promise<string | null>
 }
 
 export interface IndexedDBSchema {
