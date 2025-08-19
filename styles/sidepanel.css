@@ -1,5 +1,8 @@
 /* FluentFlow Sidepanel Styles - Practice Management Hub */
 
+
+
+/* FluentFlow specific variables */
 :root {
   --fluent-primary: #3b82f6;
   --fluent-primary-hover: #2563eb;
@@ -9,10 +12,8 @@
   --fluent-warning: #f59e0b;
   --fluent-accent: #8b5cf6;
   
-  --background: #ffffff;
   --surface: #f8fafc;
   --surface-elevated: #ffffff;
-  --border: #e2e8f0;
   --text-primary: #1e293b;
   --text-secondary: #64748b;
   --text-muted: #94a3b8;

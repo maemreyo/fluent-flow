@@ -1,15 +1,46 @@
+import {
+  Activity,
+  BarChart3,
+  Calendar,
+  Clock,
+  Download,
+  Eye,
+  FileAudio,
+  Headphones,
+  Loader2,
+  Mic,
+  Music,
+  Play,
+  PlayCircle,
+  RefreshCw,
+  Repeat,
+  Settings,
+  Target,
+  Trash2,
+  TrendingUp,
+  Volume2
+} from "lucide-react"
 import { useEffect, useState } from "react"
+import { AudioPlayer } from "./components/audio-player"
+import { Badge } from "./components/ui/badge"
+import { Button } from "./components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
 import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
 import type {
-  AudioRecording,
-  PracticeSession,
   SavedLoop
 } from "./lib/types/fluent-flow-types"
-import { AudioPlayer } from "./components/audio-player"
 
-import '../styles/globals.css';
-import "./styles/sidepanel.css"
 import "./styles/react-h5-audio-player.css"
+import "./styles/sidepanel.css"
+import globalCssText from "data-text:~styles/globals.css"
+
+export const getStyle = () => {
+  const style = document.createElement("style")
+  // Replace :root with :host for Shadow DOM compatibility
+  style.textContent = globalCssText.replace(/:root/g, ":host")
+  return style
+}
 
 export default function FluentFlowSidePanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'analytics' | 'settings'>('dashboard')
@@ -226,111 +257,188 @@ export default function FluentFlowSidePanel() {
   }
 
   const renderDashboard = () => (
-    <div className="sidepanel-dashboard">
-      <div className="dashboard-header">
-        <h2>Practice Dashboard</h2>
-        {currentVideo && (
-          <div className="current-video-banner">
-            <div className="video-indicator">🔴 Currently Practicing</div>
-            <div className="video-title">{currentVideo.title}</div>
-            <div className="video-channel">{currentVideo.channel}</div>
-          </div>
-        )}
+    <div className="space-y-6">
+      {currentVideo && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
+              <CardTitle className="text-sm">Currently Practicing</CardTitle>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <p className="font-medium text-sm">{currentVideo.title}</p>
+              <p className="text-xs text-muted-foreground">{currentVideo.channel}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Activity className="h-4 w-4 text-blue-500" />
+              <CardDescription className="text-xs">Total Sessions</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{statistics.totalSessions}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-green-500" />
+              <CardDescription className="text-xs">Practice Time</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatTime(statistics.totalPracticeTime)}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Mic className="h-4 w-4 text-purple-500" />
+              <CardDescription className="text-xs">Recordings</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{statistics.totalRecordings}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4 text-orange-500" />
+              <CardDescription className="text-xs">Avg Session</CardDescription>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-xl font-bold">{formatTime(statistics.averageSessionDuration)}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="stats-overview">
-        <div className="stat-card">
-          <div className="stat-value">{statistics.totalSessions}</div>
-          <div className="stat-label">Total Sessions</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{formatTime(statistics.totalPracticeTime)}</div>
-          <div className="stat-label">Practice Time</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{statistics.totalRecordings}</div>
-          <div className="stat-label">Recordings</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-value">{formatTime(statistics.averageSessionDuration)}</div>
-          <div className="stat-label">Avg Session</div>
-        </div>
-      </div>
-
-      <div className="recent-sessions">
-        <h3>Recent Practice Sessions</h3>
-        {allSessions.slice(0, 5).map(session => (
-          <div 
-            key={session.id} 
-            className={`session-item ${currentSession?.id === session.id ? 'active' : ''}`}
-            onClick={() => {}}
-          >
-            <div className="session-video">
-              <div className="session-title">{session.videoTitle}</div>
-              <div className="session-meta">
-                {formatDate(session.createdAt)} • {session.segments.length} segments • {session.recordings.length} recordings
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Recent Practice Sessions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {allSessions.slice(0, 5).map(session => (
+            <div 
+              key={session.id} 
+              className={`flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-muted/50 ${
+                currentSession?.id === session.id ? 'bg-blue-50 border-blue-200' : ''
+              }`}
+              onClick={() => {}}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{session.videoTitle}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                  <span>{formatDate(session.createdAt)}</span>
+                  <span>•</span>
+                  <span>{session.segments.length} segments</span>
+                  <span>•</span>
+                  <span>{session.recordings.length} recordings</span>
+                </div>
               </div>
+              <Badge variant="secondary" className="text-xs">
+                {formatTime(session.totalPracticeTime)}
+              </Badge>
             </div>
-            <div className="session-stats">
-              <div className="practice-time">{formatTime(session.totalPracticeTime)}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </CardContent>
+      </Card>
 
-      <div className="quick-actions">
-        <h3>Quick Actions</h3>
-        <div className="action-buttons">
-          <button 
-            className="action-btn primary"
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Quick Actions</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button 
+            className="w-full justify-start"
+            variant="outline"
             onClick={() => setActiveTab('recordings')}
           >
-            📚 View All Recordings
-          </button>
-          <button 
-            className="action-btn secondary"
+            <FileAudio className="h-4 w-4 mr-2" />
+            View All Recordings
+          </Button>
+          <Button 
+            className="w-full justify-start"
+            variant="outline"
             onClick={() => setActiveTab('analytics')}
           >
-            📊 View Analytics
-          </button>
-        </div>
-      </div>
+            <BarChart3 className="h-4 w-4 mr-2" />
+            View Analytics
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 
   const renderRecordings = () => (
-    <div className="sidepanel-recordings">
-      <div className="recordings-header">
-        <h2>Recording Library</h2>
-        <div className="recordings-stats">
-          {savedRecordings.length} saved recordings
-        </div>
-        <button 
-          className="action-btn secondary"
-          onClick={loadSavedRecordings}
-          disabled={loadingRecordings}
-        >
-          {loadingRecordings ? '⟳ Loading...' : '🔄 Refresh'}
-        </button>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <FileAudio className="h-5 w-5" />
+                Recording Library
+              </CardTitle>
+              <CardDescription>
+                {savedRecordings.length} saved recordings
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={loadSavedRecordings}
+              disabled={loadingRecordings}
+            >
+              {loadingRecordings ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {loadingRecordings ? 'Loading...' : 'Refresh'}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
-      <div className="recordings-list">
+      <div className="space-y-4">
         {loadingRecordings && (
-          <div className="loading-state">Loading recordings...</div>
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading recordings...</span>
+              </div>
+            </CardContent>
+          </Card>
         )}
         
         {!loadingRecordings && savedRecordings.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">🎵</div>
-            <div className="empty-title">No recordings saved yet</div>
-            <div className="empty-description">
-              Record audio on YouTube videos to save them here for practice
-            </div>
-          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Music className="h-12 w-12 text-muted-foreground mb-4" />
+              <CardTitle className="text-lg mb-2">No recordings saved yet</CardTitle>
+              <CardDescription>
+                Record audio on YouTube videos to save them here for practice
+              </CardDescription>
+            </CardContent>
+          </Card>
         )}
 
         {!loadingRecordings && savedRecordings.map(recording => (
-          <div key={recording.id} className="mb-4">
+          <div key={recording.id}>
             <AudioPlayer
               recording={recording}
               onDelete={deleteRecording}
@@ -344,282 +452,363 @@ export default function FluentFlowSidePanel() {
   )
 
   const renderLoops = () => (
-    <div className="sidepanel-loops">
-      <div className="loops-header">
-        <h2>Saved Loops</h2>
-        <div className="loops-stats">
-          {savedLoops.length} saved loops
-        </div>
-        <button 
-          className="action-btn secondary"
-          onClick={loadSavedLoops}
-          disabled={loadingLoops}
-        >
-          {loadingLoops ? '⟳ Loading...' : '🔄 Refresh'}
-        </button>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Repeat className="h-5 w-5" />
+                Saved Loops
+              </CardTitle>
+              <CardDescription>
+                {savedLoops.length} saved loops
+              </CardDescription>
+            </div>
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={loadSavedLoops}
+              disabled={loadingLoops}
+            >
+              {loadingLoops ? (
+                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+              ) : (
+                <RefreshCw className="h-4 w-4 mr-2" />
+              )}
+              {loadingLoops ? 'Loading...' : 'Refresh'}
+            </Button>
+          </div>
+        </CardHeader>
+      </Card>
 
-      <div className="loops-list">
+      <div className="space-y-4">
         {loadingLoops && (
-          <div className="loading-state">Loading loops...</div>
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Loading loops...</span>
+              </div>
+            </CardContent>
+          </Card>
         )}
         
         {!loadingLoops && savedLoops.length === 0 && (
-          <div className="empty-state">
-            <div className="empty-icon">🔁</div>
-            <div className="empty-title">No loops saved yet</div>
-            <div className="empty-description">
-              Create loops on YouTube videos to save them here for later use
-            </div>
-          </div>
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Repeat className="h-12 w-12 text-muted-foreground mb-4" />
+              <CardTitle className="text-lg mb-2">No loops saved yet</CardTitle>
+              <CardDescription>
+                Create loops on YouTube videos to save them here for later use
+              </CardDescription>
+            </CardContent>
+          </Card>
         )}
 
         {!loadingLoops && savedLoops.map(loop => (
-          <div key={loop.id} className="loop-item">
-            <div className="loop-info">
-              <div className="loop-title">{loop.title}</div>
-              <div className="loop-video">{loop.videoTitle}</div>
-              <div className="loop-time">
-                {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
-                {' '} • Duration: {formatTime(loop.endTime - loop.startTime)}
+          <Card key={loop.id}>
+            <CardHeader>
+              <div className="flex items-start justify-between">
+                <div className="space-y-1 flex-1">
+                  <CardTitle className="text-base">{loop.title}</CardTitle>
+                  <CardDescription className="text-sm">{loop.videoTitle}</CardDescription>
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Clock className="h-3 w-3" />
+                    <span>{formatTime(loop.startTime)} - {formatTime(loop.endTime)}</span>
+                    <span>•</span>
+                    <span>Duration: {formatTime(loop.endTime - loop.startTime)}</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    Created: {formatDate(new Date(loop.createdAt))}
+                  </div>
+                  {loop.description && (
+                    <p className="text-sm text-muted-foreground mt-2">{loop.description}</p>
+                  )}
+                </div>
               </div>
-              <div className="loop-meta">
-                Created: {formatDate(new Date(loop.createdAt))}
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="flex gap-2">
+                <Button 
+                  size="sm"
+                  onClick={() => applyLoop(loop)}
+                  disabled={applyingLoopId === loop.id}
+                  className="flex-1"
+                >
+                  {applyingLoopId === loop.id ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <Play className="h-4 w-4 mr-2" />
+                  )}
+                  {applyingLoopId === loop.id ? 'Applying...' : 'Apply'}
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="outline"
+                  onClick={() => exportLoop(loop)}
+                >
+                  <Download className="h-4 w-4" />
+                </Button>
+                <Button 
+                  size="sm"
+                  variant="destructive"
+                  onClick={() => deleteLoop(loop.id)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
-              {loop.description && (
-                <div className="loop-description">{loop.description}</div>
-              )}
-            </div>
-            
-            <div className="loop-controls">
-              <button 
-                className="control-btn primary"
-                onClick={() => applyLoop(loop)}
-                disabled={applyingLoopId === loop.id}
-                title={applyingLoopId === loop.id ? "Applying loop..." : "Apply this loop"}
-              >
-                {applyingLoopId === loop.id ? '⟳ Applying...' : '▶️ Apply'}
-              </button>
-              <button 
-                className="control-btn"
-                onClick={() => exportLoop(loop)}
-                title="Export loop as JSON"
-              >
-                💾 Export
-              </button>
-              <button 
-                className="control-btn danger"
-                onClick={() => deleteLoop(loop.id)}
-                title="Delete loop"
-              >
-                🗑️ Delete
-              </button>
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         ))}
       </div>
     </div>
   )
 
   const renderAnalytics = () => (
-    <div className="sidepanel-analytics">
-      <h2>Practice Analytics</h2>
-      
-      <div className="analytics-cards">
-        <div className="analytics-card">
-          <h3>Weekly Progress</h3>
-          <div className="progress-chart">
-            {statistics.weeklyProgress.slice(-7).map(day => (
-              <div key={day.date} className="progress-bar">
-                <div 
-                  className="progress-fill"
-                  style={{ height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%` }}
-                ></div>
-                <div className="progress-label">{day.date.slice(-2)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div className="grid gap-4">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="h-5 w-5" />
+              Weekly Progress
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end justify-between h-32 gap-2">
+              {statistics.weeklyProgress.slice(-7).map(day => (
+                <div key={day.date} className="flex flex-col items-center flex-1">
+                  <div className="bg-blue-500 rounded-t" style={{ 
+                    height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%`,
+                    minHeight: '4px',
+                    width: '100%'
+                  }}></div>
+                  <span className="text-xs text-muted-foreground mt-2">{day.date.slice(-2)}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
-        <div className="analytics-card">
-          <h3>Most Practiced Videos</h3>
-          <div className="top-videos">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" />
+              Most Practiced Videos
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
             {statistics.mostPracticedVideos.slice(0, 5).map(video => (
-              <div key={video.videoId} className="video-rank">
-                <div className="video-info">
-                  <div className="video-title">{video.title}</div>
-                  <div className="video-channel">{video.channel}</div>
+              <div key={video.videoId} className="flex items-center gap-3 p-2 rounded-lg border">
+                <PlayCircle className="h-4 w-4 text-blue-500 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{video.title}</p>
+                  <p className="text-xs text-muted-foreground truncate">{video.channel}</p>
                 </div>
               </div>
             ))}
-          </div>
-        </div>
+          </CardContent>
+        </Card>
 
-        <div className="analytics-card">
-          <h3>Practice Streaks</h3>
-          <div className="streak-info">
-            <div className="streak-current">
-              <div className="streak-number">7</div>
-              <div className="streak-label">Day Streak</div>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Activity className="h-5 w-5" />
+              Practice Streaks
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 rounded-lg bg-green-50 border-green-200 border">
+                <div className="text-2xl font-bold text-green-600">7</div>
+                <div className="text-sm text-green-700">Day Streak</div>
+              </div>
+              <div className="text-center p-4 rounded-lg bg-blue-50 border-blue-200 border">
+                <div className="text-2xl font-bold text-blue-600">21</div>
+                <div className="text-sm text-blue-700">Best Streak</div>
+              </div>
             </div>
-            <div className="streak-best">
-              <div className="streak-number">21</div>
-              <div className="streak-label">Best Streak</div>
-            </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )
 
   const renderSettings = () => (
-    <div className="sidepanel-settings">
-      <h2>Settings</h2>
-      
-      <div className="settings-section">
-        <h3>Audio Settings</h3>
-        <div className="setting-item">
-          <label>Recording Quality</label>
-          <select 
-            value={settings.audioQuality}
-            onChange={(e) => updateSettings({ audioQuality: e.target.value as 'low' | 'medium' | 'high' })}
-          >
-            <option value="low">Low (32kbps)</option>
-            <option value="medium">Medium (64kbps)</option>
-            <option value="high">High (128kbps)</option>
-          </select>
-        </div>
-        
-        <div className="setting-item">
-          <label>Max Recording Duration</label>
-          <select
-            value={settings.maxRecordingDuration}
-            onChange={(e) => updateSettings({ maxRecordingDuration: parseInt(e.target.value) })}
-          >
-            <option value="60">1 minute</option>
-            <option value="180">3 minutes</option>
-            <option value="300">5 minutes</option>
-            <option value="600">10 minutes</option>
-          </select>
-        </div>
-      </div>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Volume2 className="h-5 w-5" />
+            Audio Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Recording Quality</label>
+            <select 
+              className="w-full p-2 border rounded-md bg-background"
+              value={settings.audioQuality}
+              onChange={(e) => updateSettings({ audioQuality: e.target.value as 'low' | 'medium' | 'high' })}
+            >
+              <option value="low">Low (32kbps)</option>
+              <option value="medium">Medium (64kbps)</option>
+              <option value="high">High (128kbps)</option>
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Max Recording Duration</label>
+            <select
+              className="w-full p-2 border rounded-md bg-background"
+              value={settings.maxRecordingDuration}
+              onChange={(e) => updateSettings({ maxRecordingDuration: parseInt(e.target.value) })}
+            >
+              <option value="60">1 minute</option>
+              <option value="180">3 minutes</option>
+              <option value="300">5 minutes</option>
+              <option value="600">10 minutes</option>
+            </select>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="settings-section">
-        <h3>UI Preferences</h3>
-        <div className="setting-item">
-          <label>Panel Position</label>
-          <select
-            value={settings.panelPosition}
-            onChange={(e) => updateSettings({ panelPosition: e.target.value as any })}
-          >
-            <option value="top-right">Top Right</option>
-            <option value="top-left">Top Left</option>
-            <option value="bottom-right">Bottom Right</option>
-            <option value="bottom-left">Bottom Left</option>
-          </select>
-        </div>
-        
-        <div className="setting-item checkbox">
-          <input
-            type="checkbox"
-            id="autoSave"
-            checked={settings.autoSaveRecordings}
-            onChange={(e) => updateSettings({ autoSaveRecordings: e.target.checked })}
-          />
-          <label htmlFor="autoSave">Auto-save recordings</label>
-        </div>
-        
-        <div className="setting-item checkbox">
-          <input
-            type="checkbox"
-            id="visualFeedback"
-            checked={settings.showVisualFeedback}
-            onChange={(e) => updateSettings({ showVisualFeedback: e.target.checked })}
-          />
-          <label htmlFor="visualFeedback">Show visual feedback</label>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Eye className="h-5 w-5" />
+            UI Preferences
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-sm font-medium">Panel Position</label>
+            <select
+              className="w-full p-2 border rounded-md bg-background"
+              value={settings.panelPosition}
+              onChange={(e) => updateSettings({ panelPosition: e.target.value as any })}
+            >
+              <option value="top-right">Top Right</option>
+              <option value="top-left">Top Left</option>
+              <option value="bottom-right">Bottom Right</option>
+              <option value="bottom-left">Bottom Left</option>
+            </select>
+          </div>
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="autoSave"
+              className="rounded border border-input"
+              checked={settings.autoSaveRecordings}
+              onChange={(e) => updateSettings({ autoSaveRecordings: e.target.checked })}
+            />
+            <label htmlFor="autoSave" className="text-sm font-medium cursor-pointer">Auto-save recordings</label>
+          </div>
+          
+          <div className="flex items-center space-x-2">
+            <input
+              type="checkbox"
+              id="visualFeedback"
+              className="rounded border border-input"
+              checked={settings.showVisualFeedback}
+              onChange={(e) => updateSettings({ showVisualFeedback: e.target.checked })}
+            />
+            <label htmlFor="visualFeedback" className="text-sm font-medium cursor-pointer">Show visual feedback</label>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="settings-section">
-        <h3>Keyboard Shortcuts</h3>
-        <div className="shortcuts-list">
-          <div className="shortcut-item">
-            <span>Set Loop Points</span>
-            <kbd>{settings.keyboardShortcuts.toggleLoop}</kbd>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Headphones className="h-5 w-5" />
+            Keyboard Shortcuts
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Set Loop Points</span>
+            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.toggleLoop}</Badge>
           </div>
-          <div className="shortcut-item">
-            <span>Start/Stop Recording</span>
-            <kbd>{settings.keyboardShortcuts.toggleRecording}</kbd>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Start/Stop Recording</span>
+            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.toggleRecording}</Badge>
           </div>
-          <div className="shortcut-item">
-            <span>Compare Audio</span>
-            <kbd>{settings.keyboardShortcuts.compareAudio}</kbd>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Compare Audio</span>
+            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.compareAudio}</Badge>
           </div>
-          <div className="shortcut-item">
-            <span>Toggle Panel</span>
-            <kbd>{settings.keyboardShortcuts.togglePanel}</kbd>
+          <div className="flex items-center justify-between">
+            <span className="text-sm">Toggle Panel</span>
+            <Badge variant="secondary" className="font-mono text-xs">{settings.keyboardShortcuts.togglePanel}</Badge>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      <div className="settings-section">
-        <h3>Data Management</h3>
-        <div className="data-actions">
-          <button className="action-btn secondary">Export All Data</button>
-          <button className="action-btn secondary">Import Data</button>
-          <button className="action-btn danger">Clear All Data</button>
-        </div>
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Download className="h-5 w-5" />
+            Data Management
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          <Button variant="outline" className="w-full justify-start">
+            <Download className="h-4 w-4 mr-2" />
+            Export All Data
+          </Button>
+          <Button variant="outline" className="w-full justify-start">
+            <Download className="h-4 w-4 mr-2" />
+            Import Data
+          </Button>
+          <Button variant="destructive" className="w-full justify-start">
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All Data
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   )
 
   return (
-    <div className="fluent-flow-sidepanel">
-      <div className="sidepanel-header">
-        <h1>FluentFlow</h1>
-        <div className="sidepanel-subtitle">YouTube Language Learning</div>
+    <div className="h-full bg-background">
+      <div className="border-b p-4">
+        <h1 className="text-xl font-bold">FluentFlow</h1>
+        <p className="text-sm text-muted-foreground">YouTube Language Learning</p>
       </div>
 
-      <div className="sidepanel-tabs">
-        <button 
-          className={`tab ${activeTab === 'dashboard' ? 'active' : ''}`}
-          onClick={() => setActiveTab('dashboard')}
-        >
-          📊 Dashboard
-        </button>
-        <button 
-          className={`tab ${activeTab === 'loops' ? 'active' : ''}`}
-          onClick={() => setActiveTab('loops')}
-        >
-          🔁 Loops
-        </button>
-        <button 
-          className={`tab ${activeTab === 'recordings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('recordings')}
-        >
-          🎵 Recordings
-        </button>
-        <button 
-          className={`tab ${activeTab === 'analytics' ? 'active' : ''}`}
-          onClick={() => setActiveTab('analytics')}
-        >
-          📈 Analytics
-        </button>
-        <button 
-          className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-          onClick={() => setActiveTab('settings')}
-        >
-          ⚙️ Settings
-        </button>
-      </div>
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1">
+        <TabsList className="grid w-full grid-cols-5 m-4">
+          <TabsTrigger value="dashboard" className="text-xs">
+            <BarChart3 className="h-4 w-4 mr-1" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="loops" className="text-xs">
+            <Repeat className="h-4 w-4 mr-1" />
+            Loops
+          </TabsTrigger>
+          <TabsTrigger value="recordings" className="text-xs">
+            <Music className="h-4 w-4 mr-1" />
+            Records
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="text-xs">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Analytics
+          </TabsTrigger>
+          <TabsTrigger value="settings" className="text-xs">
+            <Settings className="h-4 w-4 mr-1" />
+            Settings
+          </TabsTrigger>
+        </TabsList>
 
-      <div className="sidepanel-content">
-        {activeTab === 'dashboard' && renderDashboard()}
-        {activeTab === 'loops' && renderLoops()}
-        {activeTab === 'recordings' && renderRecordings()}
-        {activeTab === 'analytics' && renderAnalytics()}
-        {activeTab === 'settings' && renderSettings()}
-      </div>
+        <div className="px-4 pb-4">
+          <TabsContent value="dashboard" className="mt-0">{renderDashboard()}</TabsContent>
+          <TabsContent value="loops" className="mt-0">{renderLoops()}</TabsContent>
+          <TabsContent value="recordings" className="mt-0">{renderRecordings()}</TabsContent>
+          <TabsContent value="analytics" className="mt-0">{renderAnalytics()}</TabsContent>
+          <TabsContent value="settings" className="mt-0">{renderSettings()}</TabsContent>
+        </div>
+      </Tabs>
     </div>
   )
 }
