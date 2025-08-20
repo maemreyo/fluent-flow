@@ -170,6 +170,11 @@ export class FluentFlowOrchestrator {
 
   private setupKeyboardShortcuts(): void {
     document.addEventListener('keydown', (event) => {
+      // Prevent repeated events from holding down a key
+      if (event.repeat) {
+        return
+      }
+
       // Only handle shortcuts when not typing in input fields
       if (event.target instanceof HTMLInputElement || 
           event.target instanceof HTMLTextAreaElement ||
@@ -177,123 +182,147 @@ export class FluentFlowOrchestrator {
         return
       }
 
-      // Detect macOS and use appropriate modifier keys
+      // Debug logging for macOS
       const isMac = navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-      const useOptionKey = isMac ? event.altKey : event.altKey
-      const useCommandKey = isMac ? event.metaKey : event.ctrlKey
-
-      // Primary shortcuts: Option+Key on macOS, Alt+Key on Windows/Linux
-      if (useOptionKey && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
-        switch (event.key.toLowerCase()) {
-          case 'l':
+      
+      // Use event.code instead of event.key to avoid macOS character transformations
+      // Primary shortcuts: Option+Key (Alt+Key) on all platforms
+      if (event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
+        console.log(`FluentFlow: Option+${event.code} detected (key: ${event.key})`)
+        switch (event.code.toLowerCase()) {
+          case 'keyl':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Toggle loop playback')
             this.multipleLoopsFeature.toggleLoopPlayback()
             break
-          case 'r':
+          case 'keyr':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Toggle recording')
             this.toggleRecordingWithNotes()
             break
-          case 'n':
+          case 'keyn':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Toggle notes')
             this.timeBasedNotesFeature.toggleNoteTakingMode()
             break
-          case 'c':
+          case 'keyc':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Comparison action')
             this.handleComparisonAction()
             break
-          case 'e':
+          case 'keye':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Export loops')
             this.exportCurrentLoops()
             break
-          case 'v':
+          case 'keyv':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Show notes overlay')
             this.timeBasedNotesFeature.showNotesOverlay()
             break
-          case 'f':
+          case 'keyf':
             // Alt+F: Toggle sidebar (main shortcut)
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Toggle sidebar')
             this.toggleSidebar()
             break
         }
       }
 
-      // Panel toggle: Option+Shift+F on macOS, Alt+Shift+F on Windows/Linux
-      if (useOptionKey && event.shiftKey && event.key.toLowerCase() === 'f') {
+      // Panel toggle: Option+Shift+F (Alt+Shift+F)
+      if (event.altKey && event.shiftKey && event.code.toLowerCase() === 'keyf' && !event.metaKey && !event.ctrlKey) {
         event.preventDefault()
         event.stopPropagation()
-        // Alt+Shift+F: Open Chrome extension sidepanel
+        console.log('FluentFlow: Open side panel')
         this.openSidePanel()
       }
 
-      // Additional macOS-specific shortcuts using Command key
-      if (isMac && useCommandKey && event.shiftKey) {
-        switch (event.key.toLowerCase()) {
-          case 'l':
+      // Loop-specific shortcuts: Option+Shift+Key (Alt+Shift+Key)
+      if (event.altKey && event.shiftKey && !event.metaKey && !event.ctrlKey) {
+        console.log(`FluentFlow: Option+Shift+${event.code} detected (key: ${event.key})`)
+        switch (event.code.toLowerCase()) {
+          case 'digit1':
             event.preventDefault()
             event.stopPropagation()
-            this.multipleLoopsFeature.toggleLoopPlayback()
-            break
-          case 'r':
-            event.preventDefault()
-            event.stopPropagation()
-            this.toggleRecordingWithNotes()
-            break
-          case 'n':
-            event.preventDefault()
-            event.stopPropagation()
-            this.timeBasedNotesFeature.toggleNoteTakingMode()
-            break
-        }
-      }
-
-      // Loop-specific shortcuts
-      if (useOptionKey && event.shiftKey) {
-        switch (event.key.toLowerCase()) {
-          case '1':
-            event.preventDefault()
-            event.stopPropagation()
+            console.log('FluentFlow: Set loop start')
             this.multipleLoopsFeature.setLoopStart()
             break
-          case '2':
+          case 'digit2':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Set loop end')
             this.multipleLoopsFeature.setLoopEnd()
             break
-          case 'x':
+          case 'keyx':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Clear all loops')
             this.multipleLoopsFeature.clearAllLoops()
             break
-          case 'e':
+          case 'keye':
             event.preventDefault()
             event.stopPropagation()
+            console.log('FluentFlow: Export loops with prompt')
             this.exportCurrentLoopsWithPrompt()
             break
         }
       }
 
+      // Additional macOS Command+Shift shortcuts for compatibility
+      if (isMac && event.metaKey && event.shiftKey && !event.altKey && !event.ctrlKey) {
+        console.log(`FluentFlow: Cmd+Shift+${event.code} detected (macOS)`)
+        switch (event.code.toLowerCase()) {
+          case 'keyl':
+            event.preventDefault()
+            event.stopPropagation()
+            console.log('FluentFlow: Toggle loop playback (Cmd+Shift)')
+            this.multipleLoopsFeature.toggleLoopPlayback()
+            break
+          case 'keyr':
+            event.preventDefault()
+            event.stopPropagation()
+            console.log('FluentFlow: Toggle recording (Cmd+Shift)')
+            this.toggleRecordingWithNotes()
+            break
+          case 'digit1':
+            event.preventDefault()
+            event.stopPropagation()
+            console.log('FluentFlow: Set loop start (Cmd+Shift)')
+            this.multipleLoopsFeature.setLoopStart()
+            break
+          case 'digit2':
+            event.preventDefault()
+            event.stopPropagation()
+            console.log('FluentFlow: Set loop end (Cmd+Shift)')
+            this.multipleLoopsFeature.setLoopEnd()
+            break
+        }
+      }
+
       // Notes shortcuts: Double-tap N for quick note
-      if (!useOptionKey && !event.shiftKey && !event.metaKey && !event.ctrlKey && event.key.toLowerCase() === 'n') {
+      if (!event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey && event.code.toLowerCase() === 'keyn') {
         // Detect double-tap N for quick note
         const now = Date.now()
         const lastNTap = (window as any)._ffLastNTap || 0
         if (now - lastNTap < 500) {
           event.preventDefault()
           event.stopPropagation()
+          console.log('FluentFlow: Quick add note')
           this.quickAddNote()
         }
         ;(window as any)._ffLastNTap = now
       }
     })
 
-    console.log('FluentFlow: Keyboard shortcuts setup complete')
+    console.log('FluentFlow: Keyboard shortcuts setup complete for', navigator.userAgent.toUpperCase().indexOf('MAC') >= 0 ? 'macOS' : 'other OS')
+    console.log('FluentFlow: Using event.code for keyboard detection to avoid macOS character transformations')
   }
 
   private setupMessageHandlers(): void {

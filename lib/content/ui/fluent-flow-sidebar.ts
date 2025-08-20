@@ -52,232 +52,232 @@ export class FluentFlowSidebar {
     styles.textContent = `
       /* FluentFlow Sidebar Styles */
       .fluent-flow-sidebar {
-        position: fixed;
-        top: 50%;
-        ${this.config.position}: 0;
-        transform: translateY(-50%) translateX(${this.config.position === 'right' ? '100%' : '-100%'});
-        width: 320px;
-        max-height: 80vh;
-        background: ${this.config.theme === 'dark' ? '#1a1a1a' : '#ffffff'};
-        border: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'};
-        border-radius: 12px;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-        z-index: 2147483647;
-        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif;
-        overflow: hidden;
-        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        backdrop-filter: blur(10px);
+        position: fixed !important;
+        top: 50% !important;
+        right: -340px !important;
+        transform: translateY(-50%) !important;
+        width: 320px !important;
+        max-height: 80vh !important;
+        background: ${this.config.theme === 'dark' ? '#1a1a1a' : '#ffffff'} !important;
+        border: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'} !important;
+        border-radius: 12px !important;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3) !important;
+        z-index: 2147483647 !important;
+        font-family: 'Roboto', -apple-system, BlinkMacSystemFont, sans-serif !important;
+        overflow: hidden !important;
+        transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+        backdrop-filter: blur(10px) !important;
       }
 
       .fluent-flow-sidebar.ff-sidebar-visible {
-        transform: translateY(-50%) translateX(${this.config.position === 'right' ? '-20px' : '20px'});
+        right: 20px !important;
       }
 
       .fluent-flow-sidebar-toggle {
-        position: fixed;
-        top: 50%;
-        ${this.config.position}: 0;
-        transform: translateY(-50%);
-        width: 24px;
-        height: 48px;
-        background: ${this.config.theme === 'dark' ? 'rgba(42, 42, 42, 0.7)' : 'rgba(245, 245, 245, 0.7)'};
-        border: 1px solid ${this.config.theme === 'dark' ? 'rgba(68, 68, 68, 0.5)' : 'rgba(208, 208, 208, 0.5)'};
-        border-radius: 6px 0 0 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 2147483646;
-        transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
-        opacity: 0.6;
-        backdrop-filter: blur(4px);
+        position: fixed !important;
+        top: 50% !important;
+        right: 0 !important;
+        transform: translateY(-50%) !important;
+        width: 24px !important;
+        height: 48px !important;
+        background: ${this.config.theme === 'dark' ? 'rgba(42, 42, 42, 0.7)' : 'rgba(245, 245, 245, 0.7)'} !important;
+        border: 1px solid ${this.config.theme === 'dark' ? 'rgba(68, 68, 68, 0.5)' : 'rgba(208, 208, 208, 0.5)'} !important;
+        border-radius: 6px 0 0 6px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        z-index: 2147483646 !important;
+        transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease !important;
+        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1) !important;
+        opacity: 0.6 !important;
+        backdrop-filter: blur(4px) !important;
       }
 
       .fluent-flow-sidebar-toggle:hover {
-        background: ${this.config.theme === 'dark' ? 'rgba(58, 58, 58, 0.9)' : 'rgba(229, 229, 229, 0.9)'};
-        opacity: 1;
-        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
+        background: ${this.config.theme === 'dark' ? 'rgba(58, 58, 58, 0.9)' : 'rgba(229, 229, 229, 0.9)'} !important;
+        opacity: 1 !important;
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15) !important;
       }
 
       .fluent-flow-sidebar-toggle svg {
-        color: ${this.config.theme === 'dark' ? '#b0b0b0' : '#555555'};
-        transition: transform 0.3s ease, color 0.2s ease;
+        color: ${this.config.theme === 'dark' ? '#b0b0b0' : '#555555'} !important;
+        transition: transform 0.3s ease, color 0.2s ease !important;
       }
 
       .fluent-flow-sidebar-toggle:hover svg {
-        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'};
+        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'} !important;
       }
 
       .fluent-flow-sidebar-toggle.ff-sidebar-open svg {
-        transform: rotate(180deg);
+        transform: rotate(180deg) !important;
       }
 
       .fluent-flow-sidebar-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 20px;
-        border-bottom: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'};
-        background: ${this.config.theme === 'dark' ? '#2a2a2a' : '#f8f9fa'};
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        padding: 16px 20px !important;
+        border-bottom: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'} !important;
+        background: ${this.config.theme === 'dark' ? '#2a2a2a' : '#f8f9fa'} !important;
       }
 
       .fluent-flow-sidebar-title {
-        font-size: 18px;
-        font-weight: 600;
-        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'};
-        margin: 0;
+        font-size: 18px !important;
+        font-weight: 600 !important;
+        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'} !important;
+        margin: 0 !important;
       }
 
       .fluent-flow-sidebar-subtitle {
-        font-size: 12px;
-        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'};
-        margin: 2px 0 0 0;
+        font-size: 12px !important;
+        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'} !important;
+        margin: 2px 0 0 0 !important;
       }
 
       .fluent-flow-sidebar-close {
-        width: 32px;
-        height: 32px;
-        border: none;
-        background: transparent;
-        border-radius: 6px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'};
-        transition: all 0.2s ease;
+        width: 32px !important;
+        height: 32px !important;
+        border: none !important;
+        background: transparent !important;
+        border-radius: 6px !important;
+        cursor: pointer !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'} !important;
+        transition: all 0.2s ease !important;
       }
 
       .fluent-flow-sidebar-close:hover {
-        background: ${this.config.theme === 'dark' ? '#404040' : '#e0e0e0'};
-        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'};
+        background: ${this.config.theme === 'dark' ? '#404040' : '#e0e0e0'} !important;
+        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'} !important;
       }
 
       .fluent-flow-sidebar-content {
-        padding: 20px;
-        max-height: calc(80vh - 80px);
-        overflow-y: auto;
+        padding: 20px !important;
+        max-height: calc(80vh - 80px) !important;
+        overflow-y: auto !important;
       }
 
       .fluent-flow-sidebar-content::-webkit-scrollbar {
-        width: 6px;
+        width: 6px !important;
       }
 
       .fluent-flow-sidebar-content::-webkit-scrollbar-track {
-        background: transparent;
+        background: transparent !important;
       }
 
       .fluent-flow-sidebar-content::-webkit-scrollbar-thumb {
-        background: ${this.config.theme === 'dark' ? '#444444' : '#cccccc'};
-        border-radius: 3px;
+        background: ${this.config.theme === 'dark' ? '#444444' : '#cccccc'} !important;
+        border-radius: 3px !important;
       }
 
       .fluent-flow-sidebar-group {
-        margin-bottom: 24px;
+        margin-bottom: 24px !important;
       }
 
       .fluent-flow-sidebar-group:last-child {
-        margin-bottom: 0;
+        margin-bottom: 0 !important;
       }
 
       .fluent-flow-sidebar-group-title {
-        font-size: 14px;
-        font-weight: 600;
-        color: ${this.config.theme === 'dark' ? '#cccccc' : '#555555'};
-        margin: 0 0 12px 0;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        font-size: 14px !important;
+        font-weight: 600 !important;
+        color: ${this.config.theme === 'dark' ? '#cccccc' : '#555555'} !important;
+        margin: 0 0 12px 0 !important;
+        text-transform: uppercase !important;
+        letter-spacing: 0.5px !important;
       }
 
       .fluent-flow-sidebar-button {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        padding: 12px 16px;
-        margin-bottom: 8px;
-        background: transparent;
-        border: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'};
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.2s ease;
-        text-align: left;
-        color: ${this.config.theme === 'dark' ? '#e0e0e0' : '#333333'};
-        font-size: 14px;
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        padding: 12px 16px !important;
+        margin-bottom: 8px !important;
+        background: transparent !important;
+        border: 1px solid ${this.config.theme === 'dark' ? '#333333' : '#e0e0e0'} !important;
+        border-radius: 8px !important;
+        cursor: pointer !important;
+        transition: all 0.2s ease !important;
+        text-align: left !important;
+        color: ${this.config.theme === 'dark' ? '#e0e0e0' : '#333333'} !important;
+        font-size: 14px !important;
       }
 
       .fluent-flow-sidebar-button:hover {
-        background: ${this.config.theme === 'dark' ? '#2a2a2a' : '#f5f5f5'};
-        border-color: ${this.config.theme === 'dark' ? '#444444' : '#d0d0d0'};
-        transform: translateY(-1px);
+        background: ${this.config.theme === 'dark' ? '#2a2a2a' : '#f5f5f5'} !important;
+        border-color: ${this.config.theme === 'dark' ? '#444444' : '#d0d0d0'} !important;
+        transform: translateY(-1px) !important;
       }
 
       .fluent-flow-sidebar-button:last-child {
-        margin-bottom: 0;
+        margin-bottom: 0 !important;
       }
 
       .fluent-flow-sidebar-button-icon {
-        width: 24px;
-        height: 24px;
-        margin-right: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
+        width: 24px !important;
+        height: 24px !important;
+        margin-right: 12px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex-shrink: 0 !important;
       }
 
       .fluent-flow-sidebar-button-icon svg {
-        width: 20px;
-        height: 20px;
+        width: 20px !important;
+        height: 20px !important;
       }
 
       .fluent-flow-sidebar-button-content {
-        flex: 1;
+        flex: 1 !important;
       }
 
       .fluent-flow-sidebar-button-title {
-        font-weight: 500;
-        margin-bottom: 2px;
+        font-weight: 500 !important;
+        margin-bottom: 2px !important;
       }
 
       .fluent-flow-sidebar-button-subtitle {
-        font-size: 12px;
-        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'};
+        font-size: 12px !important;
+        color: ${this.config.theme === 'dark' ? '#888888' : '#666666'} !important;
       }
 
       /* Button States */
       .fluent-flow-sidebar-button.ff-active {
-        background: rgba(34, 197, 94, 0.1);
-        border-color: rgba(34, 197, 94, 0.3);
-        color: ${this.config.theme === 'dark' ? '#4ade80' : '#16a34a'};
+        background: rgba(34, 197, 94, 0.1) !important;
+        border-color: rgba(34, 197, 94, 0.3) !important;
+        color: ${this.config.theme === 'dark' ? '#4ade80' : '#16a34a'} !important;
       }
 
       .fluent-flow-sidebar-button.ff-setting {
-        background: rgba(251, 191, 36, 0.1);
-        border-color: rgba(251, 191, 36, 0.3);
-        color: ${this.config.theme === 'dark' ? '#fbbf24' : '#d97706'};
+        background: rgba(251, 191, 36, 0.1) !important;
+        border-color: rgba(251, 191, 36, 0.3) !important;
+        color: ${this.config.theme === 'dark' ? '#fbbf24' : '#d97706'} !important;
       }
 
       .fluent-flow-sidebar-button.ff-paused {
-        background: rgba(239, 68, 68, 0.1);
-        border-color: rgba(239, 68, 68, 0.3);
-        color: ${this.config.theme === 'dark' ? '#f87171' : '#dc2626'};
+        background: rgba(239, 68, 68, 0.1) !important;
+        border-color: rgba(239, 68, 68, 0.3) !important;
+        color: ${this.config.theme === 'dark' ? '#f87171' : '#dc2626'} !important;
       }
 
       /* Responsive adjustments */
       @media (max-width: 768px) {
         .fluent-flow-sidebar {
-          width: 280px;
-          max-height: 70vh;
+          width: 280px !important;
+          max-height: 70vh !important;
         }
         
         .fluent-flow-sidebar-content {
-          padding: 16px;
+          padding: 16px !important;
         }
 
         .fluent-flow-sidebar-toggle {
-          width: 20px;
-          height: 44px;
+          width: 20px !important;
+          height: 44px !important;
         }
       }
 
@@ -285,16 +285,16 @@ export class FluentFlowSidebar {
       @keyframes ff-sidebar-fade-in {
         from {
           opacity: 0;
-          transform: translateY(-50%) translateX(${this.config.position === 'right' ? '100%' : '-100%'});
+          right: -340px !important;
         }
         to {
           opacity: 1;
-          transform: translateY(-50%) translateX(${this.config.position === 'right' ? '-20px' : '20px'});
+          right: 20px !important;
         }
       }
 
       .fluent-flow-sidebar.ff-sidebar-animate-in {
-        animation: ff-sidebar-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: ff-sidebar-fade-in 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards !important;
       }
     `
     
@@ -693,9 +693,17 @@ export class FluentFlowSidebar {
   }
 
   public showSidebar(): void {
-    if (!this.container) return
+    if (!this.container) {
+      console.log('FluentFlow: No container found in showSidebar')
+      return
+    }
 
     this.isVisible = true
+    
+    // Force positioning with inline styles (highest specificity)
+    this.container.style.setProperty('right', '20px', 'important')
+    this.container.style.setProperty('opacity', '1', 'important')
+    
     this.container.classList.add('ff-sidebar-visible', 'ff-sidebar-animate-in')
     
     const toggle = document.querySelector('.fluent-flow-sidebar-toggle')
@@ -703,13 +711,31 @@ export class FluentFlowSidebar {
       toggle.classList.add('ff-sidebar-open')
     }
 
+    // Debug information
     console.log('FluentFlow: Sidebar shown')
+    console.log('FluentFlow: Container element:', this.container)
+    console.log('FluentFlow: Container classes:', this.container.className)
+    console.log('FluentFlow: Container style.right:', this.container.style.right)
+    
+    // Get computed styles
+    const computedStyle = window.getComputedStyle(this.container)
+    console.log('FluentFlow: Computed right:', computedStyle.right)
+    console.log('FluentFlow: Computed position:', computedStyle.position)
+    console.log('FluentFlow: Computed zIndex:', computedStyle.zIndex)
+    console.log('FluentFlow: Computed display:', computedStyle.display)
+    console.log('FluentFlow: Computed visibility:', computedStyle.visibility)
+    console.log('FluentFlow: Container bounds:', this.container.getBoundingClientRect())
   }
 
   public hideSidebar(): void {
     if (!this.container) return
 
     this.isVisible = false
+    
+    // Force positioning with inline styles (highest specificity)
+    this.container.style.setProperty('right', '-340px', 'important')
+    this.container.style.setProperty('opacity', '0', 'important')
+    
     this.container.classList.remove('ff-sidebar-visible', 'ff-sidebar-animate-in')
     
     const toggle = document.querySelector('.fluent-flow-sidebar-toggle')

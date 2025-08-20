@@ -1,0 +1,40 @@
+content.672cac6b.js:574 FluentFlow: Option+AltLeft detected (key: Alt)
+content.672cac6b.js:574 FluentFlow: Option+AltLeft detected (key: Alt)
+content.672cac6b.js:574 FluentFlow: Option+KeyF detected (key: ƒ)
+content.672cac6b.js:616 FluentFlow: Toggle sidebar
+content.672cac6b.js:837 FluentFlow: Toggling sidebar
+content.672cac6b.js:3315 FluentFlow: Sidebar shown
+content.672cac6b.js:3316 FluentFlow: Container element: <div class=​"fluent-flow-sidebar" style=​"right:​ -340px !important;​ opacity:​ 0 !important;​">​…​</div>​
+content.672cac6b.js:3317 FluentFlow: Container classes: fluent-flow-sidebar ff-sidebar-visible ff-sidebar-animate-in
+content.672cac6b.js:3318 FluentFlow: Container style.right: 20px
+content.672cac6b.js:3321 FluentFlow: Computed right: 20px
+content.672cac6b.js:3322 FluentFlow: Computed position: fixed
+content.672cac6b.js:3323 FluentFlow: Computed zIndex: 2147483647
+content.672cac6b.js:3324 FluentFlow: Computed display: block
+content.672cac6b.js:3325 FluentFlow: Computed visibility: visible
+content.672cac6b.js:3326 FluentFlow: Container bounds: DOMRect {x: 0, y: 0, width: 0, height: 0, top: 0, …}
+content.672cac6b.js:574 FluentFlow: Option+KeyF detected (key: ƒ)
+content.672cac6b.js:616 FluentFlow: Toggle sidebar
+content.672cac6b.js:837 FluentFlow: Toggling sidebar
+content.672cac6b.js:3337 FluentFlow: Sidebar hidden
+about:blank:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+about:blank:1 Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+content.672cac6b.js:574 FluentFlow: Option+AltLeft detected (key: Alt)
+content.672cac6b.js:574 FluentFlow: Option+AltLeft detected (key: Alt)
+content.672cac6b.js:574 FluentFlow: Option+KeyF detected (key: ƒ)
+content.672cac6b.js:616 FluentFlow: Toggle sidebar
+content.672cac6b.js:837 FluentFlow: Toggling sidebar
+content.672cac6b.js:3315 FluentFlow: Sidebar shown
+content.672cac6b.js:3316 FluentFlow: Container element: <div class=​"fluent-flow-sidebar" style=​"right:​ -340px !important;​ opacity:​ 0 !important;​">​…​</div>​
+content.672cac6b.js:3317 FluentFlow: Container classes: fluent-flow-sidebar ff-sidebar-visible ff-sidebar-animate-in
+content.672cac6b.js:3318 FluentFlow: Container style.right: 20px
+content.672cac6b.js:3321 FluentFlow: Computed right: 20px
+content.672cac6b.js:3322 FluentFlow: Computed position: fixed
+content.672cac6b.js:3323 FluentFlow: Computed zIndex: 2147483647
+content.672cac6b.js:3324 FluentFlow: Computed display: block
+content.672cac6b.js:3325 FluentFlow: Computed visibility: visible
+content.672cac6b.js:3326 FluentFlow: Container bounds: DOMRect {x: 0, y: 0, width: 0, height: 0, top: 0, …}
+content.672cac6b.js:574 FluentFlow: Option+KeyF detected (key: ƒ)
+content.672cac6b.js:616 FluentFlow: Toggle sidebar
+content.672cac6b.js:837 FluentFlow: Toggling sidebar
+content.672cac6b.js:3337 FluentFlow: Sidebar hidden
