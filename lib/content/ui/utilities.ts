@@ -1,3 +1,5 @@
+import { FluentFlowSidebar } from './fluent-flow-sidebar'
+
 // UI Utilities Module
 // Centralized UI helper functions for content script
 // Handles toasts, button states, formatting, and YouTube UI integration
@@ -11,12 +13,10 @@ export interface ButtonConfig {
   group?: string
 }
 
-import { FluentFlowSidebar } from './fluent-flow-sidebar'
-
 export class UIUtilities {
   private static instance: UIUtilities
   private sidebar: FluentFlowSidebar | null = null
-  
+
   public static getInstance(): UIUtilities {
     if (!UIUtilities.instance) {
       UIUtilities.instance = new UIUtilities()
@@ -32,18 +32,18 @@ export class UIUtilities {
   private async initializeSidebar(): Promise<void> {
     try {
       console.log('FluentFlow: Starting sidebar initialization')
-      
+
       // Wait for YouTube container to be available
       await this.waitForYouTubeContainer()
       console.log('FluentFlow: YouTube container found')
-      
+
       this.sidebar = new FluentFlowSidebar({
         position: 'right',
         theme: 'dark',
         collapsible: true,
         autoHide: false
       })
-      
+
       console.log('FluentFlow: Sidebar initialized successfully')
     } catch (error) {
       console.error('FluentFlow: Failed to initialize sidebar:', error)
@@ -53,7 +53,7 @@ export class UIUtilities {
   }
 
   private async waitForYouTubeContainer(): Promise<void> {
-    return new Promise<void>((resolve) => {
+    return new Promise<void>(resolve => {
       const checkForContainer = () => {
         const container = document.querySelector('#container.style-scope.ytd-player')
         if (container) {
@@ -83,9 +83,9 @@ export class UIUtilities {
       z-index: 10000;
       animation: fadeInOut 2s ease-in-out;
     `
-    
+
     toast.textContent = `FluentFlow: ${message}`
-    
+
     // Add animation
     const style = document.createElement('style')
     style.textContent = `
@@ -97,9 +97,9 @@ export class UIUtilities {
       }
     `
     document.head.appendChild(style)
-    
+
     document.body.appendChild(toast)
-    
+
     setTimeout(() => {
       toast.remove()
       style.remove()
@@ -107,7 +107,10 @@ export class UIUtilities {
   }
 
   // Button state management - now works with sidebar
-  public updateButtonState(buttonId: string, state: 'inactive' | 'active' | 'setting' | 'paused'): void {
+  public updateButtonState(
+    buttonId: string,
+    state: 'inactive' | 'active' | 'setting' | 'paused'
+  ): void {
     // Update sidebar button state
     if (this.sidebar) {
       this.sidebar.updateButtonState(buttonId, state)
@@ -119,7 +122,7 @@ export class UIUtilities {
 
     // Remove all state classes
     button.classList.remove('ff-inactive', 'ff-active', 'ff-setting', 'ff-paused')
-    
+
     // Add new state class
     button.classList.add(`ff-${state}`)
 
@@ -133,7 +136,7 @@ export class UIUtilities {
         opacity = '1'
         break
       case 'setting':
-        backgroundColor = 'rgba(251, 191, 36, 0.2)' // Yellow background  
+        backgroundColor = 'rgba(251, 191, 36, 0.2)' // Yellow background
         opacity = '1'
         break
       case 'paused':
@@ -147,8 +150,8 @@ export class UIUtilities {
         break
     }
 
-    (button as HTMLElement).style.backgroundColor = backgroundColor;
-    (button as HTMLElement).style.opacity = opacity
+    ;(button as HTMLElement).style.backgroundColor = backgroundColor
+    ;(button as HTMLElement).style.opacity = opacity
   }
 
   // Time formatting utility
@@ -167,7 +170,7 @@ export class UIUtilities {
     button.title = config.title
     button.setAttribute('data-tooltip-title', config.title)
     button.setAttribute('aria-label', config.title)
-    
+
     button.style.cssText = `
       width: 48px;
       height: 48px;
@@ -182,15 +185,15 @@ export class UIUtilities {
     `
 
     button.innerHTML = config.icon
-    
-    button.addEventListener('click', (e) => {
+
+    button.addEventListener('click', e => {
       e.preventDefault()
       e.stopPropagation()
       config.action()
     })
 
     if (config.rightClick) {
-      button.addEventListener('contextmenu', (e) => {
+      button.addEventListener('contextmenu', e => {
         e.preventDefault()
         e.stopPropagation()
         config.rightClick!()
@@ -211,7 +214,7 @@ export class UIUtilities {
   // New primary method: Create sidebar with buttons instead of YouTube controls
   public async createButtonContainer(buttons: ButtonConfig[]): Promise<HTMLElement> {
     console.log('FluentFlow: createButtonContainer called with buttons:', buttons.length)
-    
+
     // Wait for sidebar to be ready
     let retryCount = 0
     while (!this.sidebar && retryCount < 10) {
@@ -219,9 +222,11 @@ export class UIUtilities {
       await new Promise(resolve => setTimeout(resolve, 200))
       retryCount++
     }
-    
+
     if (!this.sidebar) {
-      console.warn('FluentFlow: Sidebar not initialized after waiting, using legacy button container')
+      console.warn(
+        'FluentFlow: Sidebar not initialized after waiting, using legacy button container'
+      )
       // Fallback to legacy YouTube controls
       return this.createLegacyButtonContainer(buttons)
     }
@@ -246,14 +251,16 @@ export class UIUtilities {
 
     // Create minimal YouTube control button that opens sidebar
     const sidebarToggle = this.createSidebarToggleButton()
-    
+
     console.log('FluentFlow: Sidebar button container created')
     return sidebarToggle
   }
 
   private createSidebarToggleButton(): HTMLElement {
     // Check if toggle already exists
-    const existingToggle = document.querySelector('.fluent-flow-sidebar-youtube-toggle') as HTMLElement
+    const existingToggle = document.querySelector(
+      '.fluent-flow-sidebar-youtube-toggle'
+    ) as HTMLElement
     if (existingToggle) {
       return existingToggle
     }
@@ -263,7 +270,7 @@ export class UIUtilities {
     toggleButton.title = 'Open FluentFlow Controls (Alt+F)'
     toggleButton.setAttribute('data-tooltip-title', 'FluentFlow Controls')
     toggleButton.setAttribute('aria-label', 'FluentFlow Controls')
-    
+
     toggleButton.style.cssText = `
       width: 48px;
       height: 48px;
@@ -278,8 +285,8 @@ export class UIUtilities {
     `
 
     toggleButton.innerHTML = this.getFluentFlowIcon()
-    
-    toggleButton.addEventListener('click', (e) => {
+
+    toggleButton.addEventListener('click', e => {
       e.preventDefault()
       e.stopPropagation()
       if (this.sidebar) {
@@ -305,7 +312,7 @@ export class UIUtilities {
 
   private async insertIntoYouTubeControls(button: HTMLElement): Promise<void> {
     const rightControls = await this.waitForYouTubeControls()
-    
+
     // Insert before the settings button
     const settingsButton = rightControls.querySelector('.ytp-settings-button')
     if (settingsButton) {
@@ -318,7 +325,7 @@ export class UIUtilities {
   // Legacy button container creation (fallback)
   private async createLegacyButtonContainer(buttons: ButtonConfig[]): Promise<HTMLElement> {
     console.warn('FluentFlow: Using legacy button container as fallback')
-    
+
     // Wait for YouTube player controls to load
     const rightControls = await this.waitForYouTubeControls()
 
@@ -352,7 +359,7 @@ export class UIUtilities {
         buttonContainer.appendChild(separator)
       }
       currentGroup = buttonConfig.group || ''
-      
+
       const button = this.createYouTubeButton(buttonConfig)
       buttonContainer.appendChild(button)
     })
@@ -379,7 +386,10 @@ export class UIUtilities {
       'fluent-flow-compare': 'Audio Compare',
       'fluent-flow-panel': 'Chrome Extension Panel'
     }
-    return titles[buttonId as keyof typeof titles] || buttonId.replace('fluent-flow-', '').replace('-', ' ')
+    return (
+      titles[buttonId as keyof typeof titles] ||
+      buttonId.replace('fluent-flow-', '').replace('-', ' ')
+    )
   }
 
   // Sidebar control methods
@@ -497,7 +507,7 @@ export class UIUtilities {
 
   // Private utility methods
   private async waitForYouTubeControls(): Promise<HTMLElement> {
-    return new Promise<HTMLElement>((resolve) => {
+    return new Promise<HTMLElement>(resolve => {
       const checkForControls = () => {
         const controls = document.querySelector('.ytp-right-controls') as HTMLElement
         if (controls) {
