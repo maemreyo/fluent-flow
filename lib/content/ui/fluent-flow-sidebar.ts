@@ -78,31 +78,35 @@ export class FluentFlowSidebar {
         top: 50%;
         ${this.config.position}: 0;
         transform: translateY(-50%);
-        width: 32px;
+        width: 24px;
         height: 48px;
         background: ${this.config.theme === 'dark' ? 'rgba(42, 42, 42, 0.7)' : 'rgba(245, 245, 245, 0.7)'};
         border: 1px solid ${this.config.theme === 'dark' ? 'rgba(68, 68, 68, 0.5)' : 'rgba(208, 208, 208, 0.5)'};
-        border-radius: 8px 0 0 8px;
+        border-radius: 6px 0 0 6px;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         z-index: 2147483646;
-        transition: all 0.2s ease;
+        transition: opacity 0.2s ease, background-color 0.2s ease, box-shadow 0.2s ease;
         box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
         opacity: 0.6;
         backdrop-filter: blur(4px);
       }
 
       .fluent-flow-sidebar-toggle:hover {
-        background: ${this.config.theme === 'dark' ? 'rgba(58, 58, 58, 0.8)' : 'rgba(229, 229, 229, 0.8)'};
-        transform: translateY(-50%) translateX(-6px);
-        opacity: 0.9;
+        background: ${this.config.theme === 'dark' ? 'rgba(58, 58, 58, 0.9)' : 'rgba(229, 229, 229, 0.9)'};
+        opacity: 1;
+        box-shadow: -2px 0 12px rgba(0, 0, 0, 0.15);
       }
 
       .fluent-flow-sidebar-toggle svg {
         color: ${this.config.theme === 'dark' ? '#b0b0b0' : '#555555'};
-        transition: transform 0.3s ease;
+        transition: transform 0.3s ease, color 0.2s ease;
+      }
+
+      .fluent-flow-sidebar-toggle:hover svg {
+        color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'};
       }
 
       .fluent-flow-sidebar-toggle.ff-sidebar-open svg {
@@ -272,7 +276,7 @@ export class FluentFlowSidebar {
         }
 
         .fluent-flow-sidebar-toggle {
-          width: 28px;
+          width: 20px;
           height: 44px;
         }
       }

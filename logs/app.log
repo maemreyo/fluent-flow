@@ -1,0 +1,5 @@
+
+3. investigate deeply để tôi có thể có tính năng:
+a. thêm được nhiều loop, thay vì chỉ 1 loop như hiện tại, remove toàn bộ loop từ sidebar
+b. remove từng loop từ sidebar
+c. cần update UI của các markpoint trên progress bar để nó phản ánh đúng các loop khác nhau
