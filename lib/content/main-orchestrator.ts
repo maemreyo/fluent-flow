@@ -3,7 +3,7 @@
 // Coordinates between features without mixing business logic
 
 import { ComparisonFeature } from './features/comparison'
-import { LoopFeature } from './features/loop'
+import { MultipleLoopsFeature } from './features/multiple-loops'
 import { RecordingFeature } from './features/recording'
 import { YouTubePlayerService, type VideoInfo } from './integrations/youtube-player'
 import { UIUtilities, type ButtonConfig } from './ui/utilities'
@@ -11,7 +11,7 @@ import { UIUtilities, type ButtonConfig } from './ui/utilities'
 import { TimeBasedNotesFeature } from './features/time-based-notes'
 
 export class FluentFlowOrchestrator {
-  private loopFeature: LoopFeature
+  private multipleLoopsFeature: MultipleLoopsFeature
   private recordingFeature: RecordingFeature
   private comparisonFeature: ComparisonFeature
   private timeBasedNotesFeature: TimeBasedNotesFeature
@@ -25,7 +25,7 @@ export class FluentFlowOrchestrator {
     this.uiUtilities = UIUtilities.getInstance()
 
     // Initialize features with their dependencies
-    this.loopFeature = new LoopFeature(this.playerService, this.uiUtilities)
+    this.multipleLoopsFeature = new MultipleLoopsFeature(this.playerService, this.uiUtilities)
     this.recordingFeature = new RecordingFeature(this.uiUtilities, this.playerService)
     this.comparisonFeature = new ComparisonFeature(this.playerService, this.uiUtilities)
     this.timeBasedNotesFeature = new TimeBasedNotesFeature(this.playerService, this.uiUtilities)
@@ -80,12 +80,9 @@ export class FluentFlowOrchestrator {
   }
 
   private async setupYouTubeIntegrations(): Promise<void> {
-    // Setup progress bar integration for loop feature
+    // Setup progress bar integration for multiple loops feature
     const progressBar = await this.playerService.waitForProgressBar()
-    this.loopFeature.setupProgressBarIntegration(progressBar)
-    
-    // Start loop monitoring
-    this.loopFeature.startLoopMonitoring()
+    this.multipleLoopsFeature.setupProgressBarIntegration(progressBar)
 
     console.log('FluentFlow: YouTube integrations setup complete')
   }
@@ -98,29 +95,36 @@ export class FluentFlowOrchestrator {
         id: 'fluent-flow-loop-start',
         title: 'Set Loop Start',
         icon: this.uiUtilities.getLoopStartIcon(),
-        action: () => this.loopFeature.setLoopStart(),
+        action: () => this.multipleLoopsFeature.setLoopStart(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-toggle',
         title: 'Play/Pause Loop',
         icon: this.uiUtilities.getLoopPlayIcon(),
-        action: () => this.loopFeature.toggleLoopPlayback(),
+        action: () => this.multipleLoopsFeature.toggleLoopPlayback(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-end',
         title: 'Set Loop End',
         icon: this.uiUtilities.getLoopEndIcon(),
-        action: () => this.loopFeature.setLoopEnd(),
+        action: () => this.multipleLoopsFeature.setLoopEnd(),
+        group: 'loop'
+      },
+      {
+        id: 'fluent-flow-loop-clear',
+        title: 'Clear All Loops',
+        icon: this.uiUtilities.getClearIcon(),
+        action: () => this.multipleLoopsFeature.clearAllLoops(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-export',
-        title: 'Export Current Loop',
+        title: 'Export Current Loops',
         icon: this.uiUtilities.getExportIcon(),
-        action: () => this.exportCurrentLoop(),
-        rightClick: () => this.exportCurrentLoopWithPrompt(),
+        action: () => this.exportCurrentLoops(),
+        rightClick: () => this.exportCurrentLoopsWithPrompt(),
         group: 'loop'
       },
       
@@ -184,7 +188,7 @@ export class FluentFlowOrchestrator {
           case 'l':
             event.preventDefault()
             event.stopPropagation()
-            this.loopFeature.toggleLoopMode()
+            this.multipleLoopsFeature.toggleLoopPlayback()
             break
           case 'r':
             event.preventDefault()
@@ -204,7 +208,7 @@ export class FluentFlowOrchestrator {
           case 'e':
             event.preventDefault()
             event.stopPropagation()
-            this.exportCurrentLoop()
+            this.exportCurrentLoops()
             break
           case 'v':
             event.preventDefault()
@@ -234,7 +238,7 @@ export class FluentFlowOrchestrator {
           case 'l':
             event.preventDefault()
             event.stopPropagation()
-            this.loopFeature.toggleLoopMode()
+            this.multipleLoopsFeature.toggleLoopPlayback()
             break
           case 'r':
             event.preventDefault()
@@ -255,22 +259,22 @@ export class FluentFlowOrchestrator {
           case '1':
             event.preventDefault()
             event.stopPropagation()
-            this.loopFeature.setLoopStart()
+            this.multipleLoopsFeature.setLoopStart()
             break
           case '2':
             event.preventDefault()
             event.stopPropagation()
-            this.loopFeature.setLoopEnd()
+            this.multipleLoopsFeature.setLoopEnd()
             break
           case 'x':
             event.preventDefault()
             event.stopPropagation()
-            this.loopFeature.clearLoop()
+            this.multipleLoopsFeature.clearAllLoops()
             break
           case 'e':
             event.preventDefault()
             event.stopPropagation()
-            this.exportCurrentLoopWithPrompt()
+            this.exportCurrentLoopsWithPrompt()
             break
         }
       }
@@ -305,7 +309,10 @@ export class FluentFlowOrchestrator {
         case 'APPLY_LOOP':
           // Set flag from message or default to true when applying loop
           this.isApplyingLoop = message.isApplyingLoop !== undefined ? message.isApplyingLoop : true
-          this.loopFeature.applyLoop(message.data)
+          // Import loop as a single saved loop to multiple loops system
+          if (message.data) {
+            this.multipleLoopsFeature.importLoops([message.data])
+          }
           // Clear the flag after a delay to ensure loop application is complete
           setTimeout(() => {
             this.isApplyingLoop = false
@@ -358,7 +365,7 @@ export class FluentFlowOrchestrator {
       
       // Reset features for new video, but skip loop clearing if we're applying a loop
       if (!this.isApplyingLoop) {
-        this.loopFeature.clearLoop()
+        this.multipleLoopsFeature.clearAllLoops()
       } else {
         console.log('FluentFlow: Skipping loop clear - loop application in progress')
       }
@@ -455,26 +462,52 @@ export class FluentFlowOrchestrator {
     this.uiUtilities.toggleSidebar()
   }
 
-  private exportCurrentLoop(): void {
-    const exported = this.loopFeature.exportCurrentLoop()
-    if (exported) {
+  private exportCurrentLoops(): void {
+    const exported = this.multipleLoopsFeature.exportCurrentLoops()
+    if (exported && exported.length > 0) {
+      // Save exported loops to storage
+      chrome.runtime.sendMessage({
+        type: 'SAVE_LOOPS',
+        loops: exported
+      })
       this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+      this.uiUtilities.showToast(`Exported ${exported.length} loop(s)`)
       setTimeout(() => {
         this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
       }, 2000)
+    } else {
+      this.uiUtilities.showToast('No loops to export')
     }
   }
 
-  private exportCurrentLoopWithPrompt(): void {
-    const title = prompt('Enter a title for this loop (optional):')
-    const description = prompt('Enter a description for this loop (optional):')
-    
-    const exported = this.loopFeature.exportCurrentLoop(title || undefined, description || undefined)
-    if (exported) {
-      this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
-      setTimeout(() => {
-        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
-      }, 2000)
+  private exportCurrentLoopsWithPrompt(): void {
+    const loops = this.multipleLoopsFeature.getActiveLoops()
+    if (loops.length === 0) {
+      this.uiUtilities.showToast('No loops to export')
+      return
+    }
+
+    const description = prompt(`Export ${loops.length} loop(s)? Enter optional description:`)
+    if (description !== null) {
+      const exported = this.multipleLoopsFeature.exportCurrentLoops()
+      if (exported && exported.length > 0) {
+        // Add description to all loops if provided
+        if (description.trim()) {
+          exported.forEach(loop => {
+            loop.description = description.trim()
+          })
+        }
+        
+        chrome.runtime.sendMessage({
+          type: 'SAVE_LOOPS',
+          loops: exported
+        })
+        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+        this.uiUtilities.showToast(`Exported ${exported.length} loop(s) with description`)
+        setTimeout(() => {
+          this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
+        }, 2000)
+      }
     }
   }
 
@@ -482,7 +515,7 @@ export class FluentFlowOrchestrator {
   public destroy(): void {
     console.log('FluentFlow: Destroying orchestrator')
     
-    this.loopFeature.destroy()
+    this.multipleLoopsFeature.destroy()
     this.recordingFeature.destroy()
     this.comparisonFeature.destroy()
     this.timeBasedNotesFeature.destroy()

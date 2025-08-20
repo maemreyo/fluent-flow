@@ -323,12 +323,12 @@ export class FluentFlowSidebar {
     const sidebar = document.createElement('div')
     sidebar.className = 'fluent-flow-sidebar'
     
-    // Create header
+    // Create header with Alt+F in title
     const header = document.createElement('div')
     header.className = 'fluent-flow-sidebar-header'
     header.innerHTML = `
       <div>
-        <h2 class="fluent-flow-sidebar-title">FluentFlow</h2>
+        <h2 class="fluent-flow-sidebar-title">FluentFlow (Alt+F)</h2>
         <p class="fluent-flow-sidebar-subtitle">YouTube Language Learning</p>
       </div>
       <button class="fluent-flow-sidebar-close">
@@ -404,26 +404,6 @@ export class FluentFlowSidebar {
     
     // Clear existing content
     content.innerHTML = ''
-
-    // Add usage hint at the top
-    const hintDiv = document.createElement('div')
-    hintDiv.className = 'fluent-flow-sidebar-hint'
-    hintDiv.innerHTML = `
-      <div style="
-        background: rgba(59, 130, 246, 0.1);
-        border: 1px solid rgba(59, 130, 246, 0.2);
-        border-radius: 8px;
-        padding: 12px;
-        margin-bottom: 20px;
-        font-size: 12px;
-        color: ${this.config.theme === 'dark' ? '#93c5fd' : '#1d4ed8'};
-      ">
-        <div style="font-weight: 600; margin-bottom: 4px;">💡 Quick Tips:</div>
-        <div>• Press <kbd style="background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">Alt+F</kbd> to toggle this sidebar</div>
-        <div>• Right-click buttons for additional options</div>
-      </div>
-    `
-    content.appendChild(hintDiv)
 
     // Create groups
     Object.entries(groups).forEach(([groupName, buttons]) => {

@@ -471,6 +471,14 @@ export class UIUtilities {
     `
   }
 
+  public getClearIcon(): string {
+    return `
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path fill-rule="evenodd" clip-rule="evenodd" d="M19 5.41L17.59 4L12 9.59L6.41 4L5 5.41L10.59 11L5 16.59L6.41 18L12 12.41L17.59 18L19 16.59L13.41 11L19 5.41Z" fill="currentColor"/>
+      </svg>
+    `
+  }
+
   private getFluentFlowIcon(): string {
     return `
       <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
