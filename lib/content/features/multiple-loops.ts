@@ -51,6 +51,25 @@ export class MultipleLoopsFeature {
     private ui: UIUtilities
   ) {
     this.startLoopMonitoring()
+    this.setupEventListeners()
+  }
+  private setupEventListeners(): void {
+    // Listen for loop actions from sidebar
+    document.addEventListener('fluent-flow-loop-action', (event: CustomEvent) => {
+      const { action, loopId } = event.detail
+      
+      switch (action) {
+        case 'play':
+          this.playLoop(loopId)
+          break
+        case 'stop':
+          this.stopCurrentLoop()
+          break
+        case 'remove':
+          this.removeLoop(loopId)
+          break
+      }
+    })
   }
 
   // === PUBLIC API ===
@@ -361,6 +380,16 @@ export class MultipleLoopsFeature {
 
     // Update progress markers
     this.updateProgressMarkers()
+    
+    // Update sidebar with current loops
+    this.updateSidebarLoops()
+  }
+
+  private updateSidebarLoops(): void {
+    // Notify UI utilities to update sidebar with current loops
+    if (this.ui && typeof (this.ui as any).updateSidebarLoops === 'function') {
+      (this.ui as any).updateSidebarLoops(this.activeLoops)
+    }
   }
 
   private injectProgressMarkers(): void {
@@ -399,7 +428,7 @@ export class MultipleLoopsFeature {
     if (duration <= 0) return
 
     // Create markers for each loop
-    this.activeLoops.forEach((loop, index) => {
+    this.activeLoops.forEach((loop) => {
       this.createLoopMarkers(loop, duration, markerContainer as HTMLElement)
     })
 

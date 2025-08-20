@@ -382,6 +382,157 @@ export class FluentFlowSidebar {
     this.renderButtons()
   }
 
+  public addLoopsSection(loops: any[]): void {
+    if (!this.container) return
+
+    const content = this.container.querySelector('.fluent-flow-sidebar-content') as HTMLElement
+    if (!content) return
+
+    // Find existing loops section and remove it
+    const existingLoopsSection = content.querySelector('.fluent-flow-loops-section')
+    if (existingLoopsSection) {
+      existingLoopsSection.remove()
+    }
+
+    if (loops.length === 0) return
+
+    // Create loops section
+    const loopsSection = document.createElement('div')
+    loopsSection.className = 'fluent-flow-loops-section fluent-flow-sidebar-group'
+
+    const title = document.createElement('h3')
+    title.className = 'fluent-flow-sidebar-group-title'
+    title.textContent = `Active Loops (${loops.length})`
+    loopsSection.appendChild(title)
+
+    // Create loop items
+    loops.forEach(loop => {
+      const loopItem = document.createElement('div')
+      loopItem.className = 'fluent-flow-loop-item'
+      loopItem.style.cssText = `
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 8px 12px;
+        margin-bottom: 6px;
+        background: ${this.config.theme === 'dark' ? '#2a2a2a' : '#f8f9fa'};
+        border: 1px solid ${loop.color}44;
+        border-left: 4px solid ${loop.color};
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      `
+
+      const loopInfo = document.createElement('div')
+      loopInfo.className = 'fluent-flow-loop-info'
+      loopInfo.style.cssText = 'flex: 1; overflow: hidden;'
+      loopInfo.innerHTML = `
+        <div style="
+          font-size: 12px;
+          font-weight: 600;
+          color: ${this.config.theme === 'dark' ? '#ffffff' : '#333333'};
+          margin-bottom: 2px;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+        ">${loop.title}</div>
+        <div style="
+          font-size: 10px;
+          color: ${this.config.theme === 'dark' ? '#888888' : '#666666'};
+        ">
+          ${this.formatTime(loop.startTime)} - ${this.formatTime(loop.endTime)}
+        </div>
+      `
+
+      const loopActions = document.createElement('div')
+      loopActions.className = 'fluent-flow-loop-actions'
+      loopActions.style.cssText = 'display: flex; gap: 4px;'
+      
+      // Play button
+      const playBtn = document.createElement('button')
+      playBtn.innerHTML = loop.isActive ? '⏸️' : '▶️'
+      playBtn.style.cssText = `
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 12px;
+        transition: background-color 0.2s ease;
+      `
+      playBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (loop.isActive) {
+          this.dispatchLoopEvent('stop', loop.id)
+        } else {
+          this.dispatchLoopEvent('play', loop.id)
+        }
+      })
+
+      // Remove button
+      const removeBtn = document.createElement('button')
+      removeBtn.innerHTML = '🗑️'
+      removeBtn.style.cssText = `
+        border: none;
+        background: transparent;
+        cursor: pointer;
+        padding: 2px 4px;
+        border-radius: 3px;
+        font-size: 10px;
+        transition: background-color 0.2s ease;
+      `
+      removeBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        this.dispatchLoopEvent('remove', loop.id)
+      })
+
+      loopActions.appendChild(playBtn)
+      loopActions.appendChild(removeBtn)
+
+      loopItem.appendChild(loopInfo)
+      loopItem.appendChild(loopActions)
+
+      // Click to play loop
+      loopItem.addEventListener('click', () => {
+        this.dispatchLoopEvent('play', loop.id)
+      })
+
+      // Hover effects
+      loopItem.addEventListener('mouseenter', () => {
+        loopItem.style.background = `${loop.color}22`
+        loopItem.style.borderColor = `${loop.color}88`
+      })
+
+      loopItem.addEventListener('mouseleave', () => {
+        loopItem.style.background = this.config.theme === 'dark' ? '#2a2a2a' : '#f8f9fa'
+        loopItem.style.borderColor = `${loop.color}44`
+      })
+
+      loopsSection.appendChild(loopItem)
+    })
+
+    // Insert loops section before footer
+    const footer = content.querySelector('.fluent-flow-sidebar-footer')
+    if (footer) {
+      content.insertBefore(loopsSection, footer)
+    } else {
+      content.appendChild(loopsSection)
+    }
+  }
+
+  private formatTime(seconds: number): string {
+    const mins = Math.floor(seconds / 60)
+    const secs = Math.floor(seconds % 60)
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  private dispatchLoopEvent(action: string, loopId: string): void {
+    const event = new CustomEvent('fluent-flow-loop-action', {
+      detail: { action, loopId }
+    })
+    document.dispatchEvent(event)
+  }
+
   private renderButtons(): void {
     console.log('FluentFlow: renderButtons called')
     

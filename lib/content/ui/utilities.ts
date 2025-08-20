@@ -401,6 +401,12 @@ export class UIUtilities {
     }
   }
 
+  public updateSidebarLoops(loops: any[]): void {
+    if (this.sidebar) {
+      this.sidebar.addLoopsSection(loops)
+    }
+  }
+
   public isSidebarOpen(): boolean {
     return this.sidebar ? this.sidebar.isOpen() : false
   }
