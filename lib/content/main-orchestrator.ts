@@ -91,33 +91,33 @@ export class FluentFlowOrchestrator {
   }
 
   private async setupUI(): Promise<void> {
-    // Define button configurations
+    // Define button configurations for sidebar
     const buttonConfigs: ButtonConfig[] = [
       // Loop control group
       {
         id: 'fluent-flow-loop-start',
-        title: 'Set Loop Start (Alt+Shift+1)',
+        title: 'Set Loop Start',
         icon: this.uiUtilities.getLoopStartIcon(),
         action: () => this.loopFeature.setLoopStart(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-toggle',
-        title: 'Play/Pause Loop (Alt+L)',
+        title: 'Play/Pause Loop',
         icon: this.uiUtilities.getLoopPlayIcon(),
         action: () => this.loopFeature.toggleLoopPlayback(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-end',
-        title: 'Set Loop End (Alt+Shift+2)',
+        title: 'Set Loop End',
         icon: this.uiUtilities.getLoopEndIcon(),
         action: () => this.loopFeature.setLoopEnd(),
         group: 'loop'
       },
       {
         id: 'fluent-flow-loop-export',
-        title: 'Export Current Loop (Alt+E)',
+        title: 'Export Current Loop',
         icon: this.uiUtilities.getExportIcon(),
         action: () => this.exportCurrentLoop(),
         rightClick: () => this.exportCurrentLoopWithPrompt(),
@@ -127,41 +127,41 @@ export class FluentFlowOrchestrator {
       // Recording and notes group
       {
         id: 'fluent-flow-record',
-        title: 'Voice Recording (Alt+R)', 
+        title: 'Voice Recording', 
         icon: this.uiUtilities.getRecordIcon(),
         action: () => this.toggleRecordingWithNotes(),
-        group: 'record'
+        group: 'recording'
       },
       {
         id: 'fluent-flow-notes',
-        title: 'Add Note (Alt+N)',
+        title: 'Add Note',
         icon: this.uiUtilities.getNotesIcon(),
         action: () => this.timeBasedNotesFeature.toggleNoteTakingMode(),
         rightClick: () => this.timeBasedNotesFeature.showNotesOverlay(),
-        group: 'record'
+        group: 'notes'
       },
       
       // Other features group
       {
         id: 'fluent-flow-compare',
-        title: 'Audio Compare (Alt+C)',
+        title: 'Audio Compare',
         icon: this.uiUtilities.getCompareIcon(), 
         action: () => this.handleComparisonAction(),
         group: 'other'
       },
       {
         id: 'fluent-flow-panel',
-        title: 'FluentFlow Panel (Alt+Shift+F)',
+        title: 'Chrome Extension Panel',
         icon: this.uiUtilities.getPanelIcon(),
         action: () => this.openSidePanel(),
         group: 'other'
       }
     ]
 
-    // Create button container
+    // Create sidebar with buttons and minimal YouTube toggle
     await this.uiUtilities.createButtonContainer(buttonConfigs)
 
-    console.log('FluentFlow: UI setup complete')
+    console.log('FluentFlow: UI setup complete with sidebar')
   }
 
   private setupKeyboardShortcuts(): void {
@@ -211,6 +211,12 @@ export class FluentFlowOrchestrator {
             event.stopPropagation()
             this.timeBasedNotesFeature.showNotesOverlay()
             break
+          case 'f':
+            // Alt+F: Toggle sidebar (main shortcut)
+            event.preventDefault()
+            event.stopPropagation()
+            this.toggleSidebar()
+            break
         }
       }
 
@@ -218,6 +224,7 @@ export class FluentFlowOrchestrator {
       if (useOptionKey && event.shiftKey && event.key.toLowerCase() === 'f') {
         event.preventDefault()
         event.stopPropagation()
+        // Alt+Shift+F: Open Chrome extension sidepanel
         this.openSidePanel()
       }
 
@@ -443,6 +450,11 @@ export class FluentFlowOrchestrator {
     })
   }
 
+  private toggleSidebar(): void {
+    console.log('FluentFlow: Toggling sidebar')
+    this.uiUtilities.toggleSidebar()
+  }
+
   private exportCurrentLoop(): void {
     const exported = this.loopFeature.exportCurrentLoop()
     if (exported) {
@@ -475,11 +487,8 @@ export class FluentFlowOrchestrator {
     this.comparisonFeature.destroy()
     this.timeBasedNotesFeature.destroy()
 
-    // Clean up UI elements
-    const fluentFlowControls = document.querySelector('.fluent-flow-controls')
-    if (fluentFlowControls) {
-      fluentFlowControls.remove()
-    }
+    // Clean up UI elements including sidebar
+    this.uiUtilities.destroy()
 
     const fluentFlowStyles = document.getElementById('fluent-flow-styles')
     if (fluentFlowStyles) {

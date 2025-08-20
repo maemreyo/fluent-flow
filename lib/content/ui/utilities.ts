@@ -11,8 +11,11 @@ export interface ButtonConfig {
   group?: string
 }
 
+import { FluentFlowSidebar } from './fluent-flow-sidebar'
+
 export class UIUtilities {
   private static instance: UIUtilities
+  private sidebar: FluentFlowSidebar | null = null
   
   public static getInstance(): UIUtilities {
     if (!UIUtilities.instance) {
@@ -23,6 +26,44 @@ export class UIUtilities {
 
   private constructor() {
     this.injectBaseStyles()
+    this.initializeSidebar()
+  }
+
+  private async initializeSidebar(): Promise<void> {
+    try {
+      console.log('FluentFlow: Starting sidebar initialization')
+      
+      // Wait for YouTube container to be available
+      await this.waitForYouTubeContainer()
+      console.log('FluentFlow: YouTube container found')
+      
+      this.sidebar = new FluentFlowSidebar({
+        position: 'right',
+        theme: 'dark',
+        collapsible: true,
+        autoHide: false
+      })
+      
+      console.log('FluentFlow: Sidebar initialized successfully')
+    } catch (error) {
+      console.error('FluentFlow: Failed to initialize sidebar:', error)
+      // Set sidebar to null so fallback will be used
+      this.sidebar = null
+    }
+  }
+
+  private async waitForYouTubeContainer(): Promise<void> {
+    return new Promise<void>((resolve) => {
+      const checkForContainer = () => {
+        const container = document.querySelector('#container.style-scope.ytd-player')
+        if (container) {
+          resolve()
+        } else {
+          setTimeout(checkForContainer, 100)
+        }
+      }
+      checkForContainer()
+    })
   }
 
   // Toast notification system
@@ -65,8 +106,14 @@ export class UIUtilities {
     }, 2000)
   }
 
-  // Button state management
+  // Button state management - now works with sidebar
   public updateButtonState(buttonId: string, state: 'inactive' | 'active' | 'setting' | 'paused'): void {
+    // Update sidebar button state
+    if (this.sidebar) {
+      this.sidebar.updateButtonState(buttonId, state)
+    }
+
+    // Also update any remaining YouTube control buttons (for backward compatibility)
     const button = document.getElementById(buttonId)
     if (!button) return
 
@@ -112,7 +159,7 @@ export class UIUtilities {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
 
-  // YouTube button creation
+  // YouTube button creation (legacy support - now creates minimal toggle)
   public createYouTubeButton(config: ButtonConfig): HTMLElement {
     const button = document.createElement('button')
     button.className = 'ytp-button fluent-flow-button'
@@ -161,8 +208,117 @@ export class UIUtilities {
     return button
   }
 
-  // Button container creation with grouping
+  // New primary method: Create sidebar with buttons instead of YouTube controls
   public async createButtonContainer(buttons: ButtonConfig[]): Promise<HTMLElement> {
+    console.log('FluentFlow: createButtonContainer called with buttons:', buttons.length)
+    
+    // Wait for sidebar to be ready
+    let retryCount = 0
+    while (!this.sidebar && retryCount < 10) {
+      console.log('FluentFlow: Waiting for sidebar to initialize...', retryCount)
+      await new Promise(resolve => setTimeout(resolve, 200))
+      retryCount++
+    }
+    
+    if (!this.sidebar) {
+      console.warn('FluentFlow: Sidebar not initialized after waiting, using legacy button container')
+      // Fallback to legacy YouTube controls
+      return this.createLegacyButtonContainer(buttons)
+    }
+
+    console.log('FluentFlow: Sidebar is available, converting buttons')
+
+    // Convert ButtonConfig to SidebarButton format
+    const sidebarButtons = buttons.map(button => ({
+      id: button.id,
+      title: this.getButtonDisplayTitle(button.id),
+      icon: button.icon,
+      action: button.action,
+      rightClick: button.rightClick,
+      group: button.group as 'loop' | 'recording' | 'notes' | 'other',
+      state: 'inactive' as const
+    }))
+
+    console.log('FluentFlow: Converted sidebar buttons:', sidebarButtons)
+
+    // Add buttons to sidebar
+    this.sidebar.addButtons(sidebarButtons)
+
+    // Create minimal YouTube control button that opens sidebar
+    const sidebarToggle = this.createSidebarToggleButton()
+    
+    console.log('FluentFlow: Sidebar button container created')
+    return sidebarToggle
+  }
+
+  private createSidebarToggleButton(): HTMLElement {
+    // Check if toggle already exists
+    const existingToggle = document.querySelector('.fluent-flow-sidebar-youtube-toggle') as HTMLElement
+    if (existingToggle) {
+      return existingToggle
+    }
+
+    const toggleButton = document.createElement('button')
+    toggleButton.className = 'ytp-button fluent-flow-sidebar-youtube-toggle'
+    toggleButton.title = 'Open FluentFlow Controls (Alt+F)'
+    toggleButton.setAttribute('data-tooltip-title', 'FluentFlow Controls')
+    toggleButton.setAttribute('aria-label', 'FluentFlow Controls')
+    
+    toggleButton.style.cssText = `
+      width: 48px;
+      height: 48px;
+      padding: 8px;
+      margin: 0 2px;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      color: white;
+      opacity: 0.9;
+      transition: all 0.2s ease;
+    `
+
+    toggleButton.innerHTML = this.getFluentFlowIcon()
+    
+    toggleButton.addEventListener('click', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      if (this.sidebar) {
+        this.sidebar.toggleSidebar()
+      }
+    })
+
+    toggleButton.addEventListener('mouseenter', () => {
+      toggleButton.style.opacity = '1'
+      toggleButton.style.transform = 'scale(1.05)'
+    })
+
+    toggleButton.addEventListener('mouseleave', () => {
+      toggleButton.style.opacity = '0.9'
+      toggleButton.style.transform = 'scale(1)'
+    })
+
+    // Insert into YouTube controls
+    this.insertIntoYouTubeControls(toggleButton)
+
+    return toggleButton
+  }
+
+  private async insertIntoYouTubeControls(button: HTMLElement): Promise<void> {
+    const rightControls = await this.waitForYouTubeControls()
+    
+    // Insert before the settings button
+    const settingsButton = rightControls.querySelector('.ytp-settings-button')
+    if (settingsButton) {
+      rightControls.insertBefore(button, settingsButton)
+    } else {
+      rightControls.appendChild(button)
+    }
+  }
+
+  // Legacy button container creation (fallback)
+  private async createLegacyButtonContainer(buttons: ButtonConfig[]): Promise<HTMLElement> {
+    console.warn('FluentFlow: Using legacy button container as fallback')
+    
     // Wait for YouTube player controls to load
     const rightControls = await this.waitForYouTubeControls()
 
@@ -210,6 +366,43 @@ export class UIUtilities {
     }
 
     return buttonContainer
+  }
+
+  private getButtonDisplayTitle(buttonId: string): string {
+    const titles = {
+      'fluent-flow-loop-start': 'Set Loop Start',
+      'fluent-flow-loop-toggle': 'Toggle Loop Playback',
+      'fluent-flow-loop-end': 'Set Loop End',
+      'fluent-flow-loop-export': 'Export Current Loop',
+      'fluent-flow-record': 'Voice Recording',
+      'fluent-flow-notes': 'Add Note',
+      'fluent-flow-compare': 'Audio Compare',
+      'fluent-flow-panel': 'Chrome Extension Panel'
+    }
+    return titles[buttonId as keyof typeof titles] || buttonId.replace('fluent-flow-', '').replace('-', ' ')
+  }
+
+  // Sidebar control methods
+  public showSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.showSidebar()
+    }
+  }
+
+  public hideSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.hideSidebar()
+    }
+  }
+
+  public toggleSidebar(): void {
+    if (this.sidebar) {
+      this.sidebar.toggleSidebar()
+    }
+  }
+
+  public isSidebarOpen(): boolean {
+    return this.sidebar ? this.sidebar.isOpen() : false
   }
 
   // Icon utilities - centralized icon definitions
@@ -278,11 +471,21 @@ export class UIUtilities {
     `
   }
 
+  private getFluentFlowIcon(): string {
+    return `
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+        <circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.7"/>
+        <circle cx="17" cy="12" r="2" fill="currentColor" opacity="0.7"/>
+      </svg>
+    `
+  }
+
   // Private utility methods
   private async waitForYouTubeControls(): Promise<HTMLElement> {
     return new Promise<HTMLElement>((resolve) => {
       const checkForControls = () => {
-        const controls = document.querySelector('.ytp-left-controls') as HTMLElement
+        const controls = document.querySelector('.ytp-right-controls') as HTMLElement
         if (controls) {
           resolve(controls)
         } else {
@@ -326,8 +529,33 @@ export class UIUtilities {
           background: transparent !important;
           opacity: 0.9 !important;
         }
+
+        /* FluentFlow Sidebar YouTube Toggle */
+        .fluent-flow-sidebar-youtube-toggle:hover {
+          background: rgba(255, 255, 255, 0.1) !important;
+        }
       `
       document.head.appendChild(style)
+    }
+  }
+
+  // Cleanup method
+  public destroy(): void {
+    if (this.sidebar) {
+      this.sidebar.destroy()
+      this.sidebar = null
+    }
+
+    // Remove toggle button
+    const toggle = document.querySelector('.fluent-flow-sidebar-youtube-toggle')
+    if (toggle) {
+      toggle.remove()
+    }
+
+    // Remove legacy controls
+    const legacyContainer = document.querySelector('.fluent-flow-controls')
+    if (legacyContainer) {
+      legacyContainer.remove()
     }
   }
 }
