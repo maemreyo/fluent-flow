@@ -17,6 +17,7 @@ export class FluentFlowOrchestrator {
   private playerService: YouTubePlayerService
   private uiUtilities: UIUtilities
   private isApplyingLoop: boolean = false
+  private keyboardEventHandler: ((event: KeyboardEvent) => void) | null = null
 
   constructor() {
     // Initialize services and utilities first
@@ -170,7 +171,8 @@ export class FluentFlowOrchestrator {
   }
 
   private setupKeyboardShortcuts(): void {
-    document.addEventListener('keydown', event => {
+    // Create the keyboard event handler and store it for cleanup
+    this.keyboardEventHandler = (event: KeyboardEvent) => {
       // Prevent repeated events from holding down a key
       if (event.repeat) {
         return
@@ -334,7 +336,10 @@ export class FluentFlowOrchestrator {
         }
         ;(window as any)._ffLastNTap = now
       }
-    })
+    }
+
+    // Add the event listener
+    document.addEventListener('keydown', this.keyboardEventHandler)
 
     console.log(
       'FluentFlow: Keyboard shortcuts setup complete for',
@@ -573,6 +578,13 @@ export class FluentFlowOrchestrator {
   // Cleanup method for extension unload
   public destroy(): void {
     console.log('FluentFlow: Destroying orchestrator')
+
+    // Remove keyboard event listener first
+    if (this.keyboardEventHandler) {
+      document.removeEventListener('keydown', this.keyboardEventHandler)
+      this.keyboardEventHandler = null
+      console.log('FluentFlow: Keyboard event listener removed')
+    }
 
     this.multipleLoopsFeature.destroy()
     this.recordingFeature.destroy()
