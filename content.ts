@@ -25,6 +25,12 @@ class FluentFlowContentScript {
   }
 
   private initialize(): void {
+    // Clean up any existing FluentFlow elements first
+    const existingElements = document.querySelectorAll(
+      '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+    )
+    existingElements.forEach(element => element.remove())
+    
     // Check if we're on a YouTube watch page
     if (this.isYouTubeWatchPage()) {
       this.orchestrator = new FluentFlowOrchestrator()
@@ -51,16 +57,27 @@ class FluentFlowContentScript {
         if (this.isYouTubeWatchPage()) {
           // Initialize orchestrator if not already running
           if (!this.orchestrator) {
+            // // Clean up any existing elements before creating new ones
+            // const existingElements = document.querySelectorAll(
+            //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+            // )
+            // existingElements.forEach(element => element.remove())
+            
             setTimeout(() => {
               this.orchestrator = new FluentFlowOrchestrator()
             }, 1000) // Wait for YouTube to finish loading
           }
         } else {
-          // Clean up orchestrator if leaving watch page
-          if (this.orchestrator) {
-            this.orchestrator.destroy()
-            this.orchestrator = null
-          }
+          // // Clean up orchestrator if leaving watch page
+          // if (this.orchestrator) {
+          //   this.orchestrator.destroy()
+          //   this.orchestrator = null
+          // }
+          // // Also clean up any remaining UI elements
+          // const existingElements = document.querySelectorAll(
+          //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+          // )
+          // existingElements.forEach(element => element.remove())
         }
       }
     }, 1000)
@@ -71,12 +88,23 @@ class FluentFlowContentScript {
       if (this.orchestrator) {
         this.orchestrator.destroy()
       }
+      // // Final cleanup of UI elements
+      // const existingElements = document.querySelectorAll(
+      //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+      // )
+      // existingElements.forEach(element => element.remove())
     })
   }
 }
 
 // Initialize FluentFlow when ready
 function initializeFluentFlow() {
+  // // Clean up any existing FluentFlow elements first
+  // const existingElements = document.querySelectorAll(
+  //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+  // )
+  // existingElements.forEach(element => element.remove())
+  
   // Check if we're on a YouTube watch page
   if (window.location.hostname === 'www.youtube.com' && 
       window.location.pathname === '/watch') {
