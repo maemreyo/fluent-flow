@@ -89,23 +89,5 @@ class FluentFlowContentScript {
   }
 }
 
-// Initialize FluentFlow when ready
-function initializeFluentFlow() {
-  // // Clean up any existing FluentFlow elements first
-  // const existingElements = document.querySelectorAll(
-  //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
-  // )
-  // existingElements.forEach(element => element.remove())
-
-  // Check if we're on a YouTube watch page
-  if (window.location.hostname === 'www.youtube.com' && window.location.pathname === '/watch') {
-    new FluentFlowContentScript()
-  }
-}
-
-// Initialize immediately if DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFluentFlow)
-} else {
-  initializeFluentFlow()
-}
+// Initialize when content script is loaded (handled by Plasmo)
+new FluentFlowContentScript()

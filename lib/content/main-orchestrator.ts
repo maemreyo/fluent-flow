@@ -219,12 +219,6 @@ export class FluentFlowOrchestrator {
             console.log('FluentFlow: Comparison action')
             this.handleComparisonAction()
             break
-          case 'keye':
-            event.preventDefault()
-            event.stopPropagation()
-            console.log('FluentFlow: Export loops')
-            this.exportCurrentLoops()
-            break
           case 'keyv':
             event.preventDefault()
             event.stopPropagation()
@@ -603,17 +597,3 @@ export class FluentFlowOrchestrator {
   }
 }
 
-// Initialize FluentFlow when ready
-function initializeFluentFlow() {
-  // Check if we're on a YouTube watch page
-  if (window.location.hostname === 'www.youtube.com' && window.location.pathname === '/watch') {
-    new FluentFlowOrchestrator()
-  }
-}
-
-// Initialize immediately if DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', initializeFluentFlow)
-} else {
-  initializeFluentFlow()
-}
