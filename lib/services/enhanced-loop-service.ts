@@ -152,6 +152,68 @@ export class EnhancedLoopService {
   }
 
   /**
+   * Update loop with transcript metadata and status
+   */
+  async updateLoopTranscript(
+    loopId: string, 
+    transcriptData: {
+      hasTranscript: boolean
+      transcriptText: string
+      transcriptLanguage: string
+      transcriptSegmentCount: number
+      questionsGenerated: boolean
+      questionCount: number
+      lastQuestionGeneration: string
+    }
+  ): Promise<void> {
+    if (!loopId || typeof loopId !== 'string') {
+      throw new Error('Valid loop ID is required')
+    }
+
+    if (!transcriptData || typeof transcriptData !== 'object') {
+      throw new Error('Valid transcript data is required')
+    }
+
+    // Validate required fields
+    if (typeof transcriptData.hasTranscript !== 'boolean') {
+      throw new Error('hasTranscript must be a boolean')
+    }
+
+    if (transcriptData.hasTranscript) {
+      if (!transcriptData.transcriptText || typeof transcriptData.transcriptText !== 'string') {
+        throw new Error('transcriptText is required when hasTranscript is true')
+      }
+
+      if (transcriptData.transcriptText.trim().length === 0) {
+        throw new Error('transcriptText cannot be empty')
+      }
+    }
+
+    try {
+      const updateData = {
+        hasTranscript: transcriptData.hasTranscript,
+        transcriptMetadata: transcriptData.hasTranscript ? {
+          text: transcriptData.transcriptText,
+          language: transcriptData.transcriptLanguage || 'en',
+          segmentCount: transcriptData.transcriptSegmentCount || 0,
+          lastAnalyzed: new Date().toISOString()
+        } : null,
+        questionsGenerated: transcriptData.questionsGenerated,
+        questionCount: transcriptData.questionCount || 0,
+        lastQuestionGeneration: transcriptData.lastQuestionGeneration,
+        updatedAt: new Date().toISOString()
+      }
+
+      await this.storageService.updateLoop(loopId, updateData)
+      
+      console.log(`FluentFlow: Updated loop ${loopId} with transcript metadata`)
+    } catch (error) {
+      console.error('Failed to update loop transcript data:', error)
+      throw new Error(`Failed to update loop transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Removes audio data from loop but keeps the loop itself
    */
   async removeAudioFromLoop(loopId: string): Promise<boolean> {

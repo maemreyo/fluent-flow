@@ -314,10 +314,14 @@ export interface ConversationQuestions {
   questions: ConversationQuestion[]
   metadata: {
     totalQuestions: number
-    audioLength: number
+    audioLength?: number
     analysisDate: string
-    generatedFromAudio: boolean
+    generatedFromAudio?: boolean
+    generatedFromTranscript?: boolean
     originalAudioSize?: number
+    transcriptLength?: number
+    transcriptSegmentCount?: number
+    transcriptLanguage?: string
     canRegenerateQuestions: boolean
   }
 }

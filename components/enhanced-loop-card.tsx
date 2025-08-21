@@ -93,7 +93,11 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
   }
 
   const handleGenerateQuestions = async () => {
-    if (!onGenerateQuestions || !loop.hasAudioSegment) return
+    if (!onGenerateQuestions) return
+    
+    // Check if we can generate questions (either audio or transcript available)
+    const canGenerateQuestions = loop.hasAudioSegment || loop.videoId
+    if (!canGenerateQuestions) return
 
     setIsGenerating(true)
     try {
@@ -196,6 +200,12 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
                   Audio
                 </Badge>
               )}
+              {loop.videoId && (
+                <Badge variant="outline" className="flex items-center gap-1">
+                  <Volume2 className="w-3 h-3" />
+                  Transcript
+                </Badge>
+              )}
               {loop.questionsGenerated && (
                 <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
                   <Brain className="w-3 h-3" />
@@ -258,7 +268,7 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
           <Button
             onClick={handleGenerateQuestions}
-            disabled={!loop.hasAudioSegment || isGenerating}
+            disabled={(!loop.hasAudioSegment && !loop.videoId) || isGenerating}
             variant="outline"
             className="flex-1 min-w-0"
           >

@@ -92,6 +92,57 @@ export class ConversationAnalysisService {
   }
 
   /**
+   * Generate questions from transcript text instead of audio
+   */
+  async generateQuestionsFromTranscript(loop: any): Promise<ConversationQuestions> {
+    // Input validation
+    if (!loop) {
+      throw new Error('Loop is required')
+    }
+
+    if (!loop.id || typeof loop.id !== 'string') {
+      throw new Error('Valid loop ID is required')
+    }
+
+    if (!loop.transcriptText || typeof loop.transcriptText !== 'string') {
+      throw new Error('No transcript text available for analysis')
+    }
+
+    if (loop.transcriptText.trim().length < 10) {
+      throw new Error('Transcript text is too short to generate meaningful questions')
+    }
+
+    try {
+      // Build transcript-specific prompt
+      const prompt = this.buildTranscriptQuestionPrompt(loop)
+      
+      // Call Gemini API with text-only prompt (no audio file)
+      const response = await this.callGeminiAPI(prompt)
+
+      // Parse and validate response
+      const questions = this.parseQuestionsResponse(response, loop)
+
+      return {
+        loopId: loop.id,
+        questions: questions.questions,
+        metadata: {
+          ...questions.metadata,
+          generatedFromTranscript: true,
+          transcriptLength: loop.transcriptText.length,
+          transcriptSegmentCount: loop.transcriptSegments?.length || 0,
+          transcriptLanguage: loop.transcriptLanguage || 'en',
+          canRegenerateQuestions: true
+        }
+      }
+    } catch (error) {
+      console.error('Transcript-based question generation failed:', error)
+      throw new Error(
+        `Failed to generate questions from transcript: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
    * Uploads audio blob to Gemini Files API
    */
   private async uploadAudioToGemini(audioBlob: Blob): Promise<string> {
@@ -163,14 +214,10 @@ export class ConversationAnalysisService {
   /**
    * Calls Gemini API to generate content
    */
-  private async callGeminiAPI(prompt: string, audioFileUri: string): Promise<any> {
+  private async callGeminiAPI(prompt: string, audioFileUri?: string): Promise<any> {
     // Input validation
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('Valid prompt is required')
-    }
-
-    if (!audioFileUri || typeof audioFileUri !== 'string') {
-      throw new Error('Valid audio file URI is required')
     }
 
     if (prompt.length > 100000) {
@@ -180,22 +227,25 @@ export class ConversationAnalysisService {
 
     const model = this.config.model || 'gemini-2.5-flash-lite'
 
-    const requestBody = {
-      contents: [
-        {
-          parts: [
-            {
-              text: prompt
-            },
-            {
-              file_data: {
-                mime_type: 'audio/webm',
-                file_uri: audioFileUri
-              }
-            }
-          ]
+    // Build request parts - text-only or text + audio
+    const parts: any[] = [{ text: prompt }]
+    
+    if (audioFileUri) {
+      if (typeof audioFileUri !== 'string') {
+        throw new Error('Invalid audio file URI format')
+      }
+      parts.push({
+        file_data: {
+          mime_type: 'audio/webm',
+          file_uri: audioFileUri
         }
-      ],
+      })
+    }
+
+    const requestBody = {
+      contents: [{
+        parts
+      }],
       generationConfig: {
         temperature: 0.1, // Low temperature for consistent questions
         topK: 1,
@@ -334,6 +384,85 @@ IMPORTANT:
 - Provide helpful explanations that reference specific audio moments
 - Use timestamps to indicate when in the audio the answer occurs
 - Return only valid JSON, no additional text
+`.trim()
+  }
+
+  /**
+   * Build prompt for transcript-based question generation
+   */
+  private buildTranscriptQuestionPrompt(loop: any): string {
+    const duration = loop.endTime - loop.startTime
+    const transcriptText = loop.transcriptText.trim()
+    const wordCount = transcriptText.split(/\s+/).length
+
+    return `
+You are an expert English conversation teacher analyzing a dialogue transcript for listening comprehension practice.
+
+Context:
+- Video Title: "${loop.videoTitle}"
+- Loop Title: "${loop.title}"  
+- Duration: ${duration} seconds
+- Transcript Word Count: ${wordCount} words
+- Description: ${loop.description || 'No additional context provided'}
+- Target: Generate exactly 10 multiple-choice questions
+
+TRANSCRIPT TEXT:
+"${transcriptText}"
+
+Instructions:
+1. Analyze the transcript text carefully
+2. Create 10 multiple-choice questions that test reading/listening comprehension
+3. Each question must have exactly 4 options (A, B, C, D)
+4. Include a mix of question types and difficulty levels
+5. Base questions ONLY on what is actually stated in the transcript
+
+Question Distribution:
+- 4 Easy questions (main ideas, obvious details)
+- 4 Medium questions (specific details, vocabulary, sequence)
+- 2 Hard questions (inference, implied meaning, tone)
+
+Question Types to Include:
+- Main idea (What is the main topic discussed?)
+- Specific details (Who said what? When? Where?)
+- Vocabulary (What does X mean in this context?)
+- Sequence (What happened first/next?)
+- Inference (What can we conclude from the conversation?)
+- Speaker intent/attitude
+
+Return ONLY valid JSON in this exact format:
+{
+  "questions": [
+    {
+      "id": "q1",
+      "question": "What is the main topic being discussed?",
+      "options": [
+        "A) Travel plans for the weekend",
+        "B) Work-related projects", 
+        "C) Restaurant recommendations",
+        "D) Weather forecast"
+      ],
+      "correctAnswer": "A",
+      "explanation": "The speakers clearly mention planning a trip in the transcript text.",
+      "difficulty": "easy",
+      "type": "main_idea",
+      "timestamp": ${Math.round(loop.startTime + duration * 0.2)}
+    }
+  ],
+  "metadata": {
+    "totalQuestions": 10,
+    "transcriptLength": ${transcriptText.length},
+    "wordCount": ${wordCount},
+    "analysisDate": "${new Date().toISOString()}"
+  }
+}
+
+CRITICAL REQUIREMENTS:
+- Generate exactly 10 questions based solely on the transcript content
+- Make all options plausible but clearly distinguishable
+- Provide helpful explanations that reference specific parts of the transcript
+- Use realistic timestamps within the ${loop.startTime}-${loop.endTime} second range
+- Return only valid JSON, no additional text
+- Ensure questions test comprehension of the actual dialogue content
 `.trim()
   }
 
