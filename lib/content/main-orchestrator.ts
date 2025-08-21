@@ -241,7 +241,7 @@ export class FluentFlowOrchestrator {
         }
       }
 
-      // Panel toggle: Option+Shift+F (Alt+Shift+F)
+      // Panel toggle: Option+F (Alt+Shift+F)
       if (
         event.altKey &&
         event.shiftKey &&
@@ -255,9 +255,10 @@ export class FluentFlowOrchestrator {
         this.openSidePanel()
       }
 
-      // Loop-specific shortcuts: Option+Shift+Key (Alt+Shift+Key)
-      if (event.altKey && event.shiftKey && !event.metaKey && !event.ctrlKey) {
-        console.log(`FluentFlow: Option+Shift+${event.code} detected (key: ${event.key})`)
+      // Loop-specific shortcuts: Option+Key (Alt+Key)
+      // if (event.altKey && event.shiftKey && !event.metaKey && !event.ctrlKey) {
+      if (event.altKey && !event.metaKey && !event.ctrlKey) {
+        console.log(`FluentFlow: Option+${event.code} detected (key: ${event.key})`)
         switch (event.code.toLowerCase()) {
           case 'digit1':
             event.preventDefault()
@@ -515,13 +516,14 @@ export class FluentFlowOrchestrator {
     // Add debouncing to prevent double-triggering
     const now = Date.now()
     const lastToggle = (this as any)._lastSidebarToggle || 0
-    
-    if (now - lastToggle < 300) { // 300ms debounce
+
+    if (now - lastToggle < 300) {
+      // 300ms debounce
       console.log('FluentFlow: Sidebar toggle debounced (too quick)')
       return
     }
-    
-    (this as any)._lastSidebarToggle = now
+
+    ;(this as any)._lastSidebarToggle = now
     console.log('FluentFlow: Toggling sidebar')
     this.uiUtilities.toggleSidebar()
   }
