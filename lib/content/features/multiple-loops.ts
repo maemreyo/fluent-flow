@@ -67,6 +67,13 @@ export class MultipleLoopsFeature {
           break
         case 'remove':
           this.removeLoop(loopId)
+          // Also notify background to delete from persistent storage
+          chrome.runtime.sendMessage({
+            type: 'DELETE_LOOP',
+            data: { id: loopId }
+          }).catch(error => {
+            console.warn('FluentFlow: Failed to delete loop from storage:', error)
+          })
           break
       }
     })
@@ -177,14 +184,22 @@ export class MultipleLoopsFeature {
   }
 
   public removeLoop(loopId: string): void {
+    console.log('FluentFlow: Removing loop:', loopId)
+    console.log('FluentFlow: Active loops before removal:', this.activeLoops.length, this.activeLoops.map(l => ({ id: l.id, title: l.title })))
+    
     const loop = this.activeLoops.find(l => l.id === loopId)
-    if (!loop) return
+    if (!loop) {
+      console.log('FluentFlow: Loop not found for removal:', loopId)
+      return
+    }
 
     if (this.currentlyPlayingLoop === loopId) {
       this.stopCurrentLoop()
     }
 
     this.activeLoops = this.activeLoops.filter(l => l.id !== loopId)
+    console.log('FluentFlow: Active loops after removal:', this.activeLoops.length, this.activeLoops.map(l => ({ id: l.id, title: l.title })))
+    
     this.updateUI()
     this.ui.showToast(`Loop "${loop.title}" removed`)
   }
@@ -225,9 +240,12 @@ export class MultipleLoopsFeature {
   }
 
   public exportCurrentLoops(): SavedLoop[] {
+    console.log('FluentFlow: Exporting current loops. Active loops count:', this.activeLoops.length)
+    console.log('FluentFlow: Active loops:', this.activeLoops.map(l => ({ id: l.id, title: l.title })))
+    
     const videoInfo = this.player.getVideoInfo()
     
-    return this.activeLoops.map(loop => ({
+    const exported = this.activeLoops.map(loop => ({
       id: loop.id,
       title: loop.title,
       videoId: videoInfo.id,
@@ -239,6 +257,9 @@ export class MultipleLoopsFeature {
       createdAt: loop.createdAt,
       updatedAt: new Date()
     }))
+    
+    console.log('FluentFlow: Exported loops:', exported.length, exported.map(l => ({ id: l.id, title: l.title })))
+    return exported
   }
 
   public importLoops(savedLoops: SavedLoop[]): void {

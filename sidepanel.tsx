@@ -554,8 +554,8 @@ export default function FluentFlowSidePanel() {
 
 
   return (
-    <div className="h-full bg-background">
-      <div className="border-b p-4">
+    <div className="h-full bg-background flex flex-col">
+      <div className="border-b p-4 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">FluentFlow</h1>
@@ -583,8 +583,8 @@ export default function FluentFlowSidePanel() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1">
-        <TabsList className="grid w-full grid-cols-3 m-4">
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
+        <TabsList className="grid w-full grid-cols-3 m-4 flex-shrink-0">
           <TabsTrigger value="dashboard" className="text-xs">
             <BarChart3 className="h-4 w-4 mr-1" />
             Dashboard
@@ -599,10 +599,10 @@ export default function FluentFlowSidePanel() {
           </TabsTrigger>
         </TabsList>
 
-        <div className="px-4 pb-4">
-          <TabsContent value="dashboard" className="mt-0">{renderDashboard()}</TabsContent>
-          <TabsContent value="loops" className="mt-0">{renderLoops()}</TabsContent>
-          <TabsContent value="recordings" className="mt-0">{renderRecordings()}</TabsContent>
+        <div className="px-4 pb-4 flex-1 overflow-y-auto">
+          <TabsContent value="dashboard" className="mt-0 h-full">{renderDashboard()}</TabsContent>
+          <TabsContent value="loops" className="mt-0 h-full">{renderLoops()}</TabsContent>
+          <TabsContent value="recordings" className="mt-0 h-full">{renderRecordings()}</TabsContent>
         </div>
       </Tabs>
     </div>
