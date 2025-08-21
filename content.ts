@@ -1,20 +1,13 @@
-import type { PlasmoCSConfig } from "plasmo"
-import type {
-  YouTubeVideoInfo
-} from './lib/types/fluent-flow-types'
-
-export const config: PlasmoCSConfig = {
-  matches: [
-    "https://www.youtube.com/watch*",
-    "https://youtube.com/watch*"
-  ],
-  run_at: "document_end"
-}
-
+import type { PlasmoCSConfig } from 'plasmo'
 // FluentFlow Content Script - Refactored using Separation of Concerns
 // This file now acts as the entry point and delegates to the main orchestrator
 
 import { FluentFlowOrchestrator } from './lib/content/main-orchestrator'
+
+export const config: PlasmoCSConfig = {
+  matches: ['https://www.youtube.com/watch*', 'https://youtube.com/watch*'],
+  run_at: 'document_end'
+}
 
 class FluentFlowContentScript {
   private orchestrator: FluentFlowOrchestrator | null = null
@@ -30,7 +23,7 @@ class FluentFlowContentScript {
       '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
     )
     existingElements.forEach(element => element.remove())
-    
+
     // Check if we're on a YouTube watch page
     if (this.isYouTubeWatchPage()) {
       this.orchestrator = new FluentFlowOrchestrator()
@@ -43,41 +36,40 @@ class FluentFlowContentScript {
   }
 
   private isYouTubeWatchPage(): boolean {
-    return window.location.hostname === 'www.youtube.com' && 
-           window.location.pathname === '/watch'
+    return window.location.hostname === 'www.youtube.com' && window.location.pathname === '/watch'
   }
 
   private setupNavigationListener(): void {
     let currentUrl = window.location.href
-    
+
     const navigationObserver = setInterval(() => {
       if (window.location.href !== currentUrl) {
         currentUrl = window.location.href
-        
+
         if (this.isYouTubeWatchPage()) {
           // Initialize orchestrator if not already running
           if (!this.orchestrator) {
-            // Clean up any existing elements before creating new ones
-            const existingElements = document.querySelectorAll(
-              '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
-            )
-            existingElements.forEach(element => element.remove())
-            
+            // // Clean up any existing elements before creating new ones
+            // const existingElements = document.querySelectorAll(
+            //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+            // )
+            // existingElements.forEach(element => element.remove())
+
             setTimeout(() => {
               this.orchestrator = new FluentFlowOrchestrator()
             }, 1000) // Wait for YouTube to finish loading
           }
         } else {
-          // Clean up orchestrator if leaving watch page
-          if (this.orchestrator) {
-            this.orchestrator.destroy()
-            this.orchestrator = null
-          }
-          // Also clean up any remaining UI elements
-          const existingElements = document.querySelectorAll(
-            '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
-          )
-          existingElements.forEach(element => element.remove())
+          // // Clean up orchestrator if leaving watch page
+          // if (this.orchestrator) {
+          //   this.orchestrator.destroy()
+          //   this.orchestrator = null
+          // }
+          // // Also clean up any remaining UI elements
+          // const existingElements = document.querySelectorAll(
+          //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+          // )
+          // existingElements.forEach(element => element.remove())
         }
       }
     }, 1000)
@@ -88,27 +80,25 @@ class FluentFlowContentScript {
       if (this.orchestrator) {
         this.orchestrator.destroy()
       }
-      // Final cleanup of UI elements
-      const existingElements = document.querySelectorAll(
-        '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
-      )
-      existingElements.forEach(element => element.remove())
+      // // Final cleanup of UI elements
+      // const existingElements = document.querySelectorAll(
+      //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+      // )
+      // existingElements.forEach(element => element.remove())
     })
   }
 }
 
 // Initialize FluentFlow when ready
 function initializeFluentFlow() {
-  // Clean up any existing FluentFlow elements first
-  const existingElements = document.querySelectorAll(
-    '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
-  )
-  existingElements.forEach(element => element.remove())
-  
+  // // Clean up any existing FluentFlow elements first
+  // const existingElements = document.querySelectorAll(
+  //   '.fluent-flow-sidebar, .fluent-flow-sidebar-toggle, .fluent-flow-sidebar-youtube-toggle'
+  // )
+  // existingElements.forEach(element => element.remove())
+
   // Check if we're on a YouTube watch page
-  if (window.location.hostname === 'www.youtube.com' && 
-      window.location.pathname === '/watch') {
-    
+  if (window.location.hostname === 'www.youtube.com' && window.location.pathname === '/watch') {
     new FluentFlowContentScript()
   }
 }
