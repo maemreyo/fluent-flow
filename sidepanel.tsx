@@ -524,7 +524,7 @@ export default function FluentFlowSidePanel() {
         </CardHeader>
       </Card>
 
-      <div className="space-y-4">
+      <div className="flex-1 space-y-4 pr-1">
         {loadingLoops && (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
@@ -615,7 +615,7 @@ export default function FluentFlowSidePanel() {
   )
 
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex flex-col bg-background">
       <div className="flex-shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div>
@@ -664,7 +664,7 @@ export default function FluentFlowSidePanel() {
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex-1 px-4 pb-4">
           <TabsContent value="dashboard" className="mt-0 h-full">
             {renderDashboard()}
           </TabsContent>
