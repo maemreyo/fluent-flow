@@ -5,29 +5,31 @@ import {
   BarChart3,
   Calendar,
   Clock,
-  Download,
   FileAudio,
   Loader2,
   Mic,
   Music,
-  Play,
   RefreshCw,
   Repeat,
   Search,
+  Settings,
   Target,
-  Trash2,
   User,
   UserX
 } from 'lucide-react'
 import { AudioPlayer } from './components/audio-player'
+import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
+import { EnhancedLoopCard } from './components/enhanced-loop-card'
+import { StorageManagementPanel } from './components/storage-management-panel'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Input } from './components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
-import { useFluentFlowSupabaseStore as useFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
+import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
+import { useFluentFlowSupabaseStore as useFluentFlowStore, getFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from './lib/supabase/client'
-import type { SavedLoop } from './lib/types/fluent-flow-types'
+import type { SavedLoop, ConversationQuestions } from './lib/types/fluent-flow-types'
 import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
@@ -42,6 +44,13 @@ export default function FluentFlowSidePanel() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loopFilter, setLoopFilter] = useState('')
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
+  
+  // Conversation loop integration state
+  const [integrationService, setIntegrationService] = useState<ConversationLoopIntegrationService | null>(null)
+  const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
+  const [activeQuestionLoop, setActiveQuestionLoop] = useState<SavedLoop | null>(null)
+  const [showStoragePanel, setShowStoragePanel] = useState(false)
+  const [geminiConfigured, setGeminiConfigured] = useState(false)
 
   const {
     allSessions,
@@ -60,6 +69,7 @@ export default function FluentFlowSidePanel() {
     checkAuthStatus()
     loadSavedLoops()
     loadSavedRecordings()
+    initializeIntegration()
   }, [])
 
   const checkAuthStatus = async () => {
@@ -70,6 +80,52 @@ export default function FluentFlowSidePanel() {
       console.error('Error checking auth status:', error)
     } finally {
       setCheckingAuth(false)
+    }
+  }
+
+  const initializeIntegration = async () => {
+    try {
+      let geminiConfig = null
+      
+      try {
+        // First try to get config from Supabase
+        const { supabaseService } = getFluentFlowStore()
+        const apiConfig = await supabaseService.getApiConfig()
+        geminiConfig = apiConfig?.gemini
+        console.log('FluentFlow: Loaded Gemini config from Supabase:', !!geminiConfig?.apiKey)
+      } catch (supabaseError) {
+        console.log('FluentFlow: Failed to load from Supabase, trying Chrome storage:', supabaseError)
+        
+        // Fallback to Chrome storage
+        try {
+          const response = await chrome.runtime.sendMessage({
+            type: "STORAGE_OPERATION",
+            operation: "get",
+            key: "api_config"
+          })
+          geminiConfig = response.data?.gemini
+          console.log('FluentFlow: Loaded Gemini config from Chrome storage:', !!geminiConfig?.apiKey)
+        } catch (chromeError) {
+          console.log('FluentFlow: Failed to load from Chrome storage:', chromeError)
+        }
+      }
+      
+      if (geminiConfig?.apiKey) {
+        console.log('FluentFlow: Initializing conversation loop integration')
+        const service = new ConversationLoopIntegrationService(
+          useFluentFlowStore.getState(), // storage service
+          geminiConfig
+        )
+        setIntegrationService(service)
+        setGeminiConfigured(true)
+        console.log('FluentFlow: Conversation loop integration ready')
+      } else {
+        console.log('FluentFlow: Gemini API not configured')
+        setGeminiConfigured(false)
+      }
+    } catch (error) {
+      console.error('Failed to initialize conversation integration:', error)
+      setGeminiConfigured(false)
     }
   }
 
@@ -410,66 +466,174 @@ export default function FluentFlowSidePanel() {
                 Create loops with audio and generate AI-powered practice questions
               </CardDescription>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowStoragePanel(!showStoragePanel)}
+            >
+              <Settings className="mr-2 h-4 w-4" />
+              Storage
+            </Button>
           </div>
         </CardHeader>
       </Card>
 
+      {/* Gemini Configuration Status */}
       <Card>
-        <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <Target className="mb-4 h-12 w-12 text-muted-foreground" />
-          <CardTitle className="mb-2 text-lg">Conversation Loop Integration</CardTitle>
-          <CardDescription className="mb-4 max-w-md">
-            This feature integrates the new conversation loop system with AI-powered question generation.
-            Configure your Gemini API key in settings to enable this feature.
-          </CardDescription>
-          
-          <div className="space-y-3 text-left text-sm text-muted-foreground max-w-lg">
-            <div className="flex items-start gap-2">
-              <Badge className="mt-0.5">1</Badge>
-              <span>Create loops on YouTube videos with audio capture</span>
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className={`h-2 w-2 rounded-full ${geminiConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+              <span className="text-sm font-medium">
+                {geminiConfigured ? 'Gemini API Configured' : 'Gemini API Not Configured'}
+              </span>
             </div>
-            <div className="flex items-start gap-2">
-              <Badge className="mt-0.5">2</Badge>
-              <span>AI analyzes audio and generates 10 practice questions</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <Badge className="mt-0.5">3</Badge>
-              <span>Interactive quiz with scoring and detailed feedback</span>
-            </div>
-            <div className="flex items-start gap-2">
-              <Badge className="mt-0.5">4</Badge>
-              <span>Automatic storage cleanup and retention management</span>
-            </div>
+            {!geminiConfigured && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => chrome.runtime.openOptionsPage()}
+              >
+                Configure API
+              </Button>
+            )}
           </div>
           
-          <div className="mt-6 flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => chrome.runtime.openOptionsPage()}
-              className="flex items-center gap-2"
-            >
-              <Settings className="h-4 w-4" />
-              Configure Gemini API
-            </Button>
-            <Button
-              variant="outline"
-              onClick={() => setActiveTab('loops')}
-              className="flex items-center gap-2"
-            >
-              <Repeat className="h-4 w-4" />
-              View Existing Loops
-            </Button>
-          </div>
-
-          <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200 max-w-lg">
-            <p className="text-xs font-medium text-blue-800">🚀 Production-Ready System</p>
-            <p className="text-xs text-blue-700 mt-1">
-              Complete conversation loop integration with enterprise-level security, 
-              error handling, and performance optimization.
-            </p>
-          </div>
+          {geminiConfigured && integrationService && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              <p>✅ Audio capture enabled</p>
+              <p>✅ Question generation ready</p>
+              <p>✅ Storage management active</p>
+            </div>
+          )}
+          
+          {!geminiConfigured && (
+            <div className="mt-3 text-sm text-muted-foreground">
+              <p>Configure your Gemini API key in Options → API tab to enable:</p>
+              <ul className="mt-2 ml-4 list-disc space-y-1">
+                <li>Audio-powered question generation</li>
+                <li>Interactive practice sessions</li>
+                <li>Automatic storage cleanup</li>
+              </ul>
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Storage Management Panel */}
+      {showStoragePanel && integrationService && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Storage Management</CardTitle>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowStoragePanel(false)}
+              >
+                ✕
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <StorageManagementPanel
+              onGetStorageStats={() => integrationService.getStorageStats()}
+              onCleanupNow={() => integrationService.runStorageCleanup()}
+              onEmergencyCleanup={() => integrationService.emergencyCleanup()}
+              onGetScheduledCleanups={() => integrationService.getScheduledCleanups()}
+              onBulkSetRetentionPolicy={(loopIds, policy) => integrationService.bulkUpdateRetentionPolicies(loopIds, policy)}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Active Questions Panel */}
+      {activeQuestions && activeQuestionLoop && geminiConfigured && (
+        <ConversationQuestionsPanel
+          questions={activeQuestions}
+          loop={activeQuestionLoop}
+          onComplete={(results, score) => {
+            console.log('Practice session completed:', { results, score })
+            setActiveQuestions(null)
+            setActiveQuestionLoop(null)
+          }}
+          onClose={() => {
+            setActiveQuestions(null)
+            setActiveQuestionLoop(null)
+          }}
+        />
+      )}
+
+      {/* Integration Instructions */}
+      {!geminiConfigured && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <Target className="mb-4 h-12 w-12 text-muted-foreground" />
+            <CardTitle className="mb-2 text-lg">Ready to Practice Conversations?</CardTitle>
+            <CardDescription className="mb-6 max-w-md">
+              Configure your Gemini API key to unlock AI-powered conversation analysis and question generation.
+            </CardDescription>
+            
+            <div className="space-y-3 text-left text-sm text-muted-foreground max-w-lg">
+              <div className="flex items-start gap-2">
+                <Badge className="mt-0.5">1</Badge>
+                <span>Create loops on YouTube videos with audio capture enabled</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge className="mt-0.5">2</Badge>
+                <span>AI analyzes audio and generates 10 practice questions</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge className="mt-0.5">3</Badge>
+                <span>Interactive quiz with scoring and detailed feedback</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <Badge className="mt-0.5">4</Badge>
+                <span>Automatic storage cleanup and retention management</span>
+              </div>
+            </div>
+            
+            <div className="mt-6 flex gap-2">
+              <Button
+                onClick={() => chrome.runtime.openOptionsPage()}
+                className="flex items-center gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Configure Gemini API
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Feature Summary for Configured Users */}
+      {geminiConfigured && !activeQuestions && !showStoragePanel && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <CardTitle className="mb-4 text-lg">🎉 Conversation Practice Ready!</CardTitle>
+            <CardDescription className="mb-6">
+              Go to the Loops tab to create conversation loops with audio capture, then return here to see generated practice questions.
+            </CardDescription>
+            
+            <div className="flex justify-center gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setActiveTab('loops')}
+              >
+                <Repeat className="mr-2 h-4 w-4" />
+                Create Loops
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => setShowStoragePanel(true)}
+              >
+                <Settings className="mr-2 h-4 w-4" />
+                Manage Storage
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   )
 
@@ -639,53 +803,28 @@ export default function FluentFlowSidePanel() {
 
         {!loadingLoops &&
           filteredLoops.map(loop => (
-            <Card key={loop.id}>
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex-1 space-y-1">
-                    <CardTitle className="text-base">{loop.title}</CardTitle>
-                    <CardDescription className="text-sm">{loop.videoTitle}</CardDescription>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span>
-                        {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
-                      </span>
-                      <span>•</span>
-                      <span>Duration: {formatTime(loop.endTime - loop.startTime)}</span>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Created: {formatDate(new Date(loop.createdAt))}
-                    </div>
-                    {loop.description && (
-                      <p className="mt-2 text-sm text-muted-foreground">{loop.description}</p>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={() => applyLoop(loop)}
-                    disabled={applyingLoopId === loop.id}
-                    className="flex-1"
-                  >
-                    {applyingLoopId === loop.id ? (
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                      <Play className="mr-2 h-4 w-4" />
-                    )}
-                    {applyingLoopId === loop.id ? 'Applying...' : 'Apply'}
-                  </Button>
-                  <Button size="sm" variant="outline" onClick={() => exportLoop(loop)}>
-                    <Download className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="destructive" onClick={() => deleteLoop(loop.id)}>
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <EnhancedLoopCard
+              key={loop.id}
+              loop={loop}
+              onApply={() => applyLoop(loop)}
+              onDelete={(loopId) => deleteLoop(loopId)}
+              onExport={() => exportLoop(loop)}
+              onGenerateQuestions={async (loop) => {
+                if (integrationService) {
+                  try {
+                    const questions = await integrationService.generateQuestionsForLoop(loop.id)
+                    setActiveQuestions(questions)
+                    setActiveQuestionLoop(loop)
+                    return questions
+                  } catch (error) {
+                    console.error('Failed to generate questions:', error)
+                    throw error
+                  }
+                }
+                throw new Error('Integration service not available')
+              }}
+              isApplying={applyingLoopId === loop.id}
+            />
           ))}
       </div>
     </div>
