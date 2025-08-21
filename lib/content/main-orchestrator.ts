@@ -5,10 +5,9 @@
 import { ComparisonFeature } from './features/comparison'
 import { MultipleLoopsFeature } from './features/multiple-loops'
 import { RecordingFeature } from './features/recording'
+import { TimeBasedNotesFeature } from './features/time-based-notes'
 import { YouTubePlayerService, type VideoInfo } from './integrations/youtube-player'
 import { UIUtilities, type ButtonConfig } from './ui/utilities'
-
-import { TimeBasedNotesFeature } from './features/time-based-notes'
 
 export class FluentFlowOrchestrator {
   private multipleLoopsFeature: MultipleLoopsFeature
@@ -60,16 +59,18 @@ export class FluentFlowOrchestrator {
       this.setupVideoChangeDetection()
 
       console.log('FluentFlow: Orchestrator initialization complete')
-
     } catch (error) {
       console.error('FluentFlow: Failed to initialize orchestrator', error)
     }
   }
 
   private async waitForYouTubeReady(): Promise<void> {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       const checkReady = () => {
-        if (document.querySelector('#movie_player') && document.querySelector('.ytp-right-controls')) {
+        if (
+          document.querySelector('#movie_player') &&
+          document.querySelector('.ytp-right-controls')
+        ) {
           resolve()
         } else {
           setTimeout(checkReady, 100)
@@ -127,15 +128,15 @@ export class FluentFlowOrchestrator {
         rightClick: () => this.exportCurrentLoopsWithPrompt(),
         group: 'loop'
       },
-      
+
       // Recording and notes group
-      {
-        id: 'fluent-flow-record',
-        title: 'Voice Recording', 
-        icon: this.uiUtilities.getRecordIcon(),
-        action: () => this.toggleRecordingWithNotes(),
-        group: 'recording'
-      },
+      // {
+      //   id: 'fluent-flow-record',
+      //   title: 'Voice Recording',
+      //   icon: this.uiUtilities.getRecordIcon(),
+      //   action: () => this.toggleRecordingWithNotes(),
+      //   group: 'recording'
+      // },
       {
         id: 'fluent-flow-notes',
         title: 'Add Note',
@@ -144,15 +145,15 @@ export class FluentFlowOrchestrator {
         rightClick: () => this.timeBasedNotesFeature.showNotesOverlay(),
         group: 'notes'
       },
-      
-      // Other features group
-      {
-        id: 'fluent-flow-compare',
-        title: 'Audio Compare',
-        icon: this.uiUtilities.getCompareIcon(), 
-        action: () => this.handleComparisonAction(),
-        group: 'other'
-      },
+
+      // // Other features group
+      // {
+      //   id: 'fluent-flow-compare',
+      //   title: 'Audio Compare',
+      //   icon: this.uiUtilities.getCompareIcon(),
+      //   action: () => this.handleComparisonAction(),
+      //   group: 'other'
+      // },
       {
         id: 'fluent-flow-panel',
         title: 'Chrome Extension Panel',
@@ -169,22 +170,24 @@ export class FluentFlowOrchestrator {
   }
 
   private setupKeyboardShortcuts(): void {
-    document.addEventListener('keydown', (event) => {
+    document.addEventListener('keydown', event => {
       // Prevent repeated events from holding down a key
       if (event.repeat) {
         return
       }
 
       // Only handle shortcuts when not typing in input fields
-      if (event.target instanceof HTMLInputElement || 
-          event.target instanceof HTMLTextAreaElement ||
-          (event.target as HTMLElement)?.isContentEditable) {
+      if (
+        event.target instanceof HTMLInputElement ||
+        event.target instanceof HTMLTextAreaElement ||
+        (event.target as HTMLElement)?.isContentEditable
+      ) {
         return
       }
 
       // Debug logging for macOS
       const isMac = navigator.userAgent.toUpperCase().indexOf('MAC') >= 0
-      
+
       // Use event.code instead of event.key to avoid macOS character transformations
       // Primary shortcuts: Option+Key (Alt+Key) on all platforms
       if (event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey) {
@@ -237,7 +240,13 @@ export class FluentFlowOrchestrator {
       }
 
       // Panel toggle: Option+Shift+F (Alt+Shift+F)
-      if (event.altKey && event.shiftKey && event.code.toLowerCase() === 'keyf' && !event.metaKey && !event.ctrlKey) {
+      if (
+        event.altKey &&
+        event.shiftKey &&
+        event.code.toLowerCase() === 'keyf' &&
+        !event.metaKey &&
+        !event.ctrlKey
+      ) {
         event.preventDefault()
         event.stopPropagation()
         console.log('FluentFlow: Open side panel')
@@ -307,7 +316,13 @@ export class FluentFlowOrchestrator {
       }
 
       // Notes shortcuts: Double-tap N for quick note
-      if (!event.altKey && !event.shiftKey && !event.metaKey && !event.ctrlKey && event.code.toLowerCase() === 'keyn') {
+      if (
+        !event.altKey &&
+        !event.shiftKey &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        event.code.toLowerCase() === 'keyn'
+      ) {
         // Detect double-tap N for quick note
         const now = Date.now()
         const lastNTap = (window as any)._ffLastNTap || 0
@@ -321,16 +336,21 @@ export class FluentFlowOrchestrator {
       }
     })
 
-    console.log('FluentFlow: Keyboard shortcuts setup complete for', navigator.userAgent.toUpperCase().indexOf('MAC') >= 0 ? 'macOS' : 'other OS')
-    console.log('FluentFlow: Using event.code for keyboard detection to avoid macOS character transformations')
+    console.log(
+      'FluentFlow: Keyboard shortcuts setup complete for',
+      navigator.userAgent.toUpperCase().indexOf('MAC') >= 0 ? 'macOS' : 'other OS'
+    )
+    console.log(
+      'FluentFlow: Using event.code for keyboard detection to avoid macOS character transformations'
+    )
   }
 
   private setupMessageHandlers(): void {
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       switch (message.type) {
         case 'GET_VIDEO_INFO':
-          sendResponse({ 
-            success: true, 
+          sendResponse({
+            success: true,
             videoInfo: this.playerService.getVideoInfo()
           })
           return true
@@ -382,16 +402,16 @@ export class FluentFlowOrchestrator {
 
     this.playerService.onVideoChange(async (videoInfo: VideoInfo) => {
       console.log('FluentFlow: Video changed', videoInfo)
-      
+
       // Prevent duplicate re-initialization if already in progress
       if (isReInitializing) {
         console.log('FluentFlow: Skipping video change re-initialization - already in progress')
         return
       }
-      
+
       // Handle notes session for video change
       await this.timeBasedNotesFeature.onVideoChange()
-      
+
       // Reset features for new video, but skip loop clearing if we're applying a loop
       if (!this.isApplyingLoop) {
         this.multipleLoopsFeature.clearAllLoops()
@@ -400,22 +420,22 @@ export class FluentFlowOrchestrator {
       }
       this.recordingFeature.clearRecording()
       this.comparisonFeature.destroy()
-      
+
       // Check if integrations need re-setup by testing if progress bar is still available
       const progressBarExists = document.querySelector('.ytp-progress-bar')
       const controlsExists = document.querySelector('.ytp-right-controls')
-      
+
       if (!progressBarExists || !controlsExists) {
         console.log('FluentFlow: YouTube player elements missing, re-initializing...')
         isReInitializing = true
-        
+
         // Re-setup integrations after a delay
         setTimeout(async () => {
           try {
             console.log('FluentFlow: Re-initializing for video change')
             await this.setupYouTubeIntegrations()
             await this.timeBasedNotesFeature.initializeVideoNotes()
-            
+
             // Only re-setup UI if buttons are missing
             const buttonContainer = document.querySelector('.fluent-flow-controls')
             if (!buttonContainer) {
@@ -423,7 +443,7 @@ export class FluentFlowOrchestrator {
             } else {
               console.log('FluentFlow: UI already exists, skipping re-setup')
             }
-            
+
             console.log('FluentFlow: Video change re-initialization complete')
           } catch (error) {
             console.error('FluentFlow: Failed to re-initialize after video change', error)
@@ -526,7 +546,7 @@ export class FluentFlowOrchestrator {
             loop.description = description.trim()
           })
         }
-        
+
         chrome.runtime.sendMessage({
           type: 'SAVE_LOOPS',
           loops: exported
@@ -543,7 +563,7 @@ export class FluentFlowOrchestrator {
   // Cleanup method for extension unload
   public destroy(): void {
     console.log('FluentFlow: Destroying orchestrator')
-    
+
     this.multipleLoopsFeature.destroy()
     this.recordingFeature.destroy()
     this.comparisonFeature.destroy()
@@ -562,9 +582,7 @@ export class FluentFlowOrchestrator {
 // Initialize FluentFlow when ready
 function initializeFluentFlow() {
   // Check if we're on a YouTube watch page
-  if (window.location.hostname === 'www.youtube.com' && 
-      window.location.pathname === '/watch') {
-    
+  if (window.location.hostname === 'www.youtube.com' && window.location.pathname === '/watch') {
     new FluentFlowOrchestrator()
   }
 }
