@@ -227,6 +227,7 @@ export interface FluentFlowStore {
   saveSession: () => Promise<void>
   getAllUserLoops: () => Promise<SavedLoop[]>
   deleteLoop: (loopId: string) => Promise<boolean>
+  deleteAllUserLoops: () => Promise<boolean>
   saveLoop: (loop: SavedLoop) => Promise<string | null>
   getAllUserRecordings: (videoId?: string) => Promise<AudioRecording[]>
   deleteUserRecording: (recordingId: string) => Promise<boolean>

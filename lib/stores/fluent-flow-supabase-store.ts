@@ -410,6 +410,38 @@ const supabaseService = {
     return true
   },
 
+  async deleteAllUserLoops(userId: string): Promise<boolean> {
+    // First get all loops for the user
+    const { data: sessions, error: selectError } = await supabase
+      .from('practice_sessions')
+      .select('id')
+      .eq('user_id', userId)
+      .not('metadata->savedLoop', 'is', null)
+
+    if (selectError) {
+      console.error('Error finding loops to delete:', selectError)
+      throw selectError
+    }
+
+    if (!sessions || sessions.length === 0) {
+      return true // No loops to delete
+    }
+
+    // Delete all practice sessions with loops (this will cascade delete loop_segments)
+    const sessionIds = sessions.map(s => s.id)
+    const { error: deleteError } = await supabase
+      .from('practice_sessions')
+      .delete()
+      .in('id', sessionIds)
+
+    if (deleteError) {
+      console.error('Error deleting all loops:', deleteError)
+      throw deleteError
+    }
+
+    return true
+  },
+
   async saveLoop(userId: string, loop: SavedLoop): Promise<string> {
     // Save to Supabase: create or update practice session with loop segment
     const sessionData = {
@@ -1051,6 +1083,21 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
           return await supabaseService.deleteLoop(user.id, loopId)
         } catch (error) {
           console.error('Failed to delete loop:', error)
+          return false
+        }
+      },
+
+      deleteAllUserLoops: async (): Promise<boolean> => {
+        try {
+          const user = await getCurrentUser()
+          if (!user) {
+            console.warn('No authenticated user found')
+            return false
+          }
+
+          return await supabaseService.deleteAllUserLoops(user.id)
+        } catch (error) {
+          console.error('Failed to delete all loops:', error)
           return false
         }
       },

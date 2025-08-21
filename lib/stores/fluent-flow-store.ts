@@ -349,6 +349,11 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
         return false
       },
 
+      deleteAllUserLoops: async (): Promise<boolean> => {
+        console.warn('deleteAllUserLoops not implemented in basic store')
+        return false
+      },
+
       saveLoop: async (loop: SavedLoop): Promise<string | null> => {
         console.warn('saveLoop not implemented in basic store')
         return null

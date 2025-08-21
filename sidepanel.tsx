@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react'
 import {
   Activity,
+  AlertTriangle,
   BarChart3,
   Calendar,
   Clock,
@@ -11,25 +13,23 @@ import {
   Play,
   RefreshCw,
   Repeat,
+  Search,
   Target,
   Trash2,
   User,
   UserX
-} from "lucide-react"
-import { useEffect, useState } from "react"
-import { AudioPlayer } from "./components/audio-player"
-import { Badge } from "./components/ui/badge"
-import { Button } from "./components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
-import { useFluentFlowSupabaseStore as useFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
-import { getCurrentUser } from "./lib/supabase/client"
-import type {
-  SavedLoop
-} from "./lib/types/fluent-flow-types"
-
-import "./styles/react-h5-audio-player.css"
-import "./styles/sidepanel.css"
+} from 'lucide-react'
+import { AudioPlayer } from './components/audio-player'
+import { Badge } from './components/ui/badge'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import { useFluentFlowSupabaseStore as useFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
+import { getCurrentUser } from './lib/supabase/client'
+import type { SavedLoop } from './lib/types/fluent-flow-types'
+import './styles/react-h5-audio-player.css'
+import './styles/sidepanel.css'
 
 export default function FluentFlowSidePanel() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings'>('dashboard')
@@ -40,6 +40,8 @@ export default function FluentFlowSidePanel() {
   const [loadingRecordings, setLoadingRecordings] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
+  const [loopFilter, setLoopFilter] = useState('')
+  const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 
   const {
     allSessions,
@@ -48,6 +50,7 @@ export default function FluentFlowSidePanel() {
     currentVideo,
     getAllUserLoops,
     deleteLoop: deleteLoopFromStore,
+    deleteAllUserLoops: deleteAllLoopsFromStore,
     getAllUserRecordings,
     deleteUserRecording
   } = useFluentFlowStore()
@@ -99,11 +102,11 @@ export default function FluentFlowSidePanel() {
   const base64ToBlob = (base64: string, mimeType: string): Blob => {
     const byteCharacters = atob(base64)
     const byteNumbers = new Array(byteCharacters.length)
-    
+
     for (let i = 0; i < byteCharacters.length; i++) {
       byteNumbers[i] = byteCharacters.charCodeAt(i)
     }
-    
+
     const byteArray = new Uint8Array(byteNumbers)
     return new Blob([byteArray], { type: mimeType })
   }
@@ -112,7 +115,7 @@ export default function FluentFlowSidePanel() {
     try {
       // Use Supabase store instead of chrome.runtime.sendMessage
       const success = await deleteLoopFromStore(loopId)
-      
+
       if (success) {
         setSavedLoops(loops => loops.filter(loop => loop.id !== loopId))
       } else {
@@ -123,14 +126,39 @@ export default function FluentFlowSidePanel() {
     }
   }
 
+  const deleteAllLoops = async () => {
+    if (!savedLoops.length) return
+
+    const confirmed = confirm(
+      `Are you sure you want to delete all ${savedLoops.length} loops? This action cannot be undone.`
+    )
+    if (!confirmed) return
+
+    setDeletingAllLoops(true)
+    try {
+      const success = await deleteAllLoopsFromStore()
+
+      if (success) {
+        setSavedLoops([])
+        console.log('All loops deleted successfully')
+      } else {
+        console.error('Failed to delete all loops: User not authenticated or no loops found')
+      }
+    } catch (error) {
+      console.error('Error deleting all loops:', error)
+    } finally {
+      setDeletingAllLoops(false)
+    }
+  }
+
   const applyLoop = async (loop: SavedLoop) => {
     setApplyingLoopId(loop.id)
-    
+
     try {
       // Check if we need to navigate to the video
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const currentTab = tabs[0]
-      
+
       if (currentTab && currentTab.url && currentTab.url.includes(loop.videoId)) {
         // Same video - apply directly
         chrome.tabs.sendMessage(currentTab.id!, {
@@ -142,7 +170,7 @@ export default function FluentFlowSidePanel() {
       } else {
         // Different video - open new tab and apply with proper waiting
         const newTab = await chrome.tabs.create({ url: loop.videoUrl })
-        
+
         // Wait for tab to load then apply loop with retry mechanism
         const applyWithRetry = async (attempts = 0) => {
           if (attempts > 10) {
@@ -150,7 +178,7 @@ export default function FluentFlowSidePanel() {
             setApplyingLoopId(null)
             return
           }
-          
+
           try {
             await chrome.tabs.sendMessage(newTab.id!, {
               type: 'APPLY_LOOP',
@@ -162,7 +190,7 @@ export default function FluentFlowSidePanel() {
             setTimeout(() => applyWithRetry(attempts + 1), 2000)
           }
         }
-        
+
         // Start applying after initial delay
         setTimeout(() => applyWithRetry(), 4000)
       }
@@ -177,14 +205,14 @@ export default function FluentFlowSidePanel() {
       const data = JSON.stringify(loop, null, 2)
       const blob = new Blob([data], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
-      
+
       const a = document.createElement('a')
       a.href = url
       a.download = `fluent-flow-loop-${loop.title.replace(/[^a-zA-Z0-9]/g, '_')}.json`
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      
+
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error('Failed to export loop:', error)
@@ -206,12 +234,11 @@ export default function FluentFlowSidePanel() {
     }).format(date)
   }
 
-
   const deleteRecording = async (recordingId: string) => {
     try {
       // Use Supabase store instead of chrome.runtime.sendMessage
       const success = await deleteUserRecording(recordingId)
-      
+
       if (success) {
         setSavedRecordings(recordings => recordings.filter(rec => rec.id !== recordingId))
       } else {
@@ -228,7 +255,7 @@ export default function FluentFlowSidePanel() {
       if (!recording.audioDataBase64) {
         throw new Error('No audio data available for export')
       }
-      
+
       const audioBlob = base64ToBlob(recording.audioDataBase64, 'audio/webm')
       const audioURL = URL.createObjectURL(audioBlob)
       const a = document.createElement('a')
@@ -249,13 +276,13 @@ export default function FluentFlowSidePanel() {
         <Card>
           <CardHeader className="pb-3">
             <div className="flex items-center gap-2">
-              <div className="h-2 w-2 bg-red-500 rounded-full animate-pulse"></div>
+              <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
               <CardTitle className="text-sm">Currently Practicing</CardTitle>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-1">
-              <p className="font-medium text-sm">{currentVideo.title}</p>
+              <p className="text-sm font-medium">{currentVideo.title}</p>
               <p className="text-xs text-muted-foreground">{currentVideo.channel}</p>
             </div>
           </CardContent>
@@ -311,23 +338,23 @@ export default function FluentFlowSidePanel() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
             <Calendar className="h-4 w-4" />
             Recent Practice Sessions
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {allSessions.slice(0, 5).map(session => (
-            <div 
-              key={session.id} 
-              className={`flex items-center justify-between p-3 rounded-lg border transition-colors hover:bg-muted/50 ${
-                currentSession?.id === session.id ? 'bg-blue-50 border-blue-200' : ''
+            <div
+              key={session.id}
+              className={`flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50 ${
+                currentSession?.id === session.id ? 'border-blue-200 bg-blue-50' : ''
               }`}
               onClick={() => {}}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{session.videoTitle}</p>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{session.videoTitle}</p>
+                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                   <span>{formatDate(session.createdAt)}</span>
                   <span>•</span>
                   <span>{session.segments.length} segments</span>
@@ -348,20 +375,20 @@ export default function FluentFlowSidePanel() {
           <CardTitle className="text-base">Quick Actions</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          <Button 
+          <Button
             className="w-full justify-start"
             variant="outline"
             onClick={() => setActiveTab('recordings')}
           >
-            <FileAudio className="h-4 w-4 mr-2" />
+            <FileAudio className="mr-2 h-4 w-4" />
             View All Recordings
           </Button>
-          <Button 
+          <Button
             className="w-full justify-start"
             variant="outline"
             onClick={() => chrome.runtime.openOptionsPage()}
           >
-            <BarChart3 className="h-4 w-4 mr-2" />
+            <BarChart3 className="mr-2 h-4 w-4" />
             View Analytics & Settings
           </Button>
         </CardContent>
@@ -379,20 +406,18 @@ export default function FluentFlowSidePanel() {
                 <FileAudio className="h-5 w-5" />
                 Recording Library
               </CardTitle>
-              <CardDescription>
-                {savedRecordings.length} saved recordings
-              </CardDescription>
+              <CardDescription>{savedRecordings.length} saved recordings</CardDescription>
             </div>
-            <Button 
+            <Button
               variant="outline"
               size="sm"
               onClick={loadSavedRecordings}
               disabled={loadingRecordings}
             >
               {loadingRecordings ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+                <RefreshCw className="mr-2 h-4 w-4" />
               )}
               {loadingRecordings ? 'Loading...' : 'Refresh'}
             </Button>
@@ -411,12 +436,12 @@ export default function FluentFlowSidePanel() {
             </CardContent>
           </Card>
         )}
-        
+
         {!loadingRecordings && savedRecordings.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Music className="h-12 w-12 text-muted-foreground mb-4" />
-              <CardTitle className="text-lg mb-2">No recordings saved yet</CardTitle>
+              <Music className="mb-4 h-12 w-12 text-muted-foreground" />
+              <CardTitle className="mb-2 text-lg">No recordings saved yet</CardTitle>
               <CardDescription>
                 Record audio on YouTube videos to save them here for practice
               </CardDescription>
@@ -424,18 +449,28 @@ export default function FluentFlowSidePanel() {
           </Card>
         )}
 
-        {!loadingRecordings && savedRecordings.map(recording => (
-          <div key={recording.id}>
-            <AudioPlayer
-              recording={recording}
-              onDelete={deleteRecording}
-              onExport={exportRecording}
-              base64ToBlob={base64ToBlob}
-            />
-          </div>
-        ))}
+        {!loadingRecordings &&
+          savedRecordings.map(recording => (
+            <div key={recording.id}>
+              <AudioPlayer
+                recording={recording}
+                onDelete={deleteRecording}
+                onExport={exportRecording}
+                base64ToBlob={base64ToBlob}
+              />
+            </div>
+          ))}
       </div>
     </div>
+  )
+
+  // Filter loops based on search query
+  const filteredLoops = savedLoops.filter(
+    loop =>
+      loopFilter === '' ||
+      loop.title.toLowerCase().includes(loopFilter.toLowerCase()) ||
+      loop.videoTitle.toLowerCase().includes(loopFilter.toLowerCase()) ||
+      loop.description?.toLowerCase().includes(loopFilter.toLowerCase())
   )
 
   const renderLoops = () => (
@@ -444,28 +479,48 @@ export default function FluentFlowSidePanel() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2">
-                <Repeat className="h-5 w-5" />
-                Saved Loops
-              </CardTitle>
               <CardDescription>
-                {savedLoops.length} saved loops
+                {filteredLoops.length} of {savedLoops.length} loops
               </CardDescription>
             </div>
-            <Button 
-              variant="outline"
-              size="sm"
-              onClick={loadSavedLoops}
-              disabled={loadingLoops}
-            >
-              {loadingLoops ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <RefreshCw className="h-4 w-4 mr-2" />
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm" onClick={loadSavedLoops} disabled={loadingLoops}>
+                {loadingLoops ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                )}
+                {loadingLoops ? 'Loading...' : 'Refresh'}
+              </Button>
+              {savedLoops.length > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={deleteAllLoops}
+                  disabled={deletingAllLoops || loadingLoops}
+                >
+                  {deletingAllLoops ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <AlertTriangle className="mr-2 h-4 w-4" />
+                  )}
+                  {deletingAllLoops ? 'Deleting...' : 'Delete All'}
+                </Button>
               )}
-              {loadingLoops ? 'Loading...' : 'Refresh'}
-            </Button>
+            </div>
           </div>
+          {/* Search/Filter Input */}
+          {savedLoops.length > 0 && (
+            <div className="relative mt-4">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+              <Input
+                placeholder="Search loops by title, video, or description..."
+                value={loopFilter}
+                onChange={e => setLoopFilter(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+          )}
         </CardHeader>
       </Card>
 
@@ -480,12 +535,12 @@ export default function FluentFlowSidePanel() {
             </CardContent>
           </Card>
         )}
-        
+
         {!loadingLoops && savedLoops.length === 0 && (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Repeat className="h-12 w-12 text-muted-foreground mb-4" />
-              <CardTitle className="text-lg mb-2">No loops saved yet</CardTitle>
+              <Repeat className="mb-4 h-12 w-12 text-muted-foreground" />
+              <CardTitle className="mb-2 text-lg">No loops saved yet</CardTitle>
               <CardDescription>
                 Create loops on YouTube videos to save them here for later use
               </CardDescription>
@@ -493,69 +548,75 @@ export default function FluentFlowSidePanel() {
           </Card>
         )}
 
-        {!loadingLoops && savedLoops.map(loop => (
-          <Card key={loop.id}>
-            <CardHeader>
-              <div className="flex items-start justify-between">
-                <div className="space-y-1 flex-1">
-                  <CardTitle className="text-base">{loop.title}</CardTitle>
-                  <CardDescription className="text-sm">{loop.videoTitle}</CardDescription>
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3" />
-                    <span>{formatTime(loop.startTime)} - {formatTime(loop.endTime)}</span>
-                    <span>•</span>
-                    <span>Duration: {formatTime(loop.endTime - loop.startTime)}</span>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    Created: {formatDate(new Date(loop.createdAt))}
-                  </div>
-                  {loop.description && (
-                    <p className="text-sm text-muted-foreground mt-2">{loop.description}</p>
-                  )}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="flex gap-2">
-                <Button 
-                  size="sm"
-                  onClick={() => applyLoop(loop)}
-                  disabled={applyingLoopId === loop.id}
-                  className="flex-1"
-                >
-                  {applyingLoopId === loop.id ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                  ) : (
-                    <Play className="h-4 w-4 mr-2" />
-                  )}
-                  {applyingLoopId === loop.id ? 'Applying...' : 'Apply'}
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="outline"
-                  onClick={() => exportLoop(loop)}
-                >
-                  <Download className="h-4 w-4" />
-                </Button>
-                <Button 
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => deleteLoop(loop.id)}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
+        {!loadingLoops && savedLoops.length > 0 && filteredLoops.length === 0 && loopFilter && (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+              <Search className="mb-4 h-12 w-12 text-muted-foreground" />
+              <CardTitle className="mb-2 text-lg">No loops found</CardTitle>
+              <CardDescription>
+                No loops match your search criteria. Try different keywords.
+              </CardDescription>
             </CardContent>
           </Card>
-        ))}
+        )}
+
+        {!loadingLoops &&
+          filteredLoops.map(loop => (
+            <Card key={loop.id}>
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 space-y-1">
+                    <CardTitle className="text-base">{loop.title}</CardTitle>
+                    <CardDescription className="text-sm">{loop.videoTitle}</CardDescription>
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      <span>
+                        {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
+                      </span>
+                      <span>•</span>
+                      <span>Duration: {formatTime(loop.endTime - loop.startTime)}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Created: {formatDate(new Date(loop.createdAt))}
+                    </div>
+                    {loop.description && (
+                      <p className="mt-2 text-sm text-muted-foreground">{loop.description}</p>
+                    )}
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => applyLoop(loop)}
+                    disabled={applyingLoopId === loop.id}
+                    className="flex-1"
+                  >
+                    {applyingLoopId === loop.id ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Play className="mr-2 h-4 w-4" />
+                    )}
+                    {applyingLoopId === loop.id ? 'Applying...' : 'Apply'}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => exportLoop(loop)}>
+                    <Download className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="destructive" onClick={() => deleteLoop(loop.id)}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
       </div>
     </div>
   )
 
-
   return (
-    <div className="h-full bg-background flex flex-col">
-      <div className="border-b p-4 flex-shrink-0">
+    <div className="flex h-full flex-col bg-background">
+      <div className="flex-shrink-0 border-b p-4">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">FluentFlow</h1>
@@ -570,8 +631,8 @@ export default function FluentFlowSidePanel() {
                 <span className="text-xs">Synced</span>
               </div>
             ) : (
-              <div 
-                className="flex items-center gap-2 text-orange-600 cursor-pointer hover:text-orange-700"
+              <div
+                className="flex cursor-pointer items-center gap-2 text-orange-600 hover:text-orange-700"
                 onClick={() => chrome.runtime.openOptionsPage()}
                 title="Click to sign in for cloud sync"
               >
@@ -583,26 +644,36 @@ export default function FluentFlowSidePanel() {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as any)} className="flex-1 flex flex-col">
-        <TabsList className="grid w-full grid-cols-3 m-4 flex-shrink-0">
+      <Tabs
+        value={activeTab}
+        onValueChange={value => setActiveTab(value as any)}
+        className="flex flex-1 flex-col"
+      >
+        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-3">
           <TabsTrigger value="dashboard" className="text-xs">
-            <BarChart3 className="h-4 w-4 mr-1" />
+            <BarChart3 className="mr-1 h-4 w-4" />
             Dashboard
           </TabsTrigger>
           <TabsTrigger value="loops" className="text-xs">
-            <Repeat className="h-4 w-4 mr-1" />
+            <Repeat className="mr-1 h-4 w-4" />
             Loop
           </TabsTrigger>
           <TabsTrigger value="recordings" className="text-xs">
-            <Music className="h-4 w-4 mr-1" />
+            <Music className="mr-1 h-4 w-4" />
             Records
           </TabsTrigger>
         </TabsList>
 
-        <div className="px-4 pb-4 flex-1 overflow-y-auto">
-          <TabsContent value="dashboard" className="mt-0 h-full">{renderDashboard()}</TabsContent>
-          <TabsContent value="loops" className="mt-0 h-full">{renderLoops()}</TabsContent>
-          <TabsContent value="recordings" className="mt-0 h-full">{renderRecordings()}</TabsContent>
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <TabsContent value="dashboard" className="mt-0 h-full">
+            {renderDashboard()}
+          </TabsContent>
+          <TabsContent value="loops" className="mt-0 h-full">
+            {renderLoops()}
+          </TabsContent>
+          <TabsContent value="recordings" className="mt-0 h-full">
+            {renderRecordings()}
+          </TabsContent>
         </div>
       </Tabs>
     </div>
