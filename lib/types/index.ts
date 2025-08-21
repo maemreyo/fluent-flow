@@ -31,6 +31,12 @@ export interface ApiConfig {
   timeout?: number
   retryCount?: number
   retryDelay?: number
+  // Gemini API configuration
+  gemini?: {
+    apiKey?: string
+    baseURL?: string
+    model?: string
+  }
 }
 
 export interface ApiResponse {

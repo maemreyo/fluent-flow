@@ -19,6 +19,23 @@ export interface SavedLoop {
   description?: string
   createdAt: Date
   updatedAt: Date
+  
+  // Audio extraction fields
+  hasAudioSegment?: boolean
+  audioSegmentBlob?: string  // Base64 encoded
+  audioFormat?: 'webm' | 'wav' | 'mp3'
+  audioSize?: number
+  audioCreatedAt?: Date
+  audioLastUsed?: Date
+  
+  // Question generation fields
+  questionsGenerated?: boolean
+  questionsGeneratedAt?: Date
+  totalQuestionsGenerated?: number
+  
+  // Cleanup management fields
+  audioRetentionPolicy?: 'temporary' | 'keep' | 'auto-cleanup'
+  cleanupScheduledAt?: Date
 }
 
 // Time-based Notes Feature Types
@@ -278,4 +295,68 @@ export interface YouTubePlayerAPI {
 export interface FluentFlowError extends Error {
   code: 'PLAYER_NOT_READY' | 'RECORDING_FAILED' | 'STORAGE_ERROR' | 'PERMISSION_DENIED' | 'INVALID_SEGMENT'
   context?: Record<string, any>
+}
+
+// Conversation Analysis Types
+export interface ConversationQuestion {
+  id: string
+  question: string
+  options: string[]  // Array of 4 options (A, B, C, D)
+  correctAnswer: string  // e.g., "A", "B", "C", "D"
+  explanation: string
+  difficulty: 'easy' | 'medium' | 'hard'
+  type: 'main_idea' | 'detail' | 'vocabulary' | 'inference' | 'grammar'
+  timestamp?: number  // Time in audio where this relates
+}
+
+export interface ConversationQuestions {
+  loopId: string
+  questions: ConversationQuestion[]
+  metadata: {
+    totalQuestions: number
+    audioLength: number
+    analysisDate: string
+    generatedFromAudio: boolean
+    originalAudioSize?: number
+    canRegenerateQuestions: boolean
+  }
+}
+
+export interface QuestionPracticeResult {
+  questionId: string
+  selectedAnswer: string
+  isCorrect: boolean
+  timeSpent: number  // seconds
+  attemptedAt: Date
+}
+
+export interface ConversationPracticeSession {
+  id: string
+  loopId: string
+  questionsId: string
+  results: QuestionPracticeResult[]
+  totalScore: number  // percentage
+  completedAt: Date
+  timeSpent: number  // total time in seconds
+}
+
+// Storage cleanup types
+export interface CleanupResult {
+  totalLoops: number
+  cleanedCount: number
+  spaceFreedMB: number
+  errors: string[]
+}
+
+export interface StorageStats {
+  totalAudioFiles: number
+  totalSizeMB: number
+  oldestAudioDate?: Date
+  scheduledForCleanup: number
+  largestFiles: Array<{
+    loopId: string
+    title: string
+    sizeMB: number
+    createdAt: Date
+  }>
 }

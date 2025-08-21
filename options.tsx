@@ -1,50 +1,58 @@
 // Options Page Component - Extension settings and configuration
 // Full-page settings interface
 
-import { useState, useEffect } from "react"
-import type { UserPreferences, ApiConfig } from "./lib/types"
-import { useFluentFlowSupabaseStore as useFluentFlowStore, getFluentFlowStore } from "./lib/stores/fluent-flow-supabase-store"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./components/ui/card"
-import { Button } from "./components/ui/button"
-import { Input } from "./components/ui/input"
-import { Label } from "./components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./components/ui/select"
-import { Switch } from "./components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./components/ui/tabs"
-import { Badge } from "./components/ui/badge"
-import { Separator } from "./components/ui/separator"
-import { Alert, AlertDescription } from "./components/ui/alert"
-import { AuthComponent } from "./components/auth-component"
-import { 
-  Settings,
-  Palette,
-  Bell,
-  Save,
-  TestTube,
-  Download,
-  Upload,
-  Trash,
-  RotateCcw,
-  ExternalLink,
-  Info,
-  Zap,
-  Database,
-  TrendingUp,
+import { useEffect, useState } from 'react'
+import {
   Activity,
+  Bell,
+  Database,
+  Download,
+  ExternalLink,
   Eye,
-  PlayCircle,
-  Volume2,
   Headphones,
-  Shield
-} from "lucide-react"
-
-import "./styles/options.css"
+  Info,
+  Palette,
+  PlayCircle,
+  RotateCcw,
+  Save,
+  Settings,
+  Shield,
+  TestTube,
+  Trash,
+  TrendingUp,
+  Upload,
+  Volume2,
+  Zap
+} from 'lucide-react'
+import { AuthComponent } from './components/auth-component'
+import { Alert, AlertDescription } from './components/ui/alert'
+import { Badge } from './components/ui/badge'
+import { Button } from './components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
+import { Input } from './components/ui/input'
+import { Label } from './components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from './components/ui/select'
+import { Separator } from './components/ui/separator'
+import { Switch } from './components/ui/switch'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import {
+  getFluentFlowStore,
+  useFluentFlowSupabaseStore as useFluentFlowStore
+} from './lib/stores/fluent-flow-supabase-store'
+import type { ApiConfig, UserPreferences } from './lib/types'
+import './styles/options.css'
 
 export default function OptionsPage() {
   const [activeTab, setActiveTab] = useState('account')
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [user, setUser] = useState<any>(null)
-  
+
   const {
     statistics,
     settings: fluentFlowSettings,
@@ -71,14 +79,14 @@ export default function OptionsPage() {
         // Check authentication status first
         const store = getFluentFlowStore()
         const currentUser = await store.supabaseService.getUserProfile()
-        
+
         setIsAuthenticated(!!currentUser)
         setUser(currentUser)
-        
+
         // Load settings from Supabase for authenticated users
         if (currentUser) {
           console.log('FluentFlow: Loading settings from Supabase for user:', currentUser.id)
-          
+
           // Load user preferences
           const userPrefs = await store.supabaseService.getUserPreferences()
           if (userPrefs) {
@@ -92,14 +100,14 @@ export default function OptionsPage() {
           }
         } else {
           console.log('FluentFlow: User not authenticated, loading settings from local storage')
-          
+
           // Fallback to chrome storage for unauthenticated users
           const response = await chrome.runtime.sendMessage({
-            type: "STORAGE_OPERATION",
-            operation: "get",
-            key: ["user_preferences", "api_config"]
+            type: 'STORAGE_OPERATION',
+            operation: 'get',
+            key: ['user_preferences', 'api_config']
           })
-          
+
           if (response.success) {
             if (response.data.user_preferences) {
               setPreferences(response.data.user_preferences)
@@ -110,7 +118,7 @@ export default function OptionsPage() {
           }
         }
       } catch (error) {
-        console.error("Failed to load settings:", error)
+        console.error('Failed to load settings:', error)
       }
     }
 
@@ -123,51 +131,52 @@ export default function OptionsPage() {
 
     try {
       const store = getFluentFlowStore()
-      
+
       try {
         // Try to save to Supabase for authenticated users
         await Promise.all([
           store.supabaseService.updateUserPreferences(preferences),
           store.supabaseService.updateApiConfig(apiConfig)
         ])
-        
-        setSaveMessage("Settings saved to cloud successfully!")
+
+        setSaveMessage('Settings saved to cloud successfully!')
         console.log('FluentFlow: Settings saved to Supabase successfully')
-        
       } catch (supabaseError) {
-        console.warn('FluentFlow: Failed to save to Supabase, falling back to local storage:', supabaseError)
-        
+        console.warn(
+          'FluentFlow: Failed to save to Supabase, falling back to local storage:',
+          supabaseError
+        )
+
         // Fallback to chrome storage for unauthenticated users or when Supabase fails
         await Promise.all([
           chrome.runtime.sendMessage({
-            type: "STORAGE_OPERATION",
-            operation: "set",
-            key: "user_preferences",
+            type: 'STORAGE_OPERATION',
+            operation: 'set',
+            key: 'user_preferences',
             value: preferences
           }),
           chrome.runtime.sendMessage({
-            type: "STORAGE_OPERATION",
-            operation: "set",
-            key: "api_config",
+            type: 'STORAGE_OPERATION',
+            operation: 'set',
+            key: 'api_config',
             value: apiConfig
           })
         ])
-        
-        setSaveMessage("Settings saved locally!")
-      }
-      
-      setTimeout(() => setSaveMessage(null), 3000)
 
+        setSaveMessage('Settings saved locally!')
+      }
+
+      setTimeout(() => setSaveMessage(null), 3000)
     } catch (error) {
-      console.error("Failed to save settings:", error)
-      setSaveMessage("Failed to save settings. Please try again.")
+      console.error('Failed to save settings:', error)
+      setSaveMessage('Failed to save settings. Please try again.')
     } finally {
       setIsSaving(false)
     }
   }
 
   const handleResetSettings = async () => {
-    if (!confirm("Are you sure you want to reset all settings to defaults?")) {
+    if (!confirm('Are you sure you want to reset all settings to defaults?')) {
       return
     }
 
@@ -191,13 +200,13 @@ export default function OptionsPage() {
   const handleTestApiConnection = async () => {
     try {
       const response = await chrome.runtime.sendMessage({
-        type: "API_CALL",
-        endpoint: "example-api",
+        type: 'API_CALL',
+        endpoint: 'example-api',
         data: {}
       })
 
       if (response.success) {
-        alert("API connection test successful!")
+        alert('API connection test successful!')
       } else {
         alert(`API connection test failed: ${response.error}`)
       }
@@ -208,9 +217,9 @@ export default function OptionsPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto p-6 space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6 p-6">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold flex items-center gap-2">
+          <h1 className="flex items-center gap-2 text-3xl font-bold">
             <Settings className="h-8 w-8" />
             FluentFlow Settings
           </h1>
@@ -253,7 +262,7 @@ export default function OptionsPage() {
 
           <TabsContent value="account" className="space-y-6">
             <AuthComponent onAuthSuccess={() => {}} />
-            
+
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -268,7 +277,9 @@ export default function OptionsPage() {
                 <div className="space-y-2">
                   <Label>Sync Status</Label>
                   <div className="flex items-center gap-2">
-                    <div className={`h-2 w-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-gray-400'}`}></div>
+                    <div
+                      className={`h-2 w-2 rounded-full ${isAuthenticated ? 'bg-green-500' : 'bg-gray-400'}`}
+                    ></div>
                     <span className="text-sm">
                       {isAuthenticated ? 'Connected to cloud storage' : 'Using local storage only'}
                     </span>
@@ -281,7 +292,7 @@ export default function OptionsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Features Available</Label>
-                  <ul className="text-sm text-muted-foreground space-y-1">
+                  <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Practice sessions sync across devices</li>
                     <li>• Audio recordings stored securely</li>
                     <li>• Progress analytics and statistics</li>
@@ -299,19 +310,19 @@ export default function OptionsPage() {
                   <Palette className="h-5 w-5" />
                   Appearance
                 </CardTitle>
-                <CardDescription>
-                  Customize the look and feel of FluentFlow
-                </CardDescription>
+                <CardDescription>Customize the look and feel of FluentFlow</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="theme-select">Theme</Label>
                   <Select
                     value={preferences.theme}
-                    onValueChange={(value) => setPreferences(prev => ({
-                      ...prev,
-                      theme: value as 'light' | 'dark' | 'auto'
-                    }))}
+                    onValueChange={value =>
+                      setPreferences(prev => ({
+                        ...prev,
+                        theme: value as 'light' | 'dark' | 'auto'
+                      }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -328,10 +339,12 @@ export default function OptionsPage() {
                   <Label htmlFor="language-select">Language</Label>
                   <Select
                     value={preferences.language}
-                    onValueChange={(value) => setPreferences(prev => ({
-                      ...prev,
-                      language: value
-                    }))}
+                    onValueChange={value =>
+                      setPreferences(prev => ({
+                        ...prev,
+                        language: value
+                      }))
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -353,9 +366,7 @@ export default function OptionsPage() {
                   <Bell className="h-5 w-5" />
                   Behavior
                 </CardTitle>
-                <CardDescription>
-                  Configure how FluentFlow behaves
-                </CardDescription>
+                <CardDescription>Configure how FluentFlow behaves</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex items-center justify-between">
@@ -367,10 +378,12 @@ export default function OptionsPage() {
                   </div>
                   <Switch
                     checked={preferences.notifications}
-                    onCheckedChange={(checked) => setPreferences(prev => ({
-                      ...prev,
-                      notifications: checked
-                    }))}
+                    onCheckedChange={checked =>
+                      setPreferences(prev => ({
+                        ...prev,
+                        notifications: checked
+                      }))
+                    }
                   />
                 </div>
 
@@ -383,10 +396,12 @@ export default function OptionsPage() {
                   </div>
                   <Switch
                     checked={preferences.autoSave}
-                    onCheckedChange={(checked) => setPreferences(prev => ({
-                      ...prev,
-                      autoSave: checked
-                    }))}
+                    onCheckedChange={checked =>
+                      setPreferences(prev => ({
+                        ...prev,
+                        autoSave: checked
+                      }))
+                    }
                   />
                 </div>
               </CardContent>
@@ -400,9 +415,7 @@ export default function OptionsPage() {
                   <Database className="h-5 w-5" />
                   API Configuration
                 </CardTitle>
-                <CardDescription>
-                  Configure API endpoints and authentication
-                </CardDescription>
+                <CardDescription>Configure API endpoints and authentication</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
@@ -411,10 +424,12 @@ export default function OptionsPage() {
                     id="api-base-url"
                     type="url"
                     value={apiConfig.baseUrl}
-                    onChange={(e) => setApiConfig(prev => ({
-                      ...prev,
-                      baseUrl: e.target.value
-                    }))}
+                    onChange={e =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        baseUrl: e.target.value
+                      }))
+                    }
                     placeholder="https://api.example.com"
                   />
                 </div>
@@ -428,10 +443,12 @@ export default function OptionsPage() {
                     max="300000"
                     step="1000"
                     value={apiConfig.timeout || 30000}
-                    onChange={(e) => setApiConfig(prev => ({
-                      ...prev,
-                      timeout: parseInt(e.target.value)
-                    }))}
+                    onChange={e =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        timeout: parseInt(e.target.value)
+                      }))
+                    }
                   />
                 </div>
 
@@ -441,10 +458,12 @@ export default function OptionsPage() {
                     id="api-key"
                     type="password"
                     value={apiConfig.apiKey || ''}
-                    onChange={(e) => setApiConfig(prev => ({
-                      ...prev,
-                      apiKey: e.target.value || undefined
-                    }))}
+                    onChange={e =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        apiKey: e.target.value || undefined
+                      }))
+                    }
                     placeholder="Enter your API key"
                   />
                   <p className="text-sm text-muted-foreground">
@@ -464,6 +483,155 @@ export default function OptionsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Zap className="h-5 w-5" />
+                  Gemini AI Configuration
+                </CardTitle>
+                <CardDescription>
+                  Configure Gemini API for conversation analysis and question generation
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription>
+                    <strong>Gemini API enables:</strong> Automatic question generation from audio
+                    segments, conversation analysis, and interactive practice sessions. Get your API
+                    key from{' '}
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-blue-600 hover:underline"
+                    >
+                      Google AI Studio
+                    </a>
+                    .
+                  </AlertDescription>
+                </Alert>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-api-key">Gemini API Key</Label>
+                  <Input
+                    id="gemini-api-key"
+                    type="password"
+                    value={apiConfig.gemini?.apiKey || ''}
+                    onChange={e =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        gemini: {
+                          ...prev.gemini,
+                          apiKey: e.target.value || undefined
+                        }
+                      }))
+                    }
+                    placeholder="Enter your Gemini API key"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Required for AI-powered question generation and conversation analysis
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-model">Model</Label>
+                  <Select
+                    value={apiConfig.gemini?.model || 'gemini-2.5-flash-lite'}
+                    onValueChange={value =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        gemini: {
+                          ...prev.gemini,
+                          model: value
+                        }
+                      }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="gemini-2.5-pro">Gemini 2.5 Pro</SelectItem>
+                      <SelectItem value="gemini-2.5-flash">Gemini 2.5 Flash</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-lite">Gemini 2.5 Flash-Lite</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-live">Gemini 2.5 Flash Live</SelectItem>
+                      <SelectItem value="gemini-2.5-flash-native-audio">
+                        Gemini 2.5 Flash Native Audio
+                      </SelectItem>
+                      <SelectItem value="gemini-2.5-flash-preview-text-to-speech">
+                        Gemini 2.5 Flash Preview Text-to-Speech
+                      </SelectItem>
+                      <SelectItem value="gemini-2.5-pro-preview-text-to-speech">
+                        Gemini 2.5 Pro Preview Text-to-Speech
+                      </SelectItem>
+                      <SelectItem value="gemini-2.0-flash">Gemini 2.0 Flash</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-preview-image-generation">
+                        Gemini 2.0 Flash Preview Image Generation
+                      </SelectItem>
+                      <SelectItem value="gemini-2.0-flash-lite">Gemini 2.0 Flash-Lite</SelectItem>
+                      <SelectItem value="gemini-2.0-flash-live">Gemini 2.0 Flash Live</SelectItem>
+                      <SelectItem value="gemini-1.5-flash">Gemini 1.5 Flash</SelectItem>
+                      <SelectItem value="gemini-1.5-flash-8b">Gemini 1.5 Flash-8B</SelectItem>
+                      <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-muted-foreground">
+                    Gemini 2.0 Flash supports native audio processing (recommended)
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="gemini-base-url">Base URL (Optional)</Label>
+                  <Input
+                    id="gemini-base-url"
+                    type="url"
+                    value={apiConfig.gemini?.baseURL || ''}
+                    onChange={e =>
+                      setApiConfig(prev => ({
+                        ...prev,
+                        gemini: {
+                          ...prev.gemini,
+                          baseURL: e.target.value || undefined
+                        }
+                      }))
+                    }
+                    placeholder="https://generativelanguage.googleapis.com/v1beta"
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Leave empty to use default Google API endpoint
+                  </p>
+                </div>
+
+                <div className="space-y-3 pt-4">
+                  <div className="flex items-center gap-2 text-sm">
+                    <div
+                      className={`h-2 w-2 rounded-full ${apiConfig.gemini?.apiKey ? 'bg-green-500' : 'bg-gray-400'}`}
+                    ></div>
+                    <span>
+                      {apiConfig.gemini?.apiKey
+                        ? 'Gemini API configured'
+                        : 'Gemini API not configured'}
+                    </span>
+                  </div>
+
+                  {apiConfig.gemini?.apiKey && (
+                    <div className="space-y-1 text-xs text-muted-foreground">
+                      <p>
+                        <strong>✓ Enabled Features:</strong>
+                      </p>
+                      <ul className="list-inside list-disc space-y-1 pl-4">
+                        <li>Automatic question generation from audio loops</li>
+                        <li>Interactive practice sessions with scoring</li>
+                        <li>Conversation comprehension analysis</li>
+                        <li>Multi-choice question practice</li>
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="fluent-settings" className="space-y-6">
@@ -473,16 +641,16 @@ export default function OptionsPage() {
                   <Volume2 className="h-5 w-5" />
                   Audio Settings
                 </CardTitle>
-                <CardDescription>
-                  Configure audio recording and playback settings
-                </CardDescription>
+                <CardDescription>Configure audio recording and playback settings</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="audio-quality">Recording Quality</Label>
-                  <Select 
+                  <Select
                     value={fluentFlowSettings.audioQuality}
-                    onValueChange={(value) => updateFluentFlowSettings({ audioQuality: value as 'low' | 'medium' | 'high' })}
+                    onValueChange={value =>
+                      updateFluentFlowSettings({ audioQuality: value as 'low' | 'medium' | 'high' })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -496,9 +664,11 @@ export default function OptionsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="max-duration">Max Recording Duration</Label>
-                  <Select 
+                  <Select
                     value={fluentFlowSettings.maxRecordingDuration.toString()}
-                    onValueChange={(value) => updateFluentFlowSettings({ maxRecordingDuration: parseInt(value) })}
+                    onValueChange={value =>
+                      updateFluentFlowSettings({ maxRecordingDuration: parseInt(value) })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -520,16 +690,16 @@ export default function OptionsPage() {
                   <Eye className="h-5 w-5" />
                   UI Preferences
                 </CardTitle>
-                <CardDescription>
-                  Customize the FluentFlow user interface
-                </CardDescription>
+                <CardDescription>Customize the FluentFlow user interface</CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="panel-position">Panel Position</Label>
-                  <Select 
+                  <Select
                     value={fluentFlowSettings.panelPosition}
-                    onValueChange={(value) => updateFluentFlowSettings({ panelPosition: value as any })}
+                    onValueChange={value =>
+                      updateFluentFlowSettings({ panelPosition: value as any })
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -542,7 +712,7 @@ export default function OptionsPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Auto-save recordings</Label>
@@ -552,10 +722,12 @@ export default function OptionsPage() {
                   </div>
                   <Switch
                     checked={fluentFlowSettings.autoSaveRecordings}
-                    onCheckedChange={(checked) => updateFluentFlowSettings({ autoSaveRecordings: checked })}
+                    onCheckedChange={checked =>
+                      updateFluentFlowSettings({ autoSaveRecordings: checked })
+                    }
                   />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <Label>Show visual feedback</Label>
@@ -565,7 +737,9 @@ export default function OptionsPage() {
                   </div>
                   <Switch
                     checked={fluentFlowSettings.showVisualFeedback}
-                    onCheckedChange={(checked) => updateFluentFlowSettings({ showVisualFeedback: checked })}
+                    onCheckedChange={checked =>
+                      updateFluentFlowSettings({ showVisualFeedback: checked })
+                    }
                   />
                 </div>
               </CardContent>
@@ -577,26 +751,32 @@ export default function OptionsPage() {
                   <Headphones className="h-5 w-5" />
                   Keyboard Shortcuts
                 </CardTitle>
-                <CardDescription>
-                  Current keyboard shortcuts for FluentFlow
-                </CardDescription>
+                <CardDescription>Current keyboard shortcuts for FluentFlow</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Set Loop Points</span>
-                  <Badge variant="secondary" className="font-mono text-xs">{fluentFlowSettings.keyboardShortcuts.toggleLoop}</Badge>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {fluentFlowSettings.keyboardShortcuts.toggleLoop}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Start/Stop Recording</span>
-                  <Badge variant="secondary" className="font-mono text-xs">{fluentFlowSettings.keyboardShortcuts.toggleRecording}</Badge>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {fluentFlowSettings.keyboardShortcuts.toggleRecording}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Compare Audio</span>
-                  <Badge variant="secondary" className="font-mono text-xs">{fluentFlowSettings.keyboardShortcuts.compareAudio}</Badge>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {fluentFlowSettings.keyboardShortcuts.compareAudio}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm">Toggle Panel</span>
-                  <Badge variant="secondary" className="font-mono text-xs">{fluentFlowSettings.keyboardShortcuts.togglePanel}</Badge>
+                  <Badge variant="secondary" className="font-mono text-xs">
+                    {fluentFlowSettings.keyboardShortcuts.togglePanel}
+                  </Badge>
                 </div>
               </CardContent>
             </Card>
@@ -609,20 +789,23 @@ export default function OptionsPage() {
                   <TrendingUp className="h-5 w-5" />
                   Weekly Progress
                 </CardTitle>
-                <CardDescription>
-                  Your practice activity over the last 7 days
-                </CardDescription>
+                <CardDescription>Your practice activity over the last 7 days</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="flex items-end justify-between h-32 gap-2">
-                  {statistics.weeklyProgress.slice(-7).map((day) => (
-                    <div key={day.date} className="flex flex-col items-center flex-1">
-                      <div className="bg-primary rounded-t" style={{ 
-                        height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%`,
-                        minHeight: '4px',
-                        width: '100%'
-                      }}></div>
-                      <span className="text-xs text-muted-foreground mt-2">{day.date.slice(-2)}</span>
+                <div className="flex h-32 items-end justify-between gap-2">
+                  {statistics.weeklyProgress.slice(-7).map(day => (
+                    <div key={day.date} className="flex flex-1 flex-col items-center">
+                      <div
+                        className="rounded-t bg-primary"
+                        style={{
+                          height: `${Math.min(100, (day.practiceTime / 3600) * 100)}%`,
+                          minHeight: '4px',
+                          width: '100%'
+                        }}
+                      ></div>
+                      <span className="mt-2 text-xs text-muted-foreground">
+                        {day.date.slice(-2)}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -635,17 +818,18 @@ export default function OptionsPage() {
                   <Eye className="h-5 w-5" />
                   Most Practiced Videos
                 </CardTitle>
-                <CardDescription>
-                  Your top 5 most practiced YouTube videos
-                </CardDescription>
+                <CardDescription>Your top 5 most practiced YouTube videos</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {statistics.mostPracticedVideos.slice(0, 5).map((video, index) => (
-                  <div key={video.videoId} className="flex items-center gap-3 p-3 rounded-lg border">
-                    <PlayCircle className="h-4 w-4 text-primary flex-shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{video.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{video.channel}</p>
+                  <div
+                    key={video.videoId}
+                    className="flex items-center gap-3 rounded-lg border p-3"
+                  >
+                    <PlayCircle className="h-4 w-4 flex-shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">{video.title}</p>
+                      <p className="truncate text-xs text-muted-foreground">{video.channel}</p>
                     </div>
                     <Badge variant="secondary" className="text-xs">
                       #{index + 1}
@@ -653,7 +837,7 @@ export default function OptionsPage() {
                   </div>
                 ))}
                 {statistics.mostPracticedVideos.length === 0 && (
-                  <p className="text-sm text-muted-foreground text-center py-4">
+                  <p className="py-4 text-center text-sm text-muted-foreground">
                     Start practicing to see your most practiced videos here
                   </p>
                 )}
@@ -666,17 +850,15 @@ export default function OptionsPage() {
                   <Activity className="h-5 w-5" />
                   Practice Streaks
                 </CardTitle>
-                <CardDescription>
-                  Track your practice consistency
-                </CardDescription>
+                <CardDescription>Track your practice consistency</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 rounded-lg bg-green-50 border-green-200 border">
+                  <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
                     <div className="text-2xl font-bold text-green-600">7</div>
                     <div className="text-sm text-green-700">Current Streak</div>
                   </div>
-                  <div className="text-center p-4 rounded-lg bg-blue-50 border-blue-200 border">
+                  <div className="rounded-lg border border-blue-200 bg-blue-50 p-4 text-center">
                     <div className="text-2xl font-bold text-blue-600">21</div>
                     <div className="text-sm text-blue-700">Best Streak</div>
                   </div>
@@ -692,31 +874,17 @@ export default function OptionsPage() {
                   <Zap className="h-5 w-5" />
                   Performance
                 </CardTitle>
-                <CardDescription>
-                  Optimize FluentFlow performance
-                </CardDescription>
+                <CardDescription>Optimize FluentFlow performance</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="cache-size">Max Cache Items</Label>
-                  <Input
-                    id="cache-size"
-                    type="number"
-                    min="10"
-                    max="1000"
-                    defaultValue="100"
-                  />
+                  <Input id="cache-size" type="number" min="10" max="1000" defaultValue="100" />
                 </div>
 
                 <div className="space-y-2">
                   <Label htmlFor="batch-size">Batch Processing Size</Label>
-                  <Input
-                    id="batch-size"
-                    type="number"
-                    min="1"
-                    max="50"
-                    defaultValue="5"
-                  />
+                  <Input id="batch-size" type="number" min="1" max="50" defaultValue="5" />
                 </div>
               </CardContent>
             </Card>
@@ -724,9 +892,7 @@ export default function OptionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Data Management</CardTitle>
-                <CardDescription>
-                  Manage your FluentFlow data
-                </CardDescription>
+                <CardDescription>Manage your FluentFlow data</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex flex-wrap gap-2">
@@ -749,9 +915,7 @@ export default function OptionsPage() {
             <Card>
               <CardHeader>
                 <CardTitle>Reset Settings</CardTitle>
-                <CardDescription>
-                  Reset all settings to their default values
-                </CardDescription>
+                <CardDescription>Reset all settings to their default values</CardDescription>
               </CardHeader>
               <CardContent>
                 <Button
@@ -781,7 +945,7 @@ export default function OptionsPage() {
                     <Badge variant="secondary">Version 1.0.0</Badge>
                   </div>
                   <p className="text-muted-foreground">
-                    A powerful YouTube language learning tool that helps you practice pronunciation 
+                    A powerful YouTube language learning tool that helps you practice pronunciation
                     by recording and comparing your voice with native speakers.
                   </p>
                 </div>
@@ -807,9 +971,9 @@ export default function OptionsPage() {
                   <h4 className="font-medium">Links:</h4>
                   <div className="space-y-2">
                     <Button variant="outline" size="sm" asChild>
-                      <a 
-                        href="https://github.com/example/fluent-flow" 
-                        target="_blank" 
+                      <a
+                        href="https://github.com/example/fluent-flow"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
                       >
@@ -818,9 +982,9 @@ export default function OptionsPage() {
                       </a>
                     </Button>
                     <Button variant="outline" size="sm" asChild>
-                      <a 
-                        href="https://developer.chrome.com/docs/extensions/" 
-                        target="_blank" 
+                      <a
+                        href="https://developer.chrome.com/docs/extensions/"
+                        target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"
                       >
@@ -847,8 +1011,14 @@ export default function OptionsPage() {
                 </div>
                 <div className="flex items-center gap-4">
                   {saveMessage && (
-                    <Alert className={`${saveMessage.includes('successfully') ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} max-w-xs`}>
-                      <AlertDescription className={saveMessage.includes('successfully') ? 'text-green-800' : 'text-red-800'}>
+                    <Alert
+                      className={`${saveMessage.includes('successfully') ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'} max-w-xs`}
+                    >
+                      <AlertDescription
+                        className={
+                          saveMessage.includes('successfully') ? 'text-green-800' : 'text-red-800'
+                        }
+                      >
                         {saveMessage}
                       </AlertDescription>
                     </Alert>
