@@ -1,19 +1,19 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import type {
-  FluentFlowStore,
-  YouTubePlayerState,
-  YouTubeVideoInfo,
-  LoopState,
-  RecordingState,
   AudioComparisonState,
-  FluentFlowUIState,
-  FluentFlowSettings,
-  PracticeSession,
   AudioRecording,
+  FluentFlowSettings,
+  FluentFlowStore,
+  FluentFlowUIState,
   LoopSegment,
+  LoopState,
+  PracticeSession,
+  PracticeStatistics,
+  RecordingState,
   SavedLoop,
-  PracticeStatistics
+  YouTubePlayerState,
+  YouTubeVideoInfo
 } from '../types/fluent-flow-types'
 
 const defaultPlayerState: YouTubePlayerState = {
@@ -63,7 +63,7 @@ const defaultSettings: FluentFlowSettings = {
     toggleLoop: 'Alt+L',
     toggleRecording: 'Alt+R',
     compareAudio: 'Alt+C',
-    togglePanel: 'Alt+Shift+F',
+    togglePanel: 'Alt+F',
     setLoopStart: 'Alt+1',
     setLoopEnd: 'Alt+2',
     playPause: 'Alt+Space'
@@ -109,7 +109,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       },
 
       updatePlayerState: (newState: Partial<YouTubePlayerState>) => {
-        set((state) => ({
+        set(state => ({
           playerState: { ...state.playerState, ...newState }
         }))
       },
@@ -126,7 +126,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
           updatedAt: new Date()
         }
 
-        set((state) => ({
+        set(state => ({
           loopState: {
             ...state.loopState,
             isActive: true,
@@ -170,7 +170,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
 
           const audioChunks: Blob[] = []
 
-          mediaRecorder.ondataavailable = (event) => {
+          mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) {
               audioChunks.push(event.data)
             }
@@ -197,7 +197,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       stopRecording: async (): Promise<AudioRecording> => {
         return new Promise((resolve, reject) => {
           const { recordingState, currentVideo } = get()
-          
+
           if (!recordingState.mediaRecorder || !currentVideo) {
             reject(new Error('No active recording or video'))
             return
@@ -208,7 +208,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
               type: 'audio/webm;codecs=opus'
             })
 
-            const duration = recordingState.recordingStartTime 
+            const duration = recordingState.recordingStartTime
               ? (Date.now() - recordingState.recordingStartTime) / 1000
               : 0
 
@@ -238,7 +238,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       },
 
       saveRecording: async (recording: AudioRecording) => {
-        set((state) => {
+        set(state => {
           const updatedSession = state.currentSession
             ? {
                 ...state.currentSession,
@@ -258,13 +258,11 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       },
 
       deleteRecording: (recordingId: string) => {
-        set((state) => ({
+        set(state => ({
           currentSession: state.currentSession
             ? {
                 ...state.currentSession,
-                recordings: state.currentSession.recordings.filter(
-                  r => r.id !== recordingId
-                ),
+                recordings: state.currentSession.recordings.filter(r => r.id !== recordingId),
                 updatedAt: new Date()
               }
             : null
@@ -293,7 +291,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       },
 
       togglePanel: () => {
-        set((state) => ({
+        set(state => ({
           uiState: {
             ...state.uiState,
             isPanelVisible: !state.uiState.isPanelVisible
@@ -302,7 +300,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       },
 
       updateSettings: (newSettings: Partial<FluentFlowSettings>) => {
-        set((state) => ({
+        set(state => ({
           settings: { ...state.settings, ...newSettings }
         }))
       },
@@ -310,28 +308,28 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
       loadSession: async (videoId: string): Promise<PracticeSession | null> => {
         const { allSessions } = get()
         const session = allSessions.find(s => s.videoId === videoId)
-        
+
         if (session) {
           set({ currentSession: session })
           return session
         }
-        
+
         return null
       },
 
       saveSession: async () => {
         const { currentSession, allSessions } = get()
-        
+
         if (!currentSession) return
 
         const existingIndex = allSessions.findIndex(s => s.id === currentSession.id)
-        
+
         if (existingIndex >= 0) {
           const updatedSessions = [...allSessions]
           updatedSessions[existingIndex] = currentSession
           set({ allSessions: updatedSessions })
         } else {
-          set((state) => ({
+          set(state => ({
             allSessions: [...allSessions, currentSession],
             statistics: {
               ...state.statistics,
@@ -368,7 +366,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
     }),
     {
       name: 'fluent-flow-storage',
-      partialize: (state) => ({
+      partialize: state => ({
         settings: state.settings,
         allSessions: state.allSessions,
         statistics: state.statistics,

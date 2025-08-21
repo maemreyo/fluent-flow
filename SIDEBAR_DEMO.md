@@ -3,6 +3,7 @@
 ## 🎯 **Cách test FluentFlow Sidebar**
 
 ### 1. **Setup Extension**
+
 ```bash
 # Build extension
 pnpm build
@@ -13,6 +14,7 @@ pnpm build
 ```
 
 ### 2. **Test trên YouTube**
+
 ```bash
 # Mở YouTube video bất kỳ
 https://www.youtube.com/watch?v=dQw4w9WgXcQ
@@ -23,6 +25,7 @@ https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ## 🎮 **Các tính năng để test**
 
 ### ✨ **Sidebar Toggle**
+
 - **Click FluentFlow icon** trên YouTube controls (bên phải volume)
 - **Keyboard shortcut**: `Alt+F` để toggle sidebar
 - **Animation**: Sidebar slide in/out mượt mà từ bên phải
@@ -30,30 +33,36 @@ https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ### 🎛️ **Sidebar Features**
 
 #### **Loop Controls Group**
-- ✅ **Set Loop Start** - `Alt+Shift+1`
-- ✅ **Toggle Loop Playback** - `Alt+L` 
-- ✅ **Set Loop End** - `Alt+Shift+2`
+
+- ✅ **Set Loop Start** - `Alt+1`
+- ✅ **Toggle Loop Playback** - `Alt+L`
+- ✅ **Set Loop End** - `Alt+2`
 - ✅ **Export Current Loop** - `Alt+E` (right-click cho options)
 
 #### **Recording & Audio Group**
+
 - ✅ **Voice Recording** - `Alt+R`
 - ✅ **Audio Compare** - `Alt+C`
 
 #### **Notes & Learning Group**
+
 - ✅ **Add Note** - `Alt+N` (right-click để xem notes)
 
 #### **Tools & Settings Group**
-- ✅ **Chrome Extension Panel** - `Alt+Shift+F`
+
+- ✅ **Chrome Extension Panel** - `Alt+F`
 
 ### 🖱️ **Interactive Elements**
 
 #### **Sidebar Controls**
+
 - **Toggle icon** ở bên phải YouTube player
 - **Close button** (X) trong header
 - **Click outside** để đóng sidebar
 - **Escape key** để đóng sidebar
 
 #### **Button States**
+
 - **Hover effects**: Buttons highlight khi hover
 - **Active states**: Buttons thay đổi màu khi active (xanh lá)
 - **Setting states**: Buttons màu vàng khi đang setting
@@ -62,6 +71,7 @@ https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ## 🧪 **Test Cases**
 
 ### **Test 1: Sidebar Initialization**
+
 ```javascript
 // Mở Console và check logs
 console.log('FluentFlow: Sidebar initialized successfully')
@@ -69,6 +79,7 @@ console.log('FluentFlow: Sidebar initialized successfully')
 ```
 
 ### **Test 2: Toggle Functionality**
+
 ```javascript
 // Test keyboard shortcuts
 Alt+F -> Sidebar open/close
@@ -77,6 +88,7 @@ Alt+R -> Recording start/stop (và button state change)
 ```
 
 ### **Test 3: Responsive Design**
+
 ```javascript
 // Resize browser window
 // Sidebar tự động điều chỉnh cho mobile/desktop
@@ -84,6 +96,7 @@ Alt+R -> Recording start/stop (và button state change)
 ```
 
 ### **Test 4: YouTube Navigation**
+
 ```javascript
 // Navigate giữa các YouTube videos
 // Sidebar persist và hoạt động bình thường
@@ -91,6 +104,7 @@ Alt+R -> Recording start/stop (và button state change)
 ```
 
 ### **Test 5: Error Handling**
+
 ```javascript
 // Check console cho fallback messages:
 console.log('FluentFlow: Using legacy button container as fallback')
@@ -100,6 +114,7 @@ console.log('FluentFlow: Using legacy button container as fallback')
 ## 🎨 **Visual Inspection**
 
 ### **Design Consistency**
+
 - ✅ Dark theme với `#1a1a1a` background
 - ✅ Rounded corners `12px` border-radius
 - ✅ Smooth transitions `0.3s cubic-bezier(0.4, 0, 0.2, 1)`
@@ -107,31 +122,39 @@ console.log('FluentFlow: Using legacy button container as fallback')
 - ✅ Backdrop filter blur effect
 
 ### **Typography**
+
 - ✅ Font family: 'Roboto', -apple-system, BlinkMacSystemFont
 - ✅ Title size: 18px, weight 600
 - ✅ Button text: 14px
 - ✅ Subtitle: 12px
 
 ### **Colors**
+
 - ✅ Active: `rgba(34, 197, 94, 0.1)` green
-- ✅ Setting: `rgba(251, 191, 36, 0.1)` yellow  
+- ✅ Setting: `rgba(251, 191, 36, 0.1)` yellow
 - ✅ Paused: `rgba(239, 68, 68, 0.1)` red
 - ✅ Border: `#333333` for dark theme
 
 ## 🐛 **Troubleshooting**
 
 ### **Common Issues**
+
 1. **Sidebar không xuất hiện**: Check console log, có thể cần refresh page
-2. **Buttons không hoạt động**: Check keyboard shortcuts, có thể conflict với YouTube
-3. **Legacy fallback**: Nếu sidebar fail, buttons sẽ xuất hiện trên YouTube controls
+2. **Buttons không hoạt động**: Check keyboard shortcuts, có thể conflict với
+   YouTube
+3. **Legacy fallback**: Nếu sidebar fail, buttons sẽ xuất hiện trên YouTube
+   controls
 
 ### **Debug Commands**
+
 ```javascript
 // Check sidebar instance
 window.fluentFlowSidebar = document.querySelector('.fluent-flow-sidebar')
 
 // Check toggle button
-window.fluentFlowToggle = document.querySelector('.fluent-flow-sidebar-youtube-toggle')
+window.fluentFlowToggle = document.querySelector(
+  '.fluent-flow-sidebar-youtube-toggle'
+)
 
 // Manual toggle
 document.querySelector('.fluent-flow-sidebar-toggle')?.click()
@@ -140,11 +163,13 @@ document.querySelector('.fluent-flow-sidebar-toggle')?.click()
 ## 📊 **Performance Metrics**
 
 ### **Load Time**
+
 - Sidebar initialization: < 1s
 - First render: < 200ms
 - Animation duration: 300ms
 
 ### **Memory Usage**
+
 - Minimal DOM elements
 - Efficient event listeners
 - Proper cleanup on destroy
@@ -161,4 +186,5 @@ document.querySelector('.fluent-flow-sidebar-toggle')?.click()
 
 ---
 
-**🎉 Thành công khi:** Tất cả features hoạt động, UI đẹp, performance tốt, không có errors trong console!
+**🎉 Thành công khi:** Tất cả features hoạt động, UI đẹp, performance tốt, không
+có errors trong console!

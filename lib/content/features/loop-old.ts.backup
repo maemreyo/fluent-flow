@@ -1079,8 +1079,8 @@ export class LoopFeature {
     if (startButton) {
       const hasStart = this.loopState.startTime !== null
       const startTooltip = hasStart 
-        ? `Loop Start: ${this.ui.formatTime(this.loopState.startTime)} (Alt+Shift+1 to change)`
-        : 'Set Loop Start (Alt+Shift+1)'
+        ? `Loop Start: ${this.ui.formatTime(this.loopState.startTime)} (Alt+1 to change)`
+        : 'Set Loop Start (Alt+1)'
       startButton.title = startTooltip
       startButton.setAttribute('data-tooltip-title', startTooltip)
       startButton.setAttribute('aria-label', startTooltip)
@@ -1107,8 +1107,8 @@ export class LoopFeature {
     if (endButton) {
       const hasEnd = this.loopState.endTime !== null
       const endTooltip = hasEnd
-        ? `Loop End: ${this.ui.formatTime(this.loopState.endTime)} (Alt+Shift+2 to change)`
-        : 'Set Loop End (Alt+Shift+2)'
+        ? `Loop End: ${this.ui.formatTime(this.loopState.endTime)} (Alt+2 to change)`
+        : 'Set Loop End (Alt+2)'
       endButton.title = endTooltip
       endButton.setAttribute('data-tooltip-title', endTooltip)
       endButton.setAttribute('aria-label', endTooltip)

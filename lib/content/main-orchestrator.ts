@@ -241,7 +241,7 @@ export class FluentFlowOrchestrator {
         }
       }
 
-      // Panel toggle: Option+F (Alt+Shift+F)
+      // Panel toggle: Option+F (Alt+F)
       if (
         event.altKey &&
         event.shiftKey &&

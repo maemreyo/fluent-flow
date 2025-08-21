@@ -8,7 +8,7 @@ export interface YouTubePlayerIntegration {
   getCurrentTime(): number | null
   seekTo(time: number): boolean
   getVideoDuration(): number
-  getVideoInfo(): { id: string | null, title: string | null, url: string | null }
+  getVideoInfo(): { id: string | null; title: string | null; url: string | null }
   updateVideoInfo?(): void
 }
 
@@ -28,7 +28,7 @@ export class LoopFeature {
     private ui: UIUtilities
   ) {
     // Subscribe to state changes for UI updates
-    this.stateMachine.subscribe((context) => {
+    this.stateMachine.subscribe(context => {
       this.onStateChange(context)
     })
   }
@@ -36,34 +36,34 @@ export class LoopFeature {
   // Single source of truth for all UI updates
   private onStateChange(context: LoopStateContext): void {
     console.log('FluentFlow: State changed to:', context.state, context.data)
-    
+
     // Defensive programming - ensure we have valid context
     if (!context || !context.state) {
       console.error('FluentFlow: Invalid state context', context)
       return
     }
-    
+
     // Update all button states based on current state - NO EXCEPTIONS
     switch (context.state) {
       case 'idle':
         this.ui.updateButtonState('fluent-flow-loop', 'inactive')
-        this.ui.updateButtonState('fluent-flow-loop-start', 'inactive')  
+        this.ui.updateButtonState('fluent-flow-loop-start', 'inactive')
         this.ui.updateButtonState('fluent-flow-loop-toggle', 'inactive')
         this.ui.updateButtonState('fluent-flow-loop-end', 'inactive')
         break
-        
+
       case 'setting-start':
         this.ui.updateButtonState('fluent-flow-loop', 'setting')
         this.ui.updateButtonState('fluent-flow-loop-start', 'setting')
         this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
         break
-        
+
       case 'setting-end':
         this.ui.updateButtonState('fluent-flow-loop', 'setting')
         this.ui.updateButtonState('fluent-flow-loop-end', 'setting')
         this.ui.updateButtonState('fluent-flow-loop-toggle', 'setting')
         break
-        
+
       case 'configured':
         // CRITICAL: Loop is set up but NOT actively looping
         this.ui.updateButtonState('fluent-flow-loop', 'active')
@@ -71,23 +71,23 @@ export class LoopFeature {
         this.ui.updateButtonState('fluent-flow-loop-end', 'active')
         this.ui.updateButtonState('fluent-flow-loop-toggle', 'inactive') // Ready to play, not playing
         break
-        
+
       case 'active':
         // CRITICAL: Loop is actively running
         this.ui.updateButtonState('fluent-flow-loop', 'active')
         this.ui.updateButtonState('fluent-flow-loop-start', 'active')
         this.ui.updateButtonState('fluent-flow-loop-end', 'active')
-        this.ui.updateButtonState('fluent-flow-loop-toggle', 'active')   // Currently looping
+        this.ui.updateButtonState('fluent-flow-loop-toggle', 'active') // Currently looping
         break
-        
+
       case 'paused':
         this.ui.updateButtonState('fluent-flow-loop', 'paused')
         this.ui.updateButtonState('fluent-flow-loop-start', 'active')
         this.ui.updateButtonState('fluent-flow-loop-end', 'active')
-        this.ui.updateButtonState('fluent-flow-loop-toggle', 'paused')   // Paused
+        this.ui.updateButtonState('fluent-flow-loop-toggle', 'paused') // Paused
         break
     }
-    
+
     // Update visual elements
     this.updateProgressMarkers()
     this.updateLoopButtonTooltips()
@@ -108,7 +108,7 @@ export class LoopFeature {
     }
 
     const newData = { ...context.data, startTime: currentTime }
-    
+
     // Simple logic: just check if we have both points
     if (newData.startTime !== null && newData.endTime !== null) {
       // Both points set - go to configured (ready but not active)
@@ -135,7 +135,7 @@ export class LoopFeature {
     }
 
     const newData = { ...context.data, endTime: currentTime }
-    
+
     // Simple logic: just check if we have both points
     if (newData.startTime !== null && newData.endTime !== null) {
       // Both points set - go to configured (ready but not active)
@@ -150,7 +150,7 @@ export class LoopFeature {
 
   public toggleLoopPlayback(): void {
     const context = this.stateMachine.getContext()
-    
+
     if (context.data.startTime === null || context.data.endTime === null) {
       this.ui.showToast('Please set both loop start and end points first')
       return
@@ -160,31 +160,31 @@ export class LoopFeature {
     switch (context.state) {
       case 'configured':
         // Start looping - ONLY place where active looping begins
-        this.stateMachine.transition('active', context.data)  // Preserve data!
+        this.stateMachine.transition('active', context.data) // Preserve data!
         const startTime = this.ui.formatTime(context.data.startTime)
         const endTime = this.ui.formatTime(context.data.endTime)
         this.ui.showToast(`Loop started: ${startTime} - ${endTime}`)
         break
-        
+
       case 'active':
         // Pause looping
-        this.stateMachine.transition('paused', context.data)  // Preserve data!
+        this.stateMachine.transition('paused', context.data) // Preserve data!
         this.ui.showToast('Loop paused')
         break
-        
+
       case 'paused':
         // Resume looping
-        this.stateMachine.transition('active', context.data)  // Preserve data!
+        this.stateMachine.transition('active', context.data) // Preserve data!
         this.ui.showToast('Loop resumed')
         break
-        
+
       default:
         this.ui.showToast('Loop setup not complete')
     }
   }
 
   public clearLoop(): void {
-    this.stateMachine.transition('idle', { startTime: null, endTime: null })  // Explicitly clear data
+    this.stateMachine.transition('idle', { startTime: null, endTime: null }) // Explicitly clear data
     this.ui.showToast('Loop cleared')
   }
 
@@ -196,11 +196,13 @@ export class LoopFeature {
     }
 
     const context = this.stateMachine.getContext()
-    
+
     switch (context.state) {
       case 'idle':
         this.stateMachine.transition('setting-start')
-        this.ui.showToast('Click on progress bar to set loop start, or click button to use current time')
+        this.ui.showToast(
+          'Click on progress bar to set loop start, or click button to use current time'
+        )
         break
 
       case 'setting-start':
@@ -220,17 +222,17 @@ export class LoopFeature {
         break
 
       case 'configured':
-        this.stateMachine.transition('active', context.data)  // Preserve data!
+        this.stateMachine.transition('active', context.data) // Preserve data!
         this.ui.showToast('Loop started')
         break
-        
+
       case 'active':
-        this.stateMachine.transition('paused', context.data)  // Preserve data!
+        this.stateMachine.transition('paused', context.data) // Preserve data!
         this.ui.showToast('Loop paused')
         break
-        
+
       case 'paused':
-        this.stateMachine.transition('active', context.data)  // Preserve data!
+        this.stateMachine.transition('active', context.data) // Preserve data!
         this.ui.showToast('Loop resumed')
         break
     }
@@ -238,7 +240,7 @@ export class LoopFeature {
 
   public applyLoop(savedLoop: SavedLoop): void {
     console.log('FluentFlow V2: Applying saved loop', savedLoop)
-    
+
     // Check if we're on the correct video
     const currentVideoInfo = this.player.getVideoInfo()
     if (currentVideoInfo.id !== savedLoop.videoId) {
@@ -255,7 +257,7 @@ export class LoopFeature {
 
     // Seek to start time but don't start looping
     this.player.seekTo(savedLoop.startTime)
-    
+
     this.ui.showToast(`Loop ready: ${savedLoop.title} - Press Loop Play to start`)
     console.log('FluentFlow: Loop configured but NOT active:', this.stateMachine.getContext())
   }
@@ -268,11 +270,13 @@ export class LoopFeature {
 
     this.loopInterval = setInterval(() => {
       const context = this.stateMachine.getContext()
-      
+
       // CRITICAL: Only loop when state is explicitly 'active'
-      if (context.state === 'active' && 
-          context.data.startTime !== null && 
-          context.data.endTime !== null) {
+      if (
+        context.state === 'active' &&
+        context.data.startTime !== null &&
+        context.data.endTime !== null
+      ) {
         const currentTime = this.player.getCurrentTime()
         if (currentTime !== null && currentTime >= context.data.endTime) {
           this.player.seekTo(context.data.startTime)
@@ -288,7 +292,7 @@ export class LoopFeature {
   }
 
   // Getters for external access
-  public getLoopState(): { 
+  public getLoopState(): {
     isActive: boolean
     isLooping: boolean
     startTime: number | null
@@ -307,7 +311,7 @@ export class LoopFeature {
 
   public exportCurrentLoop(title?: string, description?: string): SavedLoop | null {
     const context = this.stateMachine.getContext()
-    
+
     if (context.data.startTime === null || context.data.endTime === null) {
       this.ui.showToast('No loop to export - please set start and end points first')
       return null
@@ -320,20 +324,21 @@ export class LoopFeature {
         this.player.updateVideoInfo()
         videoInfo = this.player.getVideoInfo()
       }
-      
+
       if (!videoInfo.id || !videoInfo.title) {
         const urlParams = new URLSearchParams(window.location.search)
         const videoId = urlParams.get('v')
         const docTitle = document.title
-        const fallbackTitle = docTitle && docTitle !== 'YouTube' 
-          ? docTitle.replace(/ - YouTube$/, '').trim() 
-          : 'Unknown Video'
-        
+        const fallbackTitle =
+          docTitle && docTitle !== 'YouTube'
+            ? docTitle.replace(/ - YouTube$/, '').trim()
+            : 'Unknown Video'
+
         if (!videoId) {
           this.ui.showToast('Cannot export - unable to detect YouTube video')
           return null
         }
-        
+
         videoInfo = {
           id: videoId,
           title: fallbackTitle,
@@ -344,7 +349,9 @@ export class LoopFeature {
 
     const savedLoop: SavedLoop = {
       id: `loop_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-      title: title || `Loop ${this.ui.formatTime(context.data.startTime)}-${this.ui.formatTime(context.data.endTime)}`,
+      title:
+        title ||
+        `Loop ${this.ui.formatTime(context.data.startTime)}-${this.ui.formatTime(context.data.endTime)}`,
       videoId: videoInfo.id,
       videoTitle: videoInfo.title,
       videoUrl: videoInfo.url || window.location.href,
@@ -371,11 +378,11 @@ export class LoopFeature {
       clearInterval(this.loopInterval)
       this.loopInterval = null
     }
-    
+
     // Remove progress markers
     const existingMarkers = document.querySelectorAll('.fluent-flow-marker')
     existingMarkers.forEach(marker => marker.remove())
-    
+
     const markerContainer = document.querySelector('.fluent-flow-markers')
     if (markerContainer) {
       markerContainer.remove()
@@ -436,7 +443,11 @@ export class LoopFeature {
 
     // Create loop region highlight
     if (context.data.startTime !== null && context.data.endTime !== null) {
-      const loopRegion = this.createLoopRegion(context.data.startTime, context.data.endTime, duration)
+      const loopRegion = this.createLoopRegion(
+        context.data.startTime,
+        context.data.endTime,
+        duration
+      )
       markerContainer.appendChild(loopRegion)
     }
   }
@@ -444,17 +455,17 @@ export class LoopFeature {
   private createProgressMarker(type: 'start' | 'end', time: number, duration: number): HTMLElement {
     const marker = document.createElement('div')
     marker.className = `fluent-flow-marker fluent-flow-marker-${type}`
-    
+
     const percentage = (time / duration) * 100
-    
+
     const colors = {
       start: { primary: '#10b981', secondary: '#059669', shadow: 'rgba(16, 185, 129, 0.3)' },
       end: { primary: '#f59e0b', secondary: '#d97706', shadow: 'rgba(245, 158, 11, 0.3)' }
     }
-    
+
     const colorSet = colors[type]
     const arrow = type === 'start' ? '→' : '←'
-    
+
     marker.style.cssText = `
       position: absolute;
       left: ${percentage}%;
@@ -540,42 +551,44 @@ export class LoopFeature {
     })
 
     // Add click to seek functionality - only if not dragging
-    marker.addEventListener('click', (e) => {
+    marker.addEventListener('click', e => {
       // Don't seek if clicking on X button area or if we just finished dragging
-      if ((e.target as HTMLElement).classList.contains('ff-marker-remove') || 
-          marker.classList.contains('dragging')) {
+      if (
+        (e.target as HTMLElement).classList.contains('ff-marker-remove') ||
+        marker.classList.contains('dragging')
+      ) {
         return
       }
-      
+
       this.player.seekTo(time)
       this.ui.showToast(`Jumped to ${type}: ${this.ui.formatTime(time)}`)
     })
-    
+
     // Add X button functionality with enhanced effects
     const removeBtn = marker.querySelector('.ff-marker-remove') as HTMLElement
     if (removeBtn) {
-      removeBtn.addEventListener('click', (e) => {
+      removeBtn.addEventListener('click', e => {
         e.stopPropagation()
         e.stopImmediatePropagation()
         e.preventDefault()
         this.removeMarkerPoint(type)
       })
 
-      removeBtn.addEventListener('mousedown', (e) => {
+      removeBtn.addEventListener('mousedown', e => {
         e.stopPropagation()
         e.stopImmediatePropagation()
         e.preventDefault()
       })
 
-      // Enhanced X button hover effects  
-      removeBtn.addEventListener('mouseenter', (e) => {
+      // Enhanced X button hover effects
+      removeBtn.addEventListener('mouseenter', e => {
         e.stopPropagation()
         removeBtn.style.background = 'linear-gradient(135deg, #f87171, #ef4444)'
         removeBtn.style.transform = 'scale(1.1)'
         removeBtn.style.boxShadow = '0 3px 10px rgba(239, 68, 68, 0.6)'
       })
 
-      removeBtn.addEventListener('mouseleave', (e) => {
+      removeBtn.addEventListener('mouseleave', e => {
         e.stopPropagation()
         removeBtn.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'
         removeBtn.style.transform = 'scale(1)'
@@ -608,11 +621,11 @@ export class LoopFeature {
   private createLoopRegion(startTime: number, endTime: number, duration: number): HTMLElement {
     const region = document.createElement('div')
     region.className = 'fluent-flow-loop-region'
-    
+
     const startPercent = (startTime / duration) * 100
     const endPercent = (endTime / duration) * 100
     const width = endPercent - startPercent
-    
+
     region.style.cssText = `
       position: absolute;
       left: ${startPercent}%;
@@ -636,14 +649,14 @@ export class LoopFeature {
 
   private updateLoopButtonTooltips(): void {
     const context = this.stateMachine.getContext()
-    
+
     // Update tooltips based on current state and data
     const startButton = document.getElementById('fluent-flow-loop-start')
     if (startButton) {
       const hasStart = context.data.startTime !== null
-      const tooltip = hasStart 
-        ? `Loop Start: ${this.ui.formatTime(context.data.startTime)} (Alt+Shift+1 to change)`
-        : 'Set Loop Start (Alt+Shift+1)'
+      const tooltip = hasStart
+        ? `Loop Start: ${this.ui.formatTime(context.data.startTime)} (Alt+1 to change)`
+        : 'Set Loop Start (Alt+1)'
       startButton.title = tooltip
     }
 
@@ -665,23 +678,23 @@ export class LoopFeature {
       toggleButton.title = tooltip
     }
 
-    const endButton = document.getElementById('fluent-flow-loop-end')  
+    const endButton = document.getElementById('fluent-flow-loop-end')
     if (endButton) {
       const hasEnd = context.data.endTime !== null
       const tooltip = hasEnd
-        ? `Loop End: ${this.ui.formatTime(context.data.endTime)} (Alt+Shift+2 to change)`
-        : 'Set Loop End (Alt+Shift+2)'
+        ? `Loop End: ${this.ui.formatTime(context.data.endTime)} (Alt+2 to change)`
+        : 'Set Loop End (Alt+2)'
       endButton.title = tooltip
     }
   }
 
   private removeMarkerPoint(type: 'start' | 'end'): void {
     const context = this.stateMachine.getContext()
-    
+
     if (type === 'start') {
       // Remove start point
       const newData = { ...context.data, startTime: null }
-      
+
       if (newData.endTime !== null) {
         // Still have end point - go to setting-start
         this.stateMachine.transition('setting-start', newData)
@@ -689,12 +702,12 @@ export class LoopFeature {
         // No points left - go to idle
         this.stateMachine.transition('idle', newData)
       }
-      
+
       this.ui.showToast('Start point removed')
     } else {
       // Remove end point
       const newData = { ...context.data, endTime: null }
-      
+
       if (newData.startTime !== null) {
         // Still have start point - go to setting-end
         this.stateMachine.transition('setting-end', newData)
@@ -702,12 +715,17 @@ export class LoopFeature {
         // No points left - go to idle
         this.stateMachine.transition('idle', newData)
       }
-      
+
       this.ui.showToast('End point removed')
     }
   }
 
-  private addDragFunctionality(marker: HTMLElement, type: 'start' | 'end', initialTime: number, duration: number): void {
+  private addDragFunctionality(
+    marker: HTMLElement,
+    type: 'start' | 'end',
+    initialTime: number,
+    duration: number
+  ): void {
     let isDragging = false
     let dragStartX = 0
     let initialPercentage = (initialTime / duration) * 100
@@ -721,24 +739,24 @@ export class LoopFeature {
 
       e.preventDefault()
       e.stopPropagation()
-      
+
       isDragging = true
       hasMoved = false
       dragStartX = e.clientX
       initialPercentage = (initialTime / duration) * 100
-      
+
       marker.classList.add('dragging')
       marker.style.cursor = 'grabbing'
       marker.style.transform = 'translateX(-50%) scale(1.1)'
       marker.style.zIndex = '20'
-      
+
       document.addEventListener('mousemove', onMouseMove)
       document.addEventListener('mouseup', onMouseUp)
     }
 
     const onMouseMove = (e: MouseEvent) => {
       if (!isDragging || !this.progressBar) return
-      
+
       hasMoved = true
       const progressRect = this.progressBar.getBoundingClientRect()
       const deltaX = e.clientX - dragStartX
@@ -747,7 +765,7 @@ export class LoopFeature {
 
       // Constrain within bounds
       newPercentage = Math.max(0, Math.min(100, newPercentage))
-      
+
       // Prevent start/end overlap with minimum gap
       const context = this.stateMachine.getContext()
       const otherTime = type === 'start' ? context.data.endTime : context.data.startTime
@@ -762,7 +780,7 @@ export class LoopFeature {
 
       // Update marker position
       marker.style.left = `${newPercentage}%`
-      
+
       // Update preview time in marker
       const newTime = (newPercentage / 100) * duration
       const timeDisplay = marker.querySelector('span:last-child') as HTMLElement
@@ -776,7 +794,7 @@ export class LoopFeature {
 
       isDragging = false
       marker.classList.remove('dragging')
-      
+
       // Calculate final position
       const progressRect = this.progressBar.getBoundingClientRect()
       const deltaX = e.clientX - dragStartX
@@ -785,7 +803,7 @@ export class LoopFeature {
 
       // Constrain within bounds
       newPercentage = Math.max(0, Math.min(100, newPercentage))
-      
+
       // Prevent overlap
       const context = this.stateMachine.getContext()
       const otherTime = type === 'start' ? context.data.endTime : context.data.startTime
@@ -807,7 +825,7 @@ export class LoopFeature {
       } else {
         newData.endTime = newTime
       }
-      
+
       // Determine appropriate state
       if (newData.startTime !== null && newData.endTime !== null) {
         this.stateMachine.transition('configured', newData)
@@ -830,7 +848,7 @@ export class LoopFeature {
           // Seek to end point minus 2-3 seconds for preview
           const previewTime = Math.max(0, newTime - 2.5)
           this.player.seekTo(previewTime)
-          this.ui.showToast(`End point updated: ${this.ui.formatTime(newTime)}`)  
+          this.ui.showToast(`End point updated: ${this.ui.formatTime(newTime)}`)
         } else {
           // Seek to start point for immediate feedback
           this.player.seekTo(newTime)
@@ -841,9 +859,9 @@ export class LoopFeature {
 
     // Add event listeners
     marker.addEventListener('mousedown', onMouseDown)
-    
+
     // Touch support for mobile
-    marker.addEventListener('touchstart', (e) => {
+    marker.addEventListener('touchstart', e => {
       const touch = e.touches[0]
       const mouseEvent = new MouseEvent('mousedown', {
         clientX: touch.clientX,

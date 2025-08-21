@@ -665,14 +665,14 @@ export class FluentFlowSidebar {
 
   private getButtonSubtitle(button: SidebarButton): string {
     const subtitles = {
-      'fluent-flow-loop-start': 'Alt+Shift+1',
+      'fluent-flow-loop-start': 'Alt+1',
       'fluent-flow-loop-toggle': 'Alt+L',
-      'fluent-flow-loop-end': 'Alt+Shift+2',
+      'fluent-flow-loop-end': 'Alt+2',
       'fluent-flow-loop-export': 'Alt+E',
       'fluent-flow-record': 'Alt+R',
       'fluent-flow-notes': 'Alt+N',
       'fluent-flow-compare': 'Alt+C',
-      'fluent-flow-panel': 'Alt+Shift+F'
+      'fluent-flow-panel': 'Alt+F'
     }
     return subtitles[button.id as keyof typeof subtitles] || ''
   }

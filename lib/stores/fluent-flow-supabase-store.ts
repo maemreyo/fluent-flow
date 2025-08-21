@@ -1,23 +1,23 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { supabase, getCurrentUser } from '../supabase/client'
-import type { Database, Tables, TablesInsert, TablesUpdate } from '../supabase/types'
+import { getCurrentUser, supabase } from '../supabase/client'
+import type { Tables, TablesInsert } from '../supabase/types'
+import type { ApiConfig, UserPreferences } from '../types'
 import type {
-  FluentFlowStore,
-  YouTubePlayerState,
-  YouTubeVideoInfo,
-  LoopState,
-  RecordingState,
   AudioComparisonState,
-  FluentFlowUIState,
-  FluentFlowSettings,
-  PracticeSession,
   AudioRecording,
+  FluentFlowSettings,
+  FluentFlowStore,
+  FluentFlowUIState,
   LoopSegment,
+  LoopState,
+  PracticeSession,
+  PracticeStatistics,
+  RecordingState,
   SavedLoop,
-  PracticeStatistics
+  YouTubePlayerState,
+  YouTubeVideoInfo
 } from '../types/fluent-flow-types'
-import type { UserPreferences, ApiConfig } from '../types'
 
 // Database type aliases
 type ProfileRow = Tables<'profiles'>
@@ -79,7 +79,7 @@ const defaultSettings: FluentFlowSettings = {
     toggleLoop: 'Alt+L',
     toggleRecording: 'Alt+R',
     compareAudio: 'Alt+C',
-    togglePanel: 'Alt+Shift+F',
+    togglePanel: 'Alt+F',
     setLoopStart: 'Alt+1',
     setLoopEnd: 'Alt+2',
     playPause: 'Alt+Space'
@@ -102,7 +102,11 @@ const defaultStatistics: PracticeStatistics = {
 }
 
 // Utility functions for data conversion
-const convertSessionRowToSession = (session: SessionRow, segments: SegmentRow[] = [], recordings: RecordingRow[] = []): PracticeSession => ({
+const convertSessionRowToSession = (
+  session: SessionRow,
+  segments: SegmentRow[] = [],
+  recordings: RecordingRow[] = []
+): PracticeSession => ({
   id: session.id,
   videoId: session.video_id,
   videoTitle: session.video_title,
@@ -141,11 +145,7 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) return null
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single()
+    const { data, error } = await supabase.from('profiles').select('*').eq('id', user.id).single()
 
     if (error) {
       console.error('Error fetching user profile:', error)
@@ -271,11 +271,13 @@ const supabaseService = {
     // Get sessions with their segments and recordings
     const { data: sessions, error: sessionsError } = await supabase
       .from('practice_sessions')
-      .select(`
+      .select(
+        `
         *,
         loop_segments (*),
         audio_recordings (*)
-      `)
+      `
+      )
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
 
@@ -284,7 +286,7 @@ const supabaseService = {
       return []
     }
 
-    return sessions.map(session => 
+    return sessions.map(session =>
       convertSessionRowToSession(
         session,
         session.loop_segments || [],
@@ -293,7 +295,10 @@ const supabaseService = {
     )
   },
 
-  async addLoopSegment(sessionId: string, segment: Omit<LoopSegment, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+  async addLoopSegment(
+    sessionId: string,
+    segment: Omit<LoopSegment, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<string> {
     const segmentData: SegmentInsert = {
       session_id: sessionId,
       start_time: segment.startTime,
@@ -319,7 +324,8 @@ const supabaseService = {
   async getAllUserLoops(userId: string): Promise<SavedLoop[]> {
     const { data: sessions, error } = await supabase
       .from('practice_sessions')
-      .select(`
+      .select(
+        `
         id,
         video_id,
         video_title,
@@ -336,7 +342,8 @@ const supabaseService = {
           created_at,
           updated_at
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .not('metadata->savedLoop', 'is', null)
       .order('created_at', { ascending: false })
@@ -348,7 +355,7 @@ const supabaseService = {
 
     // Convert Supabase data to SavedLoop format
     const savedLoops: SavedLoop[] = []
-    
+
     sessions?.forEach(session => {
       const loopMetadata = session.metadata as any
       const segment = session.loop_segments?.[0] // Get first segment
@@ -415,8 +422,10 @@ const supabaseService = {
           id: loop.id,
           title: loop.title,
           description: loop.description,
-          createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
-          updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
+          createdAt:
+            typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
+          updatedAt:
+            typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
         }
       }
     }
@@ -473,21 +482,23 @@ const supabaseService = {
         .eq('id', existingSegments[0].id)
     } else {
       // Create new segment
-      await supabase
-        .from('loop_segments')
-        .insert({
-          session_id: sessionId,
-          start_time: loop.startTime,
-          end_time: loop.endTime,
-          label: loop.title,
-          description: loop.description
-        })
+      await supabase.from('loop_segments').insert({
+        session_id: sessionId,
+        start_time: loop.startTime,
+        end_time: loop.endTime,
+        label: loop.title,
+        description: loop.description
+      })
     }
 
     return sessionId
   },
 
-  async saveRecording(sessionId: string, recording: AudioRecording, segmentId?: string): Promise<string> {
+  async saveRecording(
+    sessionId: string,
+    recording: AudioRecording,
+    segmentId?: string
+  ): Promise<string> {
     const user = await getCurrentUser()
     if (!user) throw new Error('User not authenticated')
 
@@ -537,9 +548,7 @@ const supabaseService = {
 
       if (error) {
         // If database insert fails, try to clean up the uploaded file
-        await supabase.storage
-          .from('audio-recordings')
-          .remove([filename])
+        await supabase.storage.from('audio-recordings').remove([filename])
         throw error
       }
 
@@ -553,14 +562,16 @@ const supabaseService = {
   async getAllUserRecordings(userId: string, videoId?: string): Promise<AudioRecording[]> {
     let query = supabase
       .from('audio_recordings')
-      .select(`
+      .select(
+        `
         id, session_id, segment_id, user_id, file_path, file_size, duration, 
         audio_format, quality_score, transcription, notes, tags, is_favorite, 
         metadata, created_at, updated_at,
         practice_sessions (
           id, video_id, video_title, video_url
         )
-      `)
+      `
+      )
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
 
@@ -577,11 +588,11 @@ const supabaseService = {
 
     // Convert to AudioRecording format
     const audioRecordings: AudioRecording[] = []
-    
+
     if (recordings) {
       for (const recording of recordings) {
         const session = recording.practice_sessions as any
-        
+
         const audioRecording: AudioRecording = {
           id: recording.id,
           videoId: session?.video_id || '',
@@ -590,7 +601,7 @@ const supabaseService = {
           createdAt: new Date(recording.created_at),
           updatedAt: new Date(recording.updated_at)
         }
-        
+
         audioRecordings.push(audioRecording)
       }
     }
@@ -654,11 +665,9 @@ const supabaseService = {
       avg_session_duration: stats.averageSessionDuration || 0
     }
 
-    const { error } = await supabase
-      .from('practice_statistics')
-      .upsert(statisticsData, {
-        onConflict: 'user_id,date'
-      })
+    const { error } = await supabase.from('practice_statistics').upsert(statisticsData, {
+      onConflict: 'user_id,date'
+    })
 
     if (error) {
       console.error('Error updating statistics:', error)
@@ -693,7 +702,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
         try {
           const sessions = await supabaseService.getUserSessions()
           const existingSession = sessions.find(s => s.videoId === videoInfo.videoId)
-          
+
           if (existingSession) {
             set({ currentSession: existingSession, allSessions: sessions })
           } else {
@@ -710,7 +719,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
               createdAt: new Date(),
               updatedAt: new Date()
             }
-            set({ 
+            set({
               currentSession: newSession,
               allSessions: [newSession, ...sessions]
             })
@@ -721,7 +730,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
       },
 
       updatePlayerState: (newState: Partial<YouTubePlayerState>) => {
-        set((state) => ({
+        set(state => ({
           playerState: { ...state.playerState, ...newState }
         }))
       },
@@ -744,7 +753,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             updatedAt: new Date()
           }
 
-          set((state) => ({
+          set(state => ({
             loopState: {
               ...state.loopState,
               isActive: true,
@@ -781,7 +790,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
 
           const audioChunks: Blob[] = []
 
-          mediaRecorder.ondataavailable = (event) => {
+          mediaRecorder.ondataavailable = event => {
             if (event.data.size > 0) {
               audioChunks.push(event.data)
             }
@@ -808,7 +817,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
       stopRecording: async (): Promise<AudioRecording> => {
         return new Promise((resolve, reject) => {
           const { recordingState, currentVideo } = get()
-          
+
           if (!recordingState.mediaRecorder || !currentVideo) {
             reject(new Error('No active recording or video'))
             return
@@ -819,7 +828,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
               type: 'audio/webm;codecs=opus'
             })
 
-            const duration = recordingState.recordingStartTime 
+            const duration = recordingState.recordingStartTime
               ? (Date.now() - recordingState.recordingStartTime) / 1000
               : 0
 
@@ -852,14 +861,11 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
         if (!currentSession) return
 
         try {
-          const recordingId = await supabaseService.saveRecording(
-            currentSession.id,
-            recording
-          )
+          const recordingId = await supabaseService.saveRecording(currentSession.id, recording)
 
           const savedRecording = { ...recording, id: recordingId }
 
-          set((state) => {
+          set(state => {
             const updatedSession = state.currentSession
               ? {
                   ...state.currentSession,
@@ -922,13 +928,11 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
           }
 
           // Update local state
-          set((state) => ({
+          set(state => ({
             currentSession: state.currentSession
               ? {
                   ...state.currentSession,
-                  recordings: state.currentSession.recordings.filter(
-                    r => r.id !== recordingId
-                  ),
+                  recordings: state.currentSession.recordings.filter(r => r.id !== recordingId),
                   updatedAt: new Date()
                 }
               : null,
@@ -965,7 +969,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
       },
 
       togglePanel: () => {
-        set((state) => ({
+        set(state => ({
           uiState: {
             ...state.uiState,
             isPanelVisible: !state.uiState.isPanelVisible
@@ -975,8 +979,8 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
 
       updateSettings: async (newSettings: Partial<FluentFlowSettings>) => {
         const updatedSettings = { ...get().settings, ...newSettings }
-        
-        set((state) => ({
+
+        set(state => ({
           settings: updatedSettings
         }))
 
@@ -991,12 +995,12 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
         try {
           const sessions = await supabaseService.getUserSessions()
           const session = sessions.find(s => s.videoId === videoId)
-          
+
           if (session) {
             set({ currentSession: session, allSessions: sessions })
             return session
           }
-          
+
           return null
         } catch (error) {
           console.error('Failed to load session:', error)
@@ -1006,13 +1010,13 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
 
       saveSession: async () => {
         const { currentSession, statistics } = get()
-        
+
         if (!currentSession) return
 
         try {
           // Update statistics in database
           await supabaseService.updatePracticeStatistics(statistics)
-          
+
           // Refresh sessions from database
           const sessions = await supabaseService.getUserSessions()
           set({ allSessions: sessions })
@@ -1028,7 +1032,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             console.warn('No authenticated user found')
             return []
           }
-          
+
           return await supabaseService.getAllUserLoops(user.id)
         } catch (error) {
           console.error('Failed to load user loops:', error)
@@ -1043,7 +1047,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             console.warn('No authenticated user found')
             return false
           }
-          
+
           return await supabaseService.deleteLoop(user.id, loopId)
         } catch (error) {
           console.error('Failed to delete loop:', error)
@@ -1058,7 +1062,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             console.warn('No authenticated user found')
             return null
           }
-          
+
           return await supabaseService.saveLoop(user.id, loop)
         } catch (error) {
           console.error('Failed to save loop:', error)
@@ -1073,7 +1077,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             console.warn('No authenticated user found')
             return []
           }
-          
+
           return await supabaseService.getAllUserRecordings(user.id, videoId)
         } catch (error) {
           console.error('Failed to load user recordings:', error)
@@ -1088,17 +1092,17 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
             console.warn('No authenticated user found')
             return false
           }
-          
+
           return await supabaseService.deleteUserRecording(user.id, recordingId)
         } catch (error) {
           console.error('Failed to delete recording:', error)
           return false
         }
-      },
+      }
     }),
     {
       name: 'fluent-flow-supabase-storage',
-      partialize: (state) => ({
+      partialize: state => ({
         settings: state.settings,
         statistics: state.statistics,
         uiState: {
