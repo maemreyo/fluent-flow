@@ -1,0 +1,45 @@
+background.ts:14 Chrome Extension Starter background script loaded
+runtime-cfbf1e163f0ccdb0.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
+auth-handler.ts:53 Auth state changed: INITIAL_SESSION - ngonhuthanhtrung1409@gmail.com
+auth-handler.ts:39 Auth initialized: User: ngonhuthanhtrung1409@gmail.com
+runtime-7dcba73b33340356.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/sidepanel.tsx
+sidepanel.tsx:98 Uncaught TypeError: Cannot read properties of null (reading 'scrollTop')
+    at sidepanel.tsx:98:9
+    at basicStateReducer (react-dom.development.js:16541:1)
+    at updateReducer (react-dom.development.js:16665:9)
+    at updateState (react-dom.development.js:17005:1)
+    at Object.useState (react-dom.development.js:17916:17)
+    at useState (react.development.js:1623:1)
+    at FluentFlowSidePanel (sidepanel.tsx:53:16)
+    at renderWithHooks (react-dom.development.js:16307:7)
+    at updateFunctionComponent (react-dom.development.js:19589:13)
+    at beginWork (react-dom.development.js:21604:10)
+sidepanel.tsx:98 Uncaught TypeError: Cannot read properties of null (reading 'scrollTop')
+    at sidepanel.tsx:98:9
+    at basicStateReducer (react-dom.development.js:16541:1)
+    at updateReducer (react-dom.development.js:16665:9)
+    at updateState (react-dom.development.js:17005:1)
+    at Object.useState (react-dom.development.js:17916:17)
+    at useState (react.development.js:1623:1)
+    at FluentFlowSidePanel (sidepanel.tsx:53:16)
+    at renderWithHooks (react-dom.development.js:16307:7)
+    at updateFunctionComponent (react-dom.development.js:19589:13)
+    at beginWork (react-dom.development.js:21604:10)
+react-dom.development.js:18694 The above error occurred in the <FluentFlowSidePanel> component:
+
+    at FluentFlowSidePanel (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/sidepanel.351be5e2.js:25167:59)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ react-dom.development.js:18694
+react-dom.development.js:26924 Uncaught TypeError: Cannot read properties of null (reading 'scrollTop')
+    at sidepanel.tsx:98:9
+    at basicStateReducer (react-dom.development.js:16541:1)
+    at updateReducer (react-dom.development.js:16665:9)
+    at updateState (react-dom.development.js:17005:1)
+    at Object.useState (react-dom.development.js:17916:17)
+    at useState (react.development.js:1623:1)
+    at FluentFlowSidePanel (sidepanel.tsx:53:16)
+    at renderWithHooks (react-dom.development.js:16307:7)
+    at updateFunctionComponent (react-dom.development.js:19589:13)
+    at beginWork (react-dom.development.js:21604:10)

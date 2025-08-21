@@ -1,4 +1,4 @@
-# Chrome Extension Starter Template
+# FluentFlow Template
 
 A modern, clean architecture template for Chrome extensions with TypeScript,
 React, and best practices for scalable development.
@@ -539,7 +539,7 @@ The extension uses CSS custom properties for theming:
   --text-primary: #1e293b;
 }
 
-[data-theme="dark"] {
+[data-theme='dark'] {
   --background: #0f172a;
   --text-primary: #f1f5f9;
 }
