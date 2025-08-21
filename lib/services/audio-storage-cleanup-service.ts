@@ -8,6 +8,13 @@ export class AudioStorageCleanupService {
   constructor(storageService: any) {
     this.storageService = storageService
   }
+  /**
+   * Helper method to get a single loop by ID
+   */
+  private async getLoop(loopId: string): Promise<SavedLoop | null> {
+    const allLoops = await this.storageService.getAllUserLoops()
+    return allLoops.find(loop => loop.id === loopId) || null
+  }
 
   /**
    * Main cleanup function - runs all cleanup strategies
@@ -290,7 +297,7 @@ export class AudioStorageCleanupService {
       throw new Error('Loop ID cannot be empty')
     }
 
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       console.warn(`Loop ${loopId} not found for cleanup`)
       return false
@@ -315,7 +322,7 @@ export class AudioStorageCleanupService {
    * Schedules a loop for cleanup
    */
   async scheduleCleanup(loopId: string, delayDays: number = 0): Promise<void> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -333,7 +340,7 @@ export class AudioStorageCleanupService {
    * Cancels scheduled cleanup
    */
   async cancelScheduledCleanup(loopId: string): Promise<void> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -390,7 +397,7 @@ export class AudioStorageCleanupService {
 
     for (const loopId of loopIds) {
       try {
-        const loop = await this.storageService.getLoop(loopId.trim())
+        const loop = await this.getLoop(loopId.trim())
         if (loop) {
           loop.audioRetentionPolicy = policy
           loop.updatedAt = new Date()

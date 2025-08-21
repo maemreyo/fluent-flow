@@ -106,7 +106,10 @@ export class ConversationLoopIntegrationService {
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
-    const loop = await this.storageService.getLoop(loopId)
+    // Get all loops and find the specific one
+    const allLoops = await this.storageService.getAllUserLoops()
+    const loop = allLoops.find(l => l.id === loopId)
+    
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -148,7 +151,10 @@ export class ConversationLoopIntegrationService {
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
-    const loop = await this.storageService.getLoop(loopId)
+    // Get all loops and find the specific one
+    const allLoops = await this.storageService.getAllUserLoops()
+    const loop = allLoops.find(l => l.id === loopId)
+    
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -213,7 +219,10 @@ export class ConversationLoopIntegrationService {
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
-    const loop = await this.storageService.getLoop(loopId)
+    // Get all loops and find the specific one
+    const allLoops = await this.storageService.getAllUserLoops()
+    const loop = allLoops.find(l => l.id === loopId)
+    
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -254,7 +263,10 @@ export class ConversationLoopIntegrationService {
     languages?: string[]
     error?: string
   }> {
-    const loop = await this.storageService.getLoop(loopId)
+    // Get all loops and find the specific one
+    const allLoops = await this.storageService.getAllUserLoops()
+    const loop = allLoops.find(l => l.id === loopId)
+    
     if (!loop || !loop.videoId) {
       return { available: false, error: 'Video ID not available' }
     }

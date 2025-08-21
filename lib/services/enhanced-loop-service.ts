@@ -21,6 +21,13 @@ export class EnhancedLoopService {
     this.audioCaptureService = new AudioCaptureService()
     this.storageService = storageService
   }
+  /**
+   * Helper method to get a single loop by ID
+   */
+  private async getLoop(loopId: string): Promise<SavedLoop | null> {
+    const allLoops = await this.storageService.getAllUserLoops()
+    return allLoops.find(loop => loop.id === loopId) || null
+  }
 
   /**
    * Creates a loop with optional audio capture
@@ -95,7 +102,7 @@ export class EnhancedLoopService {
     loopId: string, 
     policy: 'temporary' | 'keep' | 'auto-cleanup'
   ): Promise<void> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -117,7 +124,7 @@ export class EnhancedLoopService {
    * Marks audio as recently used (updates audioLastUsed)
    */
   async markAudioAsUsed(loopId: string): Promise<void> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (loop && loop.hasAudioSegment) {
       loop.audioLastUsed = new Date()
       loop.updatedAt = new Date()
@@ -133,7 +140,7 @@ export class EnhancedLoopService {
     questionsGenerated: boolean,
     totalQuestions: number = 0
   ): Promise<void> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       throw new Error('Loop not found')
     }
@@ -217,7 +224,7 @@ export class EnhancedLoopService {
    * Removes audio data from loop but keeps the loop itself
    */
   async removeAudioFromLoop(loopId: string): Promise<boolean> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop || !loop.hasAudioSegment) {
       return false
     }
@@ -242,7 +249,7 @@ export class EnhancedLoopService {
    * Re-captures audio for an existing loop
    */
   async recaptureAudio(loopId: string): Promise<boolean> {
-    const loop = await this.storageService.getLoop(loopId)
+    const loop = await this.getLoop(loopId)
     if (!loop) {
       throw new Error('Loop not found')
     }

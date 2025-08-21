@@ -812,7 +812,7 @@ export default function FluentFlowSidePanel() {
               onGenerateQuestions={async (loop) => {
                 if (integrationService) {
                   try {
-                    const questions = await integrationService.generateQuestionsForLoop(loop.id)
+                    const questions = await integrationService.generateQuestions(loop.id)
                     setActiveQuestions(questions)
                     setActiveQuestionLoop(loop)
                     return questions
