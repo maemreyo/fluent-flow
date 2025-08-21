@@ -11,6 +11,9 @@ importers:
       '@anthropic-ai/sdk':
         specifier: ^0.20.9
         version: 0.20.9
+      '@danielxceron/youtube-transcript':
+        specifier: ^1.2.3
+        version: 1.2.3
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@18.2.0))
@@ -550,6 +553,10 @@ packages:
   '@csstools/css-tokenizer@3.0.4':
     resolution: {integrity: sha512-Vd/9EVDiu6PPJt9yAh6roZP6El1xHrdvIVGjyBsHR0RYwNHgL7FJPyIIW4fANJNG6FtyZfvlRPpFI4ZM/lubvw==}
     engines: {node: '>=18'}
+
+  '@danielxceron/youtube-transcript@1.2.3':
+    resolution: {integrity: sha512-2LuyUkKG8YMzQ3QGYVJM/EVSMVW6GiLmmTTdPoXiBSgsLrGW5KmoYKJYRdcQ145wHG5tqBPb2xCZDZsUjgzULw==}
+    engines: {node: '>=18.0.0'}
 
   '@date-fns/tz@1.4.1':
     resolution: {integrity: sha512-P5LUNhtbj6YfI3iJjw5EL9eUAG6OitD0W3fWQcpQjDRc/QIsL0tRNuO1PcDvPccWL1fSTXXdE1ds+l95DV/OFA==}
@@ -6821,6 +6828,8 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
 
   '@csstools/css-tokenizer@3.0.4': {}
+
+  '@danielxceron/youtube-transcript@1.2.3': {}
 
   '@date-fns/tz@1.4.1': {}
 
