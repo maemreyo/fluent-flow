@@ -380,6 +380,7 @@ export class UIUtilities {
       'fluent-flow-loop-start': 'Set Loop Start',
       'fluent-flow-loop-toggle': 'Toggle Loop Playback',
       'fluent-flow-loop-end': 'Set Loop End',
+      'fluent-flow-loop-clear': 'Clear All Loops',
       'fluent-flow-loop-export': 'Export Current Loop',
       'fluent-flow-record': 'Voice Recording',
       'fluent-flow-notes': 'Add Note',
