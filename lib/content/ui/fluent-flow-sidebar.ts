@@ -717,19 +717,19 @@ export class FluentFlowSidebar {
     }
 
     // Debug information
-    console.log('FluentFlow: Sidebar shown')
-    console.log('FluentFlow: Container element:', this.container)
-    console.log('FluentFlow: Container classes:', this.container.className)
-    console.log('FluentFlow: Container style.right:', this.container.style.right)
+    // console.log('FluentFlow: Sidebar shown')
+    // console.log('FluentFlow: Container element:', this.container)
+    // console.log('FluentFlow: Container classes:', this.container.className)
+    // console.log('FluentFlow: Container style.right:', this.container.style.right)
 
     // Get computed styles
     const computedStyle = window.getComputedStyle(this.container)
-    console.log('FluentFlow: Computed right:', computedStyle.right)
-    console.log('FluentFlow: Computed position:', computedStyle.position)
-    console.log('FluentFlow: Computed zIndex:', computedStyle.zIndex)
-    console.log('FluentFlow: Computed display:', computedStyle.display)
-    console.log('FluentFlow: Computed visibility:', computedStyle.visibility)
-    console.log('FluentFlow: Container bounds:', this.container.getBoundingClientRect())
+    // console.log('FluentFlow: Computed right:', computedStyle.right)
+    // console.log('FluentFlow: Computed position:', computedStyle.position)
+    // console.log('FluentFlow: Computed zIndex:', computedStyle.zIndex)
+    // console.log('FluentFlow: Computed display:', computedStyle.display)
+    // console.log('FluentFlow: Computed visibility:', computedStyle.visibility)
+    // console.log('FluentFlow: Container bounds:', this.container.getBoundingClientRect())
   }
 
   public hideSidebar(): void {

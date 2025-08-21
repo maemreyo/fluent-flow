@@ -507,6 +507,16 @@ export class FluentFlowOrchestrator {
   }
 
   private toggleSidebar(): void {
+    // Add debouncing to prevent double-triggering
+    const now = Date.now()
+    const lastToggle = (this as any)._lastSidebarToggle || 0
+    
+    if (now - lastToggle < 300) { // 300ms debounce
+      console.log('FluentFlow: Sidebar toggle debounced (too quick)')
+      return
+    }
+    
+    (this as any)._lastSidebarToggle = now
     console.log('FluentFlow: Toggling sidebar')
     this.uiUtilities.toggleSidebar()
   }
