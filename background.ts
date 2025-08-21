@@ -63,6 +63,10 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       handleLoopMessage('save', message.data, sendResponse)
       return true
 
+    case "SAVE_LOOPS":
+      handleLoopMessage('save_multiple', message.loops, sendResponse)
+      return true
+
     case "LOAD_LOOP":
       handleLoopMessage('load', message.data, sendResponse)
       return true

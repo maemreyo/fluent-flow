@@ -8,7 +8,7 @@ import { supabase } from '../supabase/client'
 const LOOPS_STORAGE_KEY = 'fluent_flow_saved_loops'
 
 export async function handleLoopMessage(
-  operation: 'save' | 'load' | 'delete' | 'list' | 'apply',
+  operation: 'save' | 'save_multiple' | 'load' | 'delete' | 'list' | 'apply',
   data: any,
   sendResponse?: Function
 ): Promise<void> {
@@ -20,6 +20,10 @@ export async function handleLoopMessage(
     switch (operation) {
       case 'save':
         result = await saveLoop(data as SavedLoop)
+        break
+
+      case 'save_multiple':
+        result = await saveMultipleLoops(data as SavedLoop[])
         break
 
       case 'load':
@@ -533,4 +537,30 @@ export async function getLoopsForVideo(videoId: string): Promise<SavedLoop[]> {
       return []
     }
   }
+}
+
+async function saveMultipleLoops(loops: SavedLoop[]): Promise<SavedLoop[]> {
+  console.log('FluentFlow: Saving multiple loops:', loops.length)
+  
+  const results: SavedLoop[] = []
+  const errors: string[] = []
+  
+  // Save each loop individually
+  for (const loop of loops) {
+    try {
+      const savedLoop = await saveLoop(loop)
+      results.push(savedLoop)
+    } catch (error) {
+      console.error('FluentFlow: Failed to save loop:', loop.id, error)
+      errors.push(`Failed to save loop "${loop.title}": ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+  
+  if (errors.length > 0) {
+    console.warn('FluentFlow: Some loops failed to save:', errors)
+    // Return partial results even if some failed
+  }
+  
+  console.log('FluentFlow: Successfully saved', results.length, 'out of', loops.length, 'loops')
+  return results
 }
