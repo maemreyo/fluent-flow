@@ -274,14 +274,15 @@ export class UIUtilities {
     toggleButton.style.cssText = `
       width: 48px;
       height: 48px;
-      padding: 8px;
-      margin: 0 2px;
+      padding: 10px;
+      /* margin: 0px 2px; */
       background: transparent;
       border: none;
       cursor: pointer;
       color: white;
       opacity: 0.9;
-      transition: all 0.2s ease;
+      transition: 0.2s;
+      transform: scale(1);
     `
 
     toggleButton.innerHTML = this.getFluentFlowIcon()
@@ -526,6 +527,10 @@ export class UIUtilities {
       const style = document.createElement('style')
       style.id = 'fluent-flow-styles'
       style.textContent = `
+        .ytp-right-controls {
+          display: flex;
+        }
+
         .fluent-flow-button {
           transition: all 0.2s ease;
         }
