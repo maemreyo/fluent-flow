@@ -20,23 +20,28 @@ import {
 import { AudioPlayer } from './components/audio-player'
 import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
 import { EnhancedLoopCardWithIntegration } from './components/enhanced-loop-card-with-integration'
-import { StorageManagementPanel } from './components/storage-management-panel'
 import { QueryProvider } from './components/providers/query-provider'
+import { StorageManagementPanel } from './components/storage-management-panel'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
 import { Input } from './components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
-import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
-import { useFluentFlowSupabaseStore as useFluentFlowStore, getFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
+import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
+import {
+  getFluentFlowStore,
+  useFluentFlowSupabaseStore as useFluentFlowStore
+} from './lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from './lib/supabase/client'
-import type { SavedLoop, ConversationQuestions } from './lib/types/fluent-flow-types'
+import type { ConversationQuestions, SavedLoop } from './lib/types/fluent-flow-types'
 import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'conversations'>('dashboard')
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'loops' | 'recordings' | 'conversations'
+  >('dashboard')
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [savedRecordings, setSavedRecordings] = useState<any[]>([])
   const [loadingRecordings, setLoadingRecordings] = useState(false)
@@ -46,15 +51,16 @@ function FluentFlowSidePanelContent() {
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 
   // Use React Query for loops instead of manual state management
-  const { 
-    data: savedLoops = [], 
-    isLoading: loadingLoops, 
+  const {
+    data: savedLoops = [],
+    isLoading: loadingLoops,
     error: loopsError,
-    refetch: refetchLoops 
+    refetch: refetchLoops
   } = useLoopsQuery()
-  
+
   // Conversation loop integration state
-  const [integrationService, setIntegrationService] = useState<ConversationLoopIntegrationService | null>(null)
+  const [integrationService, setIntegrationService] =
+    useState<ConversationLoopIntegrationService | null>(null)
   const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
   const [activeQuestionLoop, setActiveQuestionLoop] = useState<SavedLoop | null>(null)
   const [showStoragePanel, setShowStoragePanel] = useState(false)
@@ -71,7 +77,7 @@ function FluentFlowSidePanelContent() {
     deleteUserRecording
   } = useFluentFlowStore()
 
-  // Load saved recordings and initialize on component mount  
+  // Load saved recordings and initialize on component mount
   useEffect(() => {
     checkAuthStatus()
     loadSavedRecordings()
@@ -92,7 +98,7 @@ function FluentFlowSidePanelContent() {
   const initializeIntegration = async () => {
     try {
       let geminiConfig = null
-      
+
       try {
         // First try to get config from Supabase
         const { supabaseService } = getFluentFlowStore()
@@ -100,22 +106,28 @@ function FluentFlowSidePanelContent() {
         geminiConfig = apiConfig?.gemini
         console.log('FluentFlow: Loaded Gemini config from Supabase:', !!geminiConfig?.apiKey)
       } catch (supabaseError) {
-        console.log('FluentFlow: Failed to load from Supabase, trying Chrome storage:', supabaseError)
-        
+        console.log(
+          'FluentFlow: Failed to load from Supabase, trying Chrome storage:',
+          supabaseError
+        )
+
         // Fallback to Chrome storage
         try {
           const response = await chrome.runtime.sendMessage({
-            type: "STORAGE_OPERATION",
-            operation: "get",
-            key: "api_config"
+            type: 'STORAGE_OPERATION',
+            operation: 'get',
+            key: 'api_config'
           })
           geminiConfig = response.data?.gemini
-          console.log('FluentFlow: Loaded Gemini config from Chrome storage:', !!geminiConfig?.apiKey)
+          console.log(
+            'FluentFlow: Loaded Gemini config from Chrome storage:',
+            !!geminiConfig?.apiKey
+          )
         } catch (chromeError) {
           console.log('FluentFlow: Failed to load from Chrome storage:', chromeError)
         }
       }
-      
+
       if (geminiConfig?.apiKey) {
         console.log('FluentFlow: Initializing conversation loop integration')
         const service = new ConversationLoopIntegrationService(
@@ -134,7 +146,6 @@ function FluentFlowSidePanelContent() {
       setGeminiConfigured(false)
     }
   }
-
 
   const loadSavedRecordings = async () => {
     setLoadingRecordings(true)
@@ -479,22 +490,20 @@ function FluentFlowSidePanelContent() {
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className={`h-2 w-2 rounded-full ${geminiConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+              <div
+                className={`h-2 w-2 rounded-full ${geminiConfigured ? 'bg-green-500' : 'bg-red-500'}`}
+              />
               <span className="text-sm font-medium">
                 {geminiConfigured ? 'Gemini API Configured' : 'Gemini API Not Configured'}
               </span>
             </div>
             {!geminiConfigured && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => chrome.runtime.openOptionsPage()}
-              >
+              <Button variant="outline" size="sm" onClick={() => chrome.runtime.openOptionsPage()}>
                 Configure API
               </Button>
             )}
           </div>
-          
+
           {geminiConfigured && integrationService && (
             <div className="mt-3 text-sm text-muted-foreground">
               <p>✅ Audio capture enabled</p>
@@ -502,11 +511,11 @@ function FluentFlowSidePanelContent() {
               <p>✅ Storage management active</p>
             </div>
           )}
-          
+
           {!geminiConfigured && (
             <div className="mt-3 text-sm text-muted-foreground">
               <p>Configure your Gemini API key in Options → API tab to enable:</p>
-              <ul className="mt-2 ml-4 list-disc space-y-1">
+              <ul className="ml-4 mt-2 list-disc space-y-1">
                 <li>Audio-powered question generation</li>
                 <li>Interactive practice sessions</li>
                 <li>Automatic storage cleanup</li>
@@ -522,11 +531,7 @@ function FluentFlowSidePanelContent() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle>Storage Management</CardTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowStoragePanel(false)}
-              >
+              <Button variant="ghost" size="sm" onClick={() => setShowStoragePanel(false)}>
                 ✕
               </Button>
             </div>
@@ -537,7 +542,9 @@ function FluentFlowSidePanelContent() {
               onCleanupNow={() => integrationService.runStorageCleanup()}
               onEmergencyCleanup={() => integrationService.emergencyCleanup()}
               onGetScheduledCleanups={() => integrationService.getScheduledCleanups()}
-              onBulkSetRetentionPolicy={(loopIds, policy) => integrationService.bulkUpdateRetentionPolicies(loopIds, policy)}
+              onBulkSetRetentionPolicy={(loopIds, policy) =>
+                integrationService.bulkUpdateRetentionPolicies(loopIds, policy)
+              }
             />
           </CardContent>
         </Card>
@@ -567,10 +574,11 @@ function FluentFlowSidePanelContent() {
             <Target className="mb-4 h-12 w-12 text-muted-foreground" />
             <CardTitle className="mb-2 text-lg">Ready to Practice Conversations?</CardTitle>
             <CardDescription className="mb-6 max-w-md">
-              Configure your Gemini API key to unlock AI-powered conversation analysis and question generation.
+              Configure your Gemini API key to unlock AI-powered conversation analysis and question
+              generation.
             </CardDescription>
-            
-            <div className="space-y-3 text-left text-sm text-muted-foreground max-w-lg">
+
+            <div className="max-w-lg space-y-3 text-left text-sm text-muted-foreground">
               <div className="flex items-start gap-2">
                 <Badge className="mt-0.5">1</Badge>
                 <span>Create loops on YouTube videos with audio capture enabled</span>
@@ -588,7 +596,7 @@ function FluentFlowSidePanelContent() {
                 <span>Automatic storage cleanup and retention management</span>
               </div>
             </div>
-            
+
             <div className="mt-6 flex gap-2">
               <Button
                 onClick={() => chrome.runtime.openOptionsPage()}
@@ -608,21 +616,16 @@ function FluentFlowSidePanelContent() {
           <CardContent className="py-8 text-center">
             <CardTitle className="mb-4 text-lg">🎉 Conversation Practice Ready!</CardTitle>
             <CardDescription className="mb-6">
-              Go to the Loops tab to create conversation loops with audio capture, then return here to see generated practice questions.
+              Go to the Loops tab to create conversation loops with audio capture, then return here
+              to see generated practice questions.
             </CardDescription>
-            
+
             <div className="flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setActiveTab('loops')}
-              >
+              <Button variant="outline" onClick={() => setActiveTab('loops')}>
                 <Repeat className="mr-2 h-4 w-4" />
                 Create Loops
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setShowStoragePanel(true)}
-              >
+              <Button variant="outline" onClick={() => setShowStoragePanel(true)}>
                 <Settings className="mr-2 h-4 w-4" />
                 Manage Storage
               </Button>
@@ -721,7 +724,12 @@ function FluentFlowSidePanelContent() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => refetchLoops()} disabled={loadingLoops}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchLoops()}
+                disabled={loadingLoops}
+              >
                 {loadingLoops ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
@@ -761,7 +769,10 @@ function FluentFlowSidePanelContent() {
         </CardHeader>
       </Card>
 
-      <div className="flex-1 space-y-4 pr-1">
+      <div
+        className="flex-1 space-y-4 overflow-y-scroll pr-1"
+        style={{ height: `calc(100vh - 222px)` }}
+      >
         {loadingLoops && (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
@@ -804,7 +815,7 @@ function FluentFlowSidePanelContent() {
               loop={loop}
               integrationService={integrationService}
               onApply={() => applyLoop(loop)}
-              onDelete={(loopId) => deleteLoop(loopId)}
+              onDelete={loopId => deleteLoop(loopId)}
               onExport={() => exportLoop(loop)}
               isApplying={applyingLoopId === loop.id}
             />
@@ -867,17 +878,17 @@ function FluentFlowSidePanelContent() {
           </TabsTrigger>
         </TabsList>
 
-        <div className="flex-1 px-4 pb-4">
-          <TabsContent value="dashboard" className="mt-0 h-full">
+        <div className="flex-1 overflow-y-auto px-4 pb-4">
+          <TabsContent value="dashboard" className="mt-0 h-full overflow-y-auto">
             {renderDashboard()}
           </TabsContent>
-          <TabsContent value="loops" className="mt-0 h-full">
+          <TabsContent value="loops" className="mt-0 h-full overflow-y-auto">
             {renderLoops()}
           </TabsContent>
-          <TabsContent value="conversations" className="mt-0 h-full">
+          <TabsContent value="conversations" className="mt-0 h-full overflow-y-auto">
             {renderConversations()}
           </TabsContent>
-          <TabsContent value="recordings" className="mt-0 h-full">
+          <TabsContent value="recordings" className="mt-0 h-full overflow-y-auto">
             {renderRecordings()}
           </TabsContent>
         </div>
