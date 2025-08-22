@@ -80,11 +80,104 @@ function FluentFlowSidePanelContent() {
     loadSavedRecordings()
     initializeIntegration()
     initializeVideoInformation()
-    const cleanup = setupMessageHandlers()
+    const messageCleanup = setupMessageHandlers()
+    const videoTrackingCleanup = setupVideoTracking()
     
     // Cleanup function
-    return cleanup
+    return () => {
+      messageCleanup()
+      videoTrackingCleanup()
+    }
   }, [])
+
+  // Setup video tracking for tab changes and navigation
+  const setupVideoTracking = () => {
+    let currentTabId: number | null = null
+    let trackingInterval: NodeJS.Timeout | null = null
+
+    // Track active tab changes
+    const handleTabActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+      currentTabId = activeInfo.tabId
+      await updateVideoInformation()
+    }
+
+    // Track tab updates (URL changes within same tab)
+    const handleTabUpdated = async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+      if (changeInfo.url && tabId === currentTabId) {
+        await updateVideoInformation()
+      }
+    }
+
+    // Periodic check for video changes (fallback for SPA navigation)
+    const startPeriodicCheck = () => {
+      trackingInterval = setInterval(async () => {
+        await updateVideoInformation()
+      }, 2000) // Check every 2 seconds
+    }
+
+    // Setup Chrome API listeners
+    chrome.tabs.onActivated.addListener(handleTabActivated)
+    chrome.tabs.onUpdated.addListener(handleTabUpdated)
+    
+    // Start periodic checking
+    startPeriodicCheck()
+
+    // Cleanup function
+    return () => {
+      chrome.tabs.onActivated.removeListener(handleTabActivated)
+      chrome.tabs.onUpdated.removeListener(handleTabUpdated)
+      if (trackingInterval) {
+        clearInterval(trackingInterval)
+      }
+    }
+  }
+
+  // Update video information (reusable function)
+  const updateVideoInformation = async () => {
+    try {
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const activeTab = tabs[0]
+      
+      if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
+        try {
+          const response = await chrome.tabs.sendMessage(activeTab.id, {
+            type: 'GET_VIDEO_INFO'
+          })
+          
+          if (response?.success && response.videoInfo) {
+            const { currentVideo: currentStoreVideo, initializePlayer } = useFluentFlowStore.getState()
+            
+            // Only update if video actually changed
+            if (!currentStoreVideo || currentStoreVideo.videoId !== response.videoInfo.videoId) {
+              initializePlayer(response.videoInfo)
+              console.log('FluentFlow: Video updated in sidepanel:', response.videoInfo)
+            }
+          }
+        } catch (error) {
+          // Content script not available or no response - clear current video
+          const { currentVideo: currentStoreVideo, updatePlayerState } = useFluentFlowStore.getState()
+          if (currentStoreVideo) {
+            // Clear current video if we can't get info anymore
+            updatePlayerState({ isReady: false })
+            console.log('FluentFlow: Content script not available - video info may be stale')
+          }
+        }
+      } else {
+        // Not on YouTube - clear current video
+        const { currentVideo: currentStoreVideo } = useFluentFlowStore.getState()
+        if (currentStoreVideo) {
+          // Use store's setState to clear currentVideo
+          useFluentFlowStore.setState({ 
+            currentVideo: null,
+            playerState: { ...useFluentFlowStore.getState().playerState, isReady: false }
+          })
+          console.log('FluentFlow: Cleared video info - not on YouTube')
+        }
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to update video information:', error)
+    }
+  }
 
   // Initialize video information from active tab
   const initializeVideoInformation = async () => {
