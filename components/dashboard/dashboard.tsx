@@ -4,11 +4,20 @@ import { StatisticsCards } from './statistics-cards'
 import { RecentSessionsCard } from './recent-sessions-card'
 import { QuickActionsCard } from './quick-actions-card'
 import { AnalyticsCard } from './analytics-card'
+import { TranscriptIntegration } from './transcript-integration'
 import type { 
   YouTubeVideoInfo, 
   PracticeStatistics, 
   PracticeSession 
 } from '../../lib/types/fluent-flow-types'
+
+interface SavedLoop {
+  id: string
+  startTime: number
+  endTime: number
+  title: string
+  videoId: string
+}
 
 interface AnalyticsData {
   weeklyTrend: Array<{
@@ -38,6 +47,7 @@ interface DashboardProps {
   statistics: PracticeStatistics
   allSessions: PracticeSession[]
   currentSession: PracticeSession | null
+  savedLoops: SavedLoop[]
   analytics: AnalyticsData
   formatTime: (seconds: number) => string
   formatDate: (date: Date) => string
@@ -49,6 +59,7 @@ export function Dashboard({
   statistics,
   allSessions,
   currentSession,
+  savedLoops,
   analytics,
   formatTime,
   formatDate,
@@ -64,6 +75,13 @@ export function Dashboard({
 
       {/* Analytics & Trends */}
       <AnalyticsCard analytics={analytics} formatTime={formatTime} />
+
+      {/* Transcript Viewer */}
+      <TranscriptIntegration
+        currentVideo={currentVideo}
+        savedLoops={savedLoops}
+        formatTime={formatTime}
+      />
 
       {/* Recent Sessions */}
       <RecentSessionsCard

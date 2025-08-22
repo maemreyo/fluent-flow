@@ -625,6 +625,7 @@ function FluentFlowSidePanelContent() {
       statistics={realStatistics}
       allSessions={allSessions}
       currentSession={currentSession}
+      savedLoops={savedLoops}
       analytics={analytics}
       formatTime={formatTime}
       formatDate={formatDate}
