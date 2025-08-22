@@ -32,6 +32,15 @@ export interface SavedLoop {
   questionsGenerated?: boolean
   questionsGeneratedAt?: Date
   totalQuestionsGenerated?: number
+
+  // Transcript fields
+  hasTranscript?: boolean
+  transcriptMetadata?: {
+    text: string
+    language: string
+    segmentCount: number
+    lastAnalyzed: string
+  }
   
   // Cleanup management fields
   audioRetentionPolicy?: 'temporary' | 'keep' | 'auto-cleanup'

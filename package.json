@@ -68,6 +68,7 @@
     "date-fns": "^3.6.0",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
+    "jsonrepair": "^3.13.0",
     "jwt-decode": "^4.0.0",
     "ky": "^1.2.3",
     "lucide-react": "^0.535.0",

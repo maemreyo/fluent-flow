@@ -1,3 +1,4 @@
+import { jsonrepair } from 'jsonrepair'
 import type {
   ConversationQuestion,
   ConversationQuestions,
@@ -571,21 +572,7 @@ export class ConversationAnalysisService {
         throw new Error('Empty response from Gemini API')
       }
 
-      // Parse the JSON response and validate it matches our schema
-      try {
-        const parsedResponse = JSON.parse(responseText)
-        
-        // Basic validation that we got the expected structure
-        if (!parsedResponse.context || !parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
-          throw new Error('Response does not match expected conversation questions schema')
-        }
-
-        return parsedResponse
-      } catch (parseError) {
-        // If JSON parsing fails, return the raw text (fallback)
-        console.warn('Failed to parse JSON response, returning raw text:', parseError)
-        return responseText
-      }
+      return responseText
 
     } catch (error) {
       if (error instanceof Error) {
@@ -749,7 +736,20 @@ CRITICAL REQUIREMENTS:
    */
   private parseQuestionsResponse(response: string, loop: SavedLoop): GeminiResponse {
     try {
-      const parsed = JSON.parse(response)
+      // Attempt to extract JSON from the response, which might be wrapped in markdown
+      let jsonString = response;
+      const jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/);
+      if (jsonMatch && jsonMatch[1]) {
+        jsonString = jsonMatch[1];
+      } else {
+        const braceMatch = response.match(/\{[\s\S]*\}/);
+        if (braceMatch && braceMatch[0]) {
+          jsonString = braceMatch[0];
+        }
+      }
+
+      const repairedJson = jsonrepair(jsonString);
+      const parsed = JSON.parse(repairedJson);
 
       if (!parsed.questions || !Array.isArray(parsed.questions)) {
         throw new Error('Invalid response format: missing questions array')

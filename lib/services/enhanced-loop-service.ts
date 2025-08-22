@@ -197,21 +197,25 @@ export class EnhancedLoopService {
     }
 
     try {
-      const updateData = {
-        hasTranscript: transcriptData.hasTranscript,
-        transcriptMetadata: transcriptData.hasTranscript ? {
+      const loop = await this.getLoop(loopId);
+      if (!loop) {
+        throw new Error('Loop not found');
+      }
+
+      // Update loop properties
+      loop.hasTranscript = transcriptData.hasTranscript;
+      loop.transcriptMetadata = transcriptData.hasTranscript ? {
           text: transcriptData.transcriptText,
           language: transcriptData.transcriptLanguage || 'en',
           segmentCount: transcriptData.transcriptSegmentCount || 0,
           lastAnalyzed: new Date().toISOString()
-        } : null,
-        questionsGenerated: transcriptData.questionsGenerated,
-        questionCount: transcriptData.questionCount || 0,
-        lastQuestionGeneration: transcriptData.lastQuestionGeneration,
-        updatedAt: new Date().toISOString()
-      }
+        } : undefined;
+      loop.questionsGenerated = transcriptData.questionsGenerated;
+      loop.totalQuestionsGenerated = transcriptData.questionCount || 0;
+      loop.questionsGeneratedAt = transcriptData.questionsGenerated ? new Date() : undefined;
+      loop.updatedAt = new Date();
 
-      await this.storageService.updateLoop(loopId, updateData)
+      await this.storageService.saveLoop(loop)
       
       console.log(`FluentFlow: Updated loop ${loopId} with transcript metadata`)
     } catch (error) {
