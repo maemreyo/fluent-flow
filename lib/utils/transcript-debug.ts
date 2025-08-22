@@ -292,6 +292,120 @@ export class TranscriptDebugUtil {
   }
 
   /**
+   * Test YouTube iframe API video capture
+   */
+  static async testYouTubeIframeAPI(videoId: string = 'dQw4w9WgXcQ', startTime: number = 10, endTime: number = 20) {
+    console.log(`🎬 Testing YouTube iframe API Video Capture\n`)
+    console.log(`Video: ${videoId}`)
+    console.log(`Segment: ${startTime}s - ${endTime}s`)
+    
+    try {
+      // Check if YouTube iframe API is available
+      const hasYT = typeof (window as any).YT !== 'undefined' && (window as any).YT.Player
+      console.log(`YouTube iframe API available: ${hasYT ? '✅ Yes' : '❌ No'}`)
+      
+      if (!hasYT) {
+        console.log('💡 Loading YouTube iframe API...')
+        await new Promise((resolve, reject) => {
+          if ((window as any).onYouTubeIframeAPIReady) {
+            const originalCallback = (window as any).onYouTubeIframeAPIReady
+            ;(window as any).onYouTubeIframeAPIReady = () => {
+              originalCallback()
+              resolve(true)
+            }
+            return
+          }
+          
+          ;(window as any).onYouTubeIframeAPIReady = () => {
+            console.log('✅ YouTube iframe API loaded')
+            resolve(true)
+          }
+          
+          const script = document.createElement('script')
+          script.src = 'https://www.youtube.com/iframe_api'
+          script.onerror = () => reject(new Error('Failed to load YouTube iframe API'))
+          document.head.appendChild(script)
+        })
+      }
+      
+      // Test loadVideoById functionality
+      console.log('\n🎯 Testing loadVideoById with start/end parameters...')
+      
+      const testContainer = document.createElement('div')
+      testContainer.id = 'fluent-flow-api-test'
+      testContainer.style.position = 'absolute'
+      testContainer.style.left = '-9999px'
+      testContainer.style.width = '640px'
+      testContainer.style.height = '360px'
+      document.body.appendChild(testContainer)
+      
+      const result = await new Promise<{
+        success: boolean
+        currentTime: number
+        duration: number
+        state: number
+        startedNearTarget: boolean
+      }>((resolve, reject) => {
+        const player = new (window as any).YT.Player('fluent-flow-api-test', {
+          height: '360',
+          width: '640',
+          videoId: videoId,
+          events: {
+            'onReady': (event: any) => {
+              console.log('✅ Player ready')
+              
+              // Test both argument and object syntax
+              console.log('🔬 Testing loadVideoById with object syntax...')
+              event.target.loadVideoById({
+                videoId: videoId,
+                startSeconds: startTime,
+                endSeconds: endTime
+              })
+              
+              setTimeout(() => {
+                const currentTime = event.target.getCurrentTime()
+                const duration = event.target.getDuration()
+                const state = event.target.getPlayerState()
+                
+                console.log(`Current time: ${currentTime.toFixed(1)}s`)
+                console.log(`Duration: ${duration.toFixed(1)}s`)
+                console.log(`Player state: ${state}`)
+                
+                event.target.destroy()
+                document.body.removeChild(testContainer)
+                
+                resolve({
+                  success: true,
+                  currentTime,
+                  duration,
+                  state,
+                  startedNearTarget: Math.abs(currentTime - startTime) < 2
+                })
+              }, 3000)
+            },
+            'onError': (event: any) => {
+              console.error('❌ Player error:', event.data)
+              document.body.removeChild(testContainer)
+              reject(new Error(`Player error: ${event.data}`))
+            }
+          }
+        })
+      })
+      
+      console.log('\n📊 YouTube iframe API Test Results:')
+      console.log(`   Precision: ${result.startedNearTarget ? '✅ Accurate' : '⚠️ May need adjustment'}`)
+      console.log(`   API Response: ✅ Working`)
+      console.log(`   loadVideoById: ✅ Functional`)
+      
+      return { success: true, ...result }
+      
+    } catch (error) {
+      console.log(`❌ YouTube iframe API test failed: ${error}`)
+      return { success: false, error: error instanceof Error ? error.message : String(error) }
+    }
+  }
+
+  /**
    * Quick test with a known working video
    */
   static async quickTest() {

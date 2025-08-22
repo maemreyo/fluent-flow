@@ -125,7 +125,8 @@
   "manifest": {
     "host_permissions": [
       "https://www.youtube.com/*",
-      "https://youtube.com/*"
+      "https://youtube.com/*",
+      "https://generativelanguage.googleapis.com/*"
     ],
     "permissions": [
       "storage",

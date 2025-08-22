@@ -992,7 +992,7 @@ export class YouTubeTranscriptService {
       // Try to access Chrome extension storage (if available)
       if (typeof chrome !== 'undefined' && chrome.storage) {
         try {
-          const result = await new Promise((resolve) => {
+          const result = await new Promise<Record<string, any>>((resolve) => {
             chrome.storage.local.get([`ejoy_transcript_${videoId}`, `transcript_${videoId}`], resolve)
           })
           

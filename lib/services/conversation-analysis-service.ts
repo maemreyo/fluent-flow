@@ -143,6 +143,179 @@ export class ConversationAnalysisService {
   }
 
   /**
+   * Analyze video content and generate conversation questions
+   */
+  async analyzeVideoForQuestions(base64Video: string, prompt: string): Promise<{
+    questions: ConversationQuestion[]
+    context: string
+  }> {
+    try {
+      console.log('FluentFlow: Starting video analysis with Gemini')
+      
+      // Determine MIME type based on video data
+      const mimeType = this.detectVideoMimeType(base64Video)
+      
+      const response = await this.callGeminiAPI(prompt, {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Video
+        }
+      })
+
+      console.log('FluentFlow: Raw Gemini video response:', response)
+      
+      // Parse the response
+      const analysis = this.parseVideoAnalysisResponse(response)
+      
+      console.log(`FluentFlow: ✅ Generated ${analysis.questions.length} questions from video analysis`)
+      
+      return analysis
+      
+    } catch (error) {
+      console.error('FluentFlow: Video analysis failed:', error)
+      throw new Error(`Video analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Detect video MIME type from base64 data
+   */
+  private detectVideoMimeType(base64Data: string): string {
+    // Check magic bytes or use default
+    const dataStart = base64Data.substring(0, 20)
+    
+    // Common video formats
+    if (dataStart.includes('WEBM') || dataStart.includes('webm')) {
+      return 'video/webm'
+    }
+    if (dataStart.includes('MP4') || dataStart.includes('mp4')) {
+      return 'video/mp4'  
+    }
+    if (dataStart.includes('AVI') || dataStart.includes('avi')) {
+      return 'video/avi'
+    }
+    
+    // Default to MP4 for compatibility
+    return 'video/mp4'
+  }
+
+  /**
+   * Parse video analysis response from Gemini
+   */
+  private parseVideoAnalysisResponse(response: string): {
+    questions: ConversationQuestion[]
+    context: string
+  } {
+    try {
+      // Try to extract JSON from response
+      let jsonMatch = response.match(/\{[\s\S]*\}/)
+      if (!jsonMatch) {
+        // Try to find content between markers
+        jsonMatch = response.match(/```json\s*([\s\S]*?)\s*```/)
+        if (jsonMatch) {
+          jsonMatch[0] = jsonMatch[1]
+        }
+      }
+      
+      if (jsonMatch) {
+        try {
+          const parsed = JSON.parse(jsonMatch[0])
+          if (parsed.questions && Array.isArray(parsed.questions)) {
+            return {
+              questions: parsed.questions.map((q: any, index: number) => ({
+                id: `video_q_${Date.now()}_${index}`,
+                question: q.question || q.text || String(q),
+                options: q.options || ['Option A', 'Option B', 'Option C', 'Option D'],
+                correctAnswer: q.correctAnswer || 'A',
+                explanation: q.explanation || 'Based on video content analysis',
+                difficulty: (q.difficulty === 'easy' || q.difficulty === 'medium' || q.difficulty === 'hard') 
+                  ? q.difficulty : 'medium',
+                type: this.mapQuestionType(q.type || q.focusArea),
+                timestamp: q.timestamp || 0
+              })),
+              context: parsed.context || 'Video content analysis'
+            }
+          }
+        } catch (parseError) {
+          console.log('FluentFlow: JSON parsing failed, using fallback parsing')
+        }
+      }
+      
+      // Fallback: Extract questions from plain text
+      const questions = this.extractQuestionsFromText(response)
+      
+      return {
+        questions: questions.map((question, index) => ({
+          id: `video_q_${Date.now()}_${index}`,
+          question: question,
+          options: ['Option A', 'Option B', 'Option C', 'Option D'],
+          correctAnswer: 'A',
+          explanation: 'Based on video content analysis',
+          difficulty: 'medium' as const,
+          type: 'detail' as const,
+          timestamp: 0
+        })),
+        context: 'Video content analysis'
+      }
+      
+    } catch (error) {
+      console.error('FluentFlow: Failed to parse video analysis response:', error)
+      throw new Error('Failed to parse video analysis response')
+    }
+  }
+
+  /**
+   * Map question focus area to proper ConversationQuestion type
+   */
+  private mapQuestionType(focusArea?: string): ConversationQuestion['type'] {
+    switch (focusArea) {
+      case 'vocabulary':
+        return 'vocabulary'
+      case 'grammar':
+        return 'grammar'
+      case 'main_idea':
+      case 'main':
+        return 'main_idea'
+      case 'inference':
+      case 'reasoning':
+        return 'inference'
+      default:
+        return 'detail'
+    }
+  }
+
+  /**
+   * Extract questions from plain text response
+   */
+  private extractQuestionsFromText(text: string): string[] {
+    const questions: string[] = []
+    
+    // Look for numbered questions
+    const numberedQuestions = text.match(/\d+\.\s*([^?\n]*\?)/g)
+    if (numberedQuestions) {
+      questions.push(...numberedQuestions.map(q => q.replace(/^\d+\.\s*/, '').trim()))
+    }
+    
+    // Look for question marks
+    const questionMarks = text.match(/[^.!]*\?/g)
+    if (questionMarks && questions.length === 0) {
+      questions.push(...questionMarks.map(q => q.trim()).filter(q => q.length > 10))
+    }
+    
+    // Fallback: Create generic questions
+    if (questions.length === 0) {
+      questions.push(
+        'What is happening in this video segment?',
+        'How would you describe the main topic or theme?',
+        'What vocabulary or phrases stood out to you?',
+        'How would you summarize this content to someone else?'
+      )
+    }
+    
+    return questions.slice(0, 5) // Limit to 5 questions
+  }
+
+  /**
    * Uploads audio blob to Gemini Files API
    */
   private async uploadAudioToGemini(audioBlob: Blob): Promise<string> {
@@ -214,7 +387,7 @@ export class ConversationAnalysisService {
   /**
    * Calls Gemini API to generate content
    */
-  private async callGeminiAPI(prompt: string, audioFileUri?: string): Promise<any> {
+  private async callGeminiAPI(prompt: string, mediaData?: string | { inlineData: { mimeType: string; data: string } }): Promise<any> {
     // Input validation
     if (!prompt || typeof prompt !== 'string') {
       throw new Error('Valid prompt is required')
@@ -227,31 +400,85 @@ export class ConversationAnalysisService {
 
     const model = this.config.model || 'gemini-2.5-flash-lite'
 
-    // Build request parts - text-only or text + audio
+    // Build request parts - text-only, text + audio, or text + video
     const parts: any[] = [{ text: prompt }]
     
-    if (audioFileUri) {
-      if (typeof audioFileUri !== 'string') {
-        throw new Error('Invalid audio file URI format')
+    if (mediaData) {
+      if (typeof mediaData === 'string') {
+        // Audio file URI
+        parts.push({
+          file_data: {
+            mime_type: 'audio/webm',
+            file_uri: mediaData
+          }
+        })
+      } else if (mediaData.inlineData) {
+        // Inline video/image data
+        parts.push(mediaData)
+      } else {
+        throw new Error('Invalid media data format')
       }
-      parts.push({
-        file_data: {
-          mime_type: 'audio/webm',
-          file_uri: audioFileUri
+    }
+
+    // Define the JSON schema for conversation questions
+    const conversationQuestionsSchema = {
+      type: "object",
+      properties: {
+        context: {
+          type: "string",
+          description: "Brief description of what happens in the video"
+        },
+        questions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              question: {
+                type: "string",
+                description: "The conversation practice question"
+              },
+              options: {
+                type: "array",
+                items: {
+                  type: "string"
+                },
+                description: "Array of 4 multiple choice options"
+              },
+              correctAnswer: {
+                type: "string",
+                description: "The correct answer (A, B, C, or D)"
+              },
+              explanation: {
+                type: "string",
+                description: "Explanation of why this answer is correct"
+              },
+              difficulty: {
+                type: "string",
+                enum: ["easy", "medium", "hard"],
+                description: "Difficulty level of the question"
+              },
+              type: {
+                type: "string",
+                enum: ["main_idea", "detail", "vocabulary", "inference", "grammar"],
+                description: "Type of conversation skill being tested"
+              }
+            },
+            required: ["question", "options", "correctAnswer", "explanation", "difficulty", "type"]
+          }
         }
-      })
+      },
+      required: ["context", "questions"]
     }
 
     const requestBody = {
-      contents: [{
-        parts
-      }],
+      contents: [{ parts }],
       generationConfig: {
         temperature: 0.1, // Low temperature for consistent questions
         topK: 1,
         topP: 0.95,
         maxOutputTokens: 2048,
-        responseMimeType: 'application/json'
+        responseMimeType: 'application/json',
+        responseSchema: conversationQuestionsSchema
       }
     }
 
@@ -308,7 +535,22 @@ export class ConversationAnalysisService {
         throw new Error('Empty response from Gemini API')
       }
 
-      return responseText
+      // Parse the JSON response and validate it matches our schema
+      try {
+        const parsedResponse = JSON.parse(responseText)
+        
+        // Basic validation that we got the expected structure
+        if (!parsedResponse.context || !parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
+          throw new Error('Response does not match expected conversation questions schema')
+        }
+
+        return parsedResponse
+      } catch (parseError) {
+        // If JSON parsing fails, return the raw text (fallback)
+        console.warn('Failed to parse JSON response, returning raw text:', parseError)
+        return responseText
+      }
+
     } catch (error) {
       if (error instanceof Error) {
         throw error

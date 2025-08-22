@@ -323,6 +323,9 @@ export interface ConversationQuestions {
     transcriptSegmentCount?: number
     transcriptLanguage?: string
     canRegenerateQuestions: boolean
+    // Video analysis specific fields
+    videoAnalysis?: boolean
+    videoSegmentDuration?: number
   }
 }
 

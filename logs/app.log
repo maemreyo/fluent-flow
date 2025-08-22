@@ -1,268 +1,39 @@
-background.ts:14 FluentFlow background script loaded
-runtime-739ddb86a28a5ef1.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
-auth-handler.ts:53 Auth state changed: INITIAL_SESSION - ngonhuthanhtrung1409@gmail.com
-auth-handler.ts:39 Auth initialized: User: ngonhuthanhtrung1409@gmail.com
-background.ts:49 Background received message: SAVE_LOOPS
-loop-handler.ts:17 FluentFlow: Handling loop operation: save_multiple Array(1)
-loop-handler.ts:545 FluentFlow: Saving multiple loops: 1
-loop-handler.ts:74 FluentFlow: Saving loop: Object
-loop-handler.ts:80 FluentFlow: Auth state in loop handler: Object
-loop-handler.ts:167 FluentFlow: Loop saved to Supabase successfully
-loop-handler.ts:565 FluentFlow: Successfully saved 1 out of 1 loops
-runtime-90aafd35f04ec759.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/sidepanel.tsx
-sidepanel.tsx:96 FluentFlow: Loaded Gemini config from Supabase: true
-sidepanel.tsx:115 FluentFlow: Initializing conversation loop integration
-auto-cleanup-scheduler.ts:24 Starting auto cleanup scheduler (every 6 hours)
-sidepanel.tsx:122 FluentFlow: Conversation loop integration ready
-conversation-loop-integration-service.ts:234 FluentFlow: Attempting transcript-based question generation for loop loop_1755798057763_bfzvp1c
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 1/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:855 FluentFlow: Attempting ytInitialPlayerResponse extraction for eVFzbxmKNUw
-youtube-transcript-service.ts:956 FluentFlow: ytInitialPlayerResponse extraction failed: Error: ytInitialPlayerResponse not found
-    at YouTubeTranscriptService.extractTranscriptFromYtInitialPlayerResponse (youtube-transcript-service.ts:887:32)
-    at youtube-transcript-service.ts:50:119
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:175:15)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 1/7 failed: Error: ytInitialPlayerResponse extraction failed: ytInitialPlayerResponse not found
-    at YouTubeTranscriptService.extractTranscriptFromYtInitialPlayerResponse (youtube-transcript-service.ts:957:5)
-    at youtube-transcript-service.ts:50:119
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:175:15)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 2/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:967 FluentFlow: Attempting Ejoy storage extraction for eVFzbxmKNUw
-youtube-transcript-service.ts:1013 FluentFlow: Ejoy storage extraction failed: Error: No Ejoy transcript storage found
-    at YouTubeTranscriptService.extractTranscriptFromEjoyStorage (youtube-transcript-service.ts:1011:14)
-    at async YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:15)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 2/7 failed: Error: Ejoy storage extraction failed: No Ejoy transcript storage found
-    at YouTubeTranscriptService.extractTranscriptFromEjoyStorage (youtube-transcript-service.ts:1014:5)
-    at async YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:15)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 3/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:794 FluentFlow: Attempting to extract transcript from Ejoy English extension for eVFzbxmKNUw
-youtube-transcript-service.ts:844 FluentFlow: Ejoy English extraction failed: Error: Ejoy English extension not found or transcript not loaded
-    at YouTubeTranscriptService.extractTranscriptFromEjoyExtension (youtube-transcript-service.ts:800:7)
-    at youtube-transcript-service.ts:54:109
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 3/7 failed: Error: Ejoy English extraction failed: Ejoy English extension not found or transcript not loaded
-    at YouTubeTranscriptService.extractTranscriptFromEjoyExtension (youtube-transcript-service.ts:845:5)
-    at youtube-transcript-service.ts:54:109
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 4/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:282 FluentFlow: Using improved transcript package (method 1)
-youtube-transcript-service.ts:284  POST https://www.youtube.com/youtubei/v1/player 403 (Forbidden)
-(anonymous) @ youtube-transcript.esm.js:149
-(anonymous) @ youtube-transcript.esm.js:23
-__awaiter @ youtube-transcript.esm.js:19
-fetchTranscriptWithInnerTube @ youtube-transcript.esm.js:133
-(anonymous) @ youtube-transcript.esm.js:83
-rejected @ youtube-transcript.esm.js:20
-Promise.then
-step @ youtube-transcript.esm.js:21
-(anonymous) @ youtube-transcript.esm.js:23
-__awaiter @ youtube-transcript.esm.js:19
-fetchTranscript @ youtube-transcript.esm.js:75
-fetchTranscriptWithRetry @ youtube-transcript-service.ts:284
-await in fetchTranscriptWithRetry
-(anonymous) @ youtube-transcript-service.ts:57
-getTranscriptSegment @ youtube-transcript-service.ts:77
-await in getTranscriptSegment
-generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:175
-await in generateQuestionsFromTranscript
-generateQuestions @ conversation-loop-integration-service.ts:235
-await in generateQuestions
-onGenerateQuestions @ sidepanel.tsx:816
-handleGenerateQuestions @ enhanced-loop-card.tsx:105
-callCallback @ react-dom.development.js:4165
-invokeGuardedCallbackDev @ react-dom.development.js:4215
-invokeGuardedCallback @ react-dom.development.js:4278
-invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
-executeDispatch @ react-dom.development.js:9042
-processDispatchQueueItemsInOrder @ react-dom.development.js:9074
-processDispatchQueue @ react-dom.development.js:9087
-dispatchEventsForPlugins @ react-dom.development.js:9098
-(anonymous) @ react-dom.development.js:9289
-batchedUpdates$1 @ react-dom.development.js:26141
-batchedUpdates @ react-dom.development.js:3992
-dispatchEventForPluginEventSystem @ react-dom.development.js:9287
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
-dispatchEvent @ react-dom.development.js:6459
-dispatchDiscreteEvent @ react-dom.development.js:6431
-youtube-transcript-service.ts:297 FluentFlow: Improved package failed, falling back to original: SyntaxError: Unexpected token '<', "<html><hea"... is not valid JSON
-youtube-transcript-service.ts:354 FluentFlow: Successfully fetched 0 segments using original package
-youtube-transcript-service.ts:81 FluentFlow: Method 4 - No transcript content found for time range 7.001873s - 184.265281s
-getTranscriptSegment @ youtube-transcript-service.ts:81
-await in getTranscriptSegment
-generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:175
-await in generateQuestionsFromTranscript
-generateQuestions @ conversation-loop-integration-service.ts:235
-await in generateQuestions
-onGenerateQuestions @ sidepanel.tsx:816
-handleGenerateQuestions @ enhanced-loop-card.tsx:105
-callCallback @ react-dom.development.js:4165
-invokeGuardedCallbackDev @ react-dom.development.js:4215
-invokeGuardedCallback @ react-dom.development.js:4278
-invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
-executeDispatch @ react-dom.development.js:9042
-processDispatchQueueItemsInOrder @ react-dom.development.js:9074
-processDispatchQueue @ react-dom.development.js:9087
-dispatchEventsForPlugins @ react-dom.development.js:9098
-(anonymous) @ react-dom.development.js:9289
-batchedUpdates$1 @ react-dom.development.js:26141
-batchedUpdates @ react-dom.development.js:3992
-dispatchEventForPluginEventSystem @ react-dom.development.js:9287
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
-dispatchEvent @ react-dom.development.js:6459
-dispatchDiscreteEvent @ react-dom.development.js:6431
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 5/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:739 FluentFlow: Attempting direct URL extraction for eVFzbxmKNUw
-youtube-transcript-service.ts:751 FluentFlow: Trying direct URL: https://video.google.com/timedtext?lang=en&v=eVFzbxmKNUw
-youtube-transcript-service.ts:751 FluentFlow: Trying direct URL: https://www.youtube.com/api/timedtext?lang=en&v=eVFzbxmKNUw&fmt=srv3
-youtube-transcript-service.ts:751 FluentFlow: Trying direct URL: https://www.youtube.com/api/timedtext?lang=en&v=eVFzbxmKNUw&fmt=vtt
-youtube-transcript-service.ts:751 FluentFlow: Trying direct URL: https://www.youtube.com/api/timedtext?lang=en&v=eVFzbxmKNUw&fmt=json3
-youtube-transcript-service.ts:783 FluentFlow: Direct URL extraction failed: Error: No direct transcript URLs worked
-    at YouTubeTranscriptService.extractTranscriptViaDirectURL (youtube-transcript-service.ts:781:14)
-    at async YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:15)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 5/7 failed: Error: Direct URL extraction failed: No direct transcript URLs worked
-    at YouTubeTranscriptService.extractTranscriptViaDirectURL (youtube-transcript-service.ts:784:5)
-    at async YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:15)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 6/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:430 FluentFlow: DOM extraction failed: Error: Could not find ytInitialPlayerResponse in page
-    at YouTubeTranscriptService.extractTranscriptFromDOM (youtube-transcript-service.ts:401:7)
-    at youtube-transcript-service.ts:60:99
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 6/7 failed: Error: DOM extraction failed: Could not find ytInitialPlayerResponse in page
-    at YouTubeTranscriptService.extractTranscriptFromDOM (youtube-transcript-service.ts:431:5)
-    at youtube-transcript-service.ts:60:99
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:76 FluentFlow: Attempting transcript extraction method 7/7 for eVFzbxmKNUw
-youtube-transcript-service.ts:523 FluentFlow: Attempting content script extraction for eVFzbxmKNUw
-youtube-transcript-service.ts:537 FluentFlow: Content script extraction failed: Error: No suitable Chrome extension scripting API available
-    at YouTubeTranscriptService.extractTranscriptViaContentScript (youtube-transcript-service.ts:535:14)
-    at youtube-transcript-service.ts:62:108
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:99 FluentFlow: ❌ Method 7/7 failed: Error: Content script extraction failed: No suitable Chrome extension scripting API available
-    at YouTubeTranscriptService.extractTranscriptViaContentScript (youtube-transcript-service.ts:538:5)
-    at youtube-transcript-service.ts:62:108
-    at YouTubeTranscriptService.getTranscriptSegment (youtube-transcript-service.ts:77:35)
-    at async ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:174:29)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-youtube-transcript-service.ts:107 FluentFlow: � All 7 transcript extraction methods failed for video eVFzbxmKNUw
-getTranscriptSegment @ youtube-transcript-service.ts:107
-await in getTranscriptSegment
-generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:175
-await in generateQuestionsFromTranscript
-generateQuestions @ conversation-loop-integration-service.ts:235
-await in generateQuestions
-onGenerateQuestions @ sidepanel.tsx:816
-handleGenerateQuestions @ enhanced-loop-card.tsx:105
-callCallback @ react-dom.development.js:4165
-invokeGuardedCallbackDev @ react-dom.development.js:4215
-invokeGuardedCallback @ react-dom.development.js:4278
-invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
-executeDispatch @ react-dom.development.js:9042
-processDispatchQueueItemsInOrder @ react-dom.development.js:9074
-processDispatchQueue @ react-dom.development.js:9087
-dispatchEventsForPlugins @ react-dom.development.js:9098
-(anonymous) @ react-dom.development.js:9289
-batchedUpdates$1 @ react-dom.development.js:26141
-batchedUpdates @ react-dom.development.js:3992
-dispatchEventForPluginEventSystem @ react-dom.development.js:9287
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
-dispatchEvent @ react-dom.development.js:6459
-dispatchDiscreteEvent @ react-dom.development.js:6431
-conversation-loop-integration-service.ts:238 FluentFlow: Transcript method failed, checking audio fallback: Error: Transcript error: All transcript extraction methods failed.
-    at ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:207:7)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-sidepanel.tsx:821 Failed to generate questions: Error: Transcript error: All transcript extraction methods failed.
-    at ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:207:7)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-onGenerateQuestions @ sidepanel.tsx:821
-await in onGenerateQuestions
-handleGenerateQuestions @ enhanced-loop-card.tsx:105
-callCallback @ react-dom.development.js:4165
-invokeGuardedCallbackDev @ react-dom.development.js:4215
-invokeGuardedCallback @ react-dom.development.js:4278
-invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
-executeDispatch @ react-dom.development.js:9042
-processDispatchQueueItemsInOrder @ react-dom.development.js:9074
-processDispatchQueue @ react-dom.development.js:9087
-dispatchEventsForPlugins @ react-dom.development.js:9098
-(anonymous) @ react-dom.development.js:9289
-batchedUpdates$1 @ react-dom.development.js:26141
-batchedUpdates @ react-dom.development.js:3992
-dispatchEventForPluginEventSystem @ react-dom.development.js:9287
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
-dispatchEvent @ react-dom.development.js:6459
-dispatchDiscreteEvent @ react-dom.development.js:6431
-enhanced-loop-card.tsx:109 Failed to generate questions: Error: Transcript error: All transcript extraction methods failed.
-    at ConversationLoopIntegrationService.generateQuestionsFromTranscript (conversation-loop-integration-service.ts:207:7)
-    at async ConversationLoopIntegrationService.generateQuestions (conversation-loop-integration-service.ts:235:16)
-    at async onGenerateQuestions (sidepanel.tsx:816:21)
-    at async handleGenerateQuestions (enhanced-loop-card.tsx:105:20)
-handleGenerateQuestions @ enhanced-loop-card.tsx:109
-await in handleGenerateQuestions
-callCallback @ react-dom.development.js:4165
-invokeGuardedCallbackDev @ react-dom.development.js:4215
-invokeGuardedCallback @ react-dom.development.js:4278
-invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
-executeDispatch @ react-dom.development.js:9042
-processDispatchQueueItemsInOrder @ react-dom.development.js:9074
-processDispatchQueue @ react-dom.development.js:9087
-dispatchEventsForPlugins @ react-dom.development.js:9098
-(anonymous) @ react-dom.development.js:9289
-batchedUpdates$1 @ react-dom.development.js:26141
-batchedUpdates @ react-dom.development.js:3992
-dispatchEventForPluginEventSystem @ react-dom.development.js:9287
-dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
-dispatchEvent @ react-dom.development.js:6459
-dispatchDiscreteEvent @ react-dom.development.js:6431
-auto-cleanup-scheduler.ts:74 Running scheduled audio cleanup...
-audio-storage-cleanup-service.ts:25 Starting audio storage cleanup...
-audio-storage-cleanup-service.ts:37 No audio files to cleanup
-auto-cleanup-scheduler.ts:92 Auto-cleanup: No files needed cleaning
+Có vẻ như đã generate được video, có thể thử thêm 1 bước tải về để tôi xem thử được không? Và ngoài ra, response của Gemini có vẻ trống rỗng, không đúng yêu cầu:
+Payload:
+```
+{"contents":[{"parts":[{"text":"Analyze this 177.263408 second video segment and generate conversation practice questions.\n\nVideo Context:\n- Source: YouTube video segment  \n- Duration: 7.001873s to 184.265281s\n- Loop ID: loop_1755798057763_bfzvp1c\n\nPlease:\n1. Analyze the visual content, dialogue, and context\n2. Generate 3-5 multiple choice questions for conversation practice\n3. Focus on practical conversation skills and vocabulary\n4. Include questions that test comprehension and speaking preparation\n\nReturn your analysis as JSON with this structure:\n{\n  \"context\": \"Brief description of what happens in the video\",\n  \"questions\": [\n    {\n      \"question\": \"Question text here\",\n      \"options\": [\"Option A\", \"Option B\", \"Option C\", \"Option D\"],\n      \"correctAnswer\": \"A\",\n      \"explanation\": \"Explanation of the correct answer\",\n      \"difficulty\": \"easy|medium|hard\",\n      \"type\": \"main_idea|detail|vocabulary|inference|grammar\"\n    }\n  ]\n}"},{"inlineData":{"mimeType":"video/mp4","data":"GkXfo59ChoEBQveBAULygQRC84EIQoKEd2VibUKHgQRChYECGFOAZwH/////////FUmpZpkq17GDD0JATYCGQ2hyb21lV0GGQ2hyb21lFlSua6uuqdeBAXPFh0tVlRAYeBaDgQFV7oEBhoVWX1ZQOOCMsIICgLqCAWhTwIEBH0O2dQH/////////54EAoF2RoVvZgQAAALChAJ0BKoACaAEExwiFhYiZhIgXgt0DqBf2C7Af4D/kG+eZXvenoF/k2CQK4ano5Py2SHxDzAf5xo7IG/N7G2d/S/7PTZr7rtbNP6ZM63pP8wH9Sunv5jf2K/Yz3nekB/x3VP+N7G2d
+..............
+r2KIpPW3xyyTeWOIicCj6bIyYgc2tSUseEyvtoq+ICZ9qH+vi0kBVKH/RMizc/JMzMj3hZbsKhvfGN/d6bAFMcinAQAdaGxpq/ugQGlqtEEAAcQCSAAwADCwX+gAEQAIAAENoLMdF7lJr85VjIrMhJ9mKMNBZUAAPuDArKX"}}]}],"generationConfig":{"temperature":0.1,"topK":1,"topP":0.95,"maxOutputTokens":2048,"responseMimeType":"application/json"}}
+```
+Response:
+```
+{
+  "candidates": [
+    {
+      "content": {
+        "parts": [
+          {
+            "text": "[\n  {\"box_2d\": [0, 0, 1000, 1000], \"label\": \"youtube video segment\"}\n]"
+          }
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 263,
+    "candidatesTokenCount": 37,
+    "totalTokenCount": 300,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 263
+      }
+    ]
+  },
+  "modelVersion": "gemini-2.5-flash-lite",
+  "responseId": "SM6naJzcI9bRz7IP79y0gQQ"
+}
+```
