@@ -79,7 +79,70 @@ function FluentFlowSidePanelContent() {
     checkAuthStatus()
     loadSavedRecordings()
     initializeIntegration()
+    initializeVideoInformation()
+    const cleanup = setupMessageHandlers()
+    
+    // Cleanup function
+    return cleanup
   }, [])
+
+  // Initialize video information from active tab
+  const initializeVideoInformation = async () => {
+    try {
+      // Get the active tab
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const activeTab = tabs[0]
+      
+      if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
+        // Send message to content script to get video information
+        try {
+          const response = await chrome.tabs.sendMessage(activeTab.id, {
+            type: 'GET_VIDEO_INFO'
+          })
+          
+          if (response?.success && response.videoInfo) {
+            // Initialize the store with video information
+            const { initializePlayer } = useFluentFlowStore.getState()
+            initializePlayer(response.videoInfo)
+            console.log('FluentFlow: Video information initialized in sidepanel:', response.videoInfo)
+          }
+        } catch (error) {
+          console.log('FluentFlow: Content script not available or no video info:', error)
+        }
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to initialize video information:', error)
+    }
+  }
+
+  // Setup message handlers for receiving data from content script
+  const setupMessageHandlers = () => {
+    const messageHandler = (message: any) => {
+      switch (message.type) {
+        case 'OPEN_SIDE_PANEL':
+          // Handle video info and notes from content script
+          if (message.videoInfo) {
+            const { initializePlayer } = useFluentFlowStore.getState()
+            initializePlayer(message.videoInfo)
+            console.log('FluentFlow: Updated video information from content script')
+          }
+          break
+        case 'SIDEPANEL_DATA':
+          // Handle any additional data from background script
+          console.log('FluentFlow: Received sidepanel data:', message)
+          break
+        default:
+          break
+      }
+    }
+
+    chrome.runtime.onMessage.addListener(messageHandler)
+    
+    // Cleanup function
+    return () => {
+      chrome.runtime.onMessage.removeListener(messageHandler)
+    }
+  }
 
   const checkAuthStatus = async () => {
     try {
@@ -294,6 +357,29 @@ function FluentFlowSidePanelContent() {
     }).format(date)
   }
 
+  // Compute real statistics from session data
+  const computeRealStatistics = () => {
+    if (!allSessions || allSessions.length === 0) {
+      return statistics // Return default statistics if no sessions
+    }
+
+    const totalSessions = allSessions.length
+    const totalRecordings = allSessions.reduce((acc, session) => acc + session.recordings.length, 0)
+    const totalPracticeTime = allSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0)
+    const avgSessionTime = totalSessions > 0 ? totalPracticeTime / totalSessions : 0
+
+    return {
+      ...statistics,
+      totalSessions,
+      totalRecordings,
+      totalPracticeTime,
+      avgSessionTime
+    }
+  }
+
+  // Get computed statistics
+  const realStatistics = computeRealStatistics()
+
   const deleteRecording = async (recordingId: string) => {
     try {
       // Use Supabase store instead of chrome.runtime.sendMessage
@@ -333,7 +419,7 @@ function FluentFlowSidePanelContent() {
   const renderDashboard = () => (
     <Dashboard
       currentVideo={currentVideo}
-      statistics={statistics}
+      statistics={realStatistics}
       allSessions={allSessions}
       currentSession={currentSession}
       formatTime={formatTime}
