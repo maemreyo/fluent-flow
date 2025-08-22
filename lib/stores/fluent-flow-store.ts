@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import { v4 as uuidv4 } from 'uuid'
 import type {
   AudioComparisonState,
   AudioRecording,
@@ -119,7 +120,7 @@ export const useFluentFlowStore = create<FluentFlowStore>()(
         if (!currentVideo) return
 
         const segment: LoopSegment = {
-          id: `loop_${Date.now()}`,
+          id: uuidv4(),
           startTime,
           endTime,
           createdAt: new Date(),

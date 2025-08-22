@@ -322,6 +322,12 @@ const supabaseService = {
   },
 
   async getAllUserLoops(userId: string): Promise<SavedLoop[]> {
+    console.log(`getAllUserLoops: Fetching loops for user ${userId}`)
+    
+    // Add a small random timestamp to bust any potential caching
+    const cacheBuster = Date.now()
+    console.log(`getAllUserLoops: Cache buster timestamp: ${cacheBuster}`)
+    
     const { data: sessions, error } = await supabase
       .from('practice_sessions')
       .select(
@@ -346,12 +352,14 @@ const supabaseService = {
       )
       .eq('user_id', userId)
       .not('metadata->savedLoop', 'is', null)
-      .order('created_at', { ascending: false })
+      .order('updated_at', { ascending: false }) // Order by updated_at instead of created_at to get latest changes first
 
     if (error) {
       console.error('Error loading user loops:', error)
       throw error
     }
+
+    console.log(`getAllUserLoops: Retrieved ${sessions?.length || 0} practice sessions`)
 
     // Convert Supabase data to SavedLoop format
     const savedLoops: SavedLoop[] = []
@@ -361,6 +369,9 @@ const supabaseService = {
       const segment = session.loop_segments?.[0] // Get first segment
 
       if (loopMetadata?.savedLoop && segment) {
+        // ✅ CACHE REMOVED: Questions now stored in conversation_questions table only
+        console.log(`getAllUserLoops: ✅ Processing loop ${loopMetadata.savedLoop.id} - cache removed, using database`)
+        
         const savedLoop: SavedLoop = {
           id: loopMetadata.savedLoop.id,
           title: segment.label || loopMetadata.savedLoop.title || 'Untitled Loop',
@@ -371,7 +382,19 @@ const supabaseService = {
           endTime: segment.end_time,
           description: segment.description || loopMetadata.savedLoop.description,
           createdAt: new Date(loopMetadata.savedLoop.createdAt || session.created_at),
-          updatedAt: new Date(loopMetadata.savedLoop.updatedAt || session.updated_at)
+          updatedAt: new Date(loopMetadata.savedLoop.updatedAt || session.updated_at),
+          
+          // Questions removed from metadata - they are now stored in conversation_questions table
+          questions: [], // Always empty - questions come from database
+          questionsGenerated: false, // Reset - will be determined from database
+          questionMetadata: null,
+          lastQuestionGeneration: null,
+          questionsGeneratedAt: undefined,
+          totalQuestionsGenerated: 0,
+          
+          // Include transcript fields from metadata  
+          hasTranscript: loopMetadata.savedLoop.hasTranscript || false,
+          transcriptMetadata: loopMetadata.savedLoop.transcriptMetadata || null
         }
         savedLoops.push(savedLoop)
       }
@@ -801,23 +824,37 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) return null
 
-    const { data, error } = await supabase
-      .from('conversation_questions')
-      .select('questions')
-      .eq('segment_id', segmentId)
-      .eq('user_id', user.id)
-      .single()
-
-    if (error) {
-      if (error.code === 'PGRST116') {
-        // No matching row found
+    console.log(`getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment ${segmentId}`)
+    
+    // Always use the conversation_questions table - no more loop metadata caching  
+    // Try raw query to avoid 406 error
+    try {
+      const { data, error } = await supabase
+        .from('conversation_questions')
+        .select('questions')
+        .or(`loop_id.eq.${segmentId}`)
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle() as any // Avoid deep type instantiation and allow null
+        
+      if (error) {
+        console.error('Error in raw query:', error)
         return null
       }
-      console.error('Error fetching questions:', error)
-      throw error
+      
+      if (data) {
+        console.log(`getQuestions: Found ${Array.isArray(data.questions) ? data.questions.length : 0} questions for segment ${segmentId}`)
+        return Array.isArray(data.questions) ? data.questions as any[] : null
+      }
+      
+      console.log(`getQuestions: No questions found for segment ${segmentId}`)
+      return null
+      
+    } catch (queryError) {
+      console.error('Query failed:', queryError)
+      return null
     }
 
-    return data.questions as any[]
   },
 
   async saveQuestions(
@@ -828,31 +865,112 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) throw new Error('User not authenticated')
 
+    console.log(`saveQuestions: Saving ${questions.length} questions for segment ${segmentId}`)
+    
+    // Always save to conversation_questions table - no more loop metadata caching
     const questionData = {
-      segment_id: segmentId,
+      loop_id: segmentId,  // Use loop_id for non-UUID identifiers
+      segment_id: null as string | null,  // Set segment_id to null since we're using loop_id
       user_id: user.id,
-      questions: questions,
+      questions: questions as any, // Cast to any to satisfy Json type
       metadata: {
         ...metadata,
         createdAt: new Date().toISOString(),
         questionCount: questions.length
+      } as any // Cast to any to satisfy Json type
+    }
+
+    try {
+      // First try to check if record exists using or query
+      const { data: existing, error: fetchError } = await supabase
+        .from('conversation_questions')
+        .select('id')
+        .or(`loop_id.eq.${segmentId}`)
+        .eq('user_id', user.id)
+        .limit(1)
+        .maybeSingle() as any // Avoid deep type instantiation
+
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
+        console.error('Error checking existing questions:', fetchError)
       }
+
+      let result: { data: any; error: any };
+      if (existing) {
+        console.log(`saveQuestions: Updating existing record for segment ${segmentId}`)
+        // Update existing record
+        const { data, error } = await supabase
+          .from('conversation_questions')
+          .update(questionData)
+          .eq('id', existing.id)
+          .select('id')
+          .single()
+        
+        result = { data, error }
+      } else {
+        console.log(`saveQuestions: Creating new record for segment ${segmentId}`)
+        // Insert new record
+        const { data, error } = await supabase
+          .from('conversation_questions')
+          .insert(questionData)
+          .select('id')
+          .single()
+        
+        result = { data, error }
+      }
+
+      if (result.error) {
+        console.error('Error saving questions:', result.error)
+        throw result.error
+      }
+
+      console.log(`saveQuestions: Successfully saved ${questions.length} questions for segment ${segmentId}`)
+      return result.data.id
+    } catch (error) {
+      // If all else fails, just try a simple insert
+      console.log('Falling back to simple insert for questions:', error)
+      const { data, error: insertError } = await supabase
+        .from('conversation_questions')
+        .insert(questionData)
+        .select('id')
+        .single()
+
+      if (insertError) {
+        console.error('Error saving questions with fallback:', insertError)
+        throw insertError
+      }
+
+      console.log(`saveQuestions: Successfully saved ${questions.length} questions via fallback`)
+      return data.id
     }
+  },
 
-    const { data, error } = await supabase
-      .from('conversation_questions')
-      .upsert(questionData, {
-        onConflict: 'segment_id,user_id'
-      })
-      .select('id')
-      .single()
+  // Clear questions from loop metadata (for regenerate functionality)
+  async clearQuestions(segmentId: string): Promise<boolean> {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
 
-    if (error) {
-      console.error('Error saving questions:', error)
-      throw error
+    console.log(`clearQuestions: Clearing questions for segment ${segmentId}`)
+
+    try {
+      // Delete from conversation_questions table using or query
+      const { error } = await supabase
+        .from('conversation_questions')
+        .delete()
+        .or(`loop_id.eq.${segmentId}`)
+        .eq('user_id', user.id) as any // Avoid type instantiation
+
+      if (error) {
+        console.error('Error clearing questions:', error)
+        return false
+      }
+
+      console.log(`clearQuestions: Successfully cleared questions for segment ${segmentId}`)
+      return true
+      
+    } catch (error) {
+      console.error(`clearQuestions: Error clearing questions for segment ${segmentId}:`, error)
+      return false
     }
-
-    return data.id
   }
 }
 
@@ -1163,7 +1281,7 @@ export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
       updateSettings: async (newSettings: Partial<FluentFlowSettings>) => {
         const updatedSettings = { ...get().settings, ...newSettings }
 
-        set(state => ({
+        set(() => ({
           settings: updatedSettings
         }))
 

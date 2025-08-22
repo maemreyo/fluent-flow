@@ -3,6 +3,7 @@
 
 import type { SavedLoop } from '../../types/fluent-flow-types'
 import { LoopStateMachine, type LoopStateContext } from './loop-state-machine'
+import { v4 as uuidv4 } from 'uuid'
 
 export interface YouTubePlayerIntegration {
   getCurrentTime(): number | null
@@ -348,7 +349,7 @@ export class LoopFeature {
     }
 
     const savedLoop: SavedLoop = {
-      id: `loop_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      id: uuidv4(),
       title:
         title ||
         `Loop ${this.ui.formatTime(context.data.startTime)}-${this.ui.formatTime(context.data.endTime)}`,

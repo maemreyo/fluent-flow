@@ -32,6 +32,19 @@ export interface SavedLoop {
   questionsGenerated?: boolean
   questionsGeneratedAt?: Date
   totalQuestionsGenerated?: number
+  questions?: any[]  // Array of generated questions
+  questionMetadata?: {
+    createdAt: string
+    questionCount: number
+    canRegenerateQuestions: boolean
+    generatedFromTranscript?: boolean
+    generatedFromLoop?: boolean
+    transcriptLength?: number
+    transcriptLanguage?: string
+    segmentCount?: number
+    generatedAt: string
+  }
+  lastQuestionGeneration?: string
 
   // Transcript fields
   hasTranscript?: boolean

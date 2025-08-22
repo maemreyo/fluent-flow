@@ -2,6 +2,7 @@
 // Supports creating, managing, and visualizing multiple loops on a single video
 
 import type { SavedLoop } from '../../types/fluent-flow-types'
+import { v4 as uuidv4 } from 'uuid'
 
 export interface ActiveLoop {
   id: string
@@ -301,7 +302,7 @@ export class MultipleLoopsFeature {
     const duration = this.creationState.tempLoop.endTime - this.creationState.tempLoop.startTime
     
     const newLoop: ActiveLoop = {
-      id: `loop_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      id: uuidv4(),
       title: `Loop ${loopNumber} (${this.ui.formatTime(duration)})`,
       startTime: this.creationState.tempLoop.startTime,
       endTime: this.creationState.tempLoop.endTime,

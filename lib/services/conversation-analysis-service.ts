@@ -659,6 +659,21 @@ IMPORTANT:
     const duration = loop.endTime - loop.startTime
     const transcriptText = loop.transcriptText.trim()
     const wordCount = transcriptText.split(/\s+/).length
+    
+    // Determine optimal question count based on transcript length
+    let targetQuestions = 10
+    let questionDistribution = '4 Easy, 4 Medium, 2 Hard'
+    
+    if (wordCount < 50) {
+      targetQuestions = 3
+      questionDistribution = '2 Easy, 1 Medium'
+    } else if (wordCount < 100) {
+      targetQuestions = 5
+      questionDistribution = '3 Easy, 2 Medium'
+    } else if (wordCount < 200) {
+      targetQuestions = 7
+      questionDistribution = '3 Easy, 3 Medium, 1 Hard'
+    }
 
     return `
 You are an expert English conversation teacher analyzing a dialogue transcript for listening comprehension practice.
@@ -669,24 +684,22 @@ Context:
 - Duration: ${duration} seconds
 - Transcript Word Count: ${wordCount} words
 - Description: ${loop.description || 'No additional context provided'}
-- Target: Generate exactly 10 multiple-choice questions
+- Target: Generate ${targetQuestions} multiple-choice questions (optimal for this transcript length)
 
 TRANSCRIPT TEXT:
 "${transcriptText}"
 
 Instructions:
 1. Analyze the transcript text carefully
-2. Create 10 multiple-choice questions that test reading/listening comprehension
+2. Create ${targetQuestions} multiple-choice questions that test reading/listening comprehension
 3. Each question must have exactly 4 options (A, B, C, D)
-4. Include a mix of question types and difficulty levels
+4. Include a mix of question types and difficulty levels appropriate for the content
 5. Base questions ONLY on what is actually stated in the transcript
+6. If the transcript is very short, focus on the most important comprehension points
 
-Question Distribution:
-- 4 Easy questions (main ideas, obvious details)
-- 4 Medium questions (specific details, vocabulary, sequence)
-- 2 Hard questions (inference, implied meaning, tone)
+Question Distribution: ${questionDistribution}
 
-Question Types to Include:
+Question Types to Include (as appropriate for content):
 - Main idea (What is the main topic discussed?)
 - Specific details (Who said what? When? Where?)
 - Vocabulary (What does X mean in this context?)
@@ -714,7 +727,7 @@ Return ONLY valid JSON in this exact format:
     }
   ],
   "metadata": {
-    "totalQuestions": 10,
+    "totalQuestions": ${targetQuestions},
     "transcriptLength": ${transcriptText.length},
     "wordCount": ${wordCount},
     "analysisDate": "${new Date().toISOString()}"
@@ -722,12 +735,13 @@ Return ONLY valid JSON in this exact format:
 }
 
 CRITICAL REQUIREMENTS:
-- Generate exactly 10 questions based solely on the transcript content
+- Generate exactly ${targetQuestions} questions based solely on the transcript content
 - Make all options plausible but clearly distinguishable
 - Provide helpful explanations that reference specific parts of the transcript
 - Use realistic timestamps within the ${loop.startTime}-${loop.endTime} second range
 - Return only valid JSON, no additional text
 - Ensure questions test comprehension of the actual dialogue content
+- If transcript is too short for meaningful questions, generate fewer but high-quality questions
 `.trim()
   }
 
@@ -755,12 +769,22 @@ CRITICAL REQUIREMENTS:
         throw new Error('Invalid response format: missing questions array')
       }
 
-      if (parsed.questions.length !== 10) {
-        throw new Error(`Expected 10 questions, got ${parsed.questions.length}`)
+      // More flexible question count validation
+      const questionCount = parsed.questions.length;
+      if (questionCount === 0) {
+        throw new Error('No questions found in response')
       }
+      
+      // Allow fewer questions if transcript is short or API has limitations
+      if (questionCount < 10) {
+        console.warn(`Generated ${questionCount} questions instead of 10. This might be due to short transcript or API limitations.`)
+      }
+      
+      // Cap at maximum of 10 questions
+      const questionsToProcess = parsed.questions.slice(0, 10);
 
       // Validate each question
-      const validatedQuestions: ConversationQuestion[] = parsed.questions.map(
+      const validatedQuestions: ConversationQuestion[] = questionsToProcess.map(
         (q: any, index: number) => {
           if (!q.question || typeof q.question !== 'string') {
             throw new Error(`Question ${index + 1}: Missing or invalid question text`)

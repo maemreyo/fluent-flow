@@ -29,6 +29,7 @@ import { Input } from './components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
 import { useFluentFlowSupabaseStore as useFluentFlowStore, getFluentFlowStore } from './lib/stores/fluent-flow-supabase-store'
+import { useLoopsQuery } from './lib/hooks/use-loop-query'
 import { getCurrentUser } from './lib/supabase/client'
 import type { SavedLoop, ConversationQuestions } from './lib/types/fluent-flow-types'
 import './styles/react-h5-audio-player.css'
@@ -36,8 +37,6 @@ import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'conversations'>('dashboard')
-  const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
-  const [loadingLoops, setLoadingLoops] = useState(false)
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [savedRecordings, setSavedRecordings] = useState<any[]>([])
   const [loadingRecordings, setLoadingRecordings] = useState(false)
@@ -45,6 +44,14 @@ function FluentFlowSidePanelContent() {
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loopFilter, setLoopFilter] = useState('')
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
+
+  // Use React Query for loops instead of manual state management
+  const { 
+    data: savedLoops = [], 
+    isLoading: loadingLoops, 
+    error: loopsError,
+    refetch: refetchLoops 
+  } = useLoopsQuery()
   
   // Conversation loop integration state
   const [integrationService, setIntegrationService] = useState<ConversationLoopIntegrationService | null>(null)
@@ -58,17 +65,15 @@ function FluentFlowSidePanelContent() {
     statistics,
     currentSession,
     currentVideo,
-    getAllUserLoops,
     deleteLoop: deleteLoopFromStore,
     deleteAllUserLoops: deleteAllLoopsFromStore,
     getAllUserRecordings,
     deleteUserRecording
   } = useFluentFlowStore()
 
-  // Load saved loops and recordings on component mount
+  // Load saved recordings and initialize on component mount  
   useEffect(() => {
     checkAuthStatus()
-    loadSavedLoops()
     loadSavedRecordings()
     initializeIntegration()
   }, [])
@@ -130,18 +135,6 @@ function FluentFlowSidePanelContent() {
     }
   }
 
-  const loadSavedLoops = async () => {
-    setLoadingLoops(true)
-    try {
-      // Use Supabase store instead of chrome.runtime.sendMessage
-      const loops = await getAllUserLoops()
-      setSavedLoops(loops)
-    } catch (error) {
-      console.error('Error loading loops:', error)
-    } finally {
-      setLoadingLoops(false)
-    }
-  }
 
   const loadSavedRecordings = async () => {
     setLoadingRecordings(true)
@@ -174,7 +167,8 @@ function FluentFlowSidePanelContent() {
       const success = await deleteLoopFromStore(loopId)
 
       if (success) {
-        setSavedLoops(loops => loops.filter(loop => loop.id !== loopId))
+        // React Query will automatically refetch the loops data
+        refetchLoops()
       } else {
         console.error('Failed to delete loop: Loop not found or user not authenticated')
       }
@@ -196,7 +190,8 @@ function FluentFlowSidePanelContent() {
       const success = await deleteAllLoopsFromStore()
 
       if (success) {
-        setSavedLoops([])
+        // React Query will automatically refetch the loops data
+        refetchLoops()
         console.log('All loops deleted successfully')
       } else {
         console.error('Failed to delete all loops: User not authenticated or no loops found')
@@ -726,7 +721,7 @@ function FluentFlowSidePanelContent() {
               </CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={loadSavedLoops} disabled={loadingLoops}>
+              <Button variant="outline" size="sm" onClick={() => refetchLoops()} disabled={loadingLoops}>
                 {loadingLoops ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (

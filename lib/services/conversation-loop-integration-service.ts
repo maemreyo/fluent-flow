@@ -102,13 +102,6 @@ export class ConversationLoopIntegrationService {
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
-    // First check if questions already exist in database
-    const cachedQuestions = await this.storageService.getQuestions(loopId)
-    if (cachedQuestions && cachedQuestions.questions.length > 0) {
-      console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
-      return cachedQuestions
-    }
-
     // Get all loops and find the specific one
     const allLoops = await this.storageService.getAllUserLoops()
     const loop = allLoops.find(l => l.id === loopId)
@@ -117,39 +110,44 @@ export class ConversationLoopIntegrationService {
       throw new Error('Loop not found')
     }
 
-    if (!loop.hasAudioSegment) {
-      throw new Error(
-        'No audio segment available. Please recreate the loop with audio capture enabled.'
-      )
+    // First check if questions already exist in database using dynamic import
+    try {
+      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+      const cachedQuestions = await supabaseService.getQuestions(loopId)
+      if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
+        console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+        return {
+          loopId,
+          questions: cachedQuestions,
+          metadata: {
+            totalQuestions: cachedQuestions.length,
+            analysisDate: new Date().toISOString(),
+            canRegenerateQuestions: true
+          }
+        }
+      }
+    } catch (cacheError) {
+      console.log(`FluentFlow: Cache check failed for loop ${loopId}:`, cacheError)
+      // Continue with generation if cache check fails
     }
 
+    // Generate questions based on loop content
+    const questions = await this.analysisService.generateQuestions(loop)
+
+    // Save questions to database for future caching using dynamic import
     try {
-      // Mark audio as recently used
-      await this.loopService.markAudioAsUsed(loopId)
-
-      // Generate questions
-      const questions = await this.analysisService.generateQuestions(loop)
-
-      // Save questions to database for future caching
-      await this.storageService.saveQuestions(loopId, questions.questions, {
-        generatedFromAudio: true,
-        audioSegmentDuration: loop.endTime - loop.startTime,
+      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+      await supabaseService.saveQuestions(loopId, questions.questions, {
+        generatedFromLoop: true,
+        loopDuration: loop.endTime - loop.startTime,
         generatedAt: new Date().toISOString()
       })
-
-      // Update loop status
-      await this.loopService.updateQuestionStatus(loopId, true, questions.questions.length)
-
-      // Schedule cleanup after successful generation
-      await this.cleanupService.scheduleCleanup(loopId, 7)
-
-      return questions
-    } catch (error) {
-      console.error('Question generation failed:', error)
-      throw new Error(
-        `Question generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
-      )
+    } catch (saveError) {
+      console.log(`FluentFlow: Failed to save questions for loop ${loopId}:`, saveError)
+      // Continue even if saving fails
     }
+
+    return questions
   }
 
   /**
@@ -173,26 +171,51 @@ export class ConversationLoopIntegrationService {
     }
 
     try {
-      // First check if questions already exist in database
-      const cachedQuestions = await this.storageService.getQuestions(loopId)
-      if (cachedQuestions && cachedQuestions.questions.length > 0) {
-        console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
-        return cachedQuestions
+      // First check if questions already exist in database using dynamic import
+      try {
+        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+        const cachedQuestions = await supabaseService.getQuestions(loopId)
+        if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
+          console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+          return {
+            loopId,
+            questions: cachedQuestions,
+            metadata: {
+              totalQuestions: cachedQuestions.length,
+              analysisDate: new Date().toISOString(),
+              generatedFromTranscript: true,
+              canRegenerateQuestions: true
+            }
+          }
+        }
+      } catch (cacheError) {
+        console.log(`FluentFlow: Cache check failed for loop ${loopId}:`, cacheError)
+        // Continue with generation if cache check fails
       }
 
       let transcriptResult: {
-        segments: any[];
-        fullText: string;
-        videoId: string;
-        language?: string | undefined;
-      };
+        segments: any[]
+        fullText: string
+        videoId: string
+        language?: string | undefined
+      }
 
-      // Check if transcript is already available in the database
-      const cachedTranscript = await this.storageService.getTranscript(
-        loop.videoId,
-        loop.startTime,
-        loop.endTime
-      )
+      // Check if transcript is already available in the database using dynamic import
+      let cachedTranscript = null
+      try {
+        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+        cachedTranscript = await supabaseService.getTranscript(
+          loop.videoId,
+          loop.startTime,
+          loop.endTime
+        )
+      } catch (transcriptCacheError) {
+        console.log(
+          `FluentFlow: Transcript cache check failed for loop ${loopId}:`,
+          transcriptCacheError
+        )
+        // Continue without cached transcript
+      }
 
       if (cachedTranscript) {
         console.log(`FluentFlow: Using cached transcript for loop ${loopId}`)
@@ -219,15 +242,24 @@ export class ConversationLoopIntegrationService {
           loop.endTime
         )
 
-        // Save transcript to database for future use
-        await this.storageService.saveTranscript(
-          loop.videoId,
-          loop.startTime,
-          loop.endTime,
-          transcriptResult.segments,
-          transcriptResult.fullText,
-          transcriptResult.language || 'en'
-        )
+        // Save transcript to database for future use using dynamic import
+        try {
+          const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+          await supabaseService.saveTranscript(
+            loop.videoId,
+            loop.startTime,
+            loop.endTime,
+            transcriptResult.segments,
+            transcriptResult.fullText,
+            transcriptResult.language || 'en'
+          )
+        } catch (saveTranscriptError) {
+          console.log(
+            `FluentFlow: Failed to save transcript for loop ${loopId}:`,
+            saveTranscriptError
+          )
+          // Continue even if saving transcript fails
+        }
       }
 
       if (!transcriptResult.fullText || transcriptResult.fullText.trim().length === 0) {
@@ -245,14 +277,20 @@ export class ConversationLoopIntegrationService {
       // Generate questions using transcript instead of audio
       const questions = await this.analysisService.generateQuestionsFromTranscript(transcriptLoop)
 
-      // Save questions to database for future caching
-      await this.storageService.saveQuestions(loopId, questions.questions, {
-        generatedFromTranscript: true,
-        transcriptLength: transcriptResult.fullText.length,
-        transcriptLanguage: transcriptResult.language || 'en',
-        segmentCount: transcriptResult.segments.length,
-        generatedAt: new Date().toISOString()
-      })
+      // Save questions to database for future caching using dynamic import
+      try {
+        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+        await supabaseService.saveQuestions(loopId, questions.questions, {
+          generatedFromTranscript: true,
+          transcriptLength: transcriptResult.fullText.length,
+          transcriptLanguage: transcriptResult.language || 'en',
+          segmentCount: transcriptResult.segments.length,
+          generatedAt: new Date().toISOString()
+        })
+      } catch (saveQuestionsError) {
+        console.log(`FluentFlow: Failed to save questions for loop ${loopId}:`, saveQuestionsError)
+        // Continue even if saving questions fails
+      }
 
       // Update loop with transcript metadata
       await this.loopService.updateLoopTranscript(loopId, {
@@ -1646,15 +1684,25 @@ Please analyze the video content and generate conversation practice questions th
    * Generate questions with automatic fallback: transcript first, then audio if available
    */
   async generateQuestions(loopId: string): Promise<ConversationQuestions> {
-    if (!this.analysisService) {
-      throw new Error('Gemini API not configured. Please provide API credentials.')
-    }
-
-    // First check if questions already exist in database
-    const cachedQuestions = await this.storageService.getQuestions(loopId)
-    if (cachedQuestions && cachedQuestions.questions.length > 0) {
-      console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
-      return cachedQuestions
+    // First try to use cached questions
+    try {
+      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+      const cachedQuestions = await supabaseService.getQuestions(loopId)
+      if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
+        console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+        return {
+          loopId,
+          questions: cachedQuestions,
+          metadata: {
+            totalQuestions: cachedQuestions.length,
+            analysisDate: new Date().toISOString(),
+            canRegenerateQuestions: true
+          }
+        }
+      }
+    } catch (cacheError) {
+      console.log(`FluentFlow: Cache check failed for loop ${loopId}:`, cacheError)
+      // Continue with generation if cache check fails
     }
 
     // Get all loops and find the specific one
@@ -1665,37 +1713,28 @@ Please analyze the video content and generate conversation practice questions th
       throw new Error('Loop not found')
     }
 
-    // Smart fallback system: Transcript → Audio (prioritizing transcript over video)
-    if (loop.videoId) {
-      // Method 1: Try transcript-based generation first (preferred)
-      try {
-        console.log(
-          `FluentFlow: Attempting transcript-based question generation for loop ${loopId}`
-        )
-        return await this.generateQuestionsFromTranscript(loopId)
-      } catch (transcriptError) {
-        console.log(`FluentFlow: Transcript method failed:`, transcriptError)
+    console.log(`FluentFlow: Attempting transcript-based question generation for loop ${loopId}`)
 
-        // Method 2: Audio fallback (if available)
-        if (loop.hasAudioSegment) {
-          console.log(`FluentFlow: Falling back to audio-based generation for loop ${loopId}`)
-          return await this.generateQuestionsForLoop(loopId)
-        } else {
-          // No audio available - provide transcript error details
-          throw new Error(`Transcript-based generation failed and no audio segment available: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}. Please try recreating the loop or check if the video has available captions.`)
+    try {
+      return await this.generateQuestionsFromTranscript(loopId)
+    } catch (transcriptError) {
+      console.log(`FluentFlow: Transcript method failed:`, transcriptError)
+
+      // Fallback: Try to generate from video if available
+      if (loop.videoId) {
+        try {
+          console.log(`FluentFlow: Attempting video-based question generation for loop ${loopId}`)
+          return await this.generateQuestionsFromVideo(loopId)
+        } catch (videoError) {
+          console.log(`FluentFlow: Video method failed:`, videoError)
         }
       }
-    }
 
-    // No video ID for analysis, try audio if available
-    if (loop.hasAudioSegment) {
-      console.log(`FluentFlow: Using audio-based generation for loop ${loopId}`)
-      return await this.generateQuestionsForLoop(loopId)
+      // If both transcript and video methods fail, throw a comprehensive error
+      throw new Error(
+        `Transcript-based generation failed and no audio segment available: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}. Please try recreating the loop or check if the video has available captions.`
+      )
     }
-
-    throw new Error(
-      'Cannot generate questions: no video ID for analysis and no audio segment captured. Please recreate the loop with a valid YouTube video.'
-    )
   }
 
   /**
@@ -1706,15 +1745,17 @@ Please analyze the video content and generate conversation practice questions th
     // This method wraps generateQuestions with additional React Query optimizations
     try {
       const questions = await this.generateQuestions(loopId)
-      
+
       // Mark this as a successful generation for analytics
-      console.log(`FluentFlow: Successfully generated/retrieved ${questions.questions.length} questions for loop ${loopId}`)
-      
+      console.log(
+        `FluentFlow: Successfully generated/retrieved ${questions.questions.length} questions for loop ${loopId}`
+      )
+
       return questions
     } catch (error) {
       // Enhanced error handling for React Query
       console.error(`FluentFlow: Question generation failed for loop ${loopId}:`, error)
-      
+
       // Re-throw with enhanced context for React Query error boundaries
       throw new Error(
         `Question generation failed for loop ${loopId}: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -1727,23 +1768,32 @@ Please analyze the video content and generate conversation practice questions th
    * This method is designed to be used by React Query hooks and UI components
    */
   async getTranscriptWithCaching(
-    videoId: string, 
-    startTime: number, 
-    endTime: number, 
+    videoId: string,
+    startTime: number,
+    endTime: number,
     language?: string
   ): Promise<{
-    id?: string;
-    segments: any[];
-    fullText: string;
-    language: string;
-    videoId: string;
+    id?: string
+    segments: any[]
+    fullText: string
+    language: string
+    videoId: string
   }> {
     try {
-      // First check if transcript exists in database
-      const cachedTranscript = await this.storageService.getTranscript(videoId, startTime, endTime)
-      
+      // First check if transcript exists in database using dynamic import
+      let cachedTranscript = null
+      try {
+        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+        cachedTranscript = await supabaseService.getTranscript(videoId, startTime, endTime)
+      } catch (cacheError) {
+        console.log(`FluentFlow: Transcript cache check failed for video ${videoId}:`, cacheError)
+        // Continue without cached transcript
+      }
+
       if (cachedTranscript) {
-        console.log(`FluentFlow: Using cached transcript for video ${videoId} (${startTime}s-${endTime}s)`)
+        console.log(
+          `FluentFlow: Using cached transcript for video ${videoId} (${startTime}s-${endTime}s)`
+        )
         return {
           id: cachedTranscript.id,
           segments: cachedTranscript.segments as any[],
@@ -1761,15 +1811,22 @@ Please analyze the video content and generate conversation practice questions th
         language
       )
 
-      // Save to database for future caching
-      const savedTranscript = await this.storageService.saveTranscript(
-        videoId,
-        startTime,
-        endTime,
-        transcriptResult.segments,
-        transcriptResult.fullText,
-        transcriptResult.language || 'en'
-      )
+      // Save to database for future caching using dynamic import
+      let savedTranscript = null
+      try {
+        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
+        savedTranscript = await supabaseService.saveTranscript(
+          videoId,
+          startTime,
+          endTime,
+          transcriptResult.segments,
+          transcriptResult.fullText,
+          transcriptResult.language || 'en'
+        )
+      } catch (saveError) {
+        console.log(`FluentFlow: Failed to save transcript for video ${videoId}:`, saveError)
+        // Continue even if saving fails
+      }
 
       console.log(`FluentFlow: Successfully fetched and cached transcript for video ${videoId}`)
 
@@ -1782,7 +1839,7 @@ Please analyze the video content and generate conversation practice questions th
       }
     } catch (error) {
       console.error(`FluentFlow: Transcript fetching failed for video ${videoId}:`, error)
-      
+
       // Handle transcript-specific errors
       if (error && typeof error === 'object' && 'code' in error) {
         const transcriptError = error as TranscriptError

@@ -17,6 +17,7 @@ export function useQuestionsQuery(loopId: string) {
     queryFn: async (): Promise<ConversationQuestion[] | null> => {
       console.log(`useQuestionsQuery: Fetching questions for loop ${loopId}`)
       
+      // Since we now store questions in loop metadata, get them from there
       const questionsData = await supabaseService.getQuestions(loopId)
       if (questionsData && Array.isArray(questionsData)) {
         return questionsData
@@ -138,7 +139,9 @@ export function useGenerateQuestionsMutation() {
       return await integrationService.getQuestionsWithCaching(loopId)
     },
     onSuccess: (data, variables) => {
-      // Update the questions cache
+      console.log(`useGenerateQuestionsMutation: Successfully generated ${data.questions.length} questions`)
+      
+      // Update the questions cache immediately
       queryClient.setQueryData(
         queryKeys.questions.bySegment(variables.loopId),
         data.questions
@@ -152,8 +155,6 @@ export function useGenerateQuestionsMutation() {
 
       // Invalidate related queries to trigger refresh
       queryClient.invalidateQueries({ queryKey: queryKeys.questions.all })
-      
-      console.log(`useGenerateQuestionsMutation: Successfully generated ${data.questions.length} questions`)
     },
     onError: (error: any, variables) => {
       console.error(`Questions generation failed for loop ${variables.loopId}:`, error)

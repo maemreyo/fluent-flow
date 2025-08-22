@@ -1,5 +1,7 @@
 import type { SavedLoop } from '../types/fluent-flow-types'
 import { AudioCaptureService } from './audio-capture-service'
+import { createClient } from '@supabase/supabase-js'
+import { v4 as uuidv4 } from 'uuid'
 
 export interface CreateLoopWithAudioData {
   title: string
@@ -355,10 +357,10 @@ export class EnhancedLoopService {
   }
 
   /**
-   * Generates unique ID for loops
+   * Generates unique UUID for loops
    */
   private generateId(): string {
-    return `loop_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    return uuidv4()
   }
 
   /**

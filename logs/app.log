@@ -1,9 +1,9 @@
 background.ts:14 FluentFlow background script loaded
-runtime-415c369c1fc15003.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
+runtime-df0c68c9c4211462.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
 auth-handler.ts:53 Auth state changed: INITIAL_SESSION - ngonhuthanhtrung1409@gmail.com
 auth-handler.ts:39 Auth initialized: User: ngonhuthanhtrung1409@gmail.com
-auth-handler.ts:53 Auth state changed: TOKEN_REFRESHED - ngonhuthanhtrung1409@gmail.com
-runtime-16293109d343432d.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/sidepanel.tsx
+use-loop-query.ts:13 useLoopsQuery: Fetching user loops
+runtime-e6c9dee611665956.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/sidepanel.tsx
 YPM2AS64.js:9504 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'subscribe')
     at YPM2AS64.js:9504:19
     at untrack (EIDV623S.js:265:13)
@@ -15,83 +15,213 @@ YPM2AS64.js:9504 Uncaught (in promise) TypeError: Cannot read properties of unde
     at EIDV623S.js:616:12
     at runUpdates (EIDV623S.js:564:5)
     at completeUpdates (EIDV623S.js:616:12)
-sidepanel.tsx:97 FluentFlow: Loaded Gemini config from Supabase: true
-sidepanel.tsx:116 FluentFlow: Initializing conversation loop integration
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755881412376
+sidepanel.tsx:102 FluentFlow: Loaded Gemini config from Supabase: true
+sidepanel.tsx:121 FluentFlow: Initializing conversation loop integration
 auto-cleanup-scheduler.ts:24 Starting auto cleanup scheduler (every 6 hours)
-sidepanel.tsx:123 FluentFlow: Conversation loop integration ready
-use-transcript-query.ts:31 useTranscriptQuery: Fetching transcript for arj7oStGLkU (3.139458s-838.60374s)
-use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop loop_1755847775390_x3h9e9i
+sidepanel.tsx:128 FluentFlow: Conversation loop integration ready
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
 use-transcript-query.ts:31 useTranscriptQuery: Fetching transcript for eVFzbxmKNUw (7.108628s-58.608679s)
 use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop loop_1755831510944_ris6tut
+fluent-flow-supabase-store.ts:831 getQuestions: Fetching questions for segment loop_1755831510944_ris6tut
 use-transcript-query.ts:36 useTranscriptQuery: Found cached transcript in database
-sidepanel.351be5e2.js:135988  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&segment_id=eq.loop_1755847775390_x3h9e9i&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 400 (Bad Request)
+fluent-flow-supabase-store.ts:843 getQuestions: No questions found for segment loop_1755831510944_ris6tut
+use-question-query.ts:135 useGenerateQuestionsMutation: Generating questions for loop loop_1755831510944_ris6tut
+fluent-flow-supabase-store.ts:831 getQuestions: Fetching questions for segment loop_1755831510944_ris6tut
+sidepanel.351be5e2.js:136058  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&loop_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 406 (Not Acceptable)
 (anonymous) @ fetch.ts:16
 (anonymous) @ fetch.ts:46
-fulfilled @ sidepanel.351be5e2.js:135988
+fulfilled @ sidepanel.351be5e2.js:136058
 Promise.then
-step @ sidepanel.351be5e2.js:136001
-(anonymous) @ sidepanel.351be5e2.js:136003
-__awaiter @ sidepanel.351be5e2.js:135985
-(anonymous) @ sidepanel.351be5e2.js:136020
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
 then @ PostgrestBuilder.ts:102
-fluent-flow-supabase-store.ts:817 Error fetching questions: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type uuid: "loop_1755847775390_x3h9e9i"'}
-getQuestions @ fluent-flow-supabase-store.ts:817
-await in getQuestions
-queryFn @ use-question-query.ts:22
-fetchFn @ query.ts:464
-run @ retryer.ts:155
-start @ retryer.ts:222
-fetch @ query.ts:530
-executeFetch_fn @ queryObserver.ts:345
-onSubscribe @ queryObserver.ts:101
-subscribe @ subscribable.ts:13
-(anonymous) @ useBaseQuery.ts:105
-subscribeToStore @ react-dom.development.js:16959
-commitHookEffectListMount @ react-dom.development.js:23153
-commitPassiveMountOnFiber @ react-dom.development.js:24927
-commitPassiveMountEffects_complete @ react-dom.development.js:24892
-commitPassiveMountEffects_begin @ react-dom.development.js:24880
-commitPassiveMountEffects @ react-dom.development.js:24867
-flushPassiveEffectsImpl @ react-dom.development.js:27042
-flushPassiveEffects @ react-dom.development.js:26985
-commitRootImpl @ react-dom.development.js:26936
-commitRoot @ react-dom.development.js:26683
-performSyncWorkOnRoot @ react-dom.development.js:26118
-flushSyncCallbacks @ react-dom.development.js:12043
-(anonymous) @ react-dom.development.js:25653
-sidepanel.351be5e2.js:135988  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&segment_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 400 (Bad Request)
+fluent-flow-supabase-store.ts:843 getQuestions: No questions found for segment loop_1755831510944_ris6tut
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755881420780
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
+conversation-loop-integration-service.ts:1718 FluentFlow: Attempting transcript-based question generation for loop loop_1755831510944_ris6tut
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755881421550
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
+fluent-flow-supabase-store.ts:831 getQuestions: Fetching questions for segment loop_1755831510944_ris6tut
+sidepanel.351be5e2.js:136058  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&loop_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 406 (Not Acceptable)
 (anonymous) @ fetch.ts:16
 (anonymous) @ fetch.ts:46
-fulfilled @ sidepanel.351be5e2.js:135988
+fulfilled @ sidepanel.351be5e2.js:136058
 Promise.then
-step @ sidepanel.351be5e2.js:136001
-(anonymous) @ sidepanel.351be5e2.js:136003
-__awaiter @ sidepanel.351be5e2.js:135985
-(anonymous) @ sidepanel.351be5e2.js:136020
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
 then @ PostgrestBuilder.ts:102
-fluent-flow-supabase-store.ts:817 Error fetching questions: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type uuid: "loop_1755831510944_ris6tut"'}
-getQuestions @ fluent-flow-supabase-store.ts:817
-await in getQuestions
-queryFn @ use-question-query.ts:22
-fetchFn @ query.ts:464
+fluent-flow-supabase-store.ts:843 getQuestions: No questions found for segment loop_1755831510944_ris6tut
+conversation-loop-integration-service.ts:222 FluentFlow: Using cached transcript for loop loop_1755831510944_ris6tut
+conversation-analysis-service.ts:783 Generated 7 questions instead of 10. This might be due to short transcript or API limitations.
+parseQuestionsResponse @ conversation-analysis-service.ts:783
+generateQuestionsFromTranscript @ conversation-analysis-service.ts:126
+await in generateQuestionsFromTranscript
+generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:280
+await in generateQuestionsFromTranscript
+generateQuestions @ conversation-loop-integration-service.ts:1720
+await in generateQuestions
+getQuestionsWithCaching @ conversation-loop-integration-service.ts:1749
+mutationFn @ use-question-query.ts:140
+fn @ mutation.ts:175
 run @ retryer.ts:155
 start @ retryer.ts:222
-fetch @ query.ts:530
-executeFetch_fn @ queryObserver.ts:345
-onSubscribe @ queryObserver.ts:101
-subscribe @ subscribable.ts:13
-(anonymous) @ useBaseQuery.ts:105
-subscribeToStore @ react-dom.development.js:16959
-commitHookEffectListMount @ react-dom.development.js:23153
-commitPassiveMountOnFiber @ react-dom.development.js:24927
-commitPassiveMountEffects_complete @ react-dom.development.js:24892
-commitPassiveMountEffects_begin @ react-dom.development.js:24880
-commitPassiveMountEffects @ react-dom.development.js:24867
-flushPassiveEffectsImpl @ react-dom.development.js:27042
-flushPassiveEffects @ react-dom.development.js:26985
-commitRootImpl @ react-dom.development.js:26936
-commitRoot @ react-dom.development.js:26683
-performSyncWorkOnRoot @ react-dom.development.js:26118
-flushSyncCallbacks @ react-dom.development.js:12043
-(anonymous) @ react-dom.development.js:25653
-use-transcript-query.ts:36 useTranscriptQuery: Found cached transcript in database
+execute @ mutation.ts:216
+await in execute
+mutate @ mutationObserver.ts:126
+handleGenerateQuestions @ enhanced-loop-card-with-integration.tsx:86
+callCallback @ react-dom.development.js:4165
+invokeGuardedCallbackDev @ react-dom.development.js:4215
+invokeGuardedCallback @ react-dom.development.js:4278
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
+executeDispatch @ react-dom.development.js:9042
+processDispatchQueueItemsInOrder @ react-dom.development.js:9074
+processDispatchQueue @ react-dom.development.js:9087
+dispatchEventsForPlugins @ react-dom.development.js:9098
+(anonymous) @ react-dom.development.js:9289
+batchedUpdates$1 @ react-dom.development.js:26141
+batchedUpdates @ react-dom.development.js:3992
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
+dispatchEvent @ react-dom.development.js:6459
+dispatchDiscreteEvent @ react-dom.development.js:6431
+fluent-flow-supabase-store.ts:863 saveQuestions: Saving 7 questions for segment loop_1755831510944_ris6tut
+sidepanel.351be5e2.js:136058  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=id&loop_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 406 (Not Acceptable)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:136058
+Promise.then
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:903 saveQuestions: Creating new record for segment loop_1755831510944_ris6tut
+sidepanel.351be5e2.js:136058  POST https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=id 400 (Bad Request)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:136058
+Promise.then
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:915 Error saving questions: {code: '23502', details: null, hint: null, message: 'null value in column "segment_id" of relation "conversation_questions" violates not-null constraint'}
+saveQuestions @ fluent-flow-supabase-store.ts:915
+await in saveQuestions
+generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:284
+await in generateQuestionsFromTranscript
+generateQuestions @ conversation-loop-integration-service.ts:1720
+await in generateQuestions
+getQuestionsWithCaching @ conversation-loop-integration-service.ts:1749
+mutationFn @ use-question-query.ts:140
+fn @ mutation.ts:175
+run @ retryer.ts:155
+start @ retryer.ts:222
+execute @ mutation.ts:216
+await in execute
+mutate @ mutationObserver.ts:126
+handleGenerateQuestions @ enhanced-loop-card-with-integration.tsx:86
+callCallback @ react-dom.development.js:4165
+invokeGuardedCallbackDev @ react-dom.development.js:4215
+invokeGuardedCallback @ react-dom.development.js:4278
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
+executeDispatch @ react-dom.development.js:9042
+processDispatchQueueItemsInOrder @ react-dom.development.js:9074
+processDispatchQueue @ react-dom.development.js:9087
+dispatchEventsForPlugins @ react-dom.development.js:9098
+(anonymous) @ react-dom.development.js:9289
+batchedUpdates$1 @ react-dom.development.js:26141
+batchedUpdates @ react-dom.development.js:3992
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
+dispatchEvent @ react-dom.development.js:6459
+dispatchDiscreteEvent @ react-dom.development.js:6431
+fluent-flow-supabase-store.ts:923 Falling back to simple insert for questions: {code: '23502', details: null, hint: null, message: 'null value in column "segment_id" of relation "conversation_questions" violates not-null constraint'}
+sidepanel.351be5e2.js:136058  POST https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=id 400 (Bad Request)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:136058
+Promise.then
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:931 Error saving questions with fallback: {code: '23502', details: null, hint: null, message: 'null value in column "segment_id" of relation "conversation_questions" violates not-null constraint'}
+saveQuestions @ fluent-flow-supabase-store.ts:931
+await in saveQuestions
+generateQuestionsFromTranscript @ conversation-loop-integration-service.ts:284
+await in generateQuestionsFromTranscript
+generateQuestions @ conversation-loop-integration-service.ts:1720
+await in generateQuestions
+getQuestionsWithCaching @ conversation-loop-integration-service.ts:1749
+mutationFn @ use-question-query.ts:140
+fn @ mutation.ts:175
+run @ retryer.ts:155
+start @ retryer.ts:222
+execute @ mutation.ts:216
+await in execute
+mutate @ mutationObserver.ts:126
+handleGenerateQuestions @ enhanced-loop-card-with-integration.tsx:86
+callCallback @ react-dom.development.js:4165
+invokeGuardedCallbackDev @ react-dom.development.js:4215
+invokeGuardedCallback @ react-dom.development.js:4278
+invokeGuardedCallbackAndCatchFirstError @ react-dom.development.js:4293
+executeDispatch @ react-dom.development.js:9042
+processDispatchQueueItemsInOrder @ react-dom.development.js:9074
+processDispatchQueue @ react-dom.development.js:9087
+dispatchEventsForPlugins @ react-dom.development.js:9098
+(anonymous) @ react-dom.development.js:9289
+batchedUpdates$1 @ react-dom.development.js:26141
+batchedUpdates @ react-dom.development.js:3992
+dispatchEventForPluginEventSystem @ react-dom.development.js:9287
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ react-dom.development.js:6466
+dispatchEvent @ react-dom.development.js:6459
+dispatchDiscreteEvent @ react-dom.development.js:6431
+conversation-loop-integration-service.ts:292 FluentFlow: Failed to save questions for loop loop_1755831510944_ris6tut: {code: '23502', details: null, hint: null, message: 'null value in column "segment_id" of relation "conversation_questions" violates not-null constraint'}
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755881431020
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
+enhanced-loop-service.ts:223 FluentFlow: Updated loop loop_1755831510944_ris6tut with transcript metadata
+conversation-loop-integration-service.ts:1754 FluentFlow: Successfully generated/retrieved 7 questions for loop loop_1755831510944_ris6tut
+use-question-query.ts:144 useGenerateQuestionsMutation: Successfully generated 7 questions
+use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop loop_1755831510944_ris6tut
+fluent-flow-supabase-store.ts:831 getQuestions: Fetching questions for segment loop_1755831510944_ris6tut
+sidepanel.351be5e2.js:136058  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&loop_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 406 (Not Acceptable)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:136058
+Promise.then
+step @ sidepanel.351be5e2.js:136071
+(anonymous) @ sidepanel.351be5e2.js:136073
+__awaiter @ sidepanel.351be5e2.js:136055
+(anonymous) @ sidepanel.351be5e2.js:136090
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:843 getQuestions: No questions found for segment loop_1755831510944_ris6tut
+auto-cleanup-scheduler.ts:74 Running scheduled audio cleanup...
+audio-storage-cleanup-service.ts:25 Starting audio storage cleanup...
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755881476134
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
+audio-storage-cleanup-service.ts:37 No audio files to cleanup
+auto-cleanup-scheduler.ts:92 Auto-cleanup: No files needed cleaning
+auth-handler.ts:53 Auth state changed: TOKEN_REFRESHED - ngonhuthanhtrung1409@gmail.com
+use-loop-query.ts:13 useLoopsQuery: Fetching user loops
+fluent-flow-supabase-store.ts:327 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:331 getAllUserLoops: Cache buster timestamp: 1755882112085
+fluent-flow-supabase-store.ts:364 getAllUserLoops: Retrieved 1 practice sessions
+fluent-flow-supabase-store.ts:375 getAllUserLoops: Processing loop loop_1755831510944_ris6tut, found 0 questions
