@@ -1,19 +1,20 @@
+import { NextRequest, NextResponse } from 'next/server'
 import { Innertube } from 'youtubei.js'
 
-export interface TranscriptSegment {
+interface TranscriptSegment {
   text: string
   start: number
   duration: number
 }
 
-export interface TranscriptResult {
+interface TranscriptResult {
   segments: TranscriptSegment[]
   fullText: string
   videoId: string
   language?: string
 }
 
-export interface TranscriptError {
+interface TranscriptError {
   code:
     | 'NOT_AVAILABLE'
     | 'VIDEO_NOT_FOUND'
@@ -26,34 +27,25 @@ export interface TranscriptError {
   details?: string
 }
 
-export class YouTubeTranscriptService {
+class YouTubeTranscriptService {
   private innertube: Innertube | null = null
-  private readonly DEFAULT_TIMEOUT = 10000
-  private readonly MAX_RETRIES = 3
-  private readonly RETRY_DELAY = 1000
 
-  /**
-   * Initialize the Innertube client
-   */
   private async getInnertube(): Promise<Innertube> {
     if (!this.innertube) {
       try {
-        console.log('FluentFlow: Initializing YouTube.js Innertube client')
-        this.innertube = await Innertube.create({ 
-          generate_session_locally: true 
+        console.log('Initializing YouTube.js Innertube client')
+        this.innertube = await Innertube.create({
+          generate_session_locally: true
         })
-        console.log('FluentFlow: ✅ Innertube client initialized successfully')
+        console.log('✅ Innertube client initialized successfully')
       } catch (error) {
-        console.error('FluentFlow: Failed to initialize Innertube client:', error)
+        console.error('Failed to initialize Innertube client:', error)
         throw this.createError('NETWORK_ERROR', `Failed to initialize YouTube client: ${error}`)
       }
     }
     return this.innertube
   }
 
-  /**
-   * Extract transcript for a specific time segment of a YouTube video
-   */
   async getTranscriptSegment(
     videoId: string,
     startTime: number,
@@ -74,8 +66,8 @@ export class YouTubeTranscriptService {
     const cleanVideoId = this.extractVideoId(videoId)
 
     try {
-      console.log(`FluentFlow: Extracting transcript for ${cleanVideoId} (${startTime}s-${endTime}s)`)
-      
+      console.log(`Extracting transcript for ${cleanVideoId} (${startTime}s-${endTime}s)`)
+
       const fullTranscript = await this.fetchFullTranscript(cleanVideoId, language)
       const segmentTranscript = this.extractTimeSegment(fullTranscript, startTime, endTime)
 
@@ -87,19 +79,8 @@ export class YouTubeTranscriptService {
       }
 
       console.log(
-        `FluentFlow: ✅ Successfully extracted ${segmentTranscript.segments.length} transcript segments`
+        `✅ Successfully extracted ${segmentTranscript.segments.length} transcript segments`
       )
-
-      // Log a sample of the extracted content for debugging
-      if (segmentTranscript.segments.length > 0) {
-        const sampleText = segmentTranscript.segments
-          .slice(0, 2)
-          .map(s => s.text)
-          .join(' ')
-        console.log(
-          `FluentFlow: Sample content: "${sampleText.substring(0, 100)}${sampleText.length > 100 ? '...' : ''}"`
-        )
-      }
 
       return {
         ...segmentTranscript,
@@ -107,203 +88,106 @@ export class YouTubeTranscriptService {
         language: language || 'auto'
       }
     } catch (error) {
-      console.error(`FluentFlow: Transcript extraction failed for ${cleanVideoId}:`, error)
+      console.error(`Transcript extraction failed for ${cleanVideoId}:`, error)
       throw this.handleTranscriptError(error, cleanVideoId)
     }
   }
 
-  /**
-   * Get available languages for a video's transcript
-   */
   async getAvailableLanguages(videoId: string): Promise<string[]> {
     const cleanVideoId = this.extractVideoId(videoId)
 
     try {
       const yt = await this.getInnertube()
       const info = await yt.getInfo(cleanVideoId)
-      
+
       if (!info.captions) {
         return []
       }
 
-      const transcript = await info.getTranscript()
-      // Get available languages from caption tracks in video info
       const captionTracks = info.captions?.caption_tracks || []
       const availableLanguages = captionTracks.map((track: any) => track.language_code)
-      
-      console.log(`FluentFlow: Available languages for ${cleanVideoId}:`, availableLanguages)
+
+      console.log(`Available languages for ${cleanVideoId}:`, availableLanguages)
       return availableLanguages.filter((lang: string) => lang)
     } catch (error) {
-      console.log(`FluentFlow: Failed to get available languages for ${cleanVideoId}:`, error)
+      console.log(`Failed to get available languages for ${cleanVideoId}:`, error)
       return []
     }
   }
 
-  /**
-   * Check if transcript is available for a video
-   */
   async isTranscriptAvailable(videoId: string, language?: string): Promise<boolean> {
     try {
       const cleanVideoId = this.extractVideoId(videoId)
       const yt = await this.getInnertube()
       const info = await yt.getInfo(cleanVideoId)
-      
+
       if (!info.captions) {
         return false
       }
 
-      // Try to get transcript to confirm it's accessible
-      const transcript = await info.getTranscript()
-      
+      await info.getTranscript()
+
       if (language) {
-        // Check if specific language is available in caption tracks
         const captionTracks = info.captions?.caption_tracks || []
         return captionTracks.some((track: any) => track.language_code === language)
       }
 
       return true
     } catch (error) {
-      console.log(`FluentFlow: Transcript availability check failed for ${videoId}:`, error)
+      console.log(`Transcript availability check failed for ${videoId}:`, error)
       return false
     }
   }
 
-  /**
-   * Fetch full transcript using YouTube.js
-   */
   private async fetchFullTranscript(videoId: string, language?: string): Promise<any[]> {
     try {
       const yt = await this.getInnertube()
-      console.log(`FluentFlow: Getting video info for ${videoId}`)
-      
+      console.log(`Getting video info for ${videoId}`)
+
       const info = await yt.getInfo(videoId)
-      
+
       if (!info.captions) {
         throw this.createError('NOT_AVAILABLE', 'Video has no captions available')
       }
 
-      console.log(`FluentFlow: Getting transcript for ${videoId}`)
+      console.log(`Getting transcript for ${videoId}`)
       let transcriptInfo = await info.getTranscript()
 
-      // If specific language requested, try to select it
       if (language) {
         try {
-          console.log(`FluentFlow: Attempting to select language: ${language}`)
+          console.log(`Attempting to select language: ${language}`)
           transcriptInfo = await transcriptInfo.selectLanguage(language)
-          console.log(`FluentFlow: ✅ Selected language: ${transcriptInfo.selectedLanguage}`)
+          console.log(`✅ Selected language: ${transcriptInfo.selectedLanguage}`)
         } catch (langError) {
-          console.log(`FluentFlow: Language '${language}' not available, using default:`, langError)
-          // Continue with default language
+          console.log(`Language '${language}' not available, using default:`, langError)
         }
       }
 
-      const segments = transcriptInfo.transcript.content.body.initial_segments
+      const segments = transcriptInfo.transcript.content?.body?.initial_segments
 
       if (!segments || !Array.isArray(segments) || segments.length === 0) {
         throw this.createError('NOT_AVAILABLE', 'No transcript segments found')
       }
 
-      console.log(`FluentFlow: ✅ Found ${segments.length} transcript segments`)
-      console.log(`FluentFlow: Language: ${transcriptInfo.selectedLanguage}`)
+      console.log(`✅ Found ${segments.length} transcript segments`)
+      console.log(`Language: ${transcriptInfo.selectedLanguage}`)
 
-      // Convert YouTube.js format to our standard format
-      return segments.map((segment: any) => ({
-        text: this.cleanTranscriptText(segment.snippet.text || ''),
-        offset: segment.start_ms ? segment.start_ms / 1000 : 0,
-        duration: segment.end_ms && segment.start_ms ? 
-          (segment.end_ms - segment.start_ms) / 1000 : 0
-      })).filter((segment: any) => segment.text.trim().length > 0)
-
+      return segments
+        .map((segment: any) => ({
+          text: this.cleanTranscriptText(segment.snippet.text || ''),
+          offset: segment.start_ms ? segment.start_ms / 1000 : 0,
+          duration:
+            segment.end_ms && segment.start_ms ? (segment.end_ms - segment.start_ms) / 1000 : 0
+        }))
+        .filter((segment: any) => segment.text.trim().length > 0)
     } catch (error) {
-      if (error.code) {
-        throw error // Re-throw our custom errors
+      if ((error as any).code) {
+        throw error
       }
       throw this.handleYouTubeJSError(error, videoId)
     }
   }
 
-  /**
-   * Get suggested videos with captions for testing
-   */
-  getSuggestedVideosWithCaptions(): Array<{ id: string; title: string; description: string }> {
-    return [
-      {
-        id: 'dQw4w9WgXcQ',
-        title: 'Rick Astley - Never Gonna Give You Up',
-        description: 'Popular music video with auto-generated captions'
-      },
-      {
-        id: 'jNQXAC9IVRw',
-        title: 'Me at the zoo',
-        description: 'First YouTube video with captions'
-      },
-      {
-        id: 'VQH8ZTgna3Q',
-        title: 'Khan Academy Lesson',
-        description: 'Educational content with captions'
-      },
-      {
-        id: 'fJ9rUzIMcZQ',
-        title: 'BBC News Video',
-        description: 'News videos often have captions'
-      }
-    ]
-  }
-
-  /**
-   * Enhanced availability check with better detection
-   */
-  async enhancedAvailabilityCheck(videoId: string): Promise<{
-    available: boolean
-    languages: string[]
-    suggestions?: string[]
-    error?: string
-  }> {
-    const cleanVideoId = this.extractVideoId(videoId)
-    const results = {
-      available: false,
-      languages: [] as string[],
-      suggestions: [] as string[]
-    }
-
-    try {
-      const yt = await this.getInnertube()
-      const info = await yt.getInfo(cleanVideoId)
-      
-      if (!info.captions) {
-        results.suggestions = [
-          'Try videos from popular channels (TED, Khan Academy, BBC)',
-          'Look for videos with the CC (closed captions) button on YouTube',
-          'Educational and news content often has captions',
-          'Avoid music videos without lyrics or very new videos'
-        ]
-        return results
-      }
-
-      // Try to get transcript to confirm it's accessible
-      await info.getTranscript()
-      results.available = true
-      
-      const captionTracks = info.captions?.caption_tracks || []
-      results.languages = captionTracks.map((track: any) => track.language_code).filter((lang: string) => lang)
-      
-      console.log(`FluentFlow: Video ${cleanVideoId} has captions in: ${results.languages.join(', ')}`)
-
-    } catch (error) {
-      console.log(`FluentFlow: Enhanced availability check failed:`, error)
-      results.suggestions = [
-        'Video may be private, deleted, or region-blocked',
-        'Try a different video with confirmed captions',
-        'Check if the video is accessible in your region'
-      ]
-    }
-
-    return results
-  }
-
-  /**
-   * Extract video ID from various YouTube URL formats
-   */
   private extractVideoId(input: string): string {
     if (!input || typeof input !== 'string') {
       throw this.createError('VIDEO_NOT_FOUND', 'Invalid video identifier')
@@ -311,12 +195,10 @@ export class YouTubeTranscriptService {
 
     const trimmed = input.trim()
 
-    // If it's already a video ID (11 characters, alphanumeric + - _)
     if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
       return trimmed
     }
 
-    // Extract from various YouTube URL formats
     const patterns = [
       /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
       /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
@@ -333,9 +215,6 @@ export class YouTubeTranscriptService {
     throw this.createError('VIDEO_NOT_FOUND', `Could not extract video ID from: ${input}`)
   }
 
-  /**
-   * Extract transcript segments within specified time range
-   */
   private extractTimeSegment(
     fullTranscript: any[],
     startTime: number,
@@ -353,7 +232,6 @@ export class YouTubeTranscriptService {
 
       if (!text) continue
 
-      // Include segments that overlap with our time range
       if (segmentEnd > startTime && segmentStart < endTime) {
         segments.push({
           text: this.cleanTranscriptText(text),
@@ -363,7 +241,6 @@ export class YouTubeTranscriptService {
       }
     }
 
-    // Sort by start time
     segments.sort((a, b) => a.start - b.start)
 
     const fullText = segments
@@ -374,9 +251,6 @@ export class YouTubeTranscriptService {
     return { segments, fullText }
   }
 
-  /**
-   * Clean and normalize transcript text
-   */
   private cleanTranscriptText(text: string): string {
     return text
       .replace(/\n+/g, ' ')
@@ -389,17 +263,11 @@ export class YouTubeTranscriptService {
       .trim()
   }
 
-  /**
-   * Parse float with fallback
-   */
   private parseFloat(value: any): number {
     const parsed = parseFloat(value)
     return isNaN(parsed) ? 0 : parsed
   }
 
-  /**
-   * Handle YouTube.js specific errors
-   */
   private handleYouTubeJSError(error: any, videoId: string): TranscriptError {
     const message = error.message?.toLowerCase() || error.toString().toLowerCase()
 
@@ -415,13 +283,14 @@ export class YouTubeTranscriptService {
       return this.createError('REGION_BLOCKED', `Video ${videoId} is blocked in this region`)
     }
 
-    if (message.includes('captions') || message.includes('transcript') || message.includes('subtitles')) {
+    if (
+      message.includes('captions') ||
+      message.includes('transcript') ||
+      message.includes('subtitles')
+    ) {
       return this.createError(
         'NOT_AVAILABLE',
-        `No captions/transcript available for video ${videoId}. ` +
-          `Try videos with: (1) Closed captions enabled, (2) Auto-generated captions, ` +
-          `(3) Popular channels like TED, Khan Academy, or news channels. ` +
-          `You can check if a video has captions by looking for the CC button on YouTube.`
+        `No captions/transcript available for video ${videoId}`
       )
     }
 
@@ -435,25 +304,18 @@ export class YouTubeTranscriptService {
     return this.createError('UNKNOWN', `YouTube.js error: ${error.message}`, error.stack)
   }
 
-  /**
-   * Handle and categorize transcript errors
-   */
   private handleTranscriptError(error: any, videoId: string): TranscriptError {
     if (!error) {
       return this.createError('UNKNOWN', 'Unknown error occurred')
     }
 
-    // If it's already our custom error, return it
-    if (error.code) {
+    if ((error as any).code) {
       return error
     }
 
     return this.handleYouTubeJSError(error, videoId)
   }
 
-  /**
-   * Create standardized error object
-   */
   private createError(
     code: TranscriptError['code'],
     message: string,
@@ -469,4 +331,76 @@ export class YouTubeTranscriptService {
   }
 }
 
-export const youtubeTranscriptService = new YouTubeTranscriptService()
+const transcriptService = new YouTubeTranscriptService()
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { videoId, startTime, endTime, language, action } = body
+
+    console.log('Transcript API request:', { videoId, startTime, endTime, language, action })
+
+    switch (action) {
+      case 'getSegment':
+        if (!videoId || startTime === undefined || endTime === undefined) {
+          return NextResponse.json(
+            { error: 'Missing required parameters: videoId, startTime, endTime' },
+            { status: 400 }
+          )
+        }
+        const result = await transcriptService.getTranscriptSegment(
+          videoId,
+          startTime,
+          endTime,
+          language
+        )
+        return NextResponse.json(result)
+
+      case 'getLanguages':
+        if (!videoId) {
+          return NextResponse.json(
+            { error: 'Missing required parameter: videoId' },
+            { status: 400 }
+          )
+        }
+        const languages = await transcriptService.getAvailableLanguages(videoId)
+        return NextResponse.json({ languages })
+
+      case 'checkAvailability':
+        if (!videoId) {
+          return NextResponse.json(
+            { error: 'Missing required parameter: videoId' },
+            { status: 400 }
+          )
+        }
+        const available = await transcriptService.isTranscriptAvailable(videoId, language)
+        return NextResponse.json({ available })
+
+      default:
+        return NextResponse.json(
+          {
+            error: 'Invalid action. Supported actions: getSegment, getLanguages, checkAvailability'
+          },
+          { status: 400 }
+        )
+    }
+  } catch (error: any) {
+    console.error('Transcript API error:', error)
+
+    if (error.code) {
+      return NextResponse.json(
+        {
+          error: error.message,
+          code: error.code,
+          details: error.details
+        },
+        { status: error.code === 'VIDEO_NOT_FOUND' ? 404 : 500 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Internal server error', details: error.message },
+      { status: 500 }
+    )
+  }
+}
