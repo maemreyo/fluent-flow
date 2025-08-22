@@ -1,13 +1,9 @@
 import { useEffect, useState } from 'react'
 import {
-  Activity,
   AlertTriangle,
   BarChart3,
-  Calendar,
-  Clock,
   FileAudio,
   Loader2,
-  Mic,
   Music,
   RefreshCw,
   Repeat,
@@ -19,6 +15,7 @@ import {
 } from 'lucide-react'
 import { AudioPlayer } from './components/audio-player'
 import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
+import { Dashboard } from './components/dashboard'
 import { EnhancedLoopCardWithIntegration } from './components/enhanced-loop-card-with-integration'
 import { QueryProvider } from './components/providers/query-provider'
 import { StorageManagementPanel } from './components/storage-management-panel'
@@ -334,129 +331,15 @@ function FluentFlowSidePanelContent() {
   }
 
   const renderDashboard = () => (
-    <div className="space-y-6">
-      {currentVideo && (
-        <Card>
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="h-2 w-2 animate-pulse rounded-full bg-red-500"></div>
-              <CardTitle className="text-sm">Currently Practicing</CardTitle>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              <p className="text-sm font-medium">{currentVideo.title}</p>
-              <p className="text-xs text-muted-foreground">{currentVideo.channel}</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-2 gap-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Activity className="h-4 w-4 text-blue-500" />
-              <CardDescription className="text-xs">Total Sessions</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{statistics.totalSessions}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Clock className="h-4 w-4 text-green-500" />
-              <CardDescription className="text-xs">Practice Time</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{formatTime(statistics.totalPracticeTime)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Mic className="h-4 w-4 text-purple-500" />
-              <CardDescription className="text-xs">Recordings</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{statistics.totalRecordings}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4 text-orange-500" />
-              <CardDescription className="text-xs">Avg Session</CardDescription>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl font-bold">{formatTime(statistics.averageSessionDuration)}</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Calendar className="h-4 w-4" />
-            Recent Practice Sessions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {allSessions.slice(0, 5).map(session => (
-            <div
-              key={session.id}
-              className={`flex items-center justify-between rounded-lg border p-3 transition-colors hover:bg-muted/50 ${
-                currentSession?.id === session.id ? 'border-blue-200 bg-blue-50' : ''
-              }`}
-              onClick={() => {}}
-            >
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-medium">{session.videoTitle}</p>
-                <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-                  <span>{formatDate(session.createdAt)}</span>
-                  <span>•</span>
-                  <span>{session.segments.length} segments</span>
-                  <span>•</span>
-                  <span>{session.recordings.length} recordings</span>
-                </div>
-              </div>
-              <Badge variant="secondary" className="text-xs">
-                {formatTime(session.totalPracticeTime)}
-              </Badge>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          <Button
-            className="w-full justify-start"
-            variant="outline"
-            onClick={() => setActiveTab('recordings')}
-          >
-            <FileAudio className="mr-2 h-4 w-4" />
-            View All Recordings
-          </Button>
-          <Button
-            className="w-full justify-start"
-            variant="outline"
-            onClick={() => chrome.runtime.openOptionsPage()}
-          >
-            <BarChart3 className="mr-2 h-4 w-4" />
-            View Analytics & Settings
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <Dashboard
+      currentVideo={currentVideo}
+      statistics={statistics}
+      allSessions={allSessions}
+      currentSession={currentSession}
+      formatTime={formatTime}
+      formatDate={formatDate}
+      onViewLoops={() => setActiveTab('loops')}
+    />
   )
 
   const renderConversations = () => (
@@ -859,23 +742,24 @@ function FluentFlowSidePanelContent() {
         onValueChange={value => setActiveTab(value as any)}
         className="flex flex-1 flex-col"
       >
-        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-4">
+        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-2">
           <TabsTrigger value="dashboard" className="text-xs">
             <BarChart3 className="mr-1 h-4 w-4" />
             Dashboard
           </TabsTrigger>
           <TabsTrigger value="loops" className="text-xs">
             <Repeat className="mr-1 h-4 w-4" />
-            Loop
+            Loops
           </TabsTrigger>
-          <TabsTrigger value="conversations" className="text-xs">
+          {/* TODO: Re-enable these tabs when ready to implement */}
+          {/* <TabsTrigger value="conversations" className="text-xs">
             <Target className="mr-1 h-4 w-4" />
             AI Chat
           </TabsTrigger>
           <TabsTrigger value="recordings" className="text-xs">
             <Music className="mr-1 h-4 w-4" />
             Records
-          </TabsTrigger>
+          </TabsTrigger> */}
         </TabsList>
 
         <div className="flex-1 overflow-y-auto px-4 pb-4">
