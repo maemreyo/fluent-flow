@@ -1,3 +1,4 @@
+
 export interface TranscriptSegment {
   text: string
   start: number
@@ -26,7 +27,7 @@ export interface TranscriptError {
 
 export class YouTubeTranscriptService {
   private readonly transcriptServerUrl: string
-  private readonly DEFAULT_TIMEOUT = 15000 // Increased timeout for network requests
+  private readonly DEFAULT_TIMEOUT = 15000
 
   constructor() {
     this.transcriptServerUrl = process.env.PLASMO_PUBLIC_TRANSCRIPT_SERVER_URL
@@ -39,22 +40,15 @@ export class YouTubeTranscriptService {
   }
 
   private async fetchFromTranscriptServer<T>(
-    endpoint: string,
-    params: Record<string, string>
+    payload: Record<string, any>
   ): Promise<T> {
-    const url = new URL(`${this.transcriptServerUrl}/${endpoint}`)
-    Object.entries(params).forEach(([key, value]) => {
-      if (value) {
-        url.searchParams.append(key, value)
-      }
-    })
-
     try {
-      const response = await fetch(url.toString(), {
-        method: 'GET',
+      const response = await fetch(this.transcriptServerUrl, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
+        body: JSON.stringify(payload),
         signal: AbortSignal.timeout(this.DEFAULT_TIMEOUT)
       })
 
@@ -73,7 +67,7 @@ export class YouTubeTranscriptService {
       if (error.name === 'TimeoutError') {
         throw this.createError('NETWORK_ERROR', 'Request to transcript server timed out.')
       }
-      throw this.handleTranscriptError(error, params.videoId)
+      throw this.handleTranscriptError(error, payload.videoId)
     }
   }
 
@@ -83,41 +77,16 @@ export class YouTubeTranscriptService {
     endTime: number,
     language?: string
   ): Promise<TranscriptResult> {
-    if (!videoId || videoId.trim().length === 0) {
-      throw this.createError('VIDEO_NOT_FOUND', 'Video ID is required')
-    }
-
-    if (startTime < 0 || endTime <= startTime) {
-      throw this.createError(
-        'PARSE_ERROR',
-        'Invalid time range: startTime must be >= 0 and endTime must be > startTime'
-      )
-    }
-
     const cleanVideoId = this.extractVideoId(videoId)
-
     try {
-      console.log(`FluentFlow: Fetching transcript for ${cleanVideoId} from external server.`)
-
-      const fullTranscript = await this.fetchFullTranscript(cleanVideoId, language)
-      const segmentTranscript = this.extractTimeSegment(fullTranscript, startTime, endTime)
-
-      if (segmentTranscript.segments.length === 0) {
-        throw this.createError(
-          'NOT_AVAILABLE',
-          `No transcript content found for time range ${startTime}s - ${endTime}s`
-        )
-      }
-
-      console.log(
-        `FluentFlow: ✅ Successfully extracted ${segmentTranscript.segments.length} transcript segments`
-      )
-
-      return {
-        ...segmentTranscript,
+      const result = await this.fetchFromTranscriptServer<TranscriptResult>({
+        action: 'getSegment',
         videoId: cleanVideoId,
-        language: language || 'auto'
-      }
+        startTime,
+        endTime,
+        language
+      })
+      return result
     } catch (error) {
       console.error(`FluentFlow: Transcript extraction failed for ${cleanVideoId}:`, error)
       throw this.handleTranscriptError(error, cleanVideoId)
@@ -127,7 +96,8 @@ export class YouTubeTranscriptService {
   async getAvailableLanguages(videoId: string): Promise<string[]> {
     const cleanVideoId = this.extractVideoId(videoId)
     try {
-      const response = await this.fetchFromTranscriptServer<{ languages: string[] }>('languages', {
+      const response = await this.fetchFromTranscriptServer<{ languages: string[] }>({
+        action: 'getLanguages',
         videoId: cleanVideoId
       })
       return response.languages || []
@@ -140,10 +110,11 @@ export class YouTubeTranscriptService {
   async isTranscriptAvailable(videoId: string, language?: string): Promise<boolean> {
     const cleanVideoId = this.extractVideoId(videoId)
     try {
-      const response = await this.fetchFromTranscriptServer<{ available: boolean }>(
-        'availability',
-        { videoId: cleanVideoId, language }
-      )
+      const response = await this.fetchFromTranscriptServer<{ available: boolean }>({
+        action: 'checkAvailability',
+        videoId: cleanVideoId,
+        language
+      })
       return response.available || false
     } catch (error) {
       console.log(`FluentFlow: Transcript availability check failed for ${videoId}:`, error)
@@ -151,71 +122,13 @@ export class YouTubeTranscriptService {
     }
   }
 
-  private async fetchFullTranscript(videoId: string, language?: string): Promise<any[]> {
-    try {
-      const result = await this.fetchFromTranscriptServer<TranscriptResult>('transcript', {
-        videoId,
-        language
-      })
-      // The external service is expected to return segments in the correct format.
-      // We just do a bit of cleaning and validation.
-      return (result.segments || [])
-        .map(segment => ({
-          ...segment,
-          text: this.cleanTranscriptText(segment.text || ''),
-          offset: this.parseFloat(segment.start),
-          duration: this.parseFloat(segment.duration)
-        }))
-        .filter(segment => segment.text.trim().length > 0)
-    } catch (error) {
-      throw this.handleTranscriptError(error, videoId)
-    }
-  }
-
   getSuggestedVideosWithCaptions(): Array<{ id: string; title: string; description: string }> {
     return [
-      {
-        id: 'dQw4w9WgXcQ',
-        title: 'Rick Astley - Never Gonna Give You Up',
-        description: 'Popular music video with auto-generated captions'
-      },
-      {
-        id: 'jNQXAC9IVRw',
-        title: 'Me at the zoo',
-        description: 'First YouTube video with captions'
-      },
-      {
-        id: 'VQH8ZTgna3Q',
-        title: 'Khan Academy Lesson',
-        description: 'Educational content with captions'
-      },
+      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up', description: 'Popular music video with auto-generated captions' },
+      { id: 'jNQXAC9IVRw', title: 'Me at the zoo', description: 'First YouTube video with captions' },
+      { id: 'VQH8ZTgna3Q', title: 'Khan Academy Lesson', description: 'Educational content with captions' },
       { id: 'fJ9rUzIMcZQ', title: 'BBC News Video', description: 'News videos often have captions' }
     ]
-  }
-
-  async enhancedAvailabilityCheck(videoId: string): Promise<{
-    available: boolean
-    languages: string[]
-    suggestions?: string[]
-    error?: string
-  }> {
-    const cleanVideoId = this.extractVideoId(videoId)
-    try {
-      return await this.fetchFromTranscriptServer('availability-enhanced', {
-        videoId: cleanVideoId
-      })
-    } catch (error) {
-      console.log(`FluentFlow: Enhanced availability check failed:`, error)
-      return {
-        available: false,
-        languages: [],
-        suggestions: [
-          'Could not connect to the transcript service.',
-          'Please check your internet connection and try again.'
-        ],
-        error: error.message
-      }
-    }
   }
 
   private extractVideoId(input: string): string {
@@ -240,47 +153,10 @@ export class YouTubeTranscriptService {
     throw this.createError('VIDEO_NOT_FOUND', `Could not extract video ID from: ${input}`)
   }
 
-  private extractTimeSegment(
-    fullTranscript: any[],
-    startTime: number,
-    endTime: number
-  ): { segments: TranscriptSegment[]; fullText: string } {
-    const segments: TranscriptSegment[] = fullTranscript.filter(item => {
-      const segmentStart = this.parseFloat(item.start) || 0
-      const segmentEnd = segmentStart + (this.parseFloat(item.duration) || 0)
-      return segmentEnd > startTime && segmentStart < endTime
-    })
-
-    segments.sort((a, b) => a.start - b.start)
-    const fullText = segments
-      .map(s => s.text)
-      .join(' ')
-      .trim()
-    return { segments, fullText }
-  }
-
-  private cleanTranscriptText(text: string): string {
-    return text
-      .replace(/\n+/g, ' ')
-      .replace(/\s+/g, ' ')
-      .replace(/&amp;/g, '&')
-      .replace(/&lt;/g, '<')
-      .replace(/&gt;/g, '>')
-      .replace(/&quot;/g, '"')
-      .replace(/&#39;/g, "'")
-      .trim()
-  }
-
-  private parseFloat(value: any): number {
-    const parsed = parseFloat(value)
-    return isNaN(parsed) ? 0 : parsed
-  }
-
   private handleTranscriptError(error: any, videoId: string): TranscriptError {
     if (error.code) {
       return error
     }
-    // Generic error for server communication
     return this.createError(
       'NETWORK_ERROR',
       `An error occurred while communicating with the transcript service for video ${videoId}.`,
