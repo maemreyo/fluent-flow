@@ -178,6 +178,42 @@ export class ConversationAnalysisService {
   }
 
   /**
+   * Analyze audio for conversation questions using Gemini API
+   */
+  async analyzeAudioForQuestions(
+    base64Audio: string, 
+    mimeType: string, 
+    prompt: string
+  ): Promise<{
+    questions: ConversationQuestion[]
+    context: string
+  }> {
+    try {
+      console.log('FluentFlow: Starting audio analysis with Gemini')
+      
+      const response = await this.callGeminiAPI(prompt, {
+        inlineData: {
+          mimeType: mimeType,
+          data: base64Audio
+        }
+      })
+
+      console.log('FluentFlow: Raw Gemini audio response:', response)
+      
+      // Parse the response (same format as video analysis)
+      const analysis = this.parseVideoAnalysisResponse(response)
+      
+      console.log(`FluentFlow: ✅ Generated ${analysis.questions.length} questions from audio analysis`)
+      
+      return analysis
+      
+    } catch (error) {
+      console.error('FluentFlow: Audio analysis failed:', error)
+      throw new Error(`Audio analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Detect video MIME type from base64 data
    */
   private detectVideoMimeType(base64Data: string): string {

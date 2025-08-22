@@ -1,5 +1,3 @@
-import { YoutubeTranscript } from 'youtube-transcript'
-
 export interface TranscriptSegment {
   text: string
   start: number
@@ -14,7 +12,14 @@ export interface TranscriptResult {
 }
 
 export interface TranscriptError {
-  code: 'NOT_AVAILABLE' | 'VIDEO_NOT_FOUND' | 'PRIVATE_VIDEO' | 'REGION_BLOCKED' | 'NETWORK_ERROR' | 'PARSE_ERROR' | 'UNKNOWN'
+  code:
+    | 'NOT_AVAILABLE'
+    | 'VIDEO_NOT_FOUND'
+    | 'PRIVATE_VIDEO'
+    | 'REGION_BLOCKED'
+    | 'NETWORK_ERROR'
+    | 'PARSE_ERROR'
+    | 'UNKNOWN'
   message: string
   details?: string
 }
@@ -39,56 +44,70 @@ export class YouTubeTranscriptService {
     }
 
     if (startTime < 0 || endTime <= startTime) {
-      throw this.createError('PARSE_ERROR', 'Invalid time range: startTime must be >= 0 and endTime must be > startTime')
+      throw this.createError(
+        'PARSE_ERROR',
+        'Invalid time range: startTime must be >= 0 and endTime must be > startTime'
+      )
     }
 
     const cleanVideoId = this.extractVideoId(videoId)
-    
+
     // Advanced method selection with deep YouTube data access
     const methods = [
-      // Method 1: Deep YouTube data access via ytInitialPlayerResponse (highest priority)
-      ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromYtInitialPlayerResponse(cleanVideoId)] : []),
-      // Method 2: Ejoy English storage/cache extraction
-      ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromEjoyStorage(cleanVideoId)] : []),
-      // Method 3: Extract from visible Ejoy English extension if available
-      ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromEjoyExtension(cleanVideoId)] : []),
+      // // Method 1: Deep YouTube data access via ytInitialPlayerResponse (highest priority)
+      // ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromYtInitialPlayerResponse(cleanVideoId)] : []),
+      // // Method 2: Ejoy English storage/cache extraction
+      // ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromEjoyStorage(cleanVideoId)] : []),
+      // // Method 3: Extract from visible Ejoy English extension if available
+      // ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromEjoyExtension(cleanVideoId)] : []),
       // Method 4: Improved npm package (with smart language detection)
-      () => this.fetchTranscriptWithRetry(cleanVideoId, language),
-      // Method 5: Direct URL extraction (works in all contexts)
-      () => this.extractTranscriptViaDirectURL(cleanVideoId, language),
-      // Method 6: DOM extraction from YouTube page
-      ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromDOM(cleanVideoId)] : []),
-      // Method 7: Content script extraction (Chrome Extension Manifest V3 compatible)
-      ...(typeof window !== 'undefined' ? [() => this.extractTranscriptViaContentScript(cleanVideoId)] : []),
-      // Method 8: YouTube Data API v3 (if API key provided)
-      ...(youtubeApiKey ? [() => this.extractTranscriptViaYouTubeAPI(cleanVideoId, youtubeApiKey)] : [])
+      () => this.fetchTranscriptWithRetry(cleanVideoId, language)
+      // // Method 5: Direct URL extraction (works in all contexts)
+      // () => this.extractTranscriptViaDirectURL(cleanVideoId, language),
+      // // Method 6: DOM extraction from YouTube page
+      // ...(typeof window !== 'undefined' ? [() => this.extractTranscriptFromDOM(cleanVideoId)] : []),
+      // // Method 7: Content script extraction (Chrome Extension Manifest V3 compatible)
+      // ...(typeof window !== 'undefined' ? [() => this.extractTranscriptViaContentScript(cleanVideoId)] : []),
+      // // Method 8: YouTube Data API v3 (if API key provided)
+      // ...(youtubeApiKey ? [() => this.extractTranscriptViaYouTubeAPI(cleanVideoId, youtubeApiKey)] : [])
     ]
 
     let lastError: any = null
     let methodIndex = 0
     const totalMethods = methods.length
-    
+
     for (const method of methods) {
       try {
         methodIndex++
-        console.log(`FluentFlow: Attempting transcript extraction method ${methodIndex}/${totalMethods} for ${cleanVideoId}`)
-        
+        console.log(
+          `FluentFlow: Attempting transcript extraction method ${methodIndex}/${totalMethods} for ${cleanVideoId}`
+        )
+
         const fullTranscript = await method()
         const segmentTranscript = this.extractTimeSegment(fullTranscript, startTime, endTime)
-        
+
         if (segmentTranscript.segments.length === 0) {
-          console.warn(`FluentFlow: Method ${methodIndex} - No transcript content found for time range ${startTime}s - ${endTime}s`)
+          console.warn(
+            `FluentFlow: Method ${methodIndex} - No transcript content found for time range ${startTime}s - ${endTime}s`
+          )
           continue // Try next method
         }
 
-        console.log(`FluentFlow: ✅ Successfully extracted transcript using method ${methodIndex}/${totalMethods} with ${segmentTranscript.segments.length} segments`)
-        
+        console.log(
+          `FluentFlow: ✅ Successfully extracted transcript using method ${methodIndex}/${totalMethods} with ${segmentTranscript.segments.length} segments`
+        )
+
         // Log a sample of the extracted content for debugging
         if (segmentTranscript.segments.length > 0) {
-          const sampleText = segmentTranscript.segments.slice(0, 2).map(s => s.text).join(' ')
-          console.log(`FluentFlow: Sample content: "${sampleText.substring(0, 100)}${sampleText.length > 100 ? '...' : ''}"`)
+          const sampleText = segmentTranscript.segments
+            .slice(0, 2)
+            .map(s => s.text)
+            .join(' ')
+          console.log(
+            `FluentFlow: Sample content: "${sampleText.substring(0, 100)}${sampleText.length > 100 ? '...' : ''}"`
+          )
         }
-        
+
         return {
           ...segmentTranscript,
           videoId: cleanVideoId,
@@ -102,8 +121,10 @@ export class YouTubeTranscriptService {
     }
 
     // All methods failed - provide helpful guidance
-    console.error(`FluentFlow: 💥 All ${totalMethods} transcript extraction methods failed for video ${cleanVideoId}`)
-    
+    console.error(
+      `FluentFlow: 💥 All ${totalMethods} transcript extraction methods failed for video ${cleanVideoId}`
+    )
+
     // Extract useful information from errors for better user guidance
     let errorMessage = 'All transcript extraction methods failed.'
     if (lastError && lastError.message) {
@@ -115,11 +136,11 @@ export class YouTubeTranscriptService {
         }
       }
     }
-    
+
     if (lastError instanceof Error && 'code' in lastError) {
       throw lastError
     }
-    
+
     const enhancedError = this.handleTranscriptError(lastError, cleanVideoId)
     enhancedError.message = errorMessage
     throw enhancedError
@@ -130,7 +151,7 @@ export class YouTubeTranscriptService {
    */
   async getAvailableLanguages(videoId: string): Promise<string[]> {
     const cleanVideoId = this.extractVideoId(videoId)
-    
+
     try {
       const transcript = await this.fetchTranscriptWithRetry(cleanVideoId)
       return transcript.length > 0 ? ['en'] : []
@@ -237,7 +258,7 @@ export class YouTubeTranscriptService {
     }
 
     const trimmed = input.trim()
-    
+
     // If it's already a video ID (11 characters, alphanumeric + - _)
     if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
       return trimmed
@@ -276,43 +297,59 @@ export class YouTubeTranscriptService {
 
       // Try the improved package with fallback mechanisms first
       try {
-        const { YoutubeTranscript: ImprovedTranscript } = await import('@danielxceron/youtube-transcript')
+        const { YoutubeTranscript: ImprovedTranscript } = await import(
+          '@danielxceron/youtube-transcript'
+        )
         console.log(`FluentFlow: Using improved transcript package (method ${retryCount + 1})`)
-        
+
         const transcript = await Promise.race([
           ImprovedTranscript.fetchTranscript(videoId, options),
           this.createTimeoutPromise(this.DEFAULT_TIMEOUT)
         ])
 
         if (!transcript || !Array.isArray(transcript)) {
-          throw this.createError('NOT_AVAILABLE', 'Invalid transcript format received from improved package')
+          throw this.createError(
+            'NOT_AVAILABLE',
+            'Invalid transcript format received from improved package'
+          )
         }
 
-        console.log(`FluentFlow: Successfully fetched ${transcript.length} segments using improved package`)
+        console.log(
+          `FluentFlow: Successfully fetched ${transcript.length} segments using improved package`
+        )
         return transcript
-        
       } catch (improvedError) {
         console.log(`FluentFlow: Improved package failed, falling back to original:`, improvedError)
-        
+
         // Check if it's a language availability error and extract available languages
         if (improvedError.message && improvedError.message.includes('Available languages:')) {
           const availableLanguagesMatch = improvedError.message.match(/Available languages: (.+)/)
           if (availableLanguagesMatch) {
             const availableLanguages = availableLanguagesMatch[1].split(', ')
             console.log(`FluentFlow: Video has captions in: ${availableLanguages.join(', ')}`)
-            
+
             // Re-import for retry attempts
-            const { YoutubeTranscript: RetryTranscript } = await import('@danielxceron/youtube-transcript')
-            
+            const { YoutubeTranscript: RetryTranscript } = await import(
+              '@danielxceron/youtube-transcript'
+            )
+
             // Try to find a suitable language
             const preferredLanguages = ['en', 'en-US', 'en-GB']
             for (const preferredLang of preferredLanguages) {
               if (availableLanguages.includes(preferredLang)) {
                 console.log(`FluentFlow: Retrying with available language: ${preferredLang}`)
                 try {
-                  const retryTranscript = await RetryTranscript.fetchTranscript(videoId, { lang: preferredLang })
-                  if (retryTranscript && Array.isArray(retryTranscript) && retryTranscript.length > 0) {
-                    console.log(`FluentFlow: Success with ${preferredLang}: ${retryTranscript.length} segments`)
+                  const retryTranscript = await RetryTranscript.fetchTranscript(videoId, {
+                    lang: preferredLang
+                  })
+                  if (
+                    retryTranscript &&
+                    Array.isArray(retryTranscript) &&
+                    retryTranscript.length > 0
+                  ) {
+                    console.log(
+                      `FluentFlow: Success with ${preferredLang}: ${retryTranscript.length} segments`
+                    )
                     return retryTranscript
                   }
                 } catch (langError) {
@@ -321,15 +358,23 @@ export class YouTubeTranscriptService {
                 }
               }
             }
-            
+
             // Try first available language if no English variants work
             if (availableLanguages.length > 0) {
               const firstLang = availableLanguages[0]
               console.log(`FluentFlow: Trying first available language: ${firstLang}`)
               try {
-                const retryTranscript = await RetryTranscript.fetchTranscript(videoId, { lang: firstLang })
-                if (retryTranscript && Array.isArray(retryTranscript) && retryTranscript.length > 0) {
-                  console.log(`FluentFlow: Success with ${firstLang}: ${retryTranscript.length} segments`)
+                const retryTranscript = await RetryTranscript.fetchTranscript(videoId, {
+                  lang: firstLang
+                })
+                if (
+                  retryTranscript &&
+                  Array.isArray(retryTranscript) &&
+                  retryTranscript.length > 0
+                ) {
+                  console.log(
+                    `FluentFlow: Success with ${firstLang}: ${retryTranscript.length} segments`
+                  )
                   return retryTranscript
                 }
               } catch (langError) {
@@ -338,7 +383,7 @@ export class YouTubeTranscriptService {
             }
           }
         }
-        
+
         // Fallback to original package
         const { YoutubeTranscript } = await import('youtube-transcript')
         const transcript = await Promise.race([
@@ -347,16 +392,22 @@ export class YouTubeTranscriptService {
         ])
 
         if (!transcript || !Array.isArray(transcript)) {
-          throw this.createError('NOT_AVAILABLE', 'Invalid transcript format received from original package')
+          throw this.createError(
+            'NOT_AVAILABLE',
+            'Invalid transcript format received from original package'
+          )
         }
 
-        console.log(`FluentFlow: Successfully fetched ${transcript.length} segments using original package`)
+        console.log(
+          `FluentFlow: Successfully fetched ${transcript.length} segments using original package`
+        )
         return transcript
       }
-
     } catch (error) {
       if (retryCount < this.MAX_RETRIES && this.isRetryableError(error)) {
-        console.log(`FluentFlow: Retry attempt ${retryCount + 1}/${this.MAX_RETRIES} after ${this.RETRY_DELAY * (retryCount + 1)}ms`)
+        console.log(
+          `FluentFlow: Retry attempt ${retryCount + 1}/${this.MAX_RETRIES} after ${this.RETRY_DELAY * (retryCount + 1)}ms`
+        )
         await this.delay(this.RETRY_DELAY * (retryCount + 1))
         return this.fetchTranscriptWithRetry(videoId, language, retryCount + 1)
       }
@@ -405,9 +456,10 @@ export class YouTubeTranscriptService {
       }
 
       // Find the best caption track (prefer English, then auto-generated)
-      let selectedTrack = captions.find((track: any) => 
-        track.languageCode === 'en' || track.languageCode === 'en-US'
-      ) || captions[0]
+      let selectedTrack =
+        captions.find(
+          (track: any) => track.languageCode === 'en' || track.languageCode === 'en-US'
+        ) || captions[0]
 
       if (!selectedTrack?.baseUrl) {
         throw new Error('No valid caption track found')
@@ -421,13 +473,14 @@ export class YouTubeTranscriptService {
       }
 
       const captionText = await response.text()
-      
+
       // Parse the caption XML/JSON format
       return this.parseCaptionResponse(captionText)
-      
     } catch (error) {
       console.log('FluentFlow: DOM extraction failed:', error)
-      throw new Error(`DOM extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `DOM extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -440,16 +493,18 @@ export class YouTubeTranscriptService {
       if (captionText.includes('<transcript>') || captionText.includes('<text')) {
         return this.parseXMLCaptions(captionText)
       }
-      
+
       // Try parsing as JSON
       const jsonData = JSON.parse(captionText)
       if (jsonData.events) {
         return this.parseJSONCaptions(jsonData)
       }
-      
+
       throw new Error('Unknown caption format')
     } catch (error) {
-      throw new Error(`Failed to parse caption response: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to parse caption response: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -458,15 +513,21 @@ export class YouTubeTranscriptService {
    */
   private parseXMLCaptions(xmlText: string): any[] {
     const segments: any[] = []
-    
+
     // Simple regex parsing for XML captions
-    const textMatches = xmlText.matchAll(/<text start="([^"]*)" dur="([^"]*)"[^>]*>([^<]*)<\/text>/g)
-    
+    const textMatches = xmlText.matchAll(
+      /<text start="([^"]*)" dur="([^"]*)"[^>]*>([^<]*)<\/text>/g
+    )
+
     for (const match of textMatches) {
       const start = parseFloat(match[1]) || 0
       const duration = parseFloat(match[2]) || 0
-      const text = match[3].replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
-      
+      const text = match[3]
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&quot;/g, '"')
+
       if (text.trim()) {
         segments.push({
           text: text.trim(),
@@ -475,7 +536,7 @@ export class YouTubeTranscriptService {
         })
       }
     }
-    
+
     return segments
   }
 
@@ -484,15 +545,18 @@ export class YouTubeTranscriptService {
    */
   private parseJSONCaptions(jsonData: any): any[] {
     const segments: any[] = []
-    
+
     if (jsonData.events && Array.isArray(jsonData.events)) {
       for (const event of jsonData.events) {
         if (event.segs && Array.isArray(event.segs)) {
           const startTime = event.tStartMs ? event.tStartMs / 1000 : 0
           const duration = event.dDurationMs ? event.dDurationMs / 1000 : 0
-          
-          const text = event.segs.map((seg: any) => seg.utf8 || '').join('').trim()
-          
+
+          const text = event.segs
+            .map((seg: any) => seg.utf8 || '')
+            .join('')
+            .trim()
+
           if (text) {
             segments.push({
               text: text,
@@ -503,7 +567,7 @@ export class YouTubeTranscriptService {
         }
       }
     }
-    
+
     return segments
   }
 
@@ -524,17 +588,18 @@ export class YouTubeTranscriptService {
       if (chrome.scripting && chrome.scripting.executeScript) {
         return await this.extractWithScriptingAPI(videoId)
       }
-      
+
       // Fallback to legacy API if available (Manifest V2)
       if (chrome.tabs && chrome.tabs.executeScript) {
         return await this.extractWithLegacyAPI(videoId)
       }
 
       throw new Error('No suitable Chrome extension scripting API available')
-
     } catch (error) {
       console.log('FluentFlow: Content script extraction failed:', error)
-      throw new Error(`Content script extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Content script extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -543,7 +608,7 @@ export class YouTubeTranscriptService {
    */
   private async extractWithScriptingAPI(videoId: string): Promise<any[]> {
     const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-    
+
     if (!tabs[0] || !tabs[0].url?.includes('youtube.com/watch')) {
       throw new Error('Not on a YouTube video page')
     }
@@ -569,35 +634,39 @@ export class YouTubeTranscriptService {
    */
   private async extractWithLegacyAPI(videoId: string): Promise<any[]> {
     return new Promise<any[]>((resolve, reject) => {
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
         if (!tabs[0] || !tabs[0].url?.includes('youtube.com/watch')) {
           reject(new Error('Not on a YouTube video page'))
           return
         }
 
-        chrome.tabs.executeScript(tabs[0].id!, {
-          code: `(${this.extractTranscriptFromPage.toString()})()`
-        }, (results) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message))
-            return
-          }
+        chrome.tabs.executeScript(
+          tabs[0].id!,
+          {
+            code: `(${this.extractTranscriptFromPage.toString()})()`
+          },
+          results => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message))
+              return
+            }
 
-          const result = results?.[0]
-          if (!result?.success) {
-            reject(new Error(result?.error || 'Content script execution failed'))
-            return
-          }
+            const result = results?.[0]
+            if (!result?.success) {
+              reject(new Error(result?.error || 'Content script execution failed'))
+              return
+            }
 
-          // Fetch the caption content
-          fetch(result.captionUrl)
-            .then(response => response.text())
-            .then(captionText => {
-              const segments = this.parseCaptionResponse(captionText)
-              resolve(segments)
-            })
-            .catch(reject)
-        })
+            // Fetch the caption content
+            fetch(result.captionUrl)
+              .then(response => response.text())
+              .then(captionText => {
+                const segments = this.parseCaptionResponse(captionText)
+                resolve(segments)
+              })
+              .catch(reject)
+          }
+        )
       })
     })
   }
@@ -605,11 +674,16 @@ export class YouTubeTranscriptService {
   /**
    * Injected function to extract transcript data from YouTube page
    */
-  private extractTranscriptFromPage(): { success: boolean; captionUrl?: string; language?: string; error?: string } {
+  private extractTranscriptFromPage(): {
+    success: boolean
+    captionUrl?: string
+    language?: string
+    error?: string
+  } {
     try {
       // Method 1: Try ytInitialPlayerResponse
       let playerResponse = null
-      
+
       // Look for ytInitialPlayerResponse in scripts
       const scripts = document.getElementsByTagName('script')
       for (const script of scripts) {
@@ -657,9 +731,12 @@ export class YouTubeTranscriptService {
       }
 
       // Find best caption track
-      let selectedTrack = captions.find((track: any) => 
-        track.languageCode === 'en' || track.languageCode === 'en-US'
-      ) || captions.find((track: any) => track.kind !== 'asr') || captions[0]
+      let selectedTrack =
+        captions.find(
+          (track: any) => track.languageCode === 'en' || track.languageCode === 'en-US'
+        ) ||
+        captions.find((track: any) => track.kind !== 'asr') ||
+        captions[0]
 
       if (!selectedTrack?.baseUrl) {
         throw new Error('No valid caption track found')
@@ -670,7 +747,6 @@ export class YouTubeTranscriptService {
         captionUrl: selectedTrack.baseUrl,
         language: selectedTrack.languageCode
       }
-
     } catch (error) {
       return {
         success: false,
@@ -693,39 +769,40 @@ export class YouTubeTranscriptService {
       // Step 1: Get captions list
       const captionsListUrl = `https://www.googleapis.com/youtube/v3/captions?videoId=${videoId}&key=${apiKey}`
       const captionsResponse = await fetch(captionsListUrl)
-      
+
       if (!captionsResponse.ok) {
         throw new Error(`API request failed: ${captionsResponse.status}`)
       }
 
       const captionsData = await captionsResponse.json()
-      
+
       if (!captionsData.items || captionsData.items.length === 0) {
         throw new Error('No captions available via YouTube API')
       }
 
       // Step 2: Find best caption track
-      let selectedCaption = captionsData.items.find((caption: any) => 
-        caption.snippet.language === 'en'
-      ) || captionsData.items[0]
+      let selectedCaption =
+        captionsData.items.find((caption: any) => caption.snippet.language === 'en') ||
+        captionsData.items[0]
 
       // Step 3: Download caption content (requires OAuth2)
       const downloadUrl = `https://www.googleapis.com/youtube/v3/captions/${selectedCaption.id}?key=${apiKey}`
       const downloadResponse = await fetch(downloadUrl)
-      
+
       if (!downloadResponse.ok) {
         throw new Error(`Caption download failed: ${downloadResponse.status}`)
       }
 
       const captionText = await downloadResponse.text()
       const segments = this.parseCaptionResponse(captionText)
-      
+
       console.log(`FluentFlow: YouTube API extracted ${segments.length} segments`)
       return segments
-
     } catch (error) {
       console.log('FluentFlow: YouTube API extraction failed:', error)
-      throw new Error(`YouTube API extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `YouTube API extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -753,13 +830,15 @@ export class YouTubeTranscriptService {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
           })
-          
+
           if (response.ok) {
             const text = await response.text()
-            
+
             if (text && text.trim().length > 0 && !text.includes('<!DOCTYPE html>')) {
-              console.log(`FluentFlow: Got transcript data from direct URL: ${text.length} characters`)
-              
+              console.log(
+                `FluentFlow: Got transcript data from direct URL: ${text.length} characters`
+              )
+
               // Parse the response based on format
               if (url.includes('fmt=json3')) {
                 return this.parseJSON3Transcript(text)
@@ -777,10 +856,11 @@ export class YouTubeTranscriptService {
       }
 
       throw new Error('No direct transcript URLs worked')
-
     } catch (error) {
       console.log('FluentFlow: Direct URL extraction failed:', error)
-      throw new Error(`Direct URL extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Direct URL extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -789,7 +869,9 @@ export class YouTubeTranscriptService {
    */
   private async extractTranscriptFromEjoyExtension(videoId: string): Promise<any[]> {
     try {
-      console.log(`FluentFlow: Attempting to extract transcript from Ejoy English extension for ${videoId}`)
+      console.log(
+        `FluentFlow: Attempting to extract transcript from Ejoy English extension for ${videoId}`
+      )
 
       // Check if Ejoy English extension elements are present
       const ejoyContainer = document.querySelector('.gl-nf-sitebar-viewContentAbs')
@@ -799,25 +881,29 @@ export class YouTubeTranscriptService {
 
       // Find all transcript segments
       const transcriptSegments = document.querySelectorAll('.site-s-c[data-time]')
-      
+
       if (transcriptSegments.length === 0) {
         throw new Error('No transcript segments found in Ejoy English extension')
       }
 
-      console.log(`FluentFlow: Found ${transcriptSegments.length} transcript segments in Ejoy English`)
+      console.log(
+        `FluentFlow: Found ${transcriptSegments.length} transcript segments in Ejoy English`
+      )
 
       const segments = []
-      
+
       for (const segment of transcriptSegments) {
         const timeData = segment.getAttribute('data-time')
-        const textElement = segment.querySelector('.site-s-title .site-s-textSubItem span:first-child')
-        
+        const textElement = segment.querySelector(
+          '.site-s-title .site-s-textSubItem span:first-child'
+        )
+
         if (timeData && textElement) {
           // Parse timing data (format: "5140-10140" = start-end in milliseconds)
           const [startMs, endMs] = timeData.split('-').map(t => parseInt(t))
-          const startTime = startMs / 1000  // Convert to seconds
+          const startTime = startMs / 1000 // Convert to seconds
           const duration = (endMs - startMs) / 1000
-          
+
           const text = textElement.textContent?.trim()
           if (text) {
             segments.push({
@@ -834,14 +920,17 @@ export class YouTubeTranscriptService {
         throw new Error('No valid transcript segments extracted from Ejoy English')
       }
 
-      console.log(`FluentFlow: ✅ Successfully extracted ${segments.length} segments from Ejoy English extension`)
+      console.log(
+        `FluentFlow: ✅ Successfully extracted ${segments.length} segments from Ejoy English extension`
+      )
       console.log(`FluentFlow: Sample: "${segments[0]?.text?.substring(0, 50)}..."`)
-      
-      return segments
 
+      return segments
     } catch (error) {
       console.log('FluentFlow: Ejoy English extraction failed:', error)
-      throw new Error(`Ejoy English extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Ejoy English extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -854,12 +943,12 @@ export class YouTubeTranscriptService {
 
       // Method 1: Try to access global ytInitialPlayerResponse
       let playerResponse = null
-      
+
       if (typeof window !== 'undefined' && (window as any).ytInitialPlayerResponse) {
         playerResponse = (window as any).ytInitialPlayerResponse
         console.log('FluentFlow: Found ytInitialPlayerResponse in window')
       }
-      
+
       // Method 2: Extract from script tags if global not available
       if (!playerResponse && typeof document !== 'undefined') {
         const scripts = document.querySelectorAll('script')
@@ -891,14 +980,14 @@ export class YouTubeTranscriptService {
       }
 
       console.log(`FluentFlow: Found ${captions.length} caption tracks`)
-      
+
       // Prioritize English and non-ASR tracks
       const prioritizedTracks = captions.sort((a: any, b: any) => {
         const aIsEnglish = a.languageCode?.startsWith('en') || a.vssId?.includes('.en')
         const bIsEnglish = b.languageCode?.startsWith('en') || b.vssId?.includes('.en')
         const aIsASR = a.kind === 'asr'
         const bIsASR = b.kind === 'asr'
-        
+
         if (aIsEnglish && !bIsEnglish) return -1
         if (bIsEnglish && !aIsEnglish) return 1
         if (!aIsASR && bIsASR) return -1
@@ -907,7 +996,9 @@ export class YouTubeTranscriptService {
       })
 
       const selectedTrack = prioritizedTracks[0]
-      console.log(`FluentFlow: Selected caption track: ${selectedTrack.name?.simpleText || selectedTrack.languageCode}`)
+      console.log(
+        `FluentFlow: Selected caption track: ${selectedTrack.name?.simpleText || selectedTrack.languageCode}`
+      )
 
       // Fetch caption content
       let captionUrl = selectedTrack.baseUrl
@@ -933,10 +1024,13 @@ export class YouTubeTranscriptService {
         const text = textNode.textContent?.trim()
         const start = parseFloat(textNode.getAttribute('start') || '0')
         const duration = parseFloat(textNode.getAttribute('dur') || '0')
-        
+
         if (text) {
           segments.push({
-            text: text.replace(/&#39;/g, "'").replace(/&quot;/g, '"').replace(/&amp;/g, '&'),
+            text: text
+              .replace(/&#39;/g, "'")
+              .replace(/&quot;/g, '"')
+              .replace(/&amp;/g, '&'),
             start: start,
             duration: duration,
             offset: start
@@ -944,16 +1038,19 @@ export class YouTubeTranscriptService {
         }
       }
 
-      console.log(`FluentFlow: ✅ Successfully extracted ${segments.length} segments from ytInitialPlayerResponse`)
+      console.log(
+        `FluentFlow: ✅ Successfully extracted ${segments.length} segments from ytInitialPlayerResponse`
+      )
       if (segments.length > 0) {
         console.log(`FluentFlow: Sample: "${segments[0].text?.substring(0, 50)}..."`)
       }
-      
-      return segments
 
+      return segments
     } catch (error) {
       console.log('FluentFlow: ytInitialPlayerResponse extraction failed:', error)
-      throw new Error(`ytInitialPlayerResponse extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `ytInitialPlayerResponse extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -965,7 +1062,10 @@ export class YouTubeTranscriptService {
       console.log(`FluentFlow: Attempting Ejoy storage extraction for ${videoId}`)
 
       // Try to access Ejoy's internal data storage
-      const ejoyData = (window as any).__EJOY_DATA__ || (window as any).ejoyData || (window as any).EJOY_TRANSCRIPT_CACHE
+      const ejoyData =
+        (window as any).__EJOY_DATA__ ||
+        (window as any).ejoyData ||
+        (window as any).EJOY_TRANSCRIPT_CACHE
 
       if (ejoyData && ejoyData[videoId]) {
         console.log('FluentFlow: Found transcript in Ejoy storage cache')
@@ -973,10 +1073,14 @@ export class YouTubeTranscriptService {
       }
 
       // Try to find Ejoy extension content scripts or injected data
-      const ejoyElements = document.querySelectorAll('[data-ejoy-transcript], [data-transcript-cache]')
+      const ejoyElements = document.querySelectorAll(
+        '[data-ejoy-transcript], [data-transcript-cache]'
+      )
       for (const element of ejoyElements) {
         try {
-          const transcriptData = element.getAttribute('data-transcript-cache') || element.getAttribute('data-ejoy-transcript')
+          const transcriptData =
+            element.getAttribute('data-transcript-cache') ||
+            element.getAttribute('data-ejoy-transcript')
           if (transcriptData) {
             const parsed = JSON.parse(transcriptData)
             if (parsed && Array.isArray(parsed)) {
@@ -992,11 +1096,17 @@ export class YouTubeTranscriptService {
       // Try to access Chrome extension storage (if available)
       if (typeof chrome !== 'undefined' && chrome.storage) {
         try {
-          const result = await new Promise<Record<string, any>>((resolve) => {
-            chrome.storage.local.get([`ejoy_transcript_${videoId}`, `transcript_${videoId}`], resolve)
+          const result = await new Promise<Record<string, any>>(resolve => {
+            chrome.storage.local.get(
+              [`ejoy_transcript_${videoId}`, `transcript_${videoId}`],
+              resolve
+            )
           })
-          
-          const transcriptKey = `ejoy_transcript_${videoId}` in result ? `ejoy_transcript_${videoId}` : `transcript_${videoId}`
+
+          const transcriptKey =
+            `ejoy_transcript_${videoId}` in result
+              ? `ejoy_transcript_${videoId}`
+              : `transcript_${videoId}`
           if (result[transcriptKey]) {
             console.log('FluentFlow: Found transcript in Chrome storage')
             return result[transcriptKey]
@@ -1007,10 +1117,11 @@ export class YouTubeTranscriptService {
       }
 
       throw new Error('No Ejoy transcript storage found')
-
     } catch (error) {
       console.log('FluentFlow: Ejoy storage extraction failed:', error)
-      throw new Error(`Ejoy storage extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Ejoy storage extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -1027,9 +1138,12 @@ export class YouTubeTranscriptService {
           if (event.segs && Array.isArray(event.segs)) {
             const startTime = event.tStartMs ? event.tStartMs / 1000 : 0
             const duration = event.dDurationMs ? event.dDurationMs / 1000 : 0
-            
-            const text = event.segs.map((seg: any) => seg.utf8 || '').join('').trim()
-            
+
+            const text = event.segs
+              .map((seg: any) => seg.utf8 || '')
+              .join('')
+              .trim()
+
             if (text) {
               segments.push({
                 text: text,
@@ -1043,7 +1157,9 @@ export class YouTubeTranscriptService {
 
       return segments
     } catch (error) {
-      throw new Error(`Failed to parse JSON3 transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to parse JSON3 transcript: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -1054,23 +1170,33 @@ export class YouTubeTranscriptService {
     try {
       const segments: any[] = []
       const lines = vttText.split('\n')
-      
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim()
-        
+
         // Look for time stamps (e.g., "00:00:10.000 --> 00:00:12.000")
-        const timeMatch = line.match(/(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s+-->\s+(\d{2}):(\d{2}):(\d{2})\.(\d{3})/)
-        
+        const timeMatch = line.match(
+          /(\d{2}):(\d{2}):(\d{2})\.(\d{3})\s+-->\s+(\d{2}):(\d{2}):(\d{2})\.(\d{3})/
+        )
+
         if (timeMatch) {
-          const startTime = parseInt(timeMatch[1]) * 3600 + parseInt(timeMatch[2]) * 60 + parseInt(timeMatch[3]) + parseInt(timeMatch[4]) / 1000
-          const endTime = parseInt(timeMatch[5]) * 3600 + parseInt(timeMatch[6]) * 60 + parseInt(timeMatch[7]) + parseInt(timeMatch[8]) / 1000
-          
+          const startTime =
+            parseInt(timeMatch[1]) * 3600 +
+            parseInt(timeMatch[2]) * 60 +
+            parseInt(timeMatch[3]) +
+            parseInt(timeMatch[4]) / 1000
+          const endTime =
+            parseInt(timeMatch[5]) * 3600 +
+            parseInt(timeMatch[6]) * 60 +
+            parseInt(timeMatch[7]) +
+            parseInt(timeMatch[8]) / 1000
+
           // Get the text on the next line(s)
           let text = ''
           for (let j = i + 1; j < lines.length && lines[j].trim() !== ''; j++) {
             text += lines[j].trim() + ' '
           }
-          
+
           if (text.trim()) {
             segments.push({
               text: text.trim(),
@@ -1083,7 +1209,9 @@ export class YouTubeTranscriptService {
 
       return segments
     } catch (error) {
-      throw new Error(`Failed to parse VTT transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      throw new Error(
+        `Failed to parse VTT transcript: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
     }
   }
 
@@ -1096,17 +1224,17 @@ export class YouTubeTranscriptService {
     endTime: number
   ): { segments: TranscriptSegment[]; fullText: string } {
     const segments: TranscriptSegment[] = []
-    
+
     for (const item of fullTranscript) {
       if (!item || typeof item !== 'object') continue
-      
+
       const segmentStart = this.parseFloat(item.offset) || 0
       const segmentDuration = this.parseFloat(item.duration) || 0
       const segmentEnd = segmentStart + segmentDuration
       const text = (item.text || '').trim()
-      
+
       if (!text) continue
-      
+
       // Include segments that overlap with our time range
       if (segmentEnd > startTime && segmentStart < endTime) {
         segments.push({
@@ -1119,9 +1247,12 @@ export class YouTubeTranscriptService {
 
     // Sort by start time
     segments.sort((a, b) => a.start - b.start)
-    
-    const fullText = segments.map(s => s.text).join(' ').trim()
-    
+
+    const fullText = segments
+      .map(s => s.text)
+      .join(' ')
+      .trim()
+
     return { segments, fullText }
   }
 
@@ -1171,13 +1302,14 @@ export class YouTubeTranscriptService {
    */
   private isRetryableError(error: any): boolean {
     if (!error) return false
-    
+
     const message = error.message?.toLowerCase() || ''
-    const isNetworkError = message.includes('network') || 
-                          message.includes('timeout') || 
-                          message.includes('connection') ||
-                          message.includes('fetch')
-    
+    const isNetworkError =
+      message.includes('network') ||
+      message.includes('timeout') ||
+      message.includes('connection') ||
+      message.includes('fetch')
+
     return isNetworkError && !this.isTranscriptNotAvailable(error)
   }
 
@@ -1186,12 +1318,14 @@ export class YouTubeTranscriptService {
    */
   private isTranscriptNotAvailable(error: any): boolean {
     if (!error) return false
-    
+
     const message = error.message?.toLowerCase() || ''
-    return message.includes('transcript') && message.includes('disabled') ||
-           message.includes('no transcript') ||
-           message.includes('transcript not available') ||
-           message.includes('captions are disabled')
+    return (
+      (message.includes('transcript') && message.includes('disabled')) ||
+      message.includes('no transcript') ||
+      message.includes('transcript not available') ||
+      message.includes('captions are disabled')
+    )
   }
 
   /**
@@ -1203,43 +1337,51 @@ export class YouTubeTranscriptService {
     }
 
     const message = error.message?.toLowerCase() || ''
-    
+
     if (message.includes('video unavailable') || message.includes('video not found')) {
       return this.createError('VIDEO_NOT_FOUND', `Video ${videoId} not found or unavailable`)
     }
-    
+
     if (message.includes('private') || message.includes('members-only')) {
       return this.createError('PRIVATE_VIDEO', `Video ${videoId} is private or members-only`)
     }
-    
+
     if (message.includes('region') || message.includes('country')) {
       return this.createError('REGION_BLOCKED', `Video ${videoId} is blocked in this region`)
     }
-    
+
     if (this.isTranscriptNotAvailable(error)) {
-      return this.createError('NOT_AVAILABLE', 
+      return this.createError(
+        'NOT_AVAILABLE',
         `No captions/transcript available for video ${videoId}. ` +
-        `Try videos with: (1) Closed captions enabled, (2) Auto-generated captions, ` +
-        `(3) Popular channels like TED, Khan Academy, or news channels. ` +
-        `You can check if a video has captions by looking for the CC button on YouTube.`
+          `Try videos with: (1) Closed captions enabled, (2) Auto-generated captions, ` +
+          `(3) Popular channels like TED, Khan Academy, or news channels. ` +
+          `You can check if a video has captions by looking for the CC button on YouTube.`
       )
     }
-    
+
     if (message.includes('network') || message.includes('timeout') || message.includes('fetch')) {
-      return this.createError('NETWORK_ERROR', `Network error while fetching transcript: ${error.message}`)
+      return this.createError(
+        'NETWORK_ERROR',
+        `Network error while fetching transcript: ${error.message}`
+      )
     }
-    
+
     if (message.includes('parse') || message.includes('invalid')) {
       return this.createError('PARSE_ERROR', `Failed to parse transcript data: ${error.message}`)
     }
-    
+
     return this.createError('UNKNOWN', `Unexpected error: ${error.message}`, error.stack)
   }
 
   /**
    * Create standardized error object
    */
-  private createError(code: TranscriptError['code'], message: string, details?: string): TranscriptError {
+  private createError(
+    code: TranscriptError['code'],
+    message: string,
+    details?: string
+  ): TranscriptError {
     const error = new Error(message) as Error & TranscriptError
     error.code = code
     error.message = message

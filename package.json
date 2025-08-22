@@ -133,7 +133,8 @@
       "activeTab",
       "contextMenus",
       "sidePanel",
-      "tabs"
+      "tabs",
+      "tabCapture"
     ],
     "commands": {
       "toggle-loop": {

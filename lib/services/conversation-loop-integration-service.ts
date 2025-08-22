@@ -219,28 +219,41 @@ export class ConversationLoopIntegrationService {
         throw new Error('No video ID found for loop')
       }
 
-      console.log(`FluentFlow: Starting video-based question generation for loop ${loopId}`)
+      console.log(`FluentFlow: Starting audio-based question generation for loop ${loopId}`)
 
-      // Step 1: Capture video segment
-      const videoBlob = await this.captureVideoSegment(loop.videoId, loop.startTime, loop.endTime)
-      console.log(`FluentFlow: Generated video blob: ${videoBlob.size} bytes`)
+      // Step 1: Capture audio segment (prioritize audio over video)
+      let audioBlob: Blob
+      try {
+        audioBlob = await this.captureAudioSegment(loop.videoId, loop.startTime, loop.endTime)
+        console.log(`FluentFlow: Generated audio blob: ${audioBlob.size} bytes`)
+      } catch (audioError) {
+        console.log('FluentFlow: Audio capture failed, falling back to video:', audioError)
+        // Fallback to video if audio fails
+        const videoBlob = await this.captureVideoSegment(loop.videoId, loop.startTime, loop.endTime)
+        console.log(`FluentFlow: Generated video blob as fallback: ${videoBlob.size} bytes`)
+        audioBlob = videoBlob
+      }
 
-      // Step 2: Optional - Save video for user testing (if in development mode)
-      if (process.env.NODE_ENV === 'development' || (window as any).location?.hostname === 'localhost') {
-        this.saveVideoForTesting(videoBlob, loopId, loop.videoId, loop.startTime, loop.endTime)
+      // Step 2: Optional - Save audio for user testing (if in development mode)
+      if (
+        process.env.NODE_ENV === 'development' ||
+        (window as any).location?.hostname === 'localhost'
+      ) {
+        this.saveAudioForTesting(audioBlob, loopId, loop.videoId, loop.startTime, loop.endTime)
       }
 
       // Step 3: Convert to base64 for Gemini API
-      const base64Video = await this.convertBlobToBase64(videoBlob)
+      const base64Audio = await this.convertBlobToBase64(audioBlob)
 
-      // Step 4: Analyze with Gemini
-      const analysisPrompt = this.buildVideoAnalysisPrompt(loop)
-      const analysis = await this.analysisService!.analyzeVideoForQuestions(
-        base64Video,
+      // Step 4: Analyze with Gemini (use audio analysis method)
+      const analysisPrompt = this.buildAudioAnalysisPrompt(loop)
+      const analysis = await this.analysisService!.analyzeAudioForQuestions(
+        base64Audio,
+        audioBlob.type,
         analysisPrompt
       )
 
-      console.log(`FluentFlow: ✅ Video analysis completed for loop ${loopId}`)
+      console.log(`FluentFlow: ✅ Audio analysis completed for loop ${loopId}`)
 
       // Return in the expected ConversationQuestions format
       return {
@@ -249,18 +262,19 @@ export class ConversationLoopIntegrationService {
         metadata: {
           totalQuestions: analysis.questions.length,
           analysisDate: new Date().toISOString(),
-          generatedFromAudio: false,
+          generatedFromAudio: true,
           generatedFromTranscript: false,
           canRegenerateQuestions: true,
-          // Video-specific metadata
-          videoAnalysis: true,
-          videoSegmentDuration: loop.endTime - loop.startTime
+          // Audio-specific metadata
+          audioAnalysis: true,
+          audioSegmentDuration: loop.endTime - loop.startTime,
+          audioFormat: audioBlob.type
         }
       }
     } catch (error) {
-      console.error(`FluentFlow: Video-based question generation failed for loop ${loopId}:`, error)
+      console.error(`FluentFlow: Audio-based question generation failed for loop ${loopId}:`, error)
       throw new Error(
-        `Video analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+        `Audio analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       )
     }
   }
@@ -269,35 +283,35 @@ export class ConversationLoopIntegrationService {
    * Save generated video blob for user testing and debugging
    */
   private saveVideoForTesting(
-    videoBlob: Blob, 
-    loopId: string, 
-    videoId: string, 
-    startTime: number, 
+    videoBlob: Blob,
+    loopId: string,
+    videoId: string,
+    startTime: number,
     endTime: number
   ): void {
     try {
       const filename = `fluent-flow-video-${videoId}-${startTime}s-${endTime}s-${Date.now()}.webm`
-      
+
       // Create download link
       const url = URL.createObjectURL(videoBlob)
       const a = document.createElement('a')
       a.href = url
       a.download = filename
       a.style.display = 'none'
-      
+
       // Trigger download
       document.body.appendChild(a)
       a.click()
       document.body.removeChild(a)
-      
+
       // Clean up URL
       setTimeout(() => URL.revokeObjectURL(url), 1000)
-      
+
       console.log(`FluentFlow: 💾 Video saved for testing: ${filename}`)
       console.log(`   Size: ${(videoBlob.size / 1024).toFixed(1)} KB`)
       console.log(`   Type: ${videoBlob.type}`)
       console.log(`   Duration: ${(endTime - startTime).toFixed(1)}s`)
-      
+
       // Also save to console for debugging
       ;(window as any).fluentFlowLastVideo = {
         blob: videoBlob,
@@ -308,12 +322,93 @@ export class ConversationLoopIntegrationService {
         endTime,
         url
       }
-      
+
       console.log('💡 Access last video via: window.fluentFlowLastVideo')
-      
     } catch (error) {
       console.warn('FluentFlow: Failed to save video for testing:', error)
     }
+  }
+
+  /**
+   * Save generated audio blob for user testing and debugging
+   */
+  private saveAudioForTesting(
+    audioBlob: Blob,
+    loopId: string,
+    videoId: string,
+    startTime: number,
+    endTime: number
+  ): void {
+    try {
+      const extension = audioBlob.type.includes('mp3')
+        ? 'mp3'
+        : audioBlob.type.includes('wav')
+          ? 'wav'
+          : 'webm'
+      const filename = `fluent-flow-audio-${videoId}-${startTime}s-${endTime}s-${Date.now()}.${extension}`
+
+      // Create download link
+      const url = URL.createObjectURL(audioBlob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      a.style.display = 'none'
+
+      // Trigger download
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+
+      // Clean up URL
+      setTimeout(() => URL.revokeObjectURL(url), 1000)
+
+      console.log(`FluentFlow: 🎵 Audio saved for testing: ${filename}`)
+      console.log(`   Size: ${(audioBlob.size / 1024).toFixed(1)} KB`)
+      console.log(`   Type: ${audioBlob.type}`)
+      console.log(`   Duration: ${(endTime - startTime).toFixed(1)}s`)
+
+      // Also save to console for debugging
+      ;(window as any).fluentFlowLastAudio = {
+        blob: audioBlob,
+        filename,
+        loopId,
+        videoId,
+        startTime,
+        endTime,
+        url
+      }
+
+      console.log('💡 Access last audio via: window.fluentFlowLastAudio')
+    } catch (error) {
+      console.warn('FluentFlow: Failed to save audio for testing:', error)
+    }
+  }
+
+  /**
+   * Build audio analysis prompt for Gemini API
+   */
+  private buildAudioAnalysisPrompt(loop: SavedLoop): string {
+    return `You are an expert language learning instructor. Analyze this ${loop.endTime - loop.startTime} second audio segment and create conversation practice questions for language learners.
+
+Audio Context:
+- Source: YouTube audio segment  
+- Duration: ${loop.startTime}s to ${loop.endTime}s
+- Loop ID: ${loop.id}
+
+Your Task:
+1. Listen carefully to the audio content, including spoken dialogue, background sounds, and context
+2. Create 3-5 multiple choice questions that help language learners practice conversation skills
+3. Focus on practical vocabulary, pronunciation, comprehension, and speaking preparation
+4. Make questions that test understanding of what was said in the audio
+
+Important: 
+- FOCUS ONLY on the audio content and spoken language
+- Create questions about dialogue, vocabulary, pronunciation, and meaning
+- Each question should have exactly 4 multiple choice options (A, B, C, D)
+- Questions should be practical for conversation practice and language learning
+- Consider different accents, speaking speeds, and conversational contexts
+
+Please analyze the audio content and generate conversation practice questions that help learners understand and discuss what they hear.`
   }
 
   /**
@@ -358,9 +453,10 @@ export class ConversationLoopIntegrationService {
       // Method 3: Canvas-based capture with reliable placeholder (always works)
       console.log('FluentFlow: Using reliable video placeholder generation')
       return await this.captureUsingCanvas(videoId, startTime, endTime)
-
     } catch (error) {
-      console.error('FluentFlow: All video capture methods failed, generating emergency placeholder')
+      console.error(
+        'FluentFlow: All video capture methods failed, generating emergency placeholder'
+      )
       // Emergency fallback - generate a basic placeholder that will always work
       try {
         return await this.generateVideoPlaceholder(videoId, startTime, endTime)
@@ -370,6 +466,240 @@ export class ConversationLoopIntegrationService {
         )
       }
     }
+  }
+
+  /**
+   * Capture audio segment from YouTube using Chrome tab capture API
+   */
+  private async captureAudioSegment(
+    videoId: string,
+    startTime: number,
+    endTime: number
+  ): Promise<Blob> {
+    try {
+      console.log(`FluentFlow: Capturing audio segment ${startTime}s-${endTime}s from ${videoId}`)
+
+      // Check if chrome.tabCapture is available
+      if (!chrome?.tabCapture) {
+        throw new Error('Chrome tabCapture API not available')
+      }
+
+      // Method 1: Try tab capture API for audio
+      try {
+        return await this.captureTabAudio(startTime, endTime)
+      } catch (tabCaptureError) {
+        console.log('FluentFlow: Tab capture failed:', tabCaptureError)
+      }
+
+      // Method 2: Try getDisplayMedia with audio
+      try {
+        return await this.captureDisplayAudio(startTime, endTime)
+      } catch (displayError) {
+        console.log('FluentFlow: Display media capture failed:', displayError)
+      }
+
+      // Method 3: Try direct YouTube audio element access
+      try {
+        return await this.captureYouTubeAudio(startTime, endTime)
+      } catch (audioError) {
+        console.log('FluentFlow: YouTube audio access failed:', audioError)
+      }
+
+      throw new Error('All audio capture methods failed')
+    } catch (error) {
+      console.error('FluentFlow: Audio capture failed:', error)
+      throw new Error(
+        `Audio capture failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
+   * Capture audio using Chrome tab capture API
+   */
+  private async captureTabAudio(startTime: number, endTime: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      const duration = endTime - startTime
+
+      // Request tab capture with audio only
+      chrome.tabCapture.capture({ audio: true, video: false }, stream => {
+        if (!stream) {
+          reject(new Error('Failed to capture tab audio stream'))
+          return
+        }
+
+        console.log('FluentFlow: Tab audio stream captured, starting recording')
+
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        })
+
+        const audioChunks: Blob[] = []
+
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data)
+          }
+        }
+
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop())
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+          console.log(`FluentFlow: Audio recording completed: ${audioBlob.size} bytes`)
+          resolve(audioBlob)
+        }
+
+        mediaRecorder.onerror = error => {
+          stream.getTracks().forEach(track => track.stop())
+          reject(new Error(`Audio recording failed: ${error}`))
+        }
+
+        // Start recording
+        mediaRecorder.start()
+
+        // Stop recording after the segment duration + buffer time
+        setTimeout(
+          () => {
+            if (mediaRecorder.state === 'recording') {
+              mediaRecorder.stop()
+            }
+          },
+          (duration + 2) * 1000
+        ) // Add 2 second buffer
+      })
+    })
+  }
+
+  /**
+   * Capture audio using getDisplayMedia API (user-initiated)
+   */
+  private async captureDisplayAudio(startTime: number, endTime: number): Promise<Blob> {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const duration = endTime - startTime
+
+        // Request display media with audio
+        const stream = await navigator.mediaDevices.getDisplayMedia({
+          audio: true,
+          video: false
+        })
+
+        console.log('FluentFlow: Display audio stream captured, starting recording')
+
+        const mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'audio/webm;codecs=opus'
+        })
+
+        const audioChunks: Blob[] = []
+
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data)
+          }
+        }
+
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop())
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+          console.log(`FluentFlow: Display audio recording completed: ${audioBlob.size} bytes`)
+          resolve(audioBlob)
+        }
+
+        mediaRecorder.onerror = error => {
+          stream.getTracks().forEach(track => track.stop())
+          reject(new Error(`Display audio recording failed: ${error}`))
+        }
+
+        // Start recording
+        mediaRecorder.start()
+
+        // Stop recording after the segment duration + buffer time
+        setTimeout(
+          () => {
+            if (mediaRecorder.state === 'recording') {
+              mediaRecorder.stop()
+            }
+          },
+          (duration + 2) * 1000
+        ) // Add 2 second buffer
+      } catch (error) {
+        reject(new Error(`Display media setup failed: ${error}`))
+      }
+    })
+  }
+
+  /**
+   * Try to capture audio directly from YouTube audio element
+   */
+  private async captureYouTubeAudio(startTime: number, endTime: number): Promise<Blob> {
+    return new Promise((resolve, reject) => {
+      try {
+        // Find YouTube video/audio element
+        const videoElement = document.querySelector('video') as HTMLVideoElement
+        if (!videoElement) {
+          throw new Error('No video element found on page')
+        }
+
+        const duration = endTime - startTime
+
+        // Try to capture stream from video element
+        const stream = (videoElement as any).captureStream
+          ? (videoElement as any).captureStream()
+          : (videoElement as any).mozCaptureStream()
+
+        if (!stream) {
+          throw new Error('Cannot capture stream from video element')
+        }
+
+        console.log('FluentFlow: YouTube audio element stream captured')
+
+        // Filter to audio tracks only
+        const audioTracks = stream.getAudioTracks()
+        if (audioTracks.length === 0) {
+          throw new Error('No audio tracks found in video stream')
+        }
+
+        const audioStream = new MediaStream(audioTracks)
+        const mediaRecorder = new MediaRecorder(audioStream, {
+          mimeType: 'audio/webm;codecs=opus'
+        })
+
+        const audioChunks: Blob[] = []
+
+        mediaRecorder.ondataavailable = event => {
+          if (event.data.size > 0) {
+            audioChunks.push(event.data)
+          }
+        }
+
+        mediaRecorder.onstop = () => {
+          audioStream.getTracks().forEach(track => track.stop())
+          const audioBlob = new Blob(audioChunks, { type: 'audio/webm' })
+          console.log(`FluentFlow: YouTube audio recording completed: ${audioBlob.size} bytes`)
+          resolve(audioBlob)
+        }
+
+        mediaRecorder.onerror = error => {
+          audioStream.getTracks().forEach(track => track.stop())
+          reject(new Error(`YouTube audio recording failed: ${error}`))
+        }
+
+        // Start recording
+        mediaRecorder.start()
+
+        // Stop recording after the segment duration + buffer time
+        setTimeout(
+          () => {
+            if (mediaRecorder.state === 'recording') {
+              mediaRecorder.stop()
+            }
+          },
+          (duration + 2) * 1000
+        ) // Add 2 second buffer
+      } catch (error) {
+        reject(new Error(`YouTube audio setup failed: ${error}`))
+      }
+    })
   }
 
   /**
@@ -586,15 +916,15 @@ export class ConversationLoopIntegrationService {
   ): Promise<Blob> {
     try {
       console.log('FluentFlow: Using canvas-based capture fallback')
-      
+
       // For fallback, use our reliable video placeholder generator
       const videoBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
-      
+
       // Validate the blob has content
       if (videoBlob.size < 1000) {
         throw new Error(`Generated video blob too small: ${videoBlob.size} bytes`)
       }
-      
+
       console.log(`FluentFlow: Canvas fallback generated video blob: ${videoBlob.size} bytes`)
       return videoBlob
     } catch (error) {
@@ -674,24 +1004,40 @@ export class ConversationLoopIntegrationService {
                   if (playerState === YT.PlayerState.PLAYING && !recordingStarted) {
                     console.log('FluentFlow: Video playing, attempting screen capture')
                     recordingStarted = true
-                    
+
                     try {
                       // Try screen capture first
-                      const capturedBlob = await this.startScreenCapture(playerContainer, endTime - startTime)
-                      
+                      const capturedBlob = await this.startScreenCapture(
+                        playerContainer,
+                        endTime - startTime
+                      )
+
                       // Validate the captured blob
                       if (capturedBlob && capturedBlob.size > 1000) {
-                        console.log(`FluentFlow: Screen capture successful: ${capturedBlob.size} bytes`)
+                        console.log(
+                          `FluentFlow: Screen capture successful: ${capturedBlob.size} bytes`
+                        )
                         resolve(capturedBlob)
                       } else {
                         console.log('FluentFlow: Screen capture blob too small, using placeholder')
-                        const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
+                        const placeholderBlob = await this.generateVideoPlaceholder(
+                          videoId,
+                          startTime,
+                          endTime
+                        )
                         resolve(placeholderBlob)
                       }
                     } catch (captureError) {
-                      console.log('FluentFlow: Screen capture failed, using placeholder:', captureError)
+                      console.log(
+                        'FluentFlow: Screen capture failed, using placeholder:',
+                        captureError
+                      )
                       try {
-                        const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
+                        const placeholderBlob = await this.generateVideoPlaceholder(
+                          videoId,
+                          startTime,
+                          endTime
+                        )
                         resolve(placeholderBlob)
                       } catch (placeholderError) {
                         reject(new Error(`Both capture methods failed: ${placeholderError}`))
@@ -704,7 +1050,11 @@ export class ConversationLoopIntegrationService {
                     if (!recordingStarted) {
                       console.log('FluentFlow: Video ended before recording, using placeholder')
                       try {
-                        const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
+                        const placeholderBlob = await this.generateVideoPlaceholder(
+                          videoId,
+                          startTime,
+                          endTime
+                        )
                         resolve(placeholderBlob)
                       } catch (error) {
                         reject(new Error(`Placeholder generation failed: ${error}`))
@@ -718,7 +1068,11 @@ export class ConversationLoopIntegrationService {
                   console.error('FluentFlow: YouTube player error:', event.data)
                   console.log('FluentFlow: Player error, using placeholder')
                   try {
-                    const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
+                    const placeholderBlob = await this.generateVideoPlaceholder(
+                      videoId,
+                      startTime,
+                      endTime
+                    )
                     resolve(placeholderBlob)
                   } catch (error) {
                     reject(new Error(`YouTube player error and placeholder failed: ${error}`))
@@ -730,24 +1084,35 @@ export class ConversationLoopIntegrationService {
             })
 
             // Fallback timeout - always provide a video blob
-            setTimeout(async () => {
-              if (!recordingStarted) {
-                console.log('FluentFlow: YouTube iframe API timeout, using placeholder')
-                try {
-                  const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
-                  resolve(placeholderBlob)
-                } catch (error) {
-                  reject(new Error(`Timeout and placeholder failed: ${error}`))
-                } finally {
-                  cleanup()
+            setTimeout(
+              async () => {
+                if (!recordingStarted) {
+                  console.log('FluentFlow: YouTube iframe API timeout, using placeholder')
+                  try {
+                    const placeholderBlob = await this.generateVideoPlaceholder(
+                      videoId,
+                      startTime,
+                      endTime
+                    )
+                    resolve(placeholderBlob)
+                  } catch (error) {
+                    reject(new Error(`Timeout and placeholder failed: ${error}`))
+                  } finally {
+                    cleanup()
+                  }
                 }
-              }
-            }, (endTime - startTime + 10) * 1000)
+              },
+              (endTime - startTime + 10) * 1000
+            )
           })
-          .catch(async (apiError) => {
+          .catch(async apiError => {
             console.log('FluentFlow: YouTube API load failed, using placeholder:', apiError)
             try {
-              const placeholderBlob = await this.generateVideoPlaceholder(videoId, startTime, endTime)
+              const placeholderBlob = await this.generateVideoPlaceholder(
+                videoId,
+                startTime,
+                endTime
+              )
               resolve(placeholderBlob)
             } catch (error) {
               reject(new Error(`API load failed and placeholder failed: ${error}`))
@@ -771,7 +1136,11 @@ export class ConversationLoopIntegrationService {
       // For Chrome extensions, we can't load external scripts due to CSP restrictions
       // Instead, we'll reject immediately and fallback to other capture methods
       console.log('FluentFlow: YouTube iframe API not available in extension context')
-      reject(new Error('YouTube iframe API not available in Chrome extension context due to CSP restrictions'))
+      reject(
+        new Error(
+          'YouTube iframe API not available in Chrome extension context due to CSP restrictions'
+        )
+      )
     })
   }
 
@@ -805,114 +1174,120 @@ export class ConversationLoopIntegrationService {
         const ctx = canvas.getContext('2d')!
         canvas.width = 640
         canvas.height = 360
-        
+
         // Create a meaningful video placeholder since iframe content may not be capturable
         const createVideoPlaceholder = () => {
           // Clear canvas with dark background
           ctx.fillStyle = '#1a1a1a'
           ctx.fillRect(0, 0, canvas.width, canvas.height)
-          
+
           // Add video player-like frame
           ctx.fillStyle = '#333'
           ctx.fillRect(20, 20, canvas.width - 40, canvas.height - 40)
-          
+
           // Add play button icon
           ctx.fillStyle = '#ff0000'
           ctx.beginPath()
-          ctx.moveTo(canvas.width/2 - 30, canvas.height/2 - 20)
-          ctx.lineTo(canvas.width/2 + 20, canvas.height/2)
-          ctx.lineTo(canvas.width/2 - 30, canvas.height/2 + 20)
+          ctx.moveTo(canvas.width / 2 - 30, canvas.height / 2 - 20)
+          ctx.lineTo(canvas.width / 2 + 20, canvas.height / 2)
+          ctx.lineTo(canvas.width / 2 - 30, canvas.height / 2 + 20)
           ctx.closePath()
           ctx.fill()
-          
+
           // Add text overlay
           ctx.fillStyle = '#fff'
           ctx.font = 'bold 24px Arial'
           ctx.textAlign = 'center'
-          ctx.fillText('YouTube Video Segment', canvas.width/2, canvas.height/2 + 60)
-          
+          ctx.fillText('YouTube Video Segment', canvas.width / 2, canvas.height / 2 + 60)
+
           ctx.font = '16px Arial'
-          ctx.fillText(`Duration: ${duration.toFixed(1)} seconds`, canvas.width/2, canvas.height/2 + 85)
-          ctx.fillText('Captured for AI Analysis', canvas.width/2, canvas.height/2 + 105)
-          
+          ctx.fillText(
+            `Duration: ${duration.toFixed(1)} seconds`,
+            canvas.width / 2,
+            canvas.height / 2 + 85
+          )
+          ctx.fillText('Captured for AI Analysis', canvas.width / 2, canvas.height / 2 + 105)
+
           // Add timestamp
           const timestamp = new Date().toLocaleTimeString()
           ctx.font = '12px Arial'
           ctx.fillStyle = '#888'
-          ctx.fillText(`Captured at: ${timestamp}`, canvas.width/2, canvas.height - 30)
+          ctx.fillText(`Captured at: ${timestamp}`, canvas.width / 2, canvas.height - 30)
         }
-        
+
         const stream = canvas.captureStream(2) // Lower FPS for placeholder content
         const mediaRecorder = new MediaRecorder(stream, {
           mimeType: 'video/webm;codecs=vp8'
         })
-        
+
         const chunks: Blob[] = []
-        
-        mediaRecorder.ondataavailable = (event) => {
+
+        mediaRecorder.ondataavailable = event => {
           if (event.data.size > 0) {
             chunks.push(event.data)
             console.log(`FluentFlow: Captured chunk: ${event.data.size} bytes`)
           }
         }
-        
+
         mediaRecorder.onstop = () => {
           const blob = new Blob(chunks, { type: 'video/webm' })
           console.log(`FluentFlow: Final video blob: ${blob.size} bytes, type: ${blob.type}`)
-          
+
           if (blob.size === 0) {
             reject(new Error('Generated video blob is empty'))
           } else {
             resolve(blob)
           }
         }
-        
-        mediaRecorder.onerror = (error) => {
+
+        mediaRecorder.onerror = error => {
           console.error('FluentFlow: MediaRecorder error:', error)
           reject(new Error(`MediaRecorder error: ${error}`))
         }
-        
+
         // Start recording with guaranteed content
         mediaRecorder.start(100) // Capture data every 100ms
-        
+
         // Generate frames with animation
         let frameCount = 0
         const totalFrames = Math.max(duration * 2, 10) // At least 10 frames
-        
+
         const generateFrame = () => {
           createVideoPlaceholder()
-          
+
           // Add progress indicator
           const progress = frameCount / totalFrames
           const barWidth = (canvas.width - 80) * progress
-          
+
           ctx.fillStyle = '#666'
           ctx.fillRect(40, canvas.height - 15, canvas.width - 80, 8)
           ctx.fillStyle = '#ff0000'
           ctx.fillRect(40, canvas.height - 15, barWidth, 8)
-          
+
           frameCount++
         }
-        
+
         // Generate initial frame
         generateFrame()
-        
+
         // Generate frames at regular intervals
         const frameInterval = setInterval(() => {
           if (frameCount < totalFrames) {
             generateFrame()
           }
         }, 500) // 2 FPS
-        
+
         // Stop recording after duration
-        setTimeout(() => {
-          clearInterval(frameInterval)
-          if (mediaRecorder.state === 'recording') {
-            console.log('FluentFlow: Stopping video recording')
-            mediaRecorder.stop()
-          }
-        }, Math.max(duration * 1000, 2000)) // At least 2 seconds
-        
+        setTimeout(
+          () => {
+            clearInterval(frameInterval)
+            if (mediaRecorder.state === 'recording') {
+              console.log('FluentFlow: Stopping video recording')
+              mediaRecorder.stop()
+            }
+          },
+          Math.max(duration * 1000, 2000)
+        ) // At least 2 seconds
       } catch (error) {
         console.error('FluentFlow: Iframe capture setup failed:', error)
         reject(new Error(`Iframe capture setup failed: ${error}`))
@@ -995,46 +1370,53 @@ export class ConversationLoopIntegrationService {
   /**
    * Generate a reliable video blob with segment information for Gemini analysis
    */
-  private async generateVideoPlaceholder(videoId: string, startTime: number, endTime: number): Promise<Blob> {
+  private async generateVideoPlaceholder(
+    videoId: string,
+    startTime: number,
+    endTime: number
+  ): Promise<Blob> {
     return new Promise((resolve, reject) => {
       try {
-        console.log(`FluentFlow: Generating video placeholder for segment ${startTime}s-${endTime}s`)
-        
+        console.log(
+          `FluentFlow: Generating video placeholder for segment ${startTime}s-${endTime}s`
+        )
+
         const canvas = document.createElement('canvas')
         const ctx = canvas.getContext('2d')!
         canvas.width = 640
         canvas.height = 360
-        
+
         const duration = endTime - startTime
         const totalFrames = Math.max(Math.floor(duration * 5), 10) // 5 FPS minimum
-        
+
         const stream = canvas.captureStream(5) // 5 FPS
         const mediaRecorder = new MediaRecorder(stream, {
           mimeType: 'video/webm;codecs=vp8'
         })
-        
+
         const chunks: Blob[] = []
         let frameCount = 0
-        
-        mediaRecorder.ondataavailable = (event) => {
+
+        mediaRecorder.ondataavailable = event => {
           if (event.data.size > 0) {
             chunks.push(event.data)
           }
         }
-        
+
         mediaRecorder.onstop = () => {
           const blob = new Blob(chunks, { type: 'video/webm' })
           console.log(`FluentFlow: Generated placeholder video: ${blob.size} bytes`)
-          
-          if (blob.size < 1000) { // If blob is too small, something went wrong
+
+          if (blob.size < 1000) {
+            // If blob is too small, something went wrong
             reject(new Error(`Generated video blob too small: ${blob.size} bytes`))
           } else {
             resolve(blob)
           }
         }
-        
+
         mediaRecorder.onerror = reject
-        
+
         const drawFrame = () => {
           // Clear with gradient background
           const gradient = ctx.createLinearGradient(0, 0, canvas.width, canvas.height)
@@ -1042,60 +1424,76 @@ export class ConversationLoopIntegrationService {
           gradient.addColorStop(1, '#16213e')
           ctx.fillStyle = gradient
           ctx.fillRect(0, 0, canvas.width, canvas.height)
-          
+
           // Draw main content area
           ctx.fillStyle = '#0f3460'
           ctx.fillRect(50, 50, canvas.width - 100, canvas.height - 100)
-          
+
           // Draw YouTube-style player
           ctx.fillStyle = '#000'
           ctx.fillRect(70, 70, canvas.width - 140, canvas.height - 200)
-          
+
           // Draw play button
           ctx.fillStyle = '#ff0000'
           ctx.beginPath()
-          ctx.arc(canvas.width/2, canvas.height/2 - 25, 40, 0, 2 * Math.PI)
+          ctx.arc(canvas.width / 2, canvas.height / 2 - 25, 40, 0, 2 * Math.PI)
           ctx.fill()
-          
+
           ctx.fillStyle = '#fff'
           ctx.beginPath()
-          ctx.moveTo(canvas.width/2 - 15, canvas.height/2 - 40)
-          ctx.lineTo(canvas.width/2 + 20, canvas.height/2 - 25)
-          ctx.lineTo(canvas.width/2 - 15, canvas.height/2 - 10)
+          ctx.moveTo(canvas.width / 2 - 15, canvas.height / 2 - 40)
+          ctx.lineTo(canvas.width / 2 + 20, canvas.height / 2 - 25)
+          ctx.lineTo(canvas.width / 2 - 15, canvas.height / 2 - 10)
           ctx.closePath()
           ctx.fill()
-          
+
           // Add video information
           ctx.fillStyle = '#fff'
           ctx.font = 'bold 28px Arial'
           ctx.textAlign = 'center'
-          ctx.fillText('YouTube Video Segment', canvas.width/2, canvas.height/2 + 40)
-          
+          ctx.fillText('YouTube Video Segment', canvas.width / 2, canvas.height / 2 + 40)
+
           ctx.font = '18px Arial'
-          ctx.fillText(`Video ID: ${videoId.substring(0, 8)}...`, canvas.width/2, canvas.height/2 + 70)
-          ctx.fillText(`Time: ${startTime.toFixed(1)}s - ${endTime.toFixed(1)}s`, canvas.width/2, canvas.height/2 + 95)
-          ctx.fillText(`Duration: ${duration.toFixed(1)} seconds`, canvas.width/2, canvas.height/2 + 120)
-          
+          ctx.fillText(
+            `Video ID: ${videoId.substring(0, 8)}...`,
+            canvas.width / 2,
+            canvas.height / 2 + 70
+          )
+          ctx.fillText(
+            `Time: ${startTime.toFixed(1)}s - ${endTime.toFixed(1)}s`,
+            canvas.width / 2,
+            canvas.height / 2 + 95
+          )
+          ctx.fillText(
+            `Duration: ${duration.toFixed(1)} seconds`,
+            canvas.width / 2,
+            canvas.height / 2 + 120
+          )
+
           // Progress bar
           const progress = frameCount / totalFrames
           const progressWidth = (canvas.width - 120) * progress
-          
+
           ctx.fillStyle = '#333'
           ctx.fillRect(60, canvas.height - 50, canvas.width - 120, 10)
           ctx.fillStyle = '#ff0000'
           ctx.fillRect(60, canvas.height - 50, progressWidth, 10)
-          
+
           // Frame counter
           ctx.font = '14px Arial'
           ctx.fillStyle = '#aaa'
-          ctx.fillText(`Frame ${frameCount + 1}/${totalFrames}`, canvas.width/2, canvas.height - 25)
-          
+          ctx.fillText(
+            `Frame ${frameCount + 1}/${totalFrames}`,
+            canvas.width / 2,
+            canvas.height - 25
+          )
+
           frameCount++
         }
-        
+
         // Start recording
         mediaRecorder.start(200) // Capture every 200ms
-        
+
         // Generate frames
         const frameInterval = setInterval(() => {
           if (frameCount < totalFrames) {
@@ -1109,18 +1507,20 @@ export class ConversationLoopIntegrationService {
             }, 500)
           }
         }, 200) // 5 FPS
-        
+
         // Initial frame
         drawFrame()
-        
+
         // Safety timeout
-        setTimeout(() => {
-          clearInterval(frameInterval)
-          if (mediaRecorder.state === 'recording') {
-            mediaRecorder.stop()
-          }
-        }, Math.max(duration * 1000 + 2000, 5000))
-        
+        setTimeout(
+          () => {
+            clearInterval(frameInterval)
+            if (mediaRecorder.state === 'recording') {
+              mediaRecorder.stop()
+            }
+          },
+          Math.max(duration * 1000 + 2000, 5000)
+        )
       } catch (error) {
         reject(new Error(`Video placeholder generation failed: ${error}`))
       }
@@ -1199,26 +1599,26 @@ Please analyze the video content and generate conversation practice questions th
         console.log(`FluentFlow: Transcript method failed:`, transcriptError)
 
         // Method 2: Try video analysis as primary fallback
-        try {
-          console.log(`FluentFlow: Falling back to video analysis for loop ${loopId}`)
-          return await this.generateQuestionsFromVideo(loopId)
-        } catch (videoError) {
-          console.log(`FluentFlow: Video analysis failed:`, videoError)
+        // try {
+        //   console.log(`FluentFlow: Falling back to video analysis for loop ${loopId}`)
+        //   return await this.generateQuestionsFromVideo(loopId)
+        // } catch (videoError) {
+        //   console.log(`FluentFlow: Video analysis failed:`, videoError)
 
-          // Method 3: Audio fallback (if available)
-          if (loop.hasAudioSegment) {
-            console.log(`FluentFlow: Falling back to audio-based generation for loop ${loopId}`)
-            return await this.generateQuestionsForLoop(loopId)
-          } else {
-            // All methods failed - provide comprehensive error
-            throw new Error(`All question generation methods failed:
-              - Transcript: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}
-              - Video: ${videoError instanceof Error ? videoError.message : 'Unknown error'}
-              - Audio: Not available
-              
-              Please try recreating the loop or check if the video has available captions.`)
-          }
-        }
+        //   // Method 3: Audio fallback (if available)
+        //   if (loop.hasAudioSegment) {
+        //     console.log(`FluentFlow: Falling back to audio-based generation for loop ${loopId}`)
+        //     return await this.generateQuestionsForLoop(loopId)
+        //   } else {
+        //     // All methods failed - provide comprehensive error
+        //     throw new Error(`All question generation methods failed:
+        //       - Transcript: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}
+        //       - Video: ${videoError instanceof Error ? videoError.message : 'Unknown error'}
+        //       - Audio: Not available
+
+        //       Please try recreating the loop or check if the video has available captions.`)
+        //   }
+        // }
       }
     }
 

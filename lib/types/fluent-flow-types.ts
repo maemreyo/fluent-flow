@@ -326,6 +326,10 @@ export interface ConversationQuestions {
     // Video analysis specific fields
     videoAnalysis?: boolean
     videoSegmentDuration?: number
+    // Audio analysis specific fields
+    audioAnalysis?: boolean
+    audioSegmentDuration?: number
+    audioFormat?: string
   }
 }
 
