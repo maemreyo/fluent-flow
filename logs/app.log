@@ -1,0 +1,97 @@
+background.ts:14 FluentFlow background script loaded
+runtime-415c369c1fc15003.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
+auth-handler.ts:53 Auth state changed: INITIAL_SESSION - ngonhuthanhtrung1409@gmail.com
+auth-handler.ts:39 Auth initialized: User: ngonhuthanhtrung1409@gmail.com
+auth-handler.ts:53 Auth state changed: TOKEN_REFRESHED - ngonhuthanhtrung1409@gmail.com
+runtime-16293109d343432d.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/sidepanel.tsx
+YPM2AS64.js:9504 Uncaught (in promise) TypeError: Cannot read properties of undefined (reading 'subscribe')
+    at YPM2AS64.js:9504:19
+    at untrack (EIDV623S.js:265:13)
+    at Object.fn (EIDV623S.js:290:1)
+    at runComputation (EIDV623S.js:456:17)
+    at updateComputation (EIDV623S.js:439:3)
+    at runTop (EIDV623S.js:547:67)
+    at runUserEffects (EIDV623S.js:659:1)
+    at EIDV623S.js:616:12
+    at runUpdates (EIDV623S.js:564:5)
+    at completeUpdates (EIDV623S.js:616:12)
+sidepanel.tsx:97 FluentFlow: Loaded Gemini config from Supabase: true
+sidepanel.tsx:116 FluentFlow: Initializing conversation loop integration
+auto-cleanup-scheduler.ts:24 Starting auto cleanup scheduler (every 6 hours)
+sidepanel.tsx:123 FluentFlow: Conversation loop integration ready
+use-transcript-query.ts:31 useTranscriptQuery: Fetching transcript for arj7oStGLkU (3.139458s-838.60374s)
+use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop loop_1755847775390_x3h9e9i
+use-transcript-query.ts:31 useTranscriptQuery: Fetching transcript for eVFzbxmKNUw (7.108628s-58.608679s)
+use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop loop_1755831510944_ris6tut
+use-transcript-query.ts:36 useTranscriptQuery: Found cached transcript in database
+sidepanel.351be5e2.js:135988  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&segment_id=eq.loop_1755847775390_x3h9e9i&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 400 (Bad Request)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:135988
+Promise.then
+step @ sidepanel.351be5e2.js:136001
+(anonymous) @ sidepanel.351be5e2.js:136003
+__awaiter @ sidepanel.351be5e2.js:135985
+(anonymous) @ sidepanel.351be5e2.js:136020
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:817 Error fetching questions: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type uuid: "loop_1755847775390_x3h9e9i"'}
+getQuestions @ fluent-flow-supabase-store.ts:817
+await in getQuestions
+queryFn @ use-question-query.ts:22
+fetchFn @ query.ts:464
+run @ retryer.ts:155
+start @ retryer.ts:222
+fetch @ query.ts:530
+executeFetch_fn @ queryObserver.ts:345
+onSubscribe @ queryObserver.ts:101
+subscribe @ subscribable.ts:13
+(anonymous) @ useBaseQuery.ts:105
+subscribeToStore @ react-dom.development.js:16959
+commitHookEffectListMount @ react-dom.development.js:23153
+commitPassiveMountOnFiber @ react-dom.development.js:24927
+commitPassiveMountEffects_complete @ react-dom.development.js:24892
+commitPassiveMountEffects_begin @ react-dom.development.js:24880
+commitPassiveMountEffects @ react-dom.development.js:24867
+flushPassiveEffectsImpl @ react-dom.development.js:27042
+flushPassiveEffects @ react-dom.development.js:26985
+commitRootImpl @ react-dom.development.js:26936
+commitRoot @ react-dom.development.js:26683
+performSyncWorkOnRoot @ react-dom.development.js:26118
+flushSyncCallbacks @ react-dom.development.js:12043
+(anonymous) @ react-dom.development.js:25653
+sidepanel.351be5e2.js:135988  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/conversation_questions?select=questions&segment_id=eq.loop_1755831510944_ris6tut&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5 400 (Bad Request)
+(anonymous) @ fetch.ts:16
+(anonymous) @ fetch.ts:46
+fulfilled @ sidepanel.351be5e2.js:135988
+Promise.then
+step @ sidepanel.351be5e2.js:136001
+(anonymous) @ sidepanel.351be5e2.js:136003
+__awaiter @ sidepanel.351be5e2.js:135985
+(anonymous) @ sidepanel.351be5e2.js:136020
+then @ PostgrestBuilder.ts:102
+fluent-flow-supabase-store.ts:817 Error fetching questions: {code: '22P02', details: null, hint: null, message: 'invalid input syntax for type uuid: "loop_1755831510944_ris6tut"'}
+getQuestions @ fluent-flow-supabase-store.ts:817
+await in getQuestions
+queryFn @ use-question-query.ts:22
+fetchFn @ query.ts:464
+run @ retryer.ts:155
+start @ retryer.ts:222
+fetch @ query.ts:530
+executeFetch_fn @ queryObserver.ts:345
+onSubscribe @ queryObserver.ts:101
+subscribe @ subscribable.ts:13
+(anonymous) @ useBaseQuery.ts:105
+subscribeToStore @ react-dom.development.js:16959
+commitHookEffectListMount @ react-dom.development.js:23153
+commitPassiveMountOnFiber @ react-dom.development.js:24927
+commitPassiveMountEffects_complete @ react-dom.development.js:24892
+commitPassiveMountEffects_begin @ react-dom.development.js:24880
+commitPassiveMountEffects @ react-dom.development.js:24867
+flushPassiveEffectsImpl @ react-dom.development.js:27042
+flushPassiveEffects @ react-dom.development.js:26985
+commitRootImpl @ react-dom.development.js:26936
+commitRoot @ react-dom.development.js:26683
+performSyncWorkOnRoot @ react-dom.development.js:26118
+flushSyncCallbacks @ react-dom.development.js:12043
+(anonymous) @ react-dom.development.js:25653
+use-transcript-query.ts:36 useTranscriptQuery: Found cached transcript in database

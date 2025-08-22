@@ -19,8 +19,9 @@ import {
 } from 'lucide-react'
 import { AudioPlayer } from './components/audio-player'
 import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
-import { EnhancedLoopCard } from './components/enhanced-loop-card'
+import { EnhancedLoopCardWithIntegration } from './components/enhanced-loop-card-with-integration'
 import { StorageManagementPanel } from './components/storage-management-panel'
+import { QueryProvider } from './components/providers/query-provider'
 import { Badge } from './components/ui/badge'
 import { Button } from './components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
@@ -33,7 +34,7 @@ import type { SavedLoop, ConversationQuestions } from './lib/types/fluent-flow-t
 import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
-export default function FluentFlowSidePanel() {
+function FluentFlowSidePanelContent() {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'recordings' | 'conversations'>('dashboard')
   const [savedLoops, setSavedLoops] = useState<SavedLoop[]>([])
   const [loadingLoops, setLoadingLoops] = useState(false)
@@ -803,26 +804,13 @@ export default function FluentFlowSidePanel() {
 
         {!loadingLoops &&
           filteredLoops.map(loop => (
-            <EnhancedLoopCard
+            <EnhancedLoopCardWithIntegration
               key={loop.id}
               loop={loop}
+              integrationService={integrationService}
               onApply={() => applyLoop(loop)}
               onDelete={(loopId) => deleteLoop(loopId)}
               onExport={() => exportLoop(loop)}
-              onGenerateQuestions={async (loop) => {
-                if (integrationService) {
-                  try {
-                    const questions = await integrationService.generateQuestions(loop.id)
-                    setActiveQuestions(questions)
-                    setActiveQuestionLoop(loop)
-                    return questions
-                  } catch (error) {
-                    console.error('Failed to generate questions:', error)
-                    throw error
-                  }
-                }
-                throw new Error('Integration service not available')
-              }}
               isApplying={applyingLoopId === loop.id}
             />
           ))}
@@ -900,5 +888,13 @@ export default function FluentFlowSidePanel() {
         </div>
       </Tabs>
     </div>
+  )
+}
+
+export default function FluentFlowSidePanel() {
+  return (
+    <QueryProvider>
+      <FluentFlowSidePanelContent />
+    </QueryProvider>
   )
 }

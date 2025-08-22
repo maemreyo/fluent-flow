@@ -93,6 +93,48 @@ export type Database = {
           },
         ]
       }
+      conversation_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          questions: Json
+          segment_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          questions: Json
+          segment_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          questions?: Json
+          segment_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_conversation_questions_segment"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "loop_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_conversation_questions_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comparison_results: {
         Row: {
           created_at: string
@@ -150,11 +192,14 @@ export type Database = {
           description: string | null
           difficulty_level: number | null
           end_time: number
+          has_transcript: boolean | null
           id: string
           label: string | null
           practice_count: number | null
           session_id: string
           start_time: number
+          transcript_id: string | null
+          transcript_metadata: Json | null
           updated_at: string
         }
         Insert: {
@@ -162,11 +207,14 @@ export type Database = {
           description?: string | null
           difficulty_level?: number | null
           end_time: number
+          has_transcript?: boolean | null
           id?: string
           label?: string | null
           practice_count?: number | null
           session_id: string
           start_time: number
+          transcript_id?: string | null
+          transcript_metadata?: Json | null
           updated_at?: string
         }
         Update: {
@@ -174,14 +222,24 @@ export type Database = {
           description?: string | null
           difficulty_level?: number | null
           end_time?: number
+          has_transcript?: boolean | null
           id?: string
           label?: string | null
           practice_count?: number | null
           session_id?: string
           start_time?: number
+          transcript_id?: string | null
+          transcript_metadata?: Json | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_loop_segments_transcript"
+            columns: ["transcript_id"]
+            isOneToOne: false
+            referencedRelation: "transcripts"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "loop_segments_session_id_fkey"
             columns: ["session_id"]
@@ -348,6 +406,42 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_preferences?: Json | null
+        }
+        Relationships: []
+      }
+      transcripts: {
+        Row: {
+          created_at: string | null
+          end_time: number
+          full_text: string
+          id: string
+          language: string | null
+          metadata: Json | null
+          segments: Json
+          start_time: number
+          video_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          end_time: number
+          full_text: string
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          segments?: Json
+          start_time: number
+          video_id: string
+        }
+        Update: {
+          created_at?: string | null
+          end_time?: number
+          full_text?: string
+          id?: string
+          language?: string | null
+          metadata?: Json | null
+          segments?: Json
+          start_time?: number
+          video_id?: string
         }
         Relationships: []
       }

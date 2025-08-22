@@ -66,13 +66,11 @@ export class ConversationLoopIntegrationService {
 
       const result: any = { loop }
 
-      // Generate questions if requested and audio was captured
-      if (generateQuestions && loop.hasAudioSegment && this.analysisService) {
+      // Generate questions if requested - use smart caching system
+      if (generateQuestions && this.analysisService) {
         try {
-          const questions = await this.analysisService.generateQuestions(loop)
-
-          // Update loop status
-          await this.loopService.updateQuestionStatus(loop.id, true, questions.questions.length)
+          // Use the smart question generation that checks cache first
+          const questions = await this.generateQuestions(loop.id)
 
           result.questions = questions
 
@@ -104,6 +102,13 @@ export class ConversationLoopIntegrationService {
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
+    // First check if questions already exist in database
+    const cachedQuestions = await this.storageService.getQuestions(loopId)
+    if (cachedQuestions && cachedQuestions.questions.length > 0) {
+      console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+      return cachedQuestions
+    }
+
     // Get all loops and find the specific one
     const allLoops = await this.storageService.getAllUserLoops()
     const loop = allLoops.find(l => l.id === loopId)
@@ -124,6 +129,13 @@ export class ConversationLoopIntegrationService {
 
       // Generate questions
       const questions = await this.analysisService.generateQuestions(loop)
+
+      // Save questions to database for future caching
+      await this.storageService.saveQuestions(loopId, questions.questions, {
+        generatedFromAudio: true,
+        audioSegmentDuration: loop.endTime - loop.startTime,
+        generatedAt: new Date().toISOString()
+      })
 
       // Update loop status
       await this.loopService.updateQuestionStatus(loopId, true, questions.questions.length)
@@ -161,12 +173,62 @@ export class ConversationLoopIntegrationService {
     }
 
     try {
-      // Extract transcript for the specific time segment
-      const transcriptResult = await youtubeTranscriptService.getTranscriptSegment(
+      // First check if questions already exist in database
+      const cachedQuestions = await this.storageService.getQuestions(loopId)
+      if (cachedQuestions && cachedQuestions.questions.length > 0) {
+        console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+        return cachedQuestions
+      }
+
+      let transcriptResult: {
+        segments: any[];
+        fullText: string;
+        videoId: string;
+        language?: string | undefined;
+      };
+
+      // Check if transcript is already available in the database
+      const cachedTranscript = await this.storageService.getTranscript(
         loop.videoId,
         loop.startTime,
         loop.endTime
       )
+
+      if (cachedTranscript) {
+        console.log(`FluentFlow: Using cached transcript for loop ${loopId}`)
+        transcriptResult = {
+          segments: cachedTranscript.segments as any[],
+          fullText: cachedTranscript.fullText,
+          videoId: loop.videoId,
+          language: cachedTranscript.language
+        }
+      } else if (loop.hasTranscript && loop.transcriptMetadata?.text) {
+        // Use existing transcript metadata if available
+        console.log(`FluentFlow: Using loop metadata transcript for loop ${loopId}`)
+        transcriptResult = {
+          segments: [],
+          fullText: loop.transcriptMetadata.text,
+          videoId: loop.videoId,
+          language: loop.transcriptMetadata.language
+        }
+      } else {
+        // Extract transcript from external service and save to database
+        transcriptResult = await youtubeTranscriptService.getTranscriptSegment(
+          loop.videoId,
+          loop.startTime,
+          loop.endTime
+        )
+
+        // Save transcript to database for future use
+        await this.storageService.saveTranscript(
+          loop.videoId,
+          loop.startTime,
+          loop.endTime,
+          transcriptResult.segments,
+          transcriptResult.fullText,
+          transcriptResult.language || 'en'
+        )
+      }
 
       if (!transcriptResult.fullText || transcriptResult.fullText.trim().length === 0) {
         throw new Error('No transcript content found for this time segment')
@@ -182,6 +244,15 @@ export class ConversationLoopIntegrationService {
 
       // Generate questions using transcript instead of audio
       const questions = await this.analysisService.generateQuestionsFromTranscript(transcriptLoop)
+
+      // Save questions to database for future caching
+      await this.storageService.saveQuestions(loopId, questions.questions, {
+        generatedFromTranscript: true,
+        transcriptLength: transcriptResult.fullText.length,
+        transcriptLanguage: transcriptResult.language || 'en',
+        segmentCount: transcriptResult.segments.length,
+        generatedAt: new Date().toISOString()
+      })
 
       // Update loop with transcript metadata
       await this.loopService.updateLoopTranscript(loopId, {
@@ -1579,6 +1650,13 @@ Please analyze the video content and generate conversation practice questions th
       throw new Error('Gemini API not configured. Please provide API credentials.')
     }
 
+    // First check if questions already exist in database
+    const cachedQuestions = await this.storageService.getQuestions(loopId)
+    if (cachedQuestions && cachedQuestions.questions.length > 0) {
+      console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
+      return cachedQuestions
+    }
+
     // Get all loops and find the specific one
     const allLoops = await this.storageService.getAllUserLoops()
     const loop = allLoops.find(l => l.id === loopId)
@@ -1587,7 +1665,7 @@ Please analyze the video content and generate conversation practice questions th
       throw new Error('Loop not found')
     }
 
-    // Smart fallback system: Transcript → Video → Audio
+    // Smart fallback system: Transcript → Audio (prioritizing transcript over video)
     if (loop.videoId) {
       // Method 1: Try transcript-based generation first (preferred)
       try {
@@ -1598,27 +1676,14 @@ Please analyze the video content and generate conversation practice questions th
       } catch (transcriptError) {
         console.log(`FluentFlow: Transcript method failed:`, transcriptError)
 
-        // Method 2: Try video analysis as primary fallback
-        // try {
-        //   console.log(`FluentFlow: Falling back to video analysis for loop ${loopId}`)
-        //   return await this.generateQuestionsFromVideo(loopId)
-        // } catch (videoError) {
-        //   console.log(`FluentFlow: Video analysis failed:`, videoError)
-
-        //   // Method 3: Audio fallback (if available)
-        //   if (loop.hasAudioSegment) {
-        //     console.log(`FluentFlow: Falling back to audio-based generation for loop ${loopId}`)
-        //     return await this.generateQuestionsForLoop(loopId)
-        //   } else {
-        //     // All methods failed - provide comprehensive error
-        //     throw new Error(`All question generation methods failed:
-        //       - Transcript: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}
-        //       - Video: ${videoError instanceof Error ? videoError.message : 'Unknown error'}
-        //       - Audio: Not available
-
-        //       Please try recreating the loop or check if the video has available captions.`)
-        //   }
-        // }
+        // Method 2: Audio fallback (if available)
+        if (loop.hasAudioSegment) {
+          console.log(`FluentFlow: Falling back to audio-based generation for loop ${loopId}`)
+          return await this.generateQuestionsForLoop(loopId)
+        } else {
+          // No audio available - provide transcript error details
+          throw new Error(`Transcript-based generation failed and no audio segment available: ${transcriptError instanceof Error ? transcriptError.message : 'Unknown error'}. Please try recreating the loop or check if the video has available captions.`)
+        }
       }
     }
 
@@ -1631,6 +1696,103 @@ Please analyze the video content and generate conversation practice questions th
     throw new Error(
       'Cannot generate questions: no video ID for analysis and no audio segment captured. Please recreate the loop with a valid YouTube video.'
     )
+  }
+
+  /**
+   * Public API for React Query: Generate questions with intelligent caching
+   * This method is designed to be used by React Query hooks and UI components
+   */
+  async getQuestionsWithCaching(loopId: string): Promise<ConversationQuestions> {
+    // This method wraps generateQuestions with additional React Query optimizations
+    try {
+      const questions = await this.generateQuestions(loopId)
+      
+      // Mark this as a successful generation for analytics
+      console.log(`FluentFlow: Successfully generated/retrieved ${questions.questions.length} questions for loop ${loopId}`)
+      
+      return questions
+    } catch (error) {
+      // Enhanced error handling for React Query
+      console.error(`FluentFlow: Question generation failed for loop ${loopId}:`, error)
+      
+      // Re-throw with enhanced context for React Query error boundaries
+      throw new Error(
+        `Question generation failed for loop ${loopId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
+  }
+
+  /**
+   * Public API for React Query: Get transcript with intelligent caching
+   * This method is designed to be used by React Query hooks and UI components
+   */
+  async getTranscriptWithCaching(
+    videoId: string, 
+    startTime: number, 
+    endTime: number, 
+    language?: string
+  ): Promise<{
+    id?: string;
+    segments: any[];
+    fullText: string;
+    language: string;
+    videoId: string;
+  }> {
+    try {
+      // First check if transcript exists in database
+      const cachedTranscript = await this.storageService.getTranscript(videoId, startTime, endTime)
+      
+      if (cachedTranscript) {
+        console.log(`FluentFlow: Using cached transcript for video ${videoId} (${startTime}s-${endTime}s)`)
+        return {
+          id: cachedTranscript.id,
+          segments: cachedTranscript.segments as any[],
+          fullText: cachedTranscript.fullText,
+          language: cachedTranscript.language,
+          videoId
+        }
+      }
+
+      // Fetch from external service
+      const transcriptResult = await youtubeTranscriptService.getTranscriptSegment(
+        videoId,
+        startTime,
+        endTime,
+        language
+      )
+
+      // Save to database for future caching
+      const savedTranscript = await this.storageService.saveTranscript(
+        videoId,
+        startTime,
+        endTime,
+        transcriptResult.segments,
+        transcriptResult.fullText,
+        transcriptResult.language || 'en'
+      )
+
+      console.log(`FluentFlow: Successfully fetched and cached transcript for video ${videoId}`)
+
+      return {
+        id: savedTranscript?.id,
+        segments: transcriptResult.segments,
+        fullText: transcriptResult.fullText,
+        language: transcriptResult.language || 'en',
+        videoId
+      }
+    } catch (error) {
+      console.error(`FluentFlow: Transcript fetching failed for video ${videoId}:`, error)
+      
+      // Handle transcript-specific errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        const transcriptError = error as TranscriptError
+        throw new Error(this.getTranscriptErrorMessage(transcriptError))
+      }
+
+      throw new Error(
+        `Transcript fetching failed for video ${videoId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+      )
+    }
   }
 
   /**

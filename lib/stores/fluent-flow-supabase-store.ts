@@ -457,7 +457,9 @@ const supabaseService = {
           createdAt:
             typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
           updatedAt:
-            typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
+            typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString(),
+          hasTranscript: loop.hasTranscript || false,
+          transcriptMetadata: loop.transcriptMetadata || null
         }
       }
     }
@@ -705,8 +707,157 @@ const supabaseService = {
       console.error('Error updating statistics:', error)
       throw error
     }
+  },
+
+  // Transcript operations
+  async getTranscript(
+    videoId: string,
+    startTime: number,
+    endTime: number
+  ): Promise<{ id: string; segments: any[]; fullText: string; language: string } | null> {
+    const { data, error } = await supabase
+      .from('transcripts')
+      .select('*')
+      .eq('video_id', videoId)
+      .eq('start_time', startTime)
+      .eq('end_time', endTime)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No matching row found
+        return null
+      }
+      console.error('Error fetching transcript:', error)
+      throw error
+    }
+
+    return {
+      id: data.id,
+      segments: data.segments as any[],
+      fullText: data.full_text,
+      language: data.language || 'auto'
+    }
+  },
+
+  async saveTranscript(
+    videoId: string,
+    startTime: number,
+    endTime: number,
+    segments: any[],
+    fullText: string,
+    language: string = 'auto'
+  ): Promise<string> {
+    const transcriptData = {
+      video_id: videoId,
+      start_time: startTime,
+      end_time: endTime,
+      segments: segments,
+      full_text: fullText,
+      language: language,
+      metadata: {
+        createdAt: new Date().toISOString(),
+        source: 'youtube.js'
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('transcripts')
+      .insert(transcriptData)
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Error saving transcript:', error)
+      throw error
+    }
+
+    return data.id
+  },
+
+  async updateLoopWithTranscript(
+    segmentId: string,
+    transcriptId: string,
+    transcriptMetadata: any
+  ): Promise<void> {
+    const { error } = await supabase
+      .from('loop_segments')
+      .update({
+        transcript_id: transcriptId,
+        has_transcript: true,
+        transcript_metadata: transcriptMetadata,
+        updated_at: new Date().toISOString()
+      })
+      .eq('id', segmentId)
+
+    if (error) {
+      console.error('Error updating loop with transcript:', error)
+      throw error
+    }
+  },
+
+  // Question operations
+  async getQuestions(segmentId: string): Promise<any[] | null> {
+    const user = await getCurrentUser()
+    if (!user) return null
+
+    const { data, error } = await supabase
+      .from('conversation_questions')
+      .select('questions')
+      .eq('segment_id', segmentId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No matching row found
+        return null
+      }
+      console.error('Error fetching questions:', error)
+      throw error
+    }
+
+    return data.questions as any[]
+  },
+
+  async saveQuestions(
+    segmentId: string,
+    questions: any[],
+    metadata: any = {}
+  ): Promise<string> {
+    const user = await getCurrentUser()
+    if (!user) throw new Error('User not authenticated')
+
+    const questionData = {
+      segment_id: segmentId,
+      user_id: user.id,
+      questions: questions,
+      metadata: {
+        ...metadata,
+        createdAt: new Date().toISOString(),
+        questionCount: questions.length
+      }
+    }
+
+    const { data, error } = await supabase
+      .from('conversation_questions')
+      .upsert(questionData, {
+        onConflict: 'segment_id,user_id'
+      })
+      .select('id')
+      .single()
+
+    if (error) {
+      console.error('Error saving questions:', error)
+      throw error
+    }
+
+    return data.id
   }
 }
+
+// Export supabaseService for use in React Query hooks
+export { supabaseService }
 
 export const useFluentFlowSupabaseStore = create<FluentFlowStore>()(
   persist(
