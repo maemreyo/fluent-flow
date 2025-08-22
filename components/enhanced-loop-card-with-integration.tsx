@@ -44,6 +44,8 @@ export function EnhancedLoopCardWithIntegration({
   const [showTranscript, setShowTranscript] = useState(false)
   const [showQuestions, setShowQuestions] = useState(false)
   const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
+  const [questionsCompleted, setQuestionsCompleted] = useState(false)
+  const [lastScore, setLastScore] = useState<number | null>(null)
   
   // Use React Query for transcript data
   const {
@@ -68,7 +70,7 @@ export function EnhancedLoopCardWithIntegration({
   const generateQuestionsMutation = useGenerateQuestionsMutation()
 
   const formatDuration = (start: number, end: number) => {
-    const duration = end - start
+    const duration = Math.floor(end - start) // Round down to avoid decimals
     return `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, '0')}`
   }
 
@@ -98,6 +100,13 @@ export function EnhancedLoopCardWithIntegration({
     console.log('Question practice completed:', { results, score })
     setShowQuestions(false)
     setActiveQuestions(null)
+    setQuestionsCompleted(true)
+    setLastScore(score)
+    // Auto hide results after 10 seconds
+    setTimeout(() => {
+      setQuestionsCompleted(false)
+      setLastScore(null)
+    }, 10000)
   }
 
   const renderTranscriptSection = () => {
@@ -431,6 +440,24 @@ export function EnhancedLoopCardWithIntegration({
             </div>
           )}
         </div>
+
+        {/* Show completion results */}
+        {questionsCompleted && lastScore !== null && (
+          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <span className="text-sm font-medium text-green-800">Practice Completed!</span>
+              </div>
+              <Badge className="bg-green-100 text-green-800 border-green-300">
+                Score: {Math.round(lastScore)}%
+              </Badge>
+            </div>
+            <p className="text-xs text-green-700 mt-1">
+              Great job! Your results have been saved.
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )
