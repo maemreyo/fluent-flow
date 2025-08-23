@@ -10,6 +10,7 @@ interface TranscriptSegment {
   timestamp: string
   text: string
   isHighlighted: boolean
+  isLoopSegment?: boolean
   loopId?: string
   startTime: number
   endTime: number

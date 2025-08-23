@@ -36,7 +36,7 @@ import {
   useFluentFlowSupabaseStore as useFluentFlowStore
 } from './lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from './lib/supabase/client'
-import type { ConversationQuestions, SavedLoop } from './lib/types/fluent-flow-types'
+import type { ConversationQuestions, SavedLoop, PracticeSession } from './lib/types/fluent-flow-types'
 import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
@@ -624,7 +624,7 @@ function FluentFlowSidePanelContent() {
           dailyAverages: analytics.dailyAverages,
           allSessions: allSessions.map(s => ({ videoId: s.videoId }))
         }
-        const suggestions = await learningGoalsService.getGoalSuggestions(practiceData)
+        const suggestions = await learningGoalsService.getGoalSuggestions()
         setGoalSuggestions(suggestions)
       }
     } catch (error) {
@@ -633,19 +633,26 @@ function FluentFlowSidePanelContent() {
   }
 
   const updateGoalsProgress = async () => {
-    if (!goals.length || !allSessions) return
+    if (!goals.length || !allSessions || allSessions.length === 0) return
 
     try {
-      const practiceData = {
-        allSessions: allSessions.map(s => ({
-          createdAt: s.createdAt,
-          totalPracticeTime: s.totalPracticeTime,
-          videoId: s.videoId
-        })),
-        practiceStreak: analytics.practiceStreak
+      // Create a mock practice session from the most recent session for progress update
+      const latestSession = allSessions[allSessions.length - 1]
+      const mockSession: PracticeSession = {
+        id: latestSession.id || `session_${Date.now()}`,
+        videoId: latestSession.videoId,
+        videoTitle: latestSession.videoTitle || 'Practice Session',
+        videoUrl: latestSession.videoUrl || '',
+        segments: [],
+        recordings: [],
+        totalPracticeTime: latestSession.totalPracticeTime,
+        vocabularyCount: latestSession.vocabularyCount || 0,
+        createdAt: latestSession.createdAt,
+        updatedAt: new Date()
       }
 
-      const updatedGoals = await learningGoalsService.updateAllGoalsProgress(practiceData)
+      await learningGoalsService.updateAllGoalsProgress(mockSession)
+      const updatedGoals = await learningGoalsService.getGoals()
       setGoals(updatedGoals)
 
       // Calculate progress for display
@@ -680,10 +687,8 @@ function FluentFlowSidePanelContent() {
 
   const handleDeleteGoal = async (goalId: string) => {
     try {
-      const success = await learningGoalsService.deleteGoal(goalId)
-      if (success) {
-        await loadGoals() // Reload goals
-      }
+      await learningGoalsService.deleteGoal(goalId)
+      await loadGoals() // Reload goals
     } catch (error) {
       console.error('Failed to delete goal:', error)
     }

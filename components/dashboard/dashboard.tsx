@@ -1,27 +1,19 @@
-import React from 'react'
-import { CurrentVideoCard } from './current-video-card'
-import { StatisticsCards } from './statistics-cards'
-import { RecentSessionsCard } from './recent-sessions-card'
-import { QuickActionsCard } from './quick-actions-card'
-import { AnalyticsCard } from './analytics-card'
-import { TranscriptIntegration } from './transcript-integration'
-import { GoalsCard } from './goals-card'
-import { SessionTemplatesCard } from './session-templates-card'
-import type { 
-  YouTubeVideoInfo, 
-  PracticeStatistics, 
-  PracticeSession 
+import type {
+  PracticeSession,
+  PracticeStatistics,
+  SavedLoop,
+  YouTubeVideoInfo
 } from '../../lib/types/fluent-flow-types'
-import type { LearningGoal, GoalProgress, GoalSuggestion } from '../../lib/utils/goals-analysis'
-import type { SessionTemplate, SessionPlan } from '../../lib/utils/session-templates'
-
-interface SavedLoop {
-  id: string
-  startTime: number
-  endTime: number
-  title: string
-  videoId: string
-}
+import type { GoalProgress, GoalSuggestion, LearningGoal } from '../../lib/utils/goals-analysis'
+import type { SessionPlan, SessionTemplate } from '../../lib/utils/session-templates'
+import { AnalyticsCard } from './analytics-card'
+import { CurrentVideoCard } from './current-video-card'
+import { GoalsCard } from './goals-card'
+import { QuickActionsCard } from './quick-actions-card'
+import { RecentSessionsCard } from './recent-sessions-card'
+import { SessionTemplatesCard } from './session-templates-card'
+import { StatisticsCards } from './statistics-cards'
+import { TranscriptIntegration } from './transcript-integration'
 
 interface AnalyticsData {
   weeklyTrend: Array<{
@@ -94,7 +86,7 @@ export function Dashboard({
   onViewPlan
 }: DashboardProps) {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-y-scroll pb-6" style={{ height: `calc(100vh - 106px)` }}>
       {/* Current Video */}
       <CurrentVideoCard currentVideo={currentVideo} />
 
@@ -105,7 +97,7 @@ export function Dashboard({
       <AnalyticsCard analytics={analytics} formatTime={formatTime} />
 
       {/* Learning Goals */}
-      <GoalsCard 
+      <GoalsCard
         goals={goals}
         goalsProgress={goalsProgress}
         suggestions={goalSuggestions}
@@ -142,9 +134,7 @@ export function Dashboard({
       />
 
       {/* Quick Actions */}
-      <QuickActionsCard
-        onViewLoops={onViewLoops}
-      />
+      <QuickActionsCard onViewLoops={onViewLoops} />
     </div>
   )
 }

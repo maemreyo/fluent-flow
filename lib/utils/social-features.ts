@@ -388,7 +388,7 @@ export function generateLeaderboard(
   return users
     .filter(user => user.preferences.showOnLeaderboard)
     .map(user => ({
-      rank: 0, // Will be set after sorting
+      rank: 0, // Set properly after sorting
       userId: user.id,
       username: user.username,
       avatar: user.avatar,

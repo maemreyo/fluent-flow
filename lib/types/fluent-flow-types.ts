@@ -124,6 +124,7 @@ export interface PracticeSession {
   segments: LoopSegment[]
   recordings: AudioRecording[]
   totalPracticeTime: number
+  vocabularyCount?: number
   createdAt: Date
   updatedAt: Date
 }

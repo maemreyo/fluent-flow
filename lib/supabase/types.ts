@@ -93,44 +93,106 @@ export type Database = {
           },
         ]
       }
-      conversation_questions: {
+      challenge_participants: {
         Row: {
-          created_at: string | null
+          avatar: string | null
+          challenge_id: string
+          completed_at: string | null
           id: string
-          metadata: Json | null
-          questions: Json
-          segment_id: string
+          joined_at: string | null
+          progress: number | null
+          rank: number | null
           user_id: string
+          username: string
         }
         Insert: {
-          created_at?: string | null
+          avatar?: string | null
+          challenge_id: string
+          completed_at?: string | null
           id?: string
-          metadata?: Json | null
-          questions: Json
-          segment_id: string
+          joined_at?: string | null
+          progress?: number | null
+          rank?: number | null
           user_id: string
+          username: string
         }
         Update: {
-          created_at?: string | null
+          avatar?: string | null
+          challenge_id?: string
+          completed_at?: string | null
           id?: string
-          metadata?: Json | null
-          questions?: Json
-          segment_id?: string
+          joined_at?: string | null
+          progress?: number | null
+          rank?: number | null
           user_id?: string
+          username?: string
         }
         Relationships: [
           {
-            foreignKeyName: "fk_conversation_questions_segment"
-            columns: ["segment_id"]
+            foreignKeyName: "challenge_participants_challenge_id_fkey"
+            columns: ["challenge_id"]
             isOneToOne: false
-            referencedRelation: "loop_segments"
+            referencedRelation: "group_challenges"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_messages: {
+        Row: {
+          content: string
+          created_at: string | null
+          group_id: string | null
+          id: string
+          metadata: Json | null
+          reactions: Json | null
+          reply_to: string | null
+          sender_avatar: string | null
+          sender_id: string
+          sender_name: string
+          timestamp: string | null
+          type: string
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reactions?: Json | null
+          reply_to?: string | null
+          sender_avatar?: string | null
+          sender_id: string
+          sender_name: string
+          timestamp?: string | null
+          type?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          group_id?: string | null
+          id?: string
+          metadata?: Json | null
+          reactions?: Json | null
+          reply_to?: string | null
+          sender_avatar?: string | null
+          sender_id?: string
+          sender_name?: string
+          timestamp?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "fk_conversation_questions_user"
-            columns: ["user_id"]
+            foreignKeyName: "chat_messages_reply_to_fkey"
+            columns: ["reply_to"]
             isOneToOne: false
-            referencedRelation: "profiles"
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]
@@ -185,6 +247,158 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      conversation_questions: {
+        Row: {
+          created_at: string | null
+          id: string
+          loop_id: string | null
+          metadata: Json | null
+          questions: Json
+          segment_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          loop_id?: string | null
+          metadata?: Json | null
+          questions: Json
+          segment_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          loop_id?: string | null
+          metadata?: Json | null
+          questions?: Json
+          segment_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fk_conversation_questions_segment"
+            columns: ["segment_id"]
+            isOneToOne: false
+            referencedRelation: "loop_segments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_conversation_questions_user"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_challenges: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          description: string | null
+          duration: number
+          end_date: string
+          group_id: string | null
+          id: string
+          rewards: Json
+          start_date: string
+          status: string
+          target: number
+          title: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          duration: number
+          end_date: string
+          group_id?: string | null
+          id?: string
+          rewards?: Json
+          start_date: string
+          status?: string
+          target: number
+          title: string
+          type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          duration?: number
+          end_date?: string
+          group_id?: string | null
+          id?: string
+          rewards?: Json
+          start_date?: string
+          status?: string
+          target?: number
+          title?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_challenges_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learning_goals: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          current: number | null
+          deadline: string | null
+          description: string | null
+          id: string
+          is_completed: boolean | null
+          target: number
+          title: string
+          type: string
+          unit: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          current?: number | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          target: number
+          title: string
+          type: string
+          unit: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          current?: number | null
+          deadline?: string | null
+          description?: string | null
+          id?: string
+          is_completed?: boolean | null
+          target?: number
+          title?: string
+          type?: string
+          unit?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
       }
       loop_segments: {
         Row: {
@@ -409,6 +623,134 @@ export type Database = {
         }
         Relationships: []
       }
+      social_notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      study_group_members: {
+        Row: {
+          avatar: string | null
+          contribution: number | null
+          group_id: string
+          id: string
+          joined_at: string | null
+          last_active: string | null
+          role: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          avatar?: string | null
+          contribution?: number | null
+          group_id: string
+          id?: string
+          joined_at?: string | null
+          last_active?: string | null
+          role?: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          avatar?: string | null
+          contribution?: number | null
+          group_id?: string
+          id?: string
+          joined_at?: string | null
+          last_active?: string | null
+          role?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_group_members_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_groups: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          current_challenge_id: string | null
+          description: string | null
+          id: string
+          is_private: boolean | null
+          language: string
+          level: string
+          max_members: number | null
+          name: string
+          stats: Json | null
+          tags: string[] | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          current_challenge_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          language: string
+          level: string
+          max_members?: number | null
+          name: string
+          stats?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          current_challenge_id?: string | null
+          description?: string | null
+          id?: string
+          is_private?: boolean | null
+          language?: string
+          level?: string
+          max_members?: number | null
+          name?: string
+          stats?: Json | null
+          tags?: string[] | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       transcripts: {
         Row: {
           created_at: string | null
@@ -445,12 +787,112 @@ export type Database = {
         }
         Relationships: []
       }
+      user_achievements: {
+        Row: {
+          achievement_id: string
+          description: string
+          icon: string
+          id: string
+          name: string
+          rarity: string
+          type: string
+          unlocked_at: string | null
+          user_id: string
+          xp_reward: number | null
+        }
+        Insert: {
+          achievement_id: string
+          description: string
+          icon: string
+          id?: string
+          name: string
+          rarity: string
+          type: string
+          unlocked_at?: string | null
+          user_id: string
+          xp_reward?: number | null
+        }
+        Update: {
+          achievement_id?: string
+          description?: string
+          icon?: string
+          id?: string
+          name?: string
+          rarity?: string
+          type?: string
+          unlocked_at?: string | null
+          user_id?: string
+          xp_reward?: number | null
+        }
+        Relationships: []
+      }
+      user_social_profiles: {
+        Row: {
+          achievements: Json | null
+          avatar: string | null
+          created_at: string | null
+          display_name: string
+          id: string
+          is_online: boolean | null
+          joined_at: string | null
+          language_preferences: Json
+          last_seen: string | null
+          level_data: Json
+          preferences: Json
+          stats: Json
+          updated_at: string | null
+          user_id: string
+          username: string
+        }
+        Insert: {
+          achievements?: Json | null
+          avatar?: string | null
+          created_at?: string | null
+          display_name: string
+          id?: string
+          is_online?: boolean | null
+          joined_at?: string | null
+          language_preferences?: Json
+          last_seen?: string | null
+          level_data?: Json
+          preferences?: Json
+          stats?: Json
+          updated_at?: string | null
+          user_id: string
+          username: string
+        }
+        Update: {
+          achievements?: Json | null
+          avatar?: string | null
+          created_at?: string | null
+          display_name?: string
+          id?: string
+          is_online?: boolean | null
+          joined_at?: string | null
+          language_preferences?: Json
+          last_seen?: string | null
+          level_data?: Json
+          preferences?: Json
+          stats?: Json
+          updated_at?: string | null
+          user_id?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_user_streak: {
+        Args: { user_uuid: string }
+        Returns: number
+      }
+      cleanup_expired_notifications: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
