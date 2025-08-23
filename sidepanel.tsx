@@ -26,6 +26,11 @@ import { Input } from './components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
+import { learningGoalsService } from './lib/services/learning-goals-service'
+import { calculateGoalProgress } from './lib/utils/goals-analysis'
+import type { LearningGoal, GoalProgress, GoalSuggestion } from './lib/utils/goals-analysis'
+import { sessionTemplatesService } from './lib/services/session-templates-service'
+import type { SessionTemplate, SessionPlan } from './lib/utils/session-templates'
 import {
   getFluentFlowStore,
   useFluentFlowSupabaseStore as useFluentFlowStore
@@ -51,7 +56,6 @@ function FluentFlowSidePanelContent() {
   const {
     data: savedLoops = [],
     isLoading: loadingLoops,
-    error: loopsError,
     refetch: refetchLoops
   } = useLoopsQuery()
 
@@ -62,6 +66,16 @@ function FluentFlowSidePanelContent() {
   const [activeQuestionLoop, setActiveQuestionLoop] = useState<SavedLoop | null>(null)
   const [showStoragePanel, setShowStoragePanel] = useState(false)
   const [geminiConfigured, setGeminiConfigured] = useState(false)
+
+  // Goals state management
+  const [goals, setGoals] = useState<LearningGoal[]>([])
+  const [goalSuggestions, setGoalSuggestions] = useState<GoalSuggestion[]>([])
+  const [goalsProgress, setGoalsProgress] = useState<{ [goalId: string]: GoalProgress }>({})
+
+  // Session templates state management
+  const [templates, setTemplates] = useState<SessionTemplate[]>([])
+  const [activePlans, setActivePlans] = useState<(SessionPlan & { id: string })[]>([])
+  const [completedPlans, setCompletedPlans] = useState<(SessionPlan & { id: string })[]>([])
 
   const {
     allSessions,
@@ -80,6 +94,8 @@ function FluentFlowSidePanelContent() {
     loadSavedRecordings()
     initializeIntegration()
     initializeVideoInformation()
+    loadGoals()
+    loadTemplates()
     const messageCleanup = setupMessageHandlers()
     const videoTrackingCleanup = setupVideoTracking()
     
@@ -89,6 +105,16 @@ function FluentFlowSidePanelContent() {
       videoTrackingCleanup()
     }
   }, [])
+
+  // Update goals progress when session data changes
+  useEffect(() => {
+    updateGoalsProgress()
+  }, [allSessions, goals])
+
+  // Update session plans when session data changes
+  useEffect(() => {
+    loadSessionPlans()
+  }, [allSessions])
 
   // Setup video tracking for tab changes and navigation
   const setupVideoTracking = () => {
@@ -583,6 +609,159 @@ function FluentFlowSidePanelContent() {
   // Get computed analytics
   const analytics = calculateAnalytics()
 
+  // Goals management functions
+  const loadGoals = async () => {
+    try {
+      const userGoals = await learningGoalsService.getGoals()
+      setGoals(userGoals)
+
+      // Get goal suggestions
+      if (allSessions && allSessions.length > 0) {
+        const practiceData = {
+          totalSessions: allSessions.length,
+          totalPracticeTime: allSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0),
+          practiceStreak: analytics.practiceStreak,
+          dailyAverages: analytics.dailyAverages,
+          allSessions: allSessions.map(s => ({ videoId: s.videoId }))
+        }
+        const suggestions = await learningGoalsService.getGoalSuggestions(practiceData)
+        setGoalSuggestions(suggestions)
+      }
+    } catch (error) {
+      console.error('Failed to load goals:', error)
+    }
+  }
+
+  const updateGoalsProgress = async () => {
+    if (!goals.length || !allSessions) return
+
+    try {
+      const practiceData = {
+        allSessions: allSessions.map(s => ({
+          createdAt: s.createdAt,
+          totalPracticeTime: s.totalPracticeTime,
+          videoId: s.videoId
+        })),
+        practiceStreak: analytics.practiceStreak
+      }
+
+      const updatedGoals = await learningGoalsService.updateAllGoalsProgress(practiceData)
+      setGoals(updatedGoals)
+
+      // Calculate progress for display
+      const progressData: { [goalId: string]: GoalProgress } = {}
+      const uniqueVideos = [...new Set(allSessions.map(s => s.videoId))].length
+      const recentTrend = analytics.weeklyTrend.map(day => day.practiceTime)
+
+      updatedGoals.forEach(goal => {
+        progressData[goal.id] = calculateGoalProgress(goal, {
+          totalSessions: allSessions.length,
+          totalPracticeTime: allSessions.reduce((acc, s) => acc + s.totalPracticeTime, 0),
+          practiceStreak: analytics.practiceStreak,
+          uniqueVideos,
+          recentTrend
+        })
+      })
+
+      setGoalsProgress(progressData)
+    } catch (error) {
+      console.error('Failed to update goals progress:', error)
+    }
+  }
+
+  const handleCreateGoal = async (suggestion: GoalSuggestion) => {
+    try {
+      await learningGoalsService.createGoalFromSuggestion(suggestion)
+      await loadGoals() // Reload goals
+    } catch (error) {
+      console.error('Failed to create goal:', error)
+    }
+  }
+
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      const success = await learningGoalsService.deleteGoal(goalId)
+      if (success) {
+        await loadGoals() // Reload goals
+      }
+    } catch (error) {
+      console.error('Failed to delete goal:', error)
+    }
+  }
+
+  // Session templates management functions
+  const loadTemplates = async () => {
+    try {
+      const userTemplates = await sessionTemplatesService.getTemplates()
+      setTemplates(userTemplates)
+    } catch (error) {
+      console.error('Failed to load templates:', error)
+    }
+  }
+
+  const loadSessionPlans = async () => {
+    try {
+      const active = await sessionTemplatesService.getActiveSessionPlans()
+      const completed = await sessionTemplatesService.getCompletedSessionPlans()
+      setActivePlans(active)
+      setCompletedPlans(completed)
+    } catch (error) {
+      console.error('Failed to load session plans:', error)
+    }
+  }
+
+  const handleStartSession = async (templateId: string) => {
+    if (!currentVideo) {
+      alert('Please select a YouTube video first')
+      return
+    }
+
+    try {
+      const planId = await sessionTemplatesService.createSessionPlan(
+        templateId,
+        currentVideo.videoId,
+        currentVideo.title,
+        0, // Start time
+        currentVideo.duration || 300 // End time or default 5 minutes
+      )
+      await loadSessionPlans()
+      console.log('Session plan created:', planId)
+    } catch (error) {
+      console.error('Failed to start session:', error)
+    }
+  }
+
+  const handleContinueSession = async (planId: string) => {
+    try {
+      const plans = await sessionTemplatesService.getSessionPlans()
+      const plan = plans.find(p => p.id === planId)
+      
+      if (plan && currentVideo?.videoId === plan.videoId) {
+        // Continue current session
+        console.log('Continuing session:', planId)
+      } else if (plan) {
+        // Navigate to video for this session
+        const videoUrl = `https://www.youtube.com/watch?v=${plan.videoId}&t=${plan.startTime}s`
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+        if (tabs[0]?.id) {
+          chrome.tabs.update(tabs[0].id, { url: videoUrl })
+        }
+      }
+    } catch (error) {
+      console.error('Failed to continue session:', error)
+    }
+  }
+
+  const handleCreateTemplate = () => {
+    // TODO: Implement template creation modal
+    console.log('Create template requested')
+  }
+
+  const handleViewPlan = (planId: string) => {
+    // TODO: Implement plan details modal
+    console.log('View plan requested:', planId)
+  }
+
   const deleteRecording = async (recordingId: string) => {
     try {
       // Use Supabase store instead of chrome.runtime.sendMessage
@@ -627,9 +806,21 @@ function FluentFlowSidePanelContent() {
       currentSession={currentSession}
       savedLoops={savedLoops}
       analytics={analytics}
+      goals={goals}
+      goalsProgress={goalsProgress}
+      goalSuggestions={goalSuggestions}
+      templates={templates}
+      activePlans={activePlans}
+      completedPlans={completedPlans}
       formatTime={formatTime}
       formatDate={formatDate}
       onViewLoops={() => setActiveTab('loops')}
+      onCreateGoal={handleCreateGoal}
+      onDeleteGoal={handleDeleteGoal}
+      onStartSession={handleStartSession}
+      onContinueSession={handleContinueSession}
+      onCreateTemplate={handleCreateTemplate}
+      onViewPlan={handleViewPlan}
     />
   )
 
