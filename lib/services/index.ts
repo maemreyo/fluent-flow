@@ -36,3 +36,11 @@ export type {
   UpdateServiceConfig,
   UpdateHistory
 } from '../types'
+
+// Practice and Learning Services
+export { practiceTrackingService, generateDashboardAnalytics } from './practice-tracking-service'
+export type { 
+  PracticeSessionData, 
+  PracticeAnalytics, 
+  DailyPracticeStats 
+} from './practice-tracking-service'

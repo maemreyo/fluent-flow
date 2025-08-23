@@ -77,6 +77,10 @@ function FluentFlowSidePanelContent() {
   const [activePlans, setActivePlans] = useState<(SessionPlan & { id: string })[]>([])
   const [completedPlans, setCompletedPlans] = useState<(SessionPlan & { id: string })[]>([])
 
+  // Enhanced practice tracking analytics state
+  const [enhancedAnalytics, setEnhancedAnalytics] = useState<any>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(true)
+
   const {
     allSessions,
     statistics,
@@ -501,6 +505,12 @@ function FluentFlowSidePanelContent() {
 
   // Analytics calculations for time-based trends
   const calculateAnalytics = () => {
+    // Use enhanced analytics if available and not loading
+    if (!analyticsLoading && enhancedAnalytics) {
+      return enhancedAnalytics
+    }
+
+    // Fallback to existing calculation logic
     if (!allSessions || allSessions.length === 0) {
       return {
         weeklyTrend: [],
@@ -675,6 +685,24 @@ function FluentFlowSidePanelContent() {
       console.error('Failed to update goals progress:', error)
     }
   }
+  // Load enhanced practice analytics
+  useEffect(() => {
+    const loadEnhancedAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true)
+        const { generateDashboardAnalytics } = await import('./lib/services/practice-tracking-service')
+        const data = await generateDashboardAnalytics()
+        setEnhancedAnalytics(data)
+      } catch (error) {
+        console.error('Failed to load enhanced practice analytics:', error)
+        setEnhancedAnalytics(null)
+      } finally {
+        setAnalyticsLoading(false)
+      }
+    }
+
+    loadEnhancedAnalytics()
+  }, [allSessions]) // Reload when sessions change
 
   const handleCreateGoal = async (suggestion: GoalSuggestion) => {
     try {

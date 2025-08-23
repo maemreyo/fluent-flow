@@ -30,32 +30,70 @@ export class NewTabDataService {
       const { allSessions, statistics } = store
 
       // Get data from other services
-      const [goals, templates, activePlans, savedContent] = await Promise.all([
+      const [goals, templates, activePlans, savedContent, practiceAnalytics] = await Promise.all([
         learningGoalsService.getGoals(),
         sessionTemplatesService.getTemplates(),
         sessionTemplatesService.getActiveSessionPlans(),
-        this.getSavedContent()
+        this.getSavedContent(),
+        // Get comprehensive practice analytics from our tracking service
+        (async () => {
+          try {
+            const { practiceTrackingService } = await import('./practice-tracking-service')
+            return await practiceTrackingService.getPracticeAnalytics('month')
+          } catch (error) {
+            console.error('Failed to load practice analytics:', error)
+            return null
+          }
+        })()
       ])
 
       // Get last video info
       const lastVideo = await this.getLastVideo()
 
-      // Calculate analytics
-      const todayStats = calculateTodayStats(allSessions, goals)
-      const practiceStreak = calculatePracticeStreak(allSessions)
-      const weeklyProgress = calculateWeeklyProgress(allSessions, goals)
+      // Use practice tracking service data if available, fallback to existing calculations
+      let todayStats, practiceStreak, weeklyProgress
       
-      // Generate derived data
+      if (practiceAnalytics) {
+        // Use data from practice tracking service
+        const { practiceTrackingService } = await import('./practice-tracking-service')
+        const dailyStats = await practiceTrackingService.getDailyStats(7)
+        const today = new Date().toISOString().split('T')[0]
+        const todayData = dailyStats.find(stat => stat.date === today)
+        
+        todayStats = {
+          sessionsCompleted: todayData?.sessionsCount || 0,
+          practiceTime: todayData?.totalMinutes || 0,
+          vocabularyLearned: todayData?.vocabularyCount || 0,
+          recordingsMade: todayData?.recordingsCount || 0,
+          streakDay: practiceAnalytics.currentStreak
+        }
+        
+        practiceStreak = practiceAnalytics.currentStreak
+        weeklyProgress = dailyStats.slice(-7).map(stat => ({
+          date: new Date(stat.date),
+          sessions: stat.sessionsCount,
+          practiceTime: stat.totalMinutes,
+          recordings: stat.recordingsCount,
+          loops: stat.loopsCount
+        }))
+      } else {
+        // Fallback to existing calculations
+        todayStats = calculateTodayStats(allSessions, goals)
+        practiceStreak = calculatePracticeStreak(allSessions)
+        weeklyProgress = calculateWeeklyProgress(allSessions, goals)
+      }
+      
+      // Generate derived data (enhanced with practice tracking data)
       const recentAchievements = generateRecentAchievements(
         goals,
         practiceStreak,
-        statistics.totalSessions,
-        todayStats.vocabularyLearned * 30 // Rough total estimate
+        practiceAnalytics?.totalSessions || statistics.totalSessions,
+        practiceAnalytics?.vocabularyLearned || (todayStats.vocabularyLearned * 30) // Rough total estimate
       )
 
       const motivationalData = getMotivationalData(
-        statistics.totalSessions,
-        statistics.totalPracticeTime,
+        practiceAnalytics?.totalSessions || statistics.totalSessions,
+        practiceAnalytics?.totalPracticeTime || statistics.totalPracticeTime,
         practiceStreak
       )
 
