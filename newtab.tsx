@@ -3,19 +3,22 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { NewTabContent } from './components/newtab/newtab-content'
 import { newTabDataService } from './lib/services/newtab-data-service'
 import type { NewTabData } from './lib/utils/newtab-analytics'
+import type { FluentFlowUser } from './lib/utils/social-features'
+import { socialService } from './lib/services/social-service'
 import './styles/newtab.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 5 * 60 * 1000, // 5 minutes
-      cacheTime: 10 * 60 * 1000, // 10 minutes
+      gcTime: 10 * 60 * 1000, // 10 minutes (replaced cacheTime in v5)
     },
   },
 })
 
 function NewTabApp() {
   const [data, setData] = useState<NewTabData | null>(null)
+  const [currentUser, setCurrentUser] = useState<FluentFlowUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -27,8 +30,12 @@ function NewTabApp() {
     try {
       setLoading(true)
       setError(null)
-      const newTabData = await newTabDataService.getNewTabData()
+      const [newTabData, user] = await Promise.all([
+        newTabDataService.getNewTabData(),
+        socialService.getCurrentUser()
+      ])
       setData(newTabData)
+      setCurrentUser(user)
     } catch (err) {
       console.error('Failed to load newtab data:', err)
       setError('Failed to load data')
@@ -116,6 +123,7 @@ function NewTabApp() {
     <QueryClientProvider client={queryClient}>
       <NewTabContent 
         data={data}
+        currentUser={currentUser}
         onQuickAction={handleQuickAction}
         onBookmark={handleBookmark}
         onRemoveBookmark={handleRemoveBookmark}

@@ -6,10 +6,14 @@ import { WeeklyProgressChart } from './weekly-progress-chart'
 import { AchievementsCard } from './achievements-card'
 import { SavedContentCard } from './saved-content-card'
 import { MotivationalCard } from './motivational-card'
+import { SocialFeaturesCard } from './social-features-card'
 import type { NewTabData } from '../../lib/utils/newtab-analytics'
+
+import type { FluentFlowUser } from '../../lib/utils/social-features'
 
 interface NewTabContentProps {
   data: NewTabData
+  currentUser?: FluentFlowUser | null
   onQuickAction: (actionId: string, data?: any) => void
   onBookmark: (videoId: string, title: string, thumbnail: string) => void
   onRemoveBookmark: (videoId: string) => void
@@ -20,6 +24,7 @@ interface NewTabContentProps {
 
 export function NewTabContent({
   data,
+  currentUser,
   onQuickAction,
   onBookmark,
   onRemoveBookmark,
@@ -88,6 +93,11 @@ export function NewTabContent({
             {/* Motivational Quote */}
             <MotivationalCard 
               motivationalData={data.motivationalData}
+            />
+            
+            {/* Social Features */}
+            <SocialFeaturesCard 
+              currentUser={currentUser}
             />
             
             {/* Recent Achievements */}
