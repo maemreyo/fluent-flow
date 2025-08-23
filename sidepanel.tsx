@@ -27,16 +27,20 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
 import { learningGoalsService } from './lib/services/learning-goals-service'
-import { calculateGoalProgress } from './lib/utils/goals-analysis'
-import type { LearningGoal, GoalProgress, GoalSuggestion } from './lib/utils/goals-analysis'
 import { sessionTemplatesService } from './lib/services/session-templates-service'
-import type { SessionTemplate, SessionPlan } from './lib/utils/session-templates'
 import {
   getFluentFlowStore,
   useFluentFlowSupabaseStore as useFluentFlowStore
 } from './lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from './lib/supabase/client'
-import type { ConversationQuestions, SavedLoop, PracticeSession } from './lib/types/fluent-flow-types'
+import type {
+  ConversationQuestions,
+  PracticeSession,
+  SavedLoop
+} from './lib/types/fluent-flow-types'
+import type { GoalProgress, GoalSuggestion, LearningGoal } from './lib/utils/goals-analysis'
+import { calculateGoalProgress } from './lib/utils/goals-analysis'
+import type { SessionPlan, SessionTemplate } from './lib/utils/session-templates'
 import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
@@ -53,11 +57,7 @@ function FluentFlowSidePanelContent() {
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 
   // Use React Query for loops instead of manual state management
-  const {
-    data: savedLoops = [],
-    isLoading: loadingLoops,
-    refetch: refetchLoops
-  } = useLoopsQuery()
+  const { data: savedLoops = [], isLoading: loadingLoops, refetch: refetchLoops } = useLoopsQuery()
 
   // Conversation loop integration state
   const [integrationService, setIntegrationService] =
@@ -102,7 +102,7 @@ function FluentFlowSidePanelContent() {
     loadTemplates()
     const messageCleanup = setupMessageHandlers()
     const videoTrackingCleanup = setupVideoTracking()
-    
+
     // Cleanup function
     return () => {
       messageCleanup()
@@ -148,7 +148,7 @@ function FluentFlowSidePanelContent() {
     // Setup Chrome API listeners
     chrome.tabs.onActivated.addListener(handleTabActivated)
     chrome.tabs.onUpdated.addListener(handleTabUpdated)
-    
+
     // Start periodic checking
     startPeriodicCheck()
 
@@ -167,16 +167,17 @@ function FluentFlowSidePanelContent() {
     try {
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const activeTab = tabs[0]
-      
+
       if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
         try {
           const response = await chrome.tabs.sendMessage(activeTab.id, {
             type: 'GET_VIDEO_INFO'
           })
-          
+
           if (response?.success && response.videoInfo) {
-            const { currentVideo: currentStoreVideo, initializePlayer } = useFluentFlowStore.getState()
-            
+            const { currentVideo: currentStoreVideo, initializePlayer } =
+              useFluentFlowStore.getState()
+
             // Only update if video actually changed
             if (!currentStoreVideo || currentStoreVideo.videoId !== response.videoInfo.videoId) {
               initializePlayer(response.videoInfo)
@@ -185,7 +186,8 @@ function FluentFlowSidePanelContent() {
           }
         } catch (error) {
           // Content script not available or no response - clear current video
-          const { currentVideo: currentStoreVideo, updatePlayerState } = useFluentFlowStore.getState()
+          const { currentVideo: currentStoreVideo, updatePlayerState } =
+            useFluentFlowStore.getState()
           if (currentStoreVideo) {
             // Clear current video if we can't get info anymore
             updatePlayerState({ isReady: false })
@@ -197,7 +199,7 @@ function FluentFlowSidePanelContent() {
         const { currentVideo: currentStoreVideo } = useFluentFlowStore.getState()
         if (currentStoreVideo) {
           // Use store's setState to clear currentVideo
-          useFluentFlowStore.setState({ 
+          useFluentFlowStore.setState({
             currentVideo: null,
             playerState: { ...useFluentFlowStore.getState().playerState, isReady: false }
           })
@@ -215,19 +217,22 @@ function FluentFlowSidePanelContent() {
       // Get the active tab
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const activeTab = tabs[0]
-      
+
       if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
         // Send message to content script to get video information
         try {
           const response = await chrome.tabs.sendMessage(activeTab.id, {
             type: 'GET_VIDEO_INFO'
           })
-          
+
           if (response?.success && response.videoInfo) {
             // Initialize the store with video information
             const { initializePlayer } = useFluentFlowStore.getState()
             initializePlayer(response.videoInfo)
-            console.log('FluentFlow: Video information initialized in sidepanel:', response.videoInfo)
+            console.log(
+              'FluentFlow: Video information initialized in sidepanel:',
+              response.videoInfo
+            )
           }
         } catch (error) {
           console.log('FluentFlow: Content script not available or no video info:', error)
@@ -260,7 +265,7 @@ function FluentFlowSidePanelContent() {
     }
 
     chrome.runtime.onMessage.addListener(messageHandler)
-    
+
     // Cleanup function
     return () => {
       chrome.runtime.onMessage.removeListener(messageHandler)
@@ -488,7 +493,10 @@ function FluentFlowSidePanelContent() {
 
     const totalSessions = allSessions.length
     const totalRecordings = allSessions.reduce((acc, session) => acc + session.recordings.length, 0)
-    const totalPracticeTime = allSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0)
+    const totalPracticeTime = allSessions.reduce(
+      (acc, session) => acc + session.totalPracticeTime,
+      0
+    )
     const avgSessionTime = totalSessions > 0 ? totalPracticeTime / totalSessions : 0
 
     return {
@@ -532,11 +540,11 @@ function FluentFlowSidePanelContent() {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-      
-      const daySessions = allSessions.filter(session => 
-        session.createdAt >= dayStart && session.createdAt < dayEnd
+
+      const daySessions = allSessions.filter(
+        session => session.createdAt >= dayStart && session.createdAt < dayEnd
       )
-      
+
       return {
         date: dayStart,
         sessions: daySessions.length,
@@ -549,11 +557,11 @@ function FluentFlowSidePanelContent() {
     const monthlyTrend = Array.from({ length: 4 }, (_, i) => {
       const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000)
       const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
-      
-      const weekSessions = allSessions.filter(session => 
-        session.createdAt >= weekStart && session.createdAt < weekEnd
+
+      const weekSessions = allSessions.filter(
+        session => session.createdAt >= weekStart && session.createdAt < weekEnd
       )
-      
+
       return {
         weekStart,
         sessions: weekSessions.length,
@@ -564,8 +572,8 @@ function FluentFlowSidePanelContent() {
 
     // Daily averages
     const thisWeekSessions = allSessions.filter(session => session.createdAt >= oneWeekAgo)
-    const lastWeekSessions = allSessions.filter(session => 
-      session.createdAt >= twoWeeksAgo && session.createdAt < oneWeekAgo
+    const lastWeekSessions = allSessions.filter(
+      session => session.createdAt >= twoWeeksAgo && session.createdAt < oneWeekAgo
     )
     const thisMonthSessions = allSessions.filter(session => session.createdAt >= oneMonthAgo)
 
@@ -581,11 +589,11 @@ function FluentFlowSidePanelContent() {
       const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
       const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
       const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-      
-      const hasSession = allSessions.some(session => 
-        session.createdAt >= dayStart && session.createdAt < dayEnd
+
+      const hasSession = allSessions.some(
+        session => session.createdAt >= dayStart && session.createdAt < dayEnd
       )
-      
+
       if (hasSession) {
         practiceStreak++
       } else {
@@ -602,9 +610,16 @@ function FluentFlowSidePanelContent() {
     const mostActiveDay = dayActivity.indexOf(Math.max(...dayActivity))
 
     // Improvement rate (this week vs last week)
-    const thisWeekTime = thisWeekSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0)
-    const lastWeekTime = lastWeekSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0)
-    const improvementRate = lastWeekTime > 0 ? ((thisWeekTime - lastWeekTime) / lastWeekTime) * 100 : 0
+    const thisWeekTime = thisWeekSessions.reduce(
+      (acc, session) => acc + session.totalPracticeTime,
+      0
+    )
+    const lastWeekTime = lastWeekSessions.reduce(
+      (acc, session) => acc + session.totalPracticeTime,
+      0
+    )
+    const improvementRate =
+      lastWeekTime > 0 ? ((thisWeekTime - lastWeekTime) / lastWeekTime) * 100 : 0
 
     return {
       weeklyTrend,
@@ -629,7 +644,10 @@ function FluentFlowSidePanelContent() {
       if (allSessions && allSessions.length > 0) {
         const practiceData = {
           totalSessions: allSessions.length,
-          totalPracticeTime: allSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0),
+          totalPracticeTime: allSessions.reduce(
+            (acc, session) => acc + session.totalPracticeTime,
+            0
+          ),
           practiceStreak: analytics.practiceStreak,
           dailyAverages: analytics.dailyAverages,
           allSessions: allSessions.map(s => ({ videoId: s.videoId }))
@@ -690,7 +708,9 @@ function FluentFlowSidePanelContent() {
     const loadEnhancedAnalytics = async () => {
       try {
         setAnalyticsLoading(true)
-        const { generateDashboardAnalytics } = await import('./lib/services/practice-tracking-service')
+        const { generateDashboardAnalytics } = await import(
+          './lib/services/practice-tracking-service'
+        )
         const data = await generateDashboardAnalytics()
         setEnhancedAnalytics(data)
       } catch (error) {
@@ -768,7 +788,7 @@ function FluentFlowSidePanelContent() {
     try {
       const plans = await sessionTemplatesService.getSessionPlans()
       const plan = plans.find(p => p.id === planId)
-      
+
       if (plan && currentVideo?.videoId === plan.videoId) {
         // Continue current session
         console.log('Continuing session:', planId)
@@ -1228,7 +1248,7 @@ function FluentFlowSidePanelContent() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold">FluentFlow</h1>
-            <p className="text-sm text-muted-foreground">YouTube Language Learning</p>
+            <p className="text-sm text-muted-foreground">Learning via Youtube</p>
           </div>
           <div className="flex items-center gap-2">
             {checkingAuth ? (

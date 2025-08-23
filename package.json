@@ -1,9 +1,9 @@
 {
   "name": "fluent-flow",
-  "displayName": "FluentFlow - YouTube Language Learning",
+  "displayName": "FluentFlow - Master Interactive Video Lessons",
   "version": "1.0.0",
-  "description": "Transform YouTube into a professional speaking practice room for language learners with A/B looping, voice recording, and audio comparison",
-  "author": "FluentFlow Team",
+  "description": "Enhance language learning on YouTube with interactive video looping, AI-generated comprehension questions, and integrated learning analytics.",
+  "author": "Matthew Ngo",
   "scripts": {
     "dev": "plasmo dev",
     "build": "plasmo build",

@@ -90,7 +90,7 @@ export interface ValidationResult {
   data?: any
 }
 
-// FluentFlow - YouTube Language Learning Extension Types
+// FluentFlow - Learning via Youtube Extension Types
 export * from './fluent-flow-types'
 
 // Message types
@@ -413,15 +413,15 @@ export interface AIStore {
   providers: Record<AIProvider, AIConfig>
   activeProvider: AIProvider
   availableModels: Record<AIProvider, string[]>
-  
+
   // Conversations
   conversations: AIConversation[]
   activeConversation: string | null
-  
+
   // Processing
   isProcessing: boolean
   processingHistory: AIProcessingResult[]
-  
+
   // Features
   availableFeatures: AIFeature[]
   enabledFeatures: string[]
@@ -430,8 +430,21 @@ export interface AIStore {
 // Export commonly used type unions
 export type Theme = 'light' | 'dark' | 'auto'
 export type Environment = 'development' | 'staging' | 'production'
-export type MessageType = 'PROCESS_FEATURE' | 'API_CALL' | 'STORAGE_OPERATION' | 'OPEN_SIDE_PANEL' | 'AI_CHAT' | 'AI_PROCESS' | string
-export type ErrorCode = 'UNKNOWN_ERROR' | 'VALIDATION_ERROR' | 'API_ERROR' | 'STORAGE_ERROR' | 'AI_ERROR' | string
+export type MessageType =
+  | 'PROCESS_FEATURE'
+  | 'API_CALL'
+  | 'STORAGE_OPERATION'
+  | 'OPEN_SIDE_PANEL'
+  | 'AI_CHAT'
+  | 'AI_PROCESS'
+  | string
+export type ErrorCode =
+  | 'UNKNOWN_ERROR'
+  | 'VALIDATION_ERROR'
+  | 'API_ERROR'
+  | 'STORAGE_ERROR'
+  | 'AI_ERROR'
+  | string
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error'
 // Logger Service Types
 export interface LogEntry {
@@ -573,4 +586,12 @@ export interface UpdateHistory {
 }
 export type CacheStrategy = 'memory-only' | 'storage-only' | 'hybrid'
 export type AIProvider = 'openai' | 'anthropic' | 'custom'
-export type AICapability = 'text-generation' | 'text-analysis' | 'summarization' | 'translation' | 'code-generation' | 'function-calling' | 'long-context' | 'reasoning'
+export type AICapability =
+  | 'text-generation'
+  | 'text-analysis'
+  | 'summarization'
+  | 'translation'
+  | 'code-generation'
+  | 'function-calling'
+  | 'long-context'
+  | 'reasoning'

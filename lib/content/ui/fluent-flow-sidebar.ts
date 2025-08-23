@@ -331,7 +331,7 @@ export class FluentFlowSidebar {
     header.innerHTML = `
       <div>
         <h2 class="fluent-flow-sidebar-title">FluentFlow (Alt+F)</h2>
-        <p class="fluent-flow-sidebar-subtitle">YouTube Language Learning</p>
+        <p class="fluent-flow-sidebar-subtitle">Learning via Youtube</p>
       </div>
       <button class="fluent-flow-sidebar-close">
         ${this.getCloseIcon()}

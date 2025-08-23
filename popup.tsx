@@ -70,7 +70,7 @@ export default function FluentFlowPopup() {
               <Activity className="h-5 w-5 text-primary" />
               FluentFlow
             </CardTitle>
-            <CardDescription>YouTube Language Learning</CardDescription>
+            <CardDescription>Learning via Youtube</CardDescription>
           </CardHeader>
 
           <CardContent className="space-y-4">
@@ -116,7 +116,7 @@ export default function FluentFlowPopup() {
             <Activity className="h-5 w-5 text-primary" />
             FluentFlow
           </CardTitle>
-          <CardDescription>YouTube Language Learning</CardDescription>
+          <CardDescription>Learning via Youtube</CardDescription>
         </CardHeader>
 
         <CardContent className="space-y-4">
