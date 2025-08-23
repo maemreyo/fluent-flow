@@ -17,7 +17,6 @@ import {
   Save,
   Settings,
   Shield,
-  TestTube,
   Trash,
   TrendingUp,
   Upload,
@@ -234,18 +233,18 @@ export default function OptionsPage() {
               <Shield className="h-4 w-4" />
               Account
             </TabsTrigger>
-            <TabsTrigger value="general" className="flex items-center gap-2">
+            {/* <TabsTrigger value="general" className="flex items-center gap-2">
               <Palette className="h-4 w-4" />
               General
-            </TabsTrigger>
-            <TabsTrigger value="fluent-settings" className="flex items-center gap-2">
+            </TabsTrigger> */}
+            {/* <TabsTrigger value="fluent-settings" className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               FluentFlow
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
+            </TabsTrigger> */}
+            {/* <TabsTrigger value="analytics" className="flex items-center gap-2">
               <TrendingUp className="h-4 w-4" />
               Analytics
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="api" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
               API
@@ -409,7 +408,7 @@ export default function OptionsPage() {
           </TabsContent>
 
           <TabsContent value="api" className="space-y-6">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Database className="h-5 w-5" />
@@ -482,7 +481,7 @@ export default function OptionsPage() {
                   </Button>
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader>
@@ -868,7 +867,7 @@ export default function OptionsPage() {
           </TabsContent>
 
           <TabsContent value="advanced" className="space-y-6">
-            <Card>
+            {/* <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-5 w-5" />
@@ -887,7 +886,7 @@ export default function OptionsPage() {
                   <Input id="batch-size" type="number" min="1" max="50" defaultValue="5" />
                 </div>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader>
@@ -955,13 +954,13 @@ export default function OptionsPage() {
                 <div className="space-y-3">
                   <h4 className="font-medium">Features:</h4>
                   <ul className="space-y-1 text-sm text-muted-foreground">
-                    <li>• Audio recording and playback</li>
-                    <li>• Professional audio player interface</li>
+                    {/* <li>• Audio recording and playback</li> */}
+                    {/* <li>• Professional audio player interface</li> */}
                     <li>• Practice session management</li>
                     <li>• Keyboard shortcuts for efficiency</li>
-                    <li>• Export audio for further practice</li>
-                    <li>• Modern UI with shadcn/ui components</li>
-                    <li>• Clean architecture with TypeScript</li>
+                    {/* <li>• Export audio for further practice</li> */}
+                    {/* <li>• Modern UI with shadcn/ui components</li> */}
+                    {/* <li>• Clean architecture with TypeScript</li> */}
                   </ul>
                 </div>
 
@@ -970,7 +969,7 @@ export default function OptionsPage() {
                 <div className="space-y-3">
                   <h4 className="font-medium">Links:</h4>
                   <div className="space-y-2">
-                    <Button variant="outline" size="sm" asChild>
+                    {/* <Button variant="outline" size="sm" asChild>
                       <a
                         href="https://github.com/example/fluent-flow"
                         target="_blank"
@@ -980,7 +979,7 @@ export default function OptionsPage() {
                         <ExternalLink className="h-4 w-4" />
                         GitHub Repository
                       </a>
-                    </Button>
+                    </Button> */}
                     <Button variant="outline" size="sm" asChild>
                       <a
                         href="https://developer.chrome.com/docs/extensions/"

@@ -11,9 +11,7 @@ import { CurrentVideoCard } from './current-video-card'
 import { GoalsCard } from './goals-card'
 import { QuickActionsCard } from './quick-actions-card'
 import { RecentSessionsCard } from './recent-sessions-card'
-import { SessionTemplatesCard } from './session-templates-card'
 import { StatisticsCards } from './statistics-cards'
-import { TranscriptIntegration } from './transcript-integration'
 
 interface AnalyticsData {
   weeklyTrend: Array<{
@@ -107,7 +105,7 @@ export function Dashboard({
       />
 
       {/* Session Templates */}
-      <SessionTemplatesCard
+      {/* <SessionTemplatesCard
         templates={templates}
         activePlans={activePlans}
         completedPlans={completedPlans}
@@ -116,14 +114,14 @@ export function Dashboard({
         onContinueSession={onContinueSession}
         onCreateTemplate={onCreateTemplate}
         onViewPlan={onViewPlan}
-      />
+      /> */}
 
       {/* Transcript Viewer */}
-      <TranscriptIntegration
+      {/* <TranscriptIntegration
         currentVideo={currentVideo}
         savedLoops={savedLoops}
         formatTime={formatTime}
-      />
+      /> */}
 
       {/* Recent Sessions */}
       <RecentSessionsCard
