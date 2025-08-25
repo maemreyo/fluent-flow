@@ -38,11 +38,20 @@ export default function FluentFlowPopup() {
   }, [])
 
   const handleTogglePanel = () => {
-    if (currentTab?.id && isYouTubePage) {
+    if (!currentTab?.windowId || !isYouTubePage) return
+
+    // FIX: To comply with the "user gesture" requirement, we must call
+    // chrome.sidePanel.open() directly from the popup script where the click occurred.
+    if (!uiState.isPanelVisible) {
+      chrome.sidePanel.open({ windowId: currentTab.windowId })
+    } else {
+      // The existing logic for hiding the panel sends a message to the content script.
+      // This does not cause an error, so we keep it.
       chrome.tabs.sendMessage(currentTab.id, { type: 'TOGGLE_PANEL' })
-      togglePanel()
-      window.close() // Close popup after action
     }
+
+    togglePanel() // Update global state
+    window.close() // Close popup after action
   }
 
   const handleOpenSidePanel = () => {
