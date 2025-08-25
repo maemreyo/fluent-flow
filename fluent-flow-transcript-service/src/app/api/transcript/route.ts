@@ -27,6 +27,20 @@ interface TranscriptError {
   details?: string
 }
 
+interface CaptionTrack {
+  language_code: string
+}
+
+interface YouTubeSegment {
+  snippet: {
+    text: string
+  }
+  start_ms: number
+  end_ms: number
+}
+
+type TranscriptSectionHeader = object
+
 class YouTubeTranscriptService {
   private innertube: Innertube | null = null
 
@@ -89,7 +103,7 @@ class YouTubeTranscriptService {
       }
     } catch (error) {
       console.error(`Transcript extraction failed for ${cleanVideoId}:`, error)
-      throw this.handleTranscriptError(error, cleanVideoId)
+      throw this.handleTranscriptError(error as Error, cleanVideoId)
     }
   }
 
@@ -105,7 +119,7 @@ class YouTubeTranscriptService {
       }
 
       const captionTracks = info.captions?.caption_tracks || []
-      const availableLanguages = captionTracks.map((track: any) => track.language_code)
+      const availableLanguages = captionTracks.map((track: CaptionTrack) => track.language_code)
 
       console.log(`Available languages for ${cleanVideoId}:`, availableLanguages)
       return availableLanguages.filter((lang: string) => lang)
@@ -129,7 +143,7 @@ class YouTubeTranscriptService {
 
       if (language) {
         const captionTracks = info.captions?.caption_tracks || []
-        return captionTracks.some((track: any) => track.language_code === language)
+        return captionTracks.some((track: CaptionTrack) => track.language_code === language)
       }
 
       return true
@@ -139,7 +153,7 @@ class YouTubeTranscriptService {
     }
   }
 
-  private async fetchFullTranscript(videoId: string, language?: string): Promise<any[]> {
+  private async fetchFullTranscript(videoId: string, language?: string): Promise<TranscriptSegment[]> {
     try {
       const yt = await this.getInnertube()
       console.log(`Getting video info for ${videoId}`)
@@ -173,18 +187,23 @@ class YouTubeTranscriptService {
       console.log(`Language: ${transcriptInfo.selectedLanguage}`)
 
       return segments
-        .map((segment: any) => ({
-          text: this.cleanTranscriptText(segment.snippet.text || ''),
-          offset: segment.start_ms ? segment.start_ms / 1000 : 0,
-          duration:
-            segment.end_ms && segment.start_ms ? (segment.end_ms - segment.start_ms) / 1000 : 0
-        }))
-        .filter((segment: any) => segment.text.trim().length > 0)
+        .map((segment: YouTubeSegment | TranscriptSectionHeader) => {
+          if ('snippet' in segment) {
+            return {
+              text: this.cleanTranscriptText((segment as YouTubeSegment).snippet.text || ''),
+              start: (segment as YouTubeSegment).start_ms ? (segment as YouTubeSegment).start_ms / 1000 : 0,
+              duration:
+                (segment as YouTubeSegment).end_ms && (segment as YouTubeSegment).start_ms ? ((segment as YouTubeSegment).end_ms - (segment as YouTubeSegment).start_ms) / 1000 : 0
+            };
+          }
+          return null;
+        })
+        .filter((segment): segment is TranscriptSegment => segment !== null && segment.text.trim().length > 0)
     } catch (error) {
-      if ((error as any).code) {
+      if ((error as TranscriptError).code) {
         throw error
       }
-      throw this.handleYouTubeJSError(error, videoId)
+      throw this.handleYouTubeJSError(error as Error, videoId)
     }
   }
 
@@ -200,8 +219,8 @@ class YouTubeTranscriptService {
     }
 
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, 
+      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/, 
       /^([a-zA-Z0-9_-]{11})$/
     ]
 
@@ -216,7 +235,7 @@ class YouTubeTranscriptService {
   }
 
   private extractTimeSegment(
-    fullTranscript: any[],
+    fullTranscript: TranscriptSegment[],
     startTime: number,
     endTime: number
   ): { segments: TranscriptSegment[]; fullText: string } {
@@ -225,7 +244,7 @@ class YouTubeTranscriptService {
     for (const item of fullTranscript) {
       if (!item || typeof item !== 'object') continue
 
-      const segmentStart = this.parseFloat(item.offset) || 0
+      const segmentStart = this.parseFloat(item.start) || 0
       const segmentDuration = this.parseFloat(item.duration) || 0
       const segmentEnd = segmentStart + segmentDuration
       const text = (item.text || '').trim()
@@ -263,12 +282,12 @@ class YouTubeTranscriptService {
       .trim()
   }
 
-  private parseFloat(value: any): number {
-    const parsed = parseFloat(value)
+  private parseFloat(value: string | number): number {
+    const parsed = parseFloat(value as string)
     return isNaN(parsed) ? 0 : parsed
   }
 
-  private handleYouTubeJSError(error: any, videoId: string): TranscriptError {
+  private handleYouTubeJSError(error: Error, videoId: string): TranscriptError {
     const message = error.message?.toLowerCase() || error.toString().toLowerCase()
 
     if (message.includes('video unavailable') || message.includes('not found')) {
@@ -304,16 +323,16 @@ class YouTubeTranscriptService {
     return this.createError('UNKNOWN', `YouTube.js error: ${error.message}`, error.stack)
   }
 
-  private handleTranscriptError(error: any, videoId: string): TranscriptError {
+  private handleTranscriptError(error: Error | TranscriptError, videoId: string): TranscriptError {
     if (!error) {
       return this.createError('UNKNOWN', 'Unknown error occurred')
     }
 
-    if ((error as any).code) {
+    if ('code' in error && error.code) {
       return error
     }
 
-    return this.handleYouTubeJSError(error, videoId)
+    return this.handleYouTubeJSError(error as Error, videoId)
   }
 
   private createError(
@@ -384,22 +403,23 @@ export async function POST(request: NextRequest) {
           { status: 400 }
         )
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Transcript API error:', error)
 
-    if (error.code) {
+    if (error && typeof error === 'object' && 'code' in error) {
+      const transcriptError = error as TranscriptError
       return NextResponse.json(
         {
-          error: error.message,
-          code: error.code,
-          details: error.details
+          error: transcriptError.message,
+          code: transcriptError.code,
+          details: transcriptError.details
         },
-        { status: error.code === 'VIDEO_NOT_FOUND' ? 404 : 500 }
+        { status: transcriptError.code === 'VIDEO_NOT_FOUND' ? 404 : 500 }
       )
     }
 
     return NextResponse.json(
-      { error: 'Internal server error', details: error.message },
+      { error: 'Internal server error', details: (error as Error).message },
       { status: 500 }
     )
   }

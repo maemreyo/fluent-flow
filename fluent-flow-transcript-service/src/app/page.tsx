@@ -2,11 +2,26 @@
 
 import { useState } from 'react'
 
+interface TranscriptSegment {
+  text: string
+  start: number
+  duration: number
+}
+
+interface TranscriptResult {
+  segments: TranscriptSegment[]
+  fullText: string
+  videoId: string
+  language?: string
+}
+
+type ApiResult = TranscriptResult | { languages: string[] } | { available: boolean } | { error: string }
+
 export default function Home() {
   const [videoId, setVideoId] = useState('dQw4w9WgXcQ')
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(30)
-  const [result, setResult] = useState<any>(null)
+  const [result, setResult] = useState<ApiResult | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,14 +34,14 @@ export default function Home() {
       const response = await fetch('/api/transcript', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           action: 'getSegment',
           videoId,
           startTime,
-          endTime,
-        }),
+          endTime
+        })
       })
 
       const data = await response.json()
@@ -36,8 +51,8 @@ export default function Home() {
       }
 
       setResult(data)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
@@ -52,12 +67,12 @@ export default function Home() {
       const response = await fetch('/api/transcript', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           action: 'checkAvailability',
-          videoId,
-        }),
+          videoId
+        })
       })
 
       const data = await response.json()
@@ -67,8 +82,8 @@ export default function Home() {
       }
 
       setResult(data)
-    } catch (err: any) {
-      setError(err.message)
+    } catch (err) {
+      setError((err as Error).message)
     } finally {
       setLoading(false)
     }
@@ -88,7 +103,7 @@ export default function Home() {
 
         <div className="bg-white shadow rounded-lg p-6 mb-6">
           <h2 className="text-xl font-semibold mb-4">Test Transcript Extraction</h2>
-          
+
           <div className="grid grid-cols-1 gap-4 mb-4">
             <div>
               <label htmlFor="videoId" className="block text-sm font-medium text-gray-700">
@@ -98,12 +113,12 @@ export default function Home() {
                 type="text"
                 id="videoId"
                 value={videoId}
-                onChange={(e) => setVideoId(e.target.value)}
+                onChange={e => setVideoId(e.target.value)}
                 className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 placeholder="dQw4w9WgXcQ or https://youtube.com/watch?v=dQw4w9WgXcQ"
               />
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
@@ -113,11 +128,11 @@ export default function Home() {
                   type="number"
                   id="startTime"
                   value={startTime}
-                  onChange={(e) => setStartTime(Number(e.target.value))}
+                  onChange={e => setStartTime(Number(e.target.value))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
                   End Time (seconds)
@@ -126,7 +141,7 @@ export default function Home() {
                   type="number"
                   id="endTime"
                   value={endTime}
-                  onChange={(e) => setEndTime(Number(e.target.value))}
+                  onChange={e => setEndTime(Number(e.target.value))}
                   className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
@@ -141,7 +156,7 @@ export default function Home() {
             >
               {loading ? 'Loading...' : 'Get Transcript'}
             </button>
-            
+
             <button
               onClick={checkAvailability}
               disabled={loading}
@@ -183,12 +198,22 @@ export default function Home() {
         <div className="bg-gray-50 rounded-lg p-6 mt-6">
           <h3 className="text-lg font-medium text-gray-900 mb-3">API Usage</h3>
           <div className="space-y-2 text-sm text-gray-600">
-            <p><strong>Endpoint:</strong> POST /api/transcript</p>
-            <p><strong>Actions:</strong></p>
+            <p>
+              <strong>Endpoint:</strong> POST /api/transcript
+            </p>
+            <p>
+              <strong>Actions:</strong>
+            </p>
             <ul className="list-disc list-inside ml-4 space-y-1">
-              <li><code>getSegment</code> - Extract transcript for time range</li>
-              <li><code>checkAvailability</code> - Check if transcript is available</li>
-              <li><code>getLanguages</code> - Get available languages</li>
+              <li>
+                <code>getSegment</code> - Extract transcript for time range
+              </li>
+              <li>
+                <code>checkAvailability</code> - Check if transcript is available
+              </li>
+              <li>
+                <code>getLanguages</code> - Get available languages
+              </li>
             </ul>
           </div>
         </div>
