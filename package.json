@@ -128,7 +128,7 @@
       "https://www.youtube.com/*",
       "https://youtube.com/*",
       "https://generativelanguage.googleapis.com/*",
-      "http://localhost:3838/*"
+      "https://fluent-flow.vercel.app/*"
     ],
     "permissions": [
       "storage",
