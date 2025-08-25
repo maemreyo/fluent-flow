@@ -7,6 +7,9 @@ DANH SÁCH QUYỀN VÀ LÝ DO SỬ DỤNG CHO FLUENT FLOW
 - Quyền: https://www.youtube.com/* và https://youtube.com/*
   Lý do: Đây là quyền cốt lõi. Cần thiết để tiện ích có thể thêm giao diện (nút điều khiển vòng lặp, câu hỏi) và tương tác với trình phát video trên trang YouTube.
 
+- Quyền: https://fluent-flow.vercel.app/*
+  Lý do: Cần thiết để tiện ích giao tiếp với máy chủ backend của chính nó. Máy chủ này xử lý các tác vụ như lấy bản ghi (transcript) của video và các dịch vụ khác mà tiện ích cung cấp.
+
 - Quyền: https://generativelanguage.googleapis.com/*
   Lý do: Dùng để kết nối với các dịch vụ AI của Google, cần thiết cho các tính năng thông minh như gợi ý hoặc tạo câu hỏi thực hành.
 
