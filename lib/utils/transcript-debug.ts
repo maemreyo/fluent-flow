@@ -19,12 +19,11 @@ export class TranscriptDebugUtil {
 
       // Test enhanced availability (all methods)
       console.log('\n🔬 Testing enhanced availability...')
-      const enhancedCheck = await youtubeTranscriptService.enhancedAvailabilityCheck(videoId)
-      console.log(`   Available methods: ${enhancedCheck.methods.length > 0 ? enhancedCheck.methods.join(', ') : 'None'}`)
-      
-      if (enhancedCheck.suggestions && enhancedCheck.suggestions.length > 0) {
-        console.log('   💡 Suggestions:')
-        enhancedCheck.suggestions.forEach(suggestion => console.log(`      • ${suggestion}`))
+      try {
+        const languages = await youtubeTranscriptService.getAvailableLanguages(videoId)
+        console.log(`   Available languages: ${languages.length > 0 ? languages.join(', ') : 'None'}`)
+      } catch (error) {
+        console.log(`   Enhanced check failed: ${error.message}`)
       }
 
       // Test available languages

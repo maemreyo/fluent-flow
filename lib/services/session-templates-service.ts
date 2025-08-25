@@ -1,12 +1,12 @@
 // Session Templates Service - Data Layer
 // Following SoC: Handles data persistence and retrieval for session templates
 
-import { 
-  SessionTemplate, 
-  SessionPlan, 
+import {
+  calculateTemplateCompletion,
   getDefaultTemplates,
   updateTemplateUsage,
-  calculateTemplateCompletion 
+  type SessionPlan,
+  type SessionTemplate
 } from '../utils/session-templates'
 
 export class SessionTemplatesService {
@@ -20,14 +20,14 @@ export class SessionTemplatesService {
     try {
       const result = await chrome.storage.local.get([this.templatesKey])
       const templatesData = result[this.templatesKey]
-      
+
       if (!templatesData || templatesData.length === 0) {
         // Initialize with default templates
         const defaultTemplates = getDefaultTemplates()
         await this.saveTemplates(defaultTemplates)
         return defaultTemplates
       }
-      
+
       // Parse dates back from JSON
       return templatesData.map((template: any) => ({
         ...template,
@@ -57,9 +57,11 @@ export class SessionTemplatesService {
   /**
    * Creates a new custom template
    */
-  async createTemplate(templateData: Omit<SessionTemplate, 'id' | 'createdAt' | 'usageCount' | 'isDefault'>): Promise<string> {
+  async createTemplate(
+    templateData: Omit<SessionTemplate, 'id' | 'createdAt' | 'usageCount' | 'isDefault'>
+  ): Promise<string> {
     const templates = await this.getTemplates()
-    
+
     const newTemplate: SessionTemplate = {
       ...templateData,
       id: `template_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
@@ -70,7 +72,7 @@ export class SessionTemplatesService {
 
     templates.push(newTemplate)
     await this.saveTemplates(templates)
-    
+
     return newTemplate.id
   }
 
@@ -81,7 +83,7 @@ export class SessionTemplatesService {
     try {
       const templates = await this.getTemplates()
       const templateIndex = templates.findIndex(t => t.id === templateId)
-      
+
       if (templateIndex === -1) {
         return false
       }
@@ -102,7 +104,7 @@ export class SessionTemplatesService {
     try {
       const templates = await this.getTemplates()
       const template = templates.find(t => t.id === templateId)
-      
+
       if (!template || template.isDefault) {
         return false // Cannot delete default templates
       }
@@ -123,7 +125,7 @@ export class SessionTemplatesService {
     try {
       const templates = await this.getTemplates()
       const templateIndex = templates.findIndex(t => t.id === templateId)
-      
+
       if (templateIndex !== -1) {
         templates[templateIndex] = updateTemplateUsage(templates[templateIndex])
         await this.saveTemplates(templates)
@@ -146,14 +148,14 @@ export class SessionTemplatesService {
     try {
       const templates = await this.getTemplates()
       const template = templates.find(t => t.id === templateId)
-      
+
       if (!template) {
         throw new Error('Template not found')
       }
 
       const plans = await this.getSessionPlans()
       const now = new Date()
-      
+
       const newPlan: SessionPlan = {
         templateId,
         videoId,
@@ -174,7 +176,7 @@ export class SessionTemplatesService {
 
       // Record template usage
       await this.recordTemplateUsage(templateId)
-      
+
       return planId
     } catch (error) {
       console.error('Failed to create session plan:', error)
@@ -189,9 +191,9 @@ export class SessionTemplatesService {
     try {
       const result = await chrome.storage.local.get([this.plansKey])
       const plansData = result[this.plansKey]
-      
+
       if (!plansData) return []
-      
+
       // Parse dates back from JSON
       return plansData.map((plan: any) => ({
         ...plan,
@@ -225,7 +227,7 @@ export class SessionTemplatesService {
     try {
       const plans = await this.getSessionPlans()
       const planIndex = plans.findIndex(p => p.id === planId)
-      
+
       if (planIndex === -1) {
         return false
       }
@@ -245,7 +247,7 @@ export class SessionTemplatesService {
   async getActiveSessionPlans(): Promise<(SessionPlan & { id: string })[]> {
     const allPlans = await this.getSessionPlans()
     const templates = await this.getTemplates()
-    
+
     return allPlans.filter(plan => {
       const template = templates.find(t => t.id === plan.templateId)
       return template && plan.completedSteps.length < template.steps.length
@@ -258,11 +260,13 @@ export class SessionTemplatesService {
   async getCompletedSessionPlans(): Promise<(SessionPlan & { id: string })[]> {
     const allPlans = await this.getSessionPlans()
     const templates = await this.getTemplates()
-    
-    return allPlans.filter(plan => {
-      const template = templates.find(t => t.id === plan.templateId)
-      return template && plan.completedSteps.length === template.steps.length
-    }).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+
+    return allPlans
+      .filter(plan => {
+        const template = templates.find(t => t.id === plan.templateId)
+        return template && plan.completedSteps.length === template.steps.length
+      })
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
   }
 
   /**
@@ -272,7 +276,7 @@ export class SessionTemplatesService {
     try {
       const plans = await this.getSessionPlans()
       const filteredPlans = plans.filter(p => p.id !== planId)
-      
+
       if (filteredPlans.length === plans.length) {
         return false // Plan not found
       }
@@ -294,7 +298,7 @@ export class SessionTemplatesService {
     tags?: string[]
   }): Promise<SessionTemplate[]> {
     const templates = await this.getTemplates()
-    
+
     return templates.filter(template => {
       if (filters.type && template.type !== filters.type) return false
       if (filters.difficulty && template.difficulty !== filters.difficulty) return false

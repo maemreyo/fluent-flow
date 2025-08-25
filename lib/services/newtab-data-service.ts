@@ -26,8 +26,8 @@ export class NewTabDataService {
   async getNewTabData(): Promise<NewTabData> {
     try {
       // Get data from FluentFlow store
-      const store = getFluentFlowStore()
-      const { allSessions, statistics } = store
+      const { store } = getFluentFlowStore()
+      const { allSessions, statistics } = store.getState()
 
       // Get data from other services
       const [goals, templates, activePlans, savedContent, practiceAnalytics] = await Promise.all([

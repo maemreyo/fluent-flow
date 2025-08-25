@@ -53,6 +53,6 @@ export function useInvalidateLoops() {
   return () => {
     console.log('useInvalidateLoops: Invalidating loops queries')
     queryClient.invalidateQueries({ queryKey: queryKeys.loops.all })
-    queryClient.invalidateQueries({ queryKey: queryKeys.loops.byId })
+    queryClient.invalidateQueries({ queryKey: ['loops', 'id'] })
   }
 }

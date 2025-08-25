@@ -16,12 +16,13 @@ const authHandler = getAuthHandler()
 
 // Context menu setup
 chrome.runtime.onInstalled.addListener(() => {
+  // Create context menu
   chrome.contextMenus.create({
     id: 'main-action',
     title: 'Process with Extension',
     contexts: ['selection']
-  })
-})
+  });
+});
 
 // Context menu handler
 chrome.contextMenus.onClicked.addListener((info, tab) => {

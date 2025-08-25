@@ -67,14 +67,17 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // Export helper functions for common operations
 export const getCurrentUser = async () => {
   try {
-    const { data: { user }, error } = await supabase.auth.getUser()
+    const {
+      data: { user },
+      error
+    } = await supabase.auth.getUser()
     if (error) {
       // AuthSessionMissingError is expected when no user is signed in
       if (error.message === 'Auth session missing') {
         console.debug('No user session found - user not signed in')
         return null
       }
-      console.error('Error getting current user:', error)
+      console.warn('Error getting current user:', error)
       return null
     }
     return user
@@ -86,7 +89,10 @@ export const getCurrentUser = async () => {
 }
 
 export const getSession = async () => {
-  const { data: { session }, error } = await supabase.auth.getSession()
+  const {
+    data: { session },
+    error
+  } = await supabase.auth.getSession()
   if (error) throw error
   return session
 }

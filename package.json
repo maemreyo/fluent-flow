@@ -123,6 +123,13 @@
     "ts-jest": "^29.4.1",
     "typescript": "5.3.3"
   },
+  "plasmo": {
+    "tabs": {
+      "onboarding": {
+        "on_install": true
+      }
+    }
+  },
   "manifest": {
     "host_permissions": [
       "https://www.youtube.com/*",

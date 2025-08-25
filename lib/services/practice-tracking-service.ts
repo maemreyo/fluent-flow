@@ -353,6 +353,7 @@ class PracticeTrackingService {
         user_id: user.id,
         video_id: session.videoId,
         video_title: session.videoTitle,
+        video_url: session.videoUrl || `https://www.youtube.com/watch?v=${session.videoId}`,
         video_channel: null, // Not available in current data structure
         video_duration: null, // Not available in current data structure
         total_practice_time: session.duration,

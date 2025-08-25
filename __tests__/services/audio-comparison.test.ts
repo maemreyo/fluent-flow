@@ -1,49 +1,111 @@
 import { AudioComparisonService } from '../../lib/services/audio-comparison-service'
+import { YouTubeService } from '../../lib/services/youtube-service'
 
 describe('AudioComparisonService', () => {
   let service: AudioComparisonService
+  let mockYouTubeService: jest.Mocked<YouTubeService>
 
   beforeEach(() => {
-    service = new AudioComparisonService()
+    mockYouTubeService = {
+      seekTo: jest.fn(),
+      play: jest.fn(),
+      pause: jest.fn(),
+      isPlayerReady: jest.fn().mockReturnValue(true)
+    } as any
+
+    service = new AudioComparisonService(mockYouTubeService)
   })
 
-  describe('compareAudio', () => {
-    it('should compare audio recordings successfully', async () => {
-      const originalAudio = new Blob(['fake-audio-data'], { type: 'audio/webm' })
-      const recordedAudio = new Blob(['fake-recorded-data'], { type: 'audio/webm' })
+  describe('analyzeDifferences', () => {
+    it('should analyze differences between recording and segment', async () => {
+      const recording = {
+        id: 'test',
+        videoId: 'test',
+        audioData: new Blob(['fake-audio-data'], { type: 'audio/webm' }),
+        duration: 5.0,
+        createdAt: new Date()
+      }
+      
+      const segment = {
+        id: 'test',
+        startTime: 10,
+        endTime: 15,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
 
-      const result = await service.compareAudio(originalAudio, recordedAudio)
+      const result = await service.analyzeDifferences(recording, segment)
 
-      expect(result).toHaveProperty('similarity')
-      expect(result).toHaveProperty('feedback')
-      expect(typeof result.similarity).toBe('number')
+      expect(result).toHaveProperty('durationDifference')
+      expect(result).toHaveProperty('suggestedImprovements')
+      expect(typeof result.durationDifference).toBe('number')
+      expect(Array.isArray(result.suggestedImprovements)).toBe(true)
     })
 
-    it('should handle comparison errors gracefully', async () => {
-      const invalidAudio = new Blob([''], { type: 'text/plain' })
-      const recordedAudio = new Blob(['fake-data'], { type: 'audio/webm' })
+    it('should provide suggestions for duration differences', async () => {
+      const recording = {
+        id: 'test',
+        videoId: 'test', 
+        audioData: new Blob(['fake-data'], { type: 'audio/webm' }),
+        duration: 8.0,
+        createdAt: new Date()
+      }
+      
+      const segment = {
+        id: 'test',
+        startTime: 10,
+        endTime: 15, // 5 second segment
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
 
-      await expect(
-        service.compareAudio(invalidAudio, recordedAudio)
-      ).rejects.toThrow()
+      const result = await service.analyzeDifferences(recording, segment)
+      
+      expect(result.suggestedImprovements.length).toBeGreaterThan(0)
+      expect(result.durationDifference).toBe(3.0) // 8 - 5 = 3
     })
   })
 
-  describe('generateFeedback', () => {
-    it('should generate meaningful feedback', () => {
-      const feedback = service.generateFeedback(0.85, 10.5, 12.0)
+  describe('createAudioVisualization', () => {
+    it('should create audio visualization data', async () => {
+      const recording = {
+        id: 'test',
+        videoId: 'test',
+        audioData: new Blob(['fake-audio-data'], { type: 'audio/webm' }),
+        duration: 5.0,
+        createdAt: new Date()
+      }
 
-      expect(feedback).toHaveProperty('overallScore')
-      expect(feedback).toHaveProperty('suggestions')
-      expect(Array.isArray(feedback.suggestions)).toBe(true)
+      const visualization = await service.createAudioVisualization(recording)
+
+      expect(Array.isArray(visualization)).toBe(true)
+      expect(visualization.length).toBeGreaterThan(0)
+      expect(visualization.every(val => val >= 0 && val <= 1)).toBe(true)
     })
 
-    it('should provide different feedback for low scores', () => {
-      const lowScoreFeedback = service.generateFeedback(0.3, 5.0, 8.0)
-      const highScoreFeedback = service.generateFeedback(0.9, 5.0, 5.2)
+    it('should handle different recording durations', async () => {
+      const shortRecording = {
+        id: 'test',
+        videoId: 'test',
+        audioData: new Blob(['fake-data'], { type: 'audio/webm' }),
+        duration: 1.0,
+        createdAt: new Date()
+      }
 
-      expect(lowScoreFeedback.suggestions.length).toBeGreaterThan(0)
-      expect(highScoreFeedback.overallScore).toBeGreaterThan(lowScoreFeedback.overallScore)
+      const longRecording = {
+        id: 'test',
+        videoId: 'test',
+        audioData: new Blob(['fake-data'], { type: 'audio/webm' }),
+        duration: 20.0,
+        createdAt: new Date()
+      }
+
+      const shortViz = await service.createAudioVisualization(shortRecording)
+      const longViz = await service.createAudioVisualization(longRecording)
+
+      expect(shortViz.length).toBeGreaterThan(0)
+      expect(longViz.length).toBeGreaterThan(0)
+      expect(longViz.length).toBeGreaterThanOrEqual(shortViz.length)
     })
   })
 })
