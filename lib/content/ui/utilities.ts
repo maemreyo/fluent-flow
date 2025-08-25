@@ -499,11 +499,30 @@ export class UIUtilities {
 
   private getFluentFlowIcon(): string {
     return `
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        <circle cx="7" cy="12" r="2" fill="currentColor" opacity="0.7"/>
-        <circle cx="17" cy="12" r="2" fill="currentColor" opacity="0.7"/>
-      </svg>
+        <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <!-- Gradient đơn giản hơn cho nút bấm -->
+                <linearGradient id="buttonGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#F79420;" />
+                    <stop offset="100%" style="stop-color:#E63471;" />
+                </linearGradient>
+            </defs>
+
+            <!-- 
+                Toàn bộ hình dạng được vẽ lại bằng MỘT đường path duy nhất.
+                Điều này giúp dễ dàng quản lý và tô màu.
+            -->
+            <path style="fill: url(#buttonGradient); transition: fill 0.2s;" d="
+                M50,95 C40,92 25,85 20,70 C15,55 25,35 40,25 
+                C55,15 75,18 85,30 C95,42 93,60 80,70 
+                C90,75 98,65 95,55 C92,45 80,45 70,50 
+                C60,55 60,65 70,70 C80,75 90,80 80,88 
+                C70,96 55,97 50,95 Z
+            "/>
+            
+            <!-- Biểu tượng Play ở giữa, màu trắng -->
+            <path style="fill: white;" d="M45 40 L65 50 L45 60 Z" />
+        </svg>
     `
   }
 
