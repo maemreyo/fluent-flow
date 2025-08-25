@@ -1,0 +1,33 @@
+DANH SÁCH QUYỀN VÀ LÝ DO SỬ DỤNG CHO FLUENT FLOW
+
+---------------------------------
+1. HOST PERMISSIONS (QUYỀN TRUY CẬP MÁY CHỦ)
+---------------------------------
+
+- Quyền: https://www.youtube.com/* và https://youtube.com/*
+  Lý do: Đây là quyền cốt lõi. Cần thiết để tiện ích có thể thêm giao diện (nút điều khiển vòng lặp, câu hỏi) và tương tác với trình phát video trên trang YouTube.
+
+- Quyền: https://generativelanguage.googleapis.com/*
+  Lý do: Dùng để kết nối với các dịch vụ AI của Google, cần thiết cho các tính năng thông minh như gợi ý hoặc tạo câu hỏi thực hành.
+
+- Quyền: http://localhost:3838/*
+  Lý do: Chỉ dành cho mục đích phát triển (development) để kết nối với máy chủ cục bộ, giúp gỡ lỗi và thử nghiệm tính năng mới.
+
+---------------------------------
+2. PERMISSIONS (CÁC QUYỀN CHUNG)
+---------------------------------
+
+- Quyền: storage
+  Lý do: Dùng để lưu trữ dữ liệu của người dùng như các vòng lặp (loops) đã tạo, câu hỏi thực hành, và các cài đặt cá nhân để không bị mất khi đóng trình duyệt.
+
+- Quyền: activeTab
+  Lý do: Cung cấp quyền truy cập tạm thời vào tab người dùng đang xem khi họ tương tác với tiện ích. Đây là một quyền an toàn, hạn chế truy cập không cần thiết.
+
+- Quyền: contextMenus
+  Lý do: Cho phép thêm các tùy chọn vào menu chuột phải, giúp người dùng thực hiện nhanh các hành động của Fluent Flow.
+
+- Quyền: sidePanel
+  Lý do: Cần thiết để hiển thị giao diện chính của tiện ích trong một bảng điều khiển bên cạnh trang YouTube.
+
+- Quyền: tabs
+  Lý do: Cho phép tiện ích quản lý và lấy thông tin về các tab đang mở, ví dụ như kiểm tra xem tab có phải là trang YouTube hay không.

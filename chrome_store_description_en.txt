@@ -1,0 +1,41 @@
+SUGGESTED TITLE:
+
+Fluent Flow: Deep Learning & Active Practice on YouTube
+
+
+SHORT DESCRIPTION (132 characters):
+
+Turn YouTube videos into interactive lessons with A-B loops and practice questions for effective learning.
+
+
+FULL DESCRIPTION:
+
+Do you ever get tired of rewinding a video over and over to understand a difficult concept? Do you want to retain knowledge from lectures and tutorials more effectively than just by passive watching?
+
+Fluent Flow is the solution for you!
+
+This extension upgrades the YouTube player into a powerful learning tool, helping you shift from passive viewing to active practice. Dive deep into the most important information and make sure you truly understand and remember it.
+
+CORE FEATURES:
+
+Precision A-B Loop:
+- Easily select a start (A) and end (B) point to continuously repeat any video segment.
+- Perfect for learning a new skill, analyzing a foreign language conversation, mastering a complex formula, or practicing a difficult piece of music.
+- Features an intuitive interface right on the familiar video player.
+
+Interactive Practice Questions:
+- Create your own questions directly on the video segment you are looping.
+- Test your own knowledge to ensure you don't miss critical information.
+- Turn learning into a two-way interactive process, reinforcing long-term memory through active recall.
+
+WHO IS FLUENT FLOW FOR?
+
+- Students: Easily memorize lectures, formulas, and complex academic concepts.
+- Language Learners: Listen to and repeat native phrases, vocabulary, and intonation until you master them.
+- Programmers, Designers, Engineers: Quickly and accurately master new tutorials and techniques.
+- Musicians: Learn and practice difficult riffs, chords, or techniques with ease.
+- ...And anyone who wants to learn in a focused, effective, and in-depth way on the YouTube platform!
+
+Stop watching videos passively.
+
+Install Fluent Flow today to turn every YouTube video into a personal lesson, helping you master any knowledge and skill you desire.
