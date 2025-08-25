@@ -2,7 +2,7 @@
   "name": "fluent-flow",
   "displayName": "FluentFlow - Master Interactive Video Lessons",
   "version": "1.0.0",
-  "description": "Enhance language learning on YouTube with interactive video looping, AI-generated comprehension questions, and integrated learning analytics.",
+  "description": "Learning on YouTube with interactive video looping, AI-generated comprehension questions, and integrated learning analytics.",
   "author": "Matthew Ngo",
   "scripts": {
     "dev": "plasmo dev",
@@ -135,8 +135,7 @@
       "activeTab",
       "contextMenus",
       "sidePanel",
-      "tabs",
-      "tabCapture"
+      "tabs"
     ],
     "commands": {
       "toggle-loop": {
@@ -144,18 +143,6 @@
           "default": "Alt+L"
         },
         "description": "Set A/B loop points"
-      },
-      "toggle-recording": {
-        "suggested_key": {
-          "default": "Alt+R"
-        },
-        "description": "Start/stop voice recording"
-      },
-      "compare-audio": {
-        "suggested_key": {
-          "default": "Alt+C"
-        },
-        "description": "Compare original vs recorded audio"
       },
       "toggle-panel": {
         "suggested_key": {
