@@ -1,21 +1,19 @@
 // Learning Goals Service - Data Layer
 // Following SoC: Handles data persistence and retrieval
 
-import type { 
-  LearningGoal, 
-  GoalSuggestion 
-} from '../utils/goals-analysis'
+import { getCurrentUser, supabase } from '../supabase/client'
 import type { PracticeSession } from '../types/fluent-flow-types'
+import type { GoalSuggestion, LearningGoal } from '../utils/goals-analysis'
+import { SocialService } from './social-service'
 
 class LearningGoalsService {
-  private cache = new Map<string, { goals: LearningGoal[], timestamp: number }>()
+  private cache = new Map<string, { goals: LearningGoal[]; timestamp: number }>()
 
   /**
    * Get all learning goals for the current user
    */
   async getGoals(): Promise<LearningGoal[]> {
     try {
-      const { supabase } = await import('../supabase/client')
       const { data, error } = await supabase
         .from('learning_goals')
         .select('*')
@@ -52,7 +50,9 @@ class LearningGoalsService {
   /**
    * Create a new learning goal
    */
-  async createGoal(goalData: Omit<LearningGoal, 'id' | 'current' | 'createdAt' | 'isCompleted' | 'completedAt'>): Promise<LearningGoal> {
+  async createGoal(
+    goalData: Omit<LearningGoal, 'id' | 'current' | 'createdAt' | 'isCompleted' | 'completedAt'>
+  ): Promise<LearningGoal> {
     const newGoal: LearningGoal = {
       id: crypto.randomUUID(),
       current: 0,
@@ -62,25 +62,22 @@ class LearningGoalsService {
     }
 
     try {
-      const { supabase, getCurrentUser } = await import('../supabase/client')
       const user = await getCurrentUser()
-      
+
       if (user) {
-        const { error } = await supabase
-          .from('learning_goals')
-          .insert({
-            id: newGoal.id,
-            user_id: user.id,
-            type: newGoal.type,
-            title: newGoal.title,
-            description: newGoal.description,
-            target: newGoal.target,
-            current: newGoal.current,
-            unit: newGoal.unit,
-            deadline: newGoal.deadline?.toISOString(),
-            is_completed: newGoal.isCompleted,
-            created_at: newGoal.createdAt.toISOString()
-          })
+        const { error } = await supabase.from('learning_goals').insert({
+          id: newGoal.id,
+          user_id: user.id,
+          type: newGoal.type,
+          title: newGoal.title,
+          description: newGoal.description,
+          target: newGoal.target,
+          current: newGoal.current,
+          unit: newGoal.unit,
+          deadline: newGoal.deadline?.toISOString(),
+          is_completed: newGoal.isCompleted,
+          created_at: newGoal.createdAt.toISOString()
+        })
 
         if (error) {
           console.warn('Error saving goal to Supabase:', error)
@@ -101,11 +98,16 @@ class LearningGoalsService {
   /**
    * Update an existing goal
    */
-  async updateGoal(goalId: string, updates: Partial<Pick<LearningGoal, 'title' | 'description' | 'target' | 'current' | 'deadline' | 'isCompleted'>>): Promise<void> {
+  async updateGoal(
+    goalId: string,
+    updates: Partial<
+      Pick<
+        LearningGoal,
+        'title' | 'description' | 'target' | 'current' | 'deadline' | 'isCompleted'
+      >
+    >
+  ): Promise<void> {
     try {
-      const { supabase } = await import('../supabase/client')
-      const { getCurrentUser } = await import('../supabase/client')
-      
       const user = await getCurrentUser()
       if (!user) {
         console.warn('No user authenticated, updating in Chrome storage')
@@ -117,7 +119,8 @@ class LearningGoalsService {
       if (updates.description !== undefined) updateData.description = updates.description
       if (updates.target !== undefined) updateData.target = updates.target
       if (updates.current !== undefined) updateData.current = updates.current
-      if (updates.deadline !== undefined) updateData.deadline = updates.deadline ? updates.deadline.toISOString() : null
+      if (updates.deadline !== undefined)
+        updateData.deadline = updates.deadline ? updates.deadline.toISOString() : null
       if (updates.isCompleted !== undefined) {
         updateData.is_completed = updates.isCompleted
         updateData.completed_at = updates.isCompleted ? new Date().toISOString() : null
@@ -147,9 +150,6 @@ class LearningGoalsService {
    */
   async deleteGoal(goalId: string): Promise<void> {
     try {
-      const { supabase } = await import('../supabase/client')
-      const { getCurrentUser } = await import('../supabase/client')
-      
       const user = await getCurrentUser()
       if (!user) {
         console.warn('No user authenticated, deleting from Chrome storage')
@@ -184,10 +184,10 @@ class LearningGoalsService {
 
     for (const goal of goals) {
       const oldCurrent = goal.current
-      
+
       switch (goal.type) {
         case 'daily':
-        case 'weekly': 
+        case 'weekly':
         case 'monthly':
           if (goal.unit === 'minutes') {
             goal.current += practiceSession.totalPracticeTime
@@ -216,8 +216,8 @@ class LearningGoalsService {
 
       if (oldCurrent !== goal.current || goal.isCompleted) {
         hasUpdates = true
-        await this.updateGoal(goal.id, { 
-          current: goal.current, 
+        await this.updateGoal(goal.id, {
+          current: goal.current,
           isCompleted: goal.isCompleted
         })
       }
@@ -226,12 +226,11 @@ class LearningGoalsService {
     if (hasUpdates) {
       // Update social service with achievements
       try {
-        const { SocialService } = await import('./social-service')
         const socialService = new SocialService()
-        
+
         // Calculate current streak for social service
         const currentStreak = await this.getCurrentStreakFromSupabase()
-        
+
         await socialService.updateUserStats({
           duration: practiceSession.totalPracticeTime,
           recordingsMade: practiceSession.recordings?.length || 0,
@@ -257,9 +256,6 @@ class LearningGoalsService {
    */
   async getCurrentStreakFromSupabase(): Promise<number> {
     try {
-      const { supabase } = await import('../supabase/client')
-      const { getCurrentUser } = await import('../supabase/client')
-      
       const user = await getCurrentUser()
       if (!user) return 0
 
@@ -288,11 +284,11 @@ class LearningGoalsService {
       // For now, return default suggestions
       // In the future, this could be enhanced with AI-powered suggestions
       const suggestions = this.getDefaultGoalSuggestions()
-      
+
       if (suggestions.length === 0) {
         return this.generateGoalSuggestions()
       }
-      
+
       return this.getDefaultGoalSuggestions()
     } catch (error) {
       console.error('Error getting goal suggestions:', error)
@@ -307,7 +303,7 @@ class LearningGoalsService {
     // Determine unit based on goal type
     let unit: LearningGoal['unit']
     let deadline: Date | undefined
-    
+
     switch (suggestion.type) {
       case 'daily':
       case 'weekly':
@@ -326,7 +322,7 @@ class LearningGoalsService {
       default:
         unit = 'minutes'
     }
-    
+
     // Set deadline based on goal type
     if (suggestion.type === 'daily') {
       deadline = new Date()
@@ -362,7 +358,9 @@ class LearningGoalsService {
     }
   }
 
-  private async createGoalInChromeStorage(goal: Omit<LearningGoal, 'id' | 'current' | 'isCompleted' | 'createdAt' | 'completedAt'>): Promise<LearningGoal> {
+  private async createGoalInChromeStorage(
+    goal: Omit<LearningGoal, 'id' | 'current' | 'isCompleted' | 'createdAt' | 'completedAt'>
+  ): Promise<LearningGoal> {
     const goals = await this.getGoalsFromChromeStorage()
     const newGoal: LearningGoal = {
       ...goal,
@@ -371,16 +369,24 @@ class LearningGoalsService {
       isCompleted: false,
       createdAt: new Date()
     }
-    
+
     goals.push(newGoal)
     await chrome.storage.local.set({ learning_goals: goals })
     return newGoal
   }
 
-  private async updateGoalInChromeStorage(goalId: string, updates: Partial<Pick<LearningGoal, 'title' | 'description' | 'target' | 'current' | 'deadline' | 'isCompleted'>>): Promise<void> {
+  private async updateGoalInChromeStorage(
+    goalId: string,
+    updates: Partial<
+      Pick<
+        LearningGoal,
+        'title' | 'description' | 'target' | 'current' | 'deadline' | 'isCompleted'
+      >
+    >
+  ): Promise<void> {
     const goals = await this.getGoalsFromChromeStorage()
     const goalIndex = goals.findIndex(g => g.id === goalId)
-    
+
     if (goalIndex !== -1) {
       goals[goalIndex] = {
         ...goals[goalIndex],

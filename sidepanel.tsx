@@ -25,6 +25,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './com
 import { Input } from './components/ui/input'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
+import { generateDashboardAnalytics } from './lib/services'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
 import { learningGoalsService } from './lib/services/learning-goals-service'
 import { sessionTemplatesService } from './lib/services/session-templates-service'
@@ -708,9 +709,6 @@ function FluentFlowSidePanelContent() {
     const loadEnhancedAnalytics = async () => {
       try {
         setAnalyticsLoading(true)
-        const { generateDashboardAnalytics } = await import(
-          './lib/services/practice-tracking-service'
-        )
         const data = await generateDashboardAnalytics()
         setEnhancedAnalytics(data)
       } catch (error) {

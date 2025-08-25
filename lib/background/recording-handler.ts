@@ -1,6 +1,7 @@
 // Recording Handler for FluentFlow Background Script
 // Manages audio recording storage, retrieval, and deletion
 
+import { getFluentFlowStore } from '../stores/fluent-flow-supabase-store'
 import type { AudioRecording } from '../types/fluent-flow-types'
 import { getAuthHandler } from './auth-handler'
 
@@ -109,9 +110,9 @@ async function saveChunkedRecording(recordingId: string, base64Data: string): Pr
     const chunkKey = `fluent_flow_recording_chunk_${recordingId}_${index}`
     return chrome.storage.local.set({ [chunkKey]: chunk })
   })
-  
+
   await Promise.all(chunkPromises)
-  
+
   const metaKey = `fluent_flow_recording_meta_${recordingId}`
   await chrome.storage.local.set({
     [metaKey]: {
@@ -126,16 +127,16 @@ async function loadChunkedRecording(recordingId: string): Promise<string | null>
     const metaKey = `fluent_flow_recording_meta_${recordingId}`
     const metaResult = await chrome.storage.local.get(metaKey)
     const meta = metaResult[metaKey]
-    
+
     if (!meta) return null
-    
+
     const chunkKeys = Array.from({ length: meta.chunkCount }, (_, i) => {
       return `fluent_flow_recording_chunk_${recordingId}_${i}`
     })
-    
+
     const chunksResult = await chrome.storage.local.get(chunkKeys)
     const chunks = chunkKeys.map(key => chunksResult[key]).filter(Boolean)
-    
+
     return chunks.join('')
   } catch (error) {
     console.error('Failed to load chunked recording:', error)
@@ -188,13 +189,14 @@ async function saveRecording(recordingData: {
     // If user is authenticated, try to save to Supabase
     if (authState.isAuthenticated && authState.user && recordingData.sessionId) {
       try {
-        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
 
         const audioRecording = {
           id: recordingId,
           videoId: recordingData.videoId,
-          audioData: shouldChunk ? base64ToBlob(recordingData.audioDataBase64, 'audio/webm') : audioData,
+          audioData: shouldChunk
+            ? base64ToBlob(recordingData.audioDataBase64, 'audio/webm')
+            : audioData,
           duration: recordingData.duration,
           createdAt: savedRecording.createdAt,
           updatedAt: savedRecording.updatedAt
@@ -207,7 +209,10 @@ async function saveRecording(recordingData: {
 
         return savedRecording
       } catch (supabaseError) {
-        console.error('FluentFlow: Failed to save to Supabase, falling back to local storage:', supabaseError)
+        console.error(
+          'FluentFlow: Failed to save to Supabase, falling back to local storage:',
+          supabaseError
+        )
       }
     }
 
@@ -249,7 +254,7 @@ async function loadRecording(recordingId: string): Promise<SavedRecording | null
     let audioDataBase64: string
     if (!recordingData.audioDataBase64) {
       // Try to load from chunks
-      audioDataBase64 = await loadChunkedRecording(recordingId) || ''
+      audioDataBase64 = (await loadChunkedRecording(recordingId)) || ''
     } else {
       audioDataBase64 = recordingData.audioDataBase64
     }
@@ -291,7 +296,6 @@ async function getAllRecordings(videoId?: string): Promise<SavedRecording[]> {
         console.log('FluentFlow: Getting recordings from Supabase for user:', authState.user.id)
 
         // Get Supabase store service
-        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
 
         // Get user recordings using the new service method
@@ -379,7 +383,6 @@ async function deleteRecording(recordingId: string): Promise<boolean> {
         console.log('FluentFlow: Deleting recording from Supabase:', recordingId)
 
         // Get Supabase store service
-        const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
         const store = getFluentFlowStore()
 
         // Delete from Supabase using the new service method

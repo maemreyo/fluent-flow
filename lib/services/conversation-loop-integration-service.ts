@@ -1,3 +1,4 @@
+import { supabaseService } from '../stores/fluent-flow-supabase-store'
 import type {
   CleanupResult,
   ConversationPracticeSession,
@@ -112,7 +113,6 @@ export class ConversationLoopIntegrationService {
 
     // First check if questions already exist in database using dynamic import
     try {
-      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
       const cachedQuestions = await supabaseService.getQuestions(loopId)
       if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
         console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
@@ -136,7 +136,6 @@ export class ConversationLoopIntegrationService {
 
     // Save questions to database for future caching using dynamic import
     try {
-      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
       await supabaseService.saveQuestions(loopId, questions.questions, {
         generatedFromLoop: true,
         loopDuration: loop.endTime - loop.startTime,
@@ -173,7 +172,6 @@ export class ConversationLoopIntegrationService {
     try {
       // First check if questions already exist in database using dynamic import
       try {
-        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
         const cachedQuestions = await supabaseService.getQuestions(loopId)
         if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
           console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
@@ -203,7 +201,6 @@ export class ConversationLoopIntegrationService {
       // Check if transcript is already available in the database using dynamic import
       let cachedTranscript = null
       try {
-        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
         cachedTranscript = await supabaseService.getTranscript(
           loop.videoId,
           loop.startTime,
@@ -244,7 +241,6 @@ export class ConversationLoopIntegrationService {
 
         // Save transcript to database for future use using dynamic import
         try {
-          const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
           await supabaseService.saveTranscript(
             loop.videoId,
             loop.startTime,
@@ -279,7 +275,6 @@ export class ConversationLoopIntegrationService {
 
       // Save questions to database for future caching using dynamic import
       try {
-        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
         await supabaseService.saveQuestions(loopId, questions.questions, {
           generatedFromTranscript: true,
           transcriptLength: transcriptResult.fullText.length,
@@ -1686,7 +1681,6 @@ Please analyze the video content and generate conversation practice questions th
   async generateQuestions(loopId: string): Promise<ConversationQuestions> {
     // First try to use cached questions
     try {
-      const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
       const cachedQuestions = await supabaseService.getQuestions(loopId)
       if (cachedQuestions && Array.isArray(cachedQuestions) && cachedQuestions.length > 0) {
         console.log(`FluentFlow: Using cached questions for loop ${loopId}`)
@@ -1783,7 +1777,6 @@ Please analyze the video content and generate conversation practice questions th
       // First check if transcript exists in database using dynamic import
       let cachedTranscript = null
       try {
-        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
         cachedTranscript = await supabaseService.getTranscript(videoId, startTime, endTime)
       } catch (cacheError) {
         console.log(`FluentFlow: Transcript cache check failed for video ${videoId}:`, cacheError)
@@ -1814,7 +1807,6 @@ Please analyze the video content and generate conversation practice questions th
       // Save to database for future caching using dynamic import
       let savedTranscript = null
       try {
-        const { supabaseService } = await import('../stores/fluent-flow-supabase-store')
         savedTranscript = await supabaseService.saveTranscript(
           videoId,
           startTime,

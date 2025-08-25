@@ -2,18 +2,19 @@
 // Following SoC: Handles data aggregation from various FluentFlow services
 
 import { getFluentFlowStore } from '../stores/fluent-flow-supabase-store'
-import { learningGoalsService } from './learning-goals-service'
-import { sessionTemplatesService } from './session-templates-service'
 import {
-  calculateTodayStats,
   calculatePracticeStreak,
+  calculateTodayStats,
   calculateWeeklyProgress,
+  generateQuickActions,
   generateRecentAchievements,
   getMotivationalData,
-  generateQuickActions,
   type NewTabData,
   type SavedContent
 } from '../utils/newtab-analytics'
+import { learningGoalsService } from './learning-goals-service'
+import { practiceTrackingService } from './practice-tracking-service'
+import { sessionTemplatesService } from './session-templates-service'
 
 export class NewTabDataService {
   private readonly bookmarksKey = 'fluent_flow_bookmarked_videos'
@@ -38,7 +39,6 @@ export class NewTabDataService {
         // Get comprehensive practice analytics from our tracking service
         (async () => {
           try {
-            const { practiceTrackingService } = await import('./practice-tracking-service')
             return await practiceTrackingService.getPracticeAnalytics('month')
           } catch (error) {
             console.error('Failed to load practice analytics:', error)
@@ -52,14 +52,13 @@ export class NewTabDataService {
 
       // Use practice tracking service data if available, fallback to existing calculations
       let todayStats, practiceStreak, weeklyProgress
-      
+
       if (practiceAnalytics) {
         // Use data from practice tracking service
-        const { practiceTrackingService } = await import('./practice-tracking-service')
         const dailyStats = await practiceTrackingService.getDailyStats(7)
         const today = new Date().toISOString().split('T')[0]
         const todayData = dailyStats.find(stat => stat.date === today)
-        
+
         todayStats = {
           sessionsCompleted: todayData?.sessionsCount || 0,
           practiceTime: todayData?.totalMinutes || 0,
@@ -67,7 +66,7 @@ export class NewTabDataService {
           recordingsMade: todayData?.recordingsCount || 0,
           streakDay: practiceAnalytics.currentStreak
         }
-        
+
         practiceStreak = practiceAnalytics.currentStreak
         weeklyProgress = dailyStats.slice(-7).map(stat => ({
           date: new Date(stat.date),
@@ -82,13 +81,13 @@ export class NewTabDataService {
         practiceStreak = calculatePracticeStreak(allSessions)
         weeklyProgress = calculateWeeklyProgress(allSessions, goals)
       }
-      
+
       // Generate derived data (enhanced with practice tracking data)
       const recentAchievements = generateRecentAchievements(
         goals,
         practiceStreak,
         practiceAnalytics?.totalSessions || statistics.totalSessions,
-        practiceAnalytics?.vocabularyLearned || (todayStats.vocabularyLearned * 30) // Rough total estimate
+        practiceAnalytics?.vocabularyLearned || todayStats.vocabularyLearned * 30 // Rough total estimate
       )
 
       const motivationalData = getMotivationalData(
@@ -97,11 +96,7 @@ export class NewTabDataService {
         practiceStreak
       )
 
-      const quickActions = generateQuickActions(
-        lastVideo,
-        activePlans,
-        practiceStreak
-      )
+      const quickActions = generateQuickActions(lastVideo, activePlans, practiceStreak)
 
       return {
         todayStats,
@@ -170,11 +165,13 @@ export class NewTabDataService {
     try {
       const result = await chrome.storage.local.get([this.bookmarksKey])
       const bookmarks = result[this.bookmarksKey] || []
-      
-      return bookmarks.map((bookmark: any) => ({
-        ...bookmark,
-        bookmarkedAt: new Date(bookmark.bookmarkedAt)
-      })).sort((a: any, b: any) => b.bookmarkedAt.getTime() - a.bookmarkedAt.getTime())
+
+      return bookmarks
+        .map((bookmark: any) => ({
+          ...bookmark,
+          bookmarkedAt: new Date(bookmark.bookmarkedAt)
+        }))
+        .sort((a: any, b: any) => b.bookmarkedAt.getTime() - a.bookmarkedAt.getTime())
         .slice(0, 5) // Limit to 5 most recent
     } catch (error) {
       console.error('Failed to load bookmarked videos:', error)
@@ -189,11 +186,13 @@ export class NewTabDataService {
     try {
       const result = await chrome.storage.local.get([this.notesKey])
       const notes = result[this.notesKey] || []
-      
-      return notes.map((note: any) => ({
-        ...note,
-        createdAt: new Date(note.createdAt)
-      })).sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
+
+      return notes
+        .map((note: any) => ({
+          ...note,
+          createdAt: new Date(note.createdAt)
+        }))
+        .sort((a: any, b: any) => b.createdAt.getTime() - a.createdAt.getTime())
         .slice(0, 3) // Limit to 3 most recent
     } catch (error) {
       console.error('Failed to load practice notes:', error)
@@ -220,7 +219,7 @@ export class NewTabDataService {
   async bookmarkVideo(videoId: string, title: string, thumbnail: string): Promise<void> {
     try {
       const bookmarks = await this.getBookmarkedVideos()
-      
+
       // Check if already bookmarked
       if (bookmarks.some(b => b.videoId === videoId)) {
         return
@@ -234,7 +233,7 @@ export class NewTabDataService {
       }
 
       const updatedBookmarks = [newBookmark, ...bookmarks].slice(0, 10) // Keep max 10
-      
+
       await chrome.storage.local.set({
         [this.bookmarksKey]: updatedBookmarks
       })
@@ -250,7 +249,7 @@ export class NewTabDataService {
     try {
       const bookmarks = await this.getBookmarkedVideos()
       const filteredBookmarks = bookmarks.filter(b => b.videoId !== videoId)
-      
+
       await chrome.storage.local.set({
         [this.bookmarksKey]: filteredBookmarks
       })
@@ -265,7 +264,7 @@ export class NewTabDataService {
   async savePracticeNote(content: string, videoId?: string): Promise<void> {
     try {
       const notes = await this.getPracticeNotes()
-      
+
       const newNote = {
         id: `note_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         content,
@@ -274,7 +273,7 @@ export class NewTabDataService {
       }
 
       const updatedNotes = [newNote, ...notes].slice(0, 20) // Keep max 20
-      
+
       await chrome.storage.local.set({
         [this.notesKey]: updatedNotes
       })
@@ -290,7 +289,7 @@ export class NewTabDataService {
     try {
       const notes = await this.getPracticeNotes()
       const filteredNotes = notes.filter(n => n.id !== noteId)
-      
+
       await chrome.storage.local.set({
         [this.notesKey]: filteredNotes
       })
@@ -371,7 +370,7 @@ export class NewTabDataService {
       'english grammar tutorial',
       'english listening practice'
     ]
-    
+
     const randomQuery = educationalQueries[Math.floor(Math.random() * educationalQueries.length)]
     const url = `https://www.youtube.com/results?search_query=${encodeURIComponent(randomQuery)}`
     await chrome.tabs.create({ url })
@@ -414,11 +413,11 @@ export class NewTabDataService {
         practiceNotes: []
       },
       motivationalData: {
-        quote: "Every new language is like an open window that shows a new view of the world.",
-        author: "Frank Harris",
+        quote: 'Every new language is like an open window that shows a new view of the world.',
+        author: 'Frank Harris',
         progress: {
-          level: "Beginner Explorer",
-          nextMilestone: "Dedicated Learner",
+          level: 'Beginner Explorer',
+          nextMilestone: 'Dedicated Learner',
           progressToNext: 0
         }
       },

@@ -1,17 +1,17 @@
 // Social Service - Data Layer
 // Following SoC: Handles real-time communication and social data persistence
 
+import { supabase } from '../supabase/client'
 import {
-  calculateUserLevel,
   calculateSessionXP,
+  calculateUserLevel,
   checkForNewAchievements,
   generateLeaderboard,
-  type FluentFlowUser,
-  type StudyGroup,
-  type GroupChallenge,
   type ChatMessage,
+  type FluentFlowUser,
   type Leaderboard,
   type SocialNotification,
+  type StudyGroup,
   type UserStats
 } from '../utils/social-features'
 
@@ -25,14 +25,14 @@ interface FirebaseConfig {
 
 export class SocialService {
   private readonly userKey = 'fluent_flow_social_user'
-  
+
   // Collection names for Firebase (unused in Supabase implementation)
   private readonly usersCollection = 'users'
   private readonly groupsCollection = 'study_groups'
   private readonly messagesCollection = 'messages'
   private readonly leaderboardsCollection = 'leaderboards'
   private readonly notificationsCollection = 'notifications'
-  
+
   // Real-time listeners
   private realtimeListeners: Map<string, (data: any) => void> = new Map()
 
@@ -52,11 +52,10 @@ export class SocialService {
       const existingUser = await this.getCurrentUser()
       if (existingUser) return existingUser
 
-      const { supabase, getCurrentUser } = await import('../supabase/client')
-      
-      const currentUser = await getCurrentUser()
-      const userId = currentUser?.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
-      
+      const currentUser = await this.getCurrentUser()
+      const userId =
+        currentUser?.id || `user_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`
+
       const newUser: FluentFlowUser = {
         id: userId,
         username: userData.displayName.toLowerCase().replace(/\s+/g, '_'),
@@ -89,24 +88,22 @@ export class SocialService {
       }
 
       // Save to Supabase
-      const { error } = await supabase
-        .from('user_social_profiles')
-        .insert({
-          username: newUser.username,
-          display_name: newUser.displayName,
-          avatar: newUser.avatar,
-          language_preferences: newUser.languagePreferences,
-          preferences: newUser.preferences,
-          stats: newUser.stats,
-          level_data: newUser.level,
-          achievements: newUser.achievements
-        } as any)
+      const { error } = await supabase.from('user_social_profiles').insert({
+        username: newUser.username,
+        display_name: newUser.displayName,
+        avatar: newUser.avatar,
+        language_preferences: newUser.languagePreferences,
+        preferences: newUser.preferences,
+        stats: newUser.stats,
+        level_data: newUser.level,
+        achievements: newUser.achievements
+      } as any)
 
       if (error) throw error
 
       // Keep local cache for quick access
       await chrome.storage.local.set({ [this.userKey]: newUser })
-      
+
       return newUser
     } catch (error) {
       console.error('Failed to initialize user:', error)
@@ -119,20 +116,15 @@ export class SocialService {
    */
   async getCurrentUser(): Promise<FluentFlowUser | null> {
     try {
-      const { supabase } = await import('../supabase/client')
-      
-      const { data, error } = await supabase
-        .from('user_social_profiles')
-        .select('*')
-        .single()
+      const { data, error } = await supabase.from('user_social_profiles').select('*').single()
 
       if (error) {
         // Fallback to Chrome storage for first-time users
         const result = await chrome.storage.local.get([this.userKey])
         const userData = result[this.userKey]
-        
+
         if (!userData) return null
-        
+
         return {
           ...userData,
           joinedAt: new Date(userData.joinedAt),
@@ -150,18 +142,25 @@ export class SocialService {
         displayName: data.display_name,
         email: data.user_id, // User email from auth system
         avatar: data.avatar,
-        languagePreferences: (typeof data.language_preferences === 'object' && data.language_preferences !== null) 
-          ? data.language_preferences as { learning: string[]; native: string[] }
-          : { learning: [], native: [] },
+        languagePreferences:
+          typeof data.language_preferences === 'object' && data.language_preferences !== null
+            ? (data.language_preferences as { learning: string[]; native: string[] })
+            : { learning: [], native: [] },
         joinedAt: new Date(data.created_at),
         lastSeen: new Date(data.last_seen),
         isOnline: data.is_online,
-        preferences: (typeof data.preferences === 'object' && data.preferences !== null) 
-          ? data.preferences as any : {},
-        stats: (typeof data.stats === 'object' && data.stats !== null) 
-          ? data.stats as any : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
-        level: (typeof data.level_data === 'object' && data.level_data !== null) 
-          ? data.level_data as any : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
+        preferences:
+          typeof data.preferences === 'object' && data.preferences !== null
+            ? (data.preferences as any)
+            : {},
+        stats:
+          typeof data.stats === 'object' && data.stats !== null
+            ? (data.stats as any)
+            : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
+        level:
+          typeof data.level_data === 'object' && data.level_data !== null
+            ? (data.level_data as any)
+            : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
         achievements: [] // Empty for now - will be loaded separately if needed
       }
     } catch (error) {
@@ -184,11 +183,9 @@ export class SocialService {
       const user = await this.getCurrentUser()
       if (!user) return null
 
-      const { supabase } = await import('../supabase/client')
-
       // Calculate XP earned
       const xpEarned = calculateSessionXP(sessionData)
-      
+
       // Update stats
       const updatedStats: UserStats = {
         ...user.stats,
@@ -214,7 +211,8 @@ export class SocialService {
       })
 
       // Calculate new level
-      const newTotalXp = user.level.totalXp + xpEarned + newAchievements.reduce((acc, ach) => acc + ach.xpReward, 0)
+      const newTotalXp =
+        user.level.totalXp + xpEarned + newAchievements.reduce((acc, ach) => acc + ach.xpReward, 0)
       const newLevel = calculateUserLevel(newTotalXp)
 
       // Update in Supabase
@@ -243,21 +241,21 @@ export class SocialService {
           xp_reward: ach.xpReward
         }))
 
-        await supabase
-          .from('user_achievements')
-          .insert(achievementInserts)
+        await supabase.from('user_achievements').insert(achievementInserts)
 
         // Create notifications for achievements
-        await this.createNotifications(newAchievements.map(ach => ({
-          id: `ach_${ach.id}_${Date.now()}`,
-          userId: user.id,
-          type: 'achievement' as const,
-          title: 'Achievement Unlocked!',
-          message: `${ach.name}: ${ach.description}`,
-          data: { achievement: ach },
-          read: false,
-          createdAt: new Date()
-        })))
+        await this.createNotifications(
+          newAchievements.map(ach => ({
+            id: `ach_${ach.id}_${Date.now()}`,
+            userId: user.id,
+            type: 'achievement' as const,
+            title: 'Achievement Unlocked!',
+            message: `${ach.name}: ${ach.description}`,
+            data: { achievement: ach },
+            read: false,
+            createdAt: new Date()
+          }))
+        )
       }
 
       const updatedUser: FluentFlowUser = {
@@ -286,8 +284,6 @@ export class SocialService {
       const user = await this.getCurrentUser()
       if (!user) return []
 
-      const { supabase } = await import('../supabase/client')
-
       // First get the group IDs for this user
       const { data: memberData, error: memberError } = await supabase
         .from('study_group_members')
@@ -302,10 +298,12 @@ export class SocialService {
       // Then get the groups with their members
       const { data, error } = await supabase
         .from('study_groups')
-        .select(`
+        .select(
+          `
           *,
           study_group_members(*)
-        `)
+        `
+        )
         .in('id', groupIds)
 
       if (error) throw error
@@ -330,9 +328,10 @@ export class SocialService {
         maxMembers: group.max_members,
         isPrivate: group.is_private,
         tags: group.tags || [],
-        stats: typeof group.stats === 'object' && group.stats !== null 
-          ? group.stats as any 
-          : { totalSessions: 0, avgProgress: 0, mostActiveDay: 'monday' }
+        stats:
+          typeof group.stats === 'object' && group.stats !== null
+            ? (group.stats as any)
+            : { totalSessions: 0, avgProgress: 0, mostActiveDay: 'monday' }
       }))
     } catch (error) {
       console.error('Failed to get user study groups:', error)
@@ -355,8 +354,6 @@ export class SocialService {
       const user = await this.getCurrentUser()
       if (!user) throw new Error('User not authenticated')
 
-      const { supabase } = await import('../supabase/client')
-
       const { data: groupResult, error: groupError } = await supabase
         .from('study_groups')
         .insert({
@@ -374,15 +371,13 @@ export class SocialService {
       if (groupError) throw groupError
 
       // Add creator as owner
-      const { error: memberError } = await supabase
-        .from('study_group_members')
-        .insert({
-          group_id: groupResult.id,
-          user_id: user.id,
-          username: user.username,
-          avatar: user.avatar,
-          role: 'owner'
-        })
+      const { error: memberError } = await supabase.from('study_group_members').insert({
+        group_id: groupResult.id,
+        user_id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        role: 'owner'
+      })
 
       if (memberError) throw memberError
 
@@ -401,8 +396,6 @@ export class SocialService {
       const user = await this.getCurrentUser()
       if (!user) return false
 
-      const { supabase } = await import('../supabase/client')
-
       // Check if group exists and has space
       const { data: group, error: groupError } = await supabase
         .from('study_groups')
@@ -417,15 +410,13 @@ export class SocialService {
       if (group.study_group_members.some((member: any) => member.user_id === user.id)) return true
 
       // Add as member
-      const { error: memberError } = await supabase
-        .from('study_group_members')
-        .insert({
-          group_id: groupId,
-          user_id: user.id,
-          username: user.username,
-          avatar: user.avatar,
-          role: 'member'
-        })
+      const { error: memberError } = await supabase.from('study_group_members').insert({
+        group_id: groupId,
+        user_id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        role: 'member'
+      })
 
       if (memberError) throw memberError
 
@@ -453,26 +444,22 @@ export class SocialService {
    */
   async sendMessage(message: ChatMessage): Promise<boolean> {
     try {
-      const { supabase } = await import('../supabase/client')
-
-      const { error } = await supabase
-        .from('chat_messages')
-        .insert({
-          group_id: message.groupId,
-          sender_id: message.senderId,
-          sender_name: message.senderName,
-          sender_avatar: message.senderAvatar,
-          content: message.content,
-          type: message.type,
-          reply_to: message.replyTo,
-          metadata: message.metadata || {}
-        })
+      const { error } = await supabase.from('chat_messages').insert({
+        group_id: message.groupId,
+        sender_id: message.senderId,
+        sender_name: message.senderName,
+        sender_avatar: message.senderAvatar,
+        content: message.content,
+        type: message.type,
+        reply_to: message.replyTo,
+        metadata: message.metadata || {}
+      })
 
       if (error) throw error
 
       // Trigger real-time listeners
       this.triggerRealtimeUpdate(`group_${message.groupId}_messages`, message)
-      
+
       return true
     } catch (error) {
       console.error('Failed to send message:', error)
@@ -485,8 +472,6 @@ export class SocialService {
    */
   async getGroupMessages(groupId: string, limit: number = 50): Promise<ChatMessage[]> {
     try {
-      const { supabase } = await import('../supabase/client')
-
       const { data, error } = await supabase
         .from('chat_messages')
         .select('*')
@@ -506,7 +491,7 @@ export class SocialService {
           content: msg.content,
           type: msg.type as ChatMessage['type'],
           timestamp: new Date(msg.timestamp),
-          reactions: Array.isArray(msg.reactions) 
+          reactions: Array.isArray(msg.reactions)
             ? msg.reactions.map((reaction: any) => ({
                 emoji: reaction.emoji || '👍',
                 users: Array.isArray(reaction.users) ? reaction.users : [],
@@ -514,7 +499,8 @@ export class SocialService {
               }))
             : [],
           replyTo: msg.reply_to || undefined,
-          metadata: typeof msg.metadata === 'object' && msg.metadata !== null ? msg.metadata as any : {}
+          metadata:
+            typeof msg.metadata === 'object' && msg.metadata !== null ? (msg.metadata as any) : {}
         }))
         .reverse()
     } catch (error) {
@@ -527,13 +513,11 @@ export class SocialService {
    * Gets current leaderboard from Supabase
    */
   async getLeaderboard(
-    type: Leaderboard['type'], 
+    type: Leaderboard['type'],
     metric: Leaderboard['metric'],
     timeframe: Leaderboard['timeframe']
   ): Promise<Leaderboard> {
     try {
-      const { supabase } = await import('../supabase/client')
-
       // Get users with social profiles
       const { data, error } = await supabase
         .from('user_social_profiles')
@@ -550,18 +534,25 @@ export class SocialService {
         displayName: profile.display_name,
         email: '', // Not needed for leaderboard
         avatar: profile.avatar,
-        languagePreferences: (typeof profile.language_preferences === 'object' && profile.language_preferences !== null) 
-          ? profile.language_preferences as { learning: string[]; native: string[] }
-          : { learning: [], native: [] },
+        languagePreferences:
+          typeof profile.language_preferences === 'object' && profile.language_preferences !== null
+            ? (profile.language_preferences as { learning: string[]; native: string[] })
+            : { learning: [], native: [] },
         joinedAt: new Date(profile.created_at),
         lastSeen: new Date(profile.last_seen),
         isOnline: profile.is_online,
-        preferences: (typeof profile.preferences === 'object' && profile.preferences !== null) 
-          ? profile.preferences as any : {},
-        stats: (typeof profile.stats === 'object' && profile.stats !== null) 
-          ? profile.stats as any : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
-        level: (typeof profile.level_data === 'object' && profile.level_data !== null) 
-          ? profile.level_data as any : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
+        preferences:
+          typeof profile.preferences === 'object' && profile.preferences !== null
+            ? (profile.preferences as any)
+            : {},
+        stats:
+          typeof profile.stats === 'object' && profile.stats !== null
+            ? (profile.stats as any)
+            : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
+        level:
+          typeof profile.level_data === 'object' && profile.level_data !== null
+            ? (profile.level_data as any)
+            : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
         achievements: [] // Empty for leaderboard - achievements not needed
       }))
 
@@ -596,8 +587,6 @@ export class SocialService {
       const user = await this.getCurrentUser()
       if (!user) return []
 
-      const { supabase } = await import('../supabase/client')
-
       const { data, error } = await supabase
         .from('social_notifications')
         .select('*')
@@ -629,11 +618,11 @@ export class SocialService {
    */
   onRealtimeUpdate(path: string, callback: (data: any) => void): () => void {
     this.realtimeListeners.set(path, callback)
-    
+
     // Real-time subscriptions can be implemented using Supabase channels
     // Example: supabase.channel(path).on('postgres_changes', callback).subscribe()
     // Currently using manual triggering for demonstration
-    
+
     // Return cleanup function
     return () => {
       this.realtimeListeners.delete(path)
@@ -656,14 +645,14 @@ export class SocialService {
 
   private async getStudyGroup(groupId: string): Promise<StudyGroup | null> {
     try {
-      const { supabase } = await import('../supabase/client')
-
       const { data, error } = await supabase
         .from('study_groups')
-        .select(`
+        .select(
+          `
           *,
           study_group_members(*)
-        `)
+        `
+        )
         .eq('id', groupId)
         .single()
 
@@ -689,9 +678,10 @@ export class SocialService {
         maxMembers: data.max_members,
         isPrivate: data.is_private,
         tags: data.tags || [],
-        stats: typeof data.stats === 'object' && data.stats !== null 
-          ? data.stats as any 
-          : { totalSessions: 0, avgProgress: 0, mostActiveDay: 'monday' }
+        stats:
+          typeof data.stats === 'object' && data.stats !== null
+            ? (data.stats as any)
+            : { totalSessions: 0, avgProgress: 0, mostActiveDay: 'monday' }
       }
     } catch (error) {
       console.error('Failed to get study group:', error)
@@ -701,11 +691,7 @@ export class SocialService {
 
   private async getAllUsers(): Promise<FluentFlowUser[]> {
     try {
-      const { supabase } = await import('../supabase/client')
-
-      const { data, error } = await supabase
-        .from('user_social_profiles')
-        .select('*')
+      const { data, error } = await supabase.from('user_social_profiles').select('*')
 
       if (error) throw error
 
@@ -715,18 +701,25 @@ export class SocialService {
         displayName: profile.display_name,
         email: '', // Not needed for this operation
         avatar: profile.avatar,
-        languagePreferences: (typeof profile.language_preferences === 'object' && profile.language_preferences !== null) 
-          ? profile.language_preferences as { learning: string[]; native: string[] }
-          : { learning: [], native: [] },
+        languagePreferences:
+          typeof profile.language_preferences === 'object' && profile.language_preferences !== null
+            ? (profile.language_preferences as { learning: string[]; native: string[] })
+            : { learning: [], native: [] },
         joinedAt: new Date(profile.created_at),
         lastSeen: new Date(profile.last_seen),
         isOnline: profile.is_online,
-        preferences: (typeof profile.preferences === 'object' && profile.preferences !== null) 
-          ? profile.preferences as any : {},
-        stats: (typeof profile.stats === 'object' && profile.stats !== null) 
-          ? profile.stats as any : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
-        level: (typeof profile.level_data === 'object' && profile.level_data !== null) 
-          ? profile.level_data as any : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
+        preferences:
+          typeof profile.preferences === 'object' && profile.preferences !== null
+            ? (profile.preferences as any)
+            : {},
+        stats:
+          typeof profile.stats === 'object' && profile.stats !== null
+            ? (profile.stats as any)
+            : { totalXp: 0, practiceStreak: 0, sessionsCompleted: 0 },
+        level:
+          typeof profile.level_data === 'object' && profile.level_data !== null
+            ? (profile.level_data as any)
+            : { currentLevel: 1, totalXp: 0, xpToNextLevel: 100 },
         achievements: [] // Empty for performance - will be loaded separately if needed
       }))
     } catch (error) {
@@ -737,8 +730,6 @@ export class SocialService {
 
   private async createNotifications(notifications: SocialNotification[]): Promise<void> {
     try {
-      const { supabase } = await import('../supabase/client')
-
       const notificationInserts = notifications.map(notif => ({
         user_id: notif.userId,
         type: notif.type,
@@ -748,9 +739,7 @@ export class SocialService {
         expires_at: notif.expiresAt?.toISOString()
       }))
 
-      const { error } = await supabase
-        .from('social_notifications')
-        .insert(notificationInserts)
+      const { error } = await supabase.from('social_notifications').insert(notificationInserts)
 
       if (error) throw error
     } catch (error) {
