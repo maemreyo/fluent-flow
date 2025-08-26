@@ -152,6 +152,12 @@ const Onboarding = () => {
   )
 }
 
-const container = document.getElementById('root')
-const root = createRoot(container)
-root.render(<Onboarding />)
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.getElementById('root');
+  if (container) {
+    const root = createRoot(container);
+    root.render(<Onboarding />);
+  } else {
+    console.error('Root element not found. Ensure <div id="root"></div> exists in your HTML.');
+  }
+});

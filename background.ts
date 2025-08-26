@@ -15,13 +15,24 @@ console.log('FluentFlow background script loaded')
 const authHandler = getAuthHandler()
 
 // Context menu setup
-chrome.runtime.onInstalled.addListener(() => {
+chrome.runtime.onInstalled.addListener((details) => {
   // Create context menu
   chrome.contextMenus.create({
     id: 'main-action',
     title: 'Process with Extension',
     contexts: ['selection']
   });
+
+  if (details.reason === 'install') {
+    chrome.storage.local.get('hasRunBefore', (result) => {
+      if (!result.hasRunBefore) {
+        chrome.tabs.create({ url: 'tabs/onboarding.html' }); // Placeholder for onboarding page
+        chrome.storage.local.set({ hasRunBefore: true });
+      }
+    });
+  } else if (details.reason === 'update') {
+    chrome.tabs.create({ url: 'tabs/whats-new.html' }); // Placeholder for what's new page
+  }
 });
 
 // Context menu handler
