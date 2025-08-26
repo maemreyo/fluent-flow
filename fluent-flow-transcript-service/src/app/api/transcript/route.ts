@@ -47,15 +47,24 @@ class YouTubeTranscriptService {
   private async getInnertube(): Promise<Innertube> {
     if (!this.innertube) {
       try {
-        console.log('Initializing YouTube.js Innertube client')
-        this.innertube = await Innertube.create({})
-        console.log('✅ Innertube client initialized successfully')
+        console.log('Initializing YouTube.js Innertube client');
+        const cookie = process.env.YOUTUBE_COOKIE || '';
+        if (cookie) {
+          console.log('Using YouTube cookie from environment variable.');
+        } else {
+          console.warn('YOUTUBE_COOKIE environment variable not set. Some videos may not be accessible.');
+        }
+
+        this.innertube = await Innertube.create({
+          cookie: cookie,
+        });
+        console.log('✅ Innertube client initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize Innertube client:', error)
-        throw this.createError('NETWORK_ERROR', `Failed to initialize YouTube client: ${error}`)
+        console.error('Failed to initialize Innertube client:', error);
+        throw this.createError('NETWORK_ERROR', `Failed to initialize YouTube client: ${error}`);
       }
     }
-    return this.innertube
+    return this.innertube;
   }
 
   async getTranscriptSegment(
@@ -112,9 +121,9 @@ class YouTubeTranscriptService {
 
     try {
       const yt = await this.getInnertube()
-      console.log(`[getAvailableLanguages] Innertube instance obtained.`)
+      console.log(`[getAvailableLanguages] Innertube instance obtained.`) 
       const info = await yt.getInfo(cleanVideoId)
-      console.log(`[getAvailableLanguages] Video info obtained.`)
+      console.log(`[getAvailableLanguages] Video info obtained.`) 
       console.log(`[getAvailableLanguages] Full video info object:`, JSON.stringify(info, null, 2))
 
       if (!info.captions) {
@@ -145,23 +154,23 @@ class YouTubeTranscriptService {
       console.log(`[isTranscriptAvailable] Clean videoId: ${cleanVideoId}`)
 
       const yt = await this.getInnertube()
-      console.log(`[isTranscriptAvailable] Innertube instance obtained.`)
+      console.log(`[isTranscriptAvailable] Innertube instance obtained.`) 
 
       const info = await yt.getInfo(cleanVideoId)
-      console.log(`[isTranscriptAvailable] Video info obtained.`)
+      console.log(`[isTranscriptAvailable] Video info obtained.`) 
       console.log(`[isTranscriptAvailable] Full video info object:`, JSON.stringify(info, null, 2))
 
       if (!info.captions) {
-        console.log(`[isTranscriptAvailable] No captions property in video info. Returning false.`)
+        console.log(`[isTranscriptAvailable] No captions property in video info. Returning false.`) 
         return false
       }
-      console.log(`[isTranscriptAvailable] Captions property exists.`)
+      console.log(`[isTranscriptAvailable] Captions property exists.`) 
 
       const transcript = await info.getTranscript()
-      console.log(`[isTranscriptAvailable] Transcript object obtained.`)
+      console.log(`[isTranscriptAvailable] Transcript object obtained.`) 
 
       if (!transcript || !transcript.transcript || !transcript.transcript.content) {
-        console.log(`[isTranscriptAvailable] Transcript content is missing. Returning false.`)
+        console.log(`[isTranscriptAvailable] Transcript content is missing. Returning false.`) 
         return false
       }
 
@@ -266,8 +275,8 @@ class YouTubeTranscriptService {
     }
 
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, 
+      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/, 
       /^([a-zA-Z0-9_-]{11})$/
     ]
 
