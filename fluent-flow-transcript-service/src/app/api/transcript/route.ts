@@ -108,48 +108,72 @@ class YouTubeTranscriptService {
   }
 
   async getAvailableLanguages(videoId: string): Promise<string[]> {
-    const cleanVideoId = this.extractVideoId(videoId)
+    console.log(`[getAvailableLanguages] Getting languages for videoId: ${videoId}`);
+    const cleanVideoId = this.extractVideoId(videoId);
+    console.log(`[getAvailableLanguages] Clean videoId: ${cleanVideoId}`);
 
     try {
-      const yt = await this.getInnertube()
-      const info = await yt.getInfo(cleanVideoId)
+      const yt = await this.getInnertube();
+      console.log(`[getAvailableLanguages] Innertube instance obtained.`);
+      const info = await yt.getInfo(cleanVideoId);
+      console.log(`[getAvailableLanguages] Video info obtained.`);
 
       if (!info.captions) {
-        return []
+        console.log(`[getAvailableLanguages] No captions property in video info. Returning empty array.`);
+        return [];
       }
 
-      const captionTracks = info.captions?.caption_tracks || []
-      const availableLanguages = captionTracks.map((track: CaptionTrack) => track.language_code)
+      const captionTracks = info.captions?.caption_tracks || [];
+      const availableLanguages = captionTracks.map((track: CaptionTrack) => track.language_code);
 
-      console.log(`Available languages for ${cleanVideoId}:`, availableLanguages)
-      return availableLanguages.filter((lang: string) => lang)
+      console.log(`[getAvailableLanguages] Available languages for ${cleanVideoId}:`, availableLanguages);
+      return availableLanguages.filter((lang: string) => lang);
     } catch (error) {
-      console.log(`Failed to get available languages for ${cleanVideoId}:`, error)
-      return []
+      console.error(`[getAvailableLanguages] Failed for ${cleanVideoId}:`, error);
+      return [];
     }
   }
 
   async isTranscriptAvailable(videoId: string, language?: string): Promise<boolean> {
+    console.log(`[isTranscriptAvailable] Checking for videoId: ${videoId}, language: ${language}`);
     try {
-      const cleanVideoId = this.extractVideoId(videoId)
-      const yt = await this.getInnertube()
-      const info = await yt.getInfo(cleanVideoId)
+      const cleanVideoId = this.extractVideoId(videoId);
+      console.log(`[isTranscriptAvailable] Clean videoId: ${cleanVideoId}`);
+
+      const yt = await this.getInnertube();
+      console.log(`[isTranscriptAvailable] Innertube instance obtained.`);
+
+      const info = await yt.getInfo(cleanVideoId);
+      console.log(`[isTranscriptAvailable] Video info obtained.`);
 
       if (!info.captions) {
-        return false
+        console.log(`[isTranscriptAvailable] No captions property in video info. Returning false.`);
+        return false;
+      }
+      console.log(`[isTranscriptAvailable] Captions property exists.`);
+
+      const transcript = await info.getTranscript();
+      console.log(`[isTranscriptAvailable] Transcript object obtained.`);
+
+      if (!transcript || !transcript.transcript || !transcript.transcript.content) {
+        console.log(`[isTranscriptAvailable] Transcript content is missing. Returning false.`);
+        return false;
       }
 
-      await info.getTranscript()
+      const captionTracks = info.captions?.caption_tracks || [];
+      console.log(`[isTranscriptAvailable] Available caption tracks:`, captionTracks.map(t => t.language_code));
 
       if (language) {
-        const captionTracks = info.captions?.caption_tracks || []
-        return captionTracks.some((track: CaptionTrack) => track.language_code === language)
+        const hasLanguage = captionTracks.some((track: CaptionTrack) => track.language_code === language);
+        console.log(`[isTranscriptAvailable] Language '${language}' availability: ${hasLanguage}`);
+        return hasLanguage;
       }
 
-      return true
+      console.log(`[isTranscriptAvailable] No specific language requested, returning true as transcripts are available.`);
+      return true;
     } catch (error) {
-      console.log(`Transcript availability check failed for ${videoId}:`, error)
-      return false
+      console.error(`[isTranscriptAvailable] Error for videoId ${videoId}:`, error);
+      return false;
     }
   }
 
@@ -230,8 +254,8 @@ class YouTubeTranscriptService {
     }
 
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, 
+      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/, 
       /^([a-zA-Z0-9_-]{11})$/
     ]
 
