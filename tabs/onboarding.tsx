@@ -1,6 +1,11 @@
+import { KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { AuthComponent } from '../components/auth-component'
+import { Button } from '../components/ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
 import { getFluentFlowStore } from '../lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from '../lib/supabase/client'
 import '../styles/globals.css'
@@ -71,81 +76,86 @@ const Onboarding = () => {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 font-sans">
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+        <div className="flex items-center gap-2 text-lg text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Loading...</span>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-50 font-sans">
-      <div className="mx-auto w-full max-w-md space-y-8 p-8">
+    <div className="min-h-screen bg-background font-sans text-foreground">
+      <div className="container mx-auto flex max-w-2xl flex-col items-center justify-center space-y-8 p-4 py-12 md:p-8">
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-gray-800">Welcome to FluentFlow!</h1>
-          <p className="mt-2 text-lg text-gray-600">Let's get you set up for learning.</p>
+          <h1 className="flex items-center justify-center gap-3 text-4xl font-bold">
+            <PartyPopper className="h-10 w-10 text-primary" />
+            Welcome to FluentFlow!
+          </h1>
+          <p className="mt-2 text-lg text-muted-foreground">
+            Let's get you set up for an enhanced learning experience.
+          </p>
         </div>
 
         {!isLoggedIn ? (
-          // STEP 1: LOGIN / SIGN UP
-          <div className="rounded-xl bg-white p-8 shadow-md">
-            <h2 className="text-center text-2xl font-semibold text-gray-700">
-              Step 1: Log In or Sign Up
-            </h2>
-            <p className="mb-6 mt-2 text-center text-gray-500">
-              Your progress and data will be synced with your account.
-            </p>
-            <AuthComponent onAuthSuccess={handleAuthSuccess} />
-          </div>
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <LogIn className="h-5 w-5" />
+                Step 1: Log In or Sign Up
+              </CardTitle>
+              <CardDescription>
+                Sync your progress and data across devices by creating an account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AuthComponent onAuthSuccess={handleAuthSuccess} />
+            </CardContent>
+          </Card>
         ) : (
-          // STEP 2: API KEY CONFIGURATION
-          <div className="rounded-xl bg-white p-8 shadow-md transition-opacity duration-500">
-            <h2 className="text-center text-2xl font-semibold text-gray-700">
-              Step 2: Set Your Gemini API Key
-            </h2>
-            <p className="mb-6 mt-2 text-center text-gray-500">
-              FluentFlow uses Google's Gemini for AI features. Please provide your API key to enable
-              them.
-            </p>
-            <div className="space-y-4">
-              <div>
-                <label htmlFor="apiKey" className="mb-1 block text-sm font-medium text-gray-700">
-                  Gemini API Key
-                </label>
-                <input
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <KeyRound className="h-5 w-5" />
+                Step 2: Set Your Gemini API Key
+              </CardTitle>
+              <CardDescription>
+                FluentFlow uses Google's Gemini for AI features. Provide your API key to enable
+                them.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">Gemini API Key</Label>
+                <Input
                   id="apiKey"
                   type="password"
                   value={geminiApiKey}
                   onChange={e => setGeminiApiKey(e.target.value)}
                   placeholder="Enter your API key here"
-                  className="w-full rounded-lg border border-gray-300 px-4 py-2 transition focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
                 />
                 <a
                   href="https://aistudio.google.com/app/apikey"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 block text-xs text-blue-600 hover:underline"
+                  className="text-xs text-muted-foreground hover:text-primary"
                 >
                   Get your Gemini API key from Google AI Studio
                 </a>
               </div>
-              <button
-                onClick={handleSaveApiKey}
-                className="w-full rounded-lg bg-blue-600 px-4 py-3 font-bold text-white transition-colors duration-300 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-              >
+              <Button onClick={handleSaveApiKey} className="w-full">
                 Save and Complete Setup
-              </button>
+              </Button>
               {saveStatus && (
                 <p
-                  className={`text-center text-sm ${saveStatus.includes('Error') ? 'text-red-500' : 'text-green-600'}`}
+                  className={`text-center text-sm ${saveStatus.includes('Error') ? 'text-destructive' : 'text-green-600'}`}
                 >
                   {saveStatus}
                 </p>
               )}
-            </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </div>
@@ -153,11 +163,11 @@ const Onboarding = () => {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('root');
+  const container = document.getElementById('root')
   if (container) {
-    const root = createRoot(container);
-    root.render(<Onboarding />);
+    const root = createRoot(container)
+    root.render(<Onboarding />)
   } else {
-    console.error('Root element not found. Ensure <div id="root"></div> exists in your HTML.');
+    console.error('Root element not found. Ensure <div id="root"></div> exists in your HTML.')
   }
-});
+})
