@@ -157,11 +157,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div
-      className="min-h-screen bg-background font-sans text-foreground"
-      style={{
-        background: 'radial-gradient(circle, hsla(220, 100%, 97%, 1) 0%, hsla(38, 100%, 97%, 1) 100%)'
-      }}>
+    <div className="min-h-screen font-sans text-foreground animated-gradient-background">
       <Joyride
         steps={tourSteps}
         run={runTour}
