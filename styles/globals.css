@@ -139,10 +139,4 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border;
-  }
-  body {
-  }
-}
+

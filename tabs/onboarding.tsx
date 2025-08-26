@@ -1,5 +1,5 @@
+import { CheckCircle2, KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
 import Joyride, { type Step } from 'react-joyride'
 import { AuthComponent } from '../components/auth-component'
 import { Button } from '../components/ui/button'
@@ -9,6 +9,66 @@ import { Label } from '../components/ui/label'
 import { getFluentFlowStore } from '../lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from '../lib/supabase/client'
 import '../styles/globals.css'
+
+const GeminiApiKeyGuide = () => (
+  <div className="mt-6 space-y-6 rounded-lg border bg-muted/50 p-4 dark:bg-muted/20">
+    <div className="space-y-4">
+      <h3 className="text-center font-semibold">How to get your API Key in 30 seconds</h3>
+      <ol className="space-y-3">
+        <li className="flex items-start gap-3">
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+            1
+          </div>
+          <div>
+            Go to{' '}
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-primary hover:underline">
+              Google AI Studio
+            </a>{' '}
+            and sign in.
+          </div>
+        </li>
+        <li className="flex items-start gap-3">
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+            2
+          </div>
+          <div>
+            Click on <span className="font-semibold">"Create API key"</span> in a new or existing
+            project.
+          </div>
+        </li>
+        <li className="flex items-start gap-3">
+          <div className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
+            3
+          </div>
+          <div>Copy your new API key and paste it above.</div>
+        </li>
+      </ol>
+    </div>
+    <div className="space-y-4 rounded-md border border-green-200 bg-green-50 p-4 dark:border-green-800 dark:bg-green-950">
+      <h3 className="font-semibold text-green-800 dark:text-green-300">
+        Unlock Powerful AI Features
+      </h3>
+      <ul className="space-y-2 text-sm text-green-700 dark:text-green-400">
+        <li className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>Deeper, more effective learning</span>
+        </li>
+        <li className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>AI-powered question generation</span>
+        </li>
+        <li className="flex items-center gap-2">
+          <CheckCircle2 className="h-4 w-4" />
+          <span>Interactive practice sessions</span>
+        </li>
+      </ul>
+    </div>
+  </div>
+)
 
 export default function Onboarding() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
@@ -97,7 +157,11 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-sans text-foreground">
+    <div
+      className="min-h-screen bg-background font-sans text-foreground"
+      style={{
+        background: 'radial-gradient(circle, hsla(220, 100%, 97%, 1) 0%, hsla(38, 100%, 97%, 1) 100%)'
+      }}>
       <Joyride
         steps={tourSteps}
         run={runTour}
@@ -144,8 +208,7 @@ export default function Onboarding() {
                 Step 2: Set Your Gemini API Key
               </CardTitle>
               <CardDescription>
-                FluentFlow uses Google's Gemini for AI features. Provide your API key to enable
-                them.
+                Provide your API key to unlock powerful AI-driven learning features.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -158,25 +221,19 @@ export default function Onboarding() {
                   onChange={e => setGeminiApiKey(e.target.value)}
                   placeholder="Enter your API key here"
                 />
-                <a
-                  href="https://aistudio.google.com/app/apikey"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-muted-foreground hover:text-primary"
-                >
-                  Get your Gemini API key from Google AI Studio
-                </a>
               </div>
               <Button onClick={handleSaveApiKey} className="w-full">
                 Save and Complete Setup
               </Button>
               {saveStatus && (
                 <p
-                  className={`text-center text-sm ${saveStatus.includes('Error') ? 'text-destructive' : 'text-green-600'}`}
-                >
+                  className={`text-center text-sm ${
+                    saveStatus.includes('Error') ? 'text-destructive' : 'text-green-600'
+                  }`}>
                   {saveStatus}
                 </p>
               )}
+              <GeminiApiKeyGuide />
             </CardContent>
           </Card>
         )}
