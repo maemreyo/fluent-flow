@@ -153,10 +153,13 @@ class YouTubeTranscriptService {
     }
   }
 
-  private async fetchFullTranscript(videoId: string, language?: string): Promise<TranscriptSegment[]> {
+  private async fetchFullTranscript(
+    videoId: string,
+    language?: string
+  ): Promise<TranscriptSegment[]> {
     try {
       const yt = await this.getInnertube()
-      console.log(`Getting video info for ${videoId}`)
+      console.log(`Getting video info for ${videoId}`, yt)
 
       const info = await yt.getInfo(videoId)
 
@@ -191,14 +194,22 @@ class YouTubeTranscriptService {
           if ('snippet' in segment) {
             return {
               text: this.cleanTranscriptText((segment as YouTubeSegment).snippet.text || ''),
-              start: (segment as YouTubeSegment).start_ms ? (segment as YouTubeSegment).start_ms / 1000 : 0,
+              start: (segment as YouTubeSegment).start_ms
+                ? (segment as YouTubeSegment).start_ms / 1000
+                : 0,
               duration:
-                (segment as YouTubeSegment).end_ms && (segment as YouTubeSegment).start_ms ? ((segment as YouTubeSegment).end_ms - (segment as YouTubeSegment).start_ms) / 1000 : 0
-            };
+                (segment as YouTubeSegment).end_ms && (segment as YouTubeSegment).start_ms
+                  ? ((segment as YouTubeSegment).end_ms - (segment as YouTubeSegment).start_ms) /
+                    1000
+                  : 0
+            }
           }
-          return null;
+          return null
         })
-        .filter((segment): segment is TranscriptSegment => segment !== null && segment.text.trim().length > 0)
+        .filter(
+          (segment): segment is TranscriptSegment =>
+            segment !== null && segment.text.trim().length > 0
+        )
     } catch (error) {
       if ((error as TranscriptError).code) {
         throw error
@@ -219,8 +230,8 @@ class YouTubeTranscriptService {
     }
 
     const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/, 
-      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/, 
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
       /^([a-zA-Z0-9_-]{11})$/
     ]
 

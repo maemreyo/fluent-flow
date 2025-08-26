@@ -252,7 +252,16 @@ function FluentFlowSidePanelContent() {
           // Handle video info and notes from content script
           if (message.videoInfo) {
             const { initializePlayer } = useFluentFlowStore.getState()
-            initializePlayer(message.videoInfo)
+            // Ensure the videoInfo object conforms to the YouTubeVideoInfo type
+            const formattedVideoInfo = {
+              videoId: message.videoInfo.id || message.videoInfo.videoId,
+              title: message.videoInfo.title,
+              channel: message.videoInfo.channel,
+              duration: message.videoInfo.duration,
+              url: message.videoInfo.url,
+              hasSubtitles: message.videoInfo.hasSubtitles
+            }
+            initializePlayer(formattedVideoInfo)
             console.log('FluentFlow: Updated video information from content script')
           }
           break
