@@ -1,0 +1,114 @@
+background.ts:14 FluentFlow background script loaded
+client.ts:81 Error getting current user: AuthSessionMissingError: Auth session missing!
+    at GoTrueClient.ts:1476:78
+    at SupabaseAuthClient._useSession (GoTrueClient.ts:1319:15)
+    at async SupabaseAuthClient._getUser (index.js:13736:20)
+    at async GoTrueClient.ts:1453:5
+    at async GoTrueClient.ts:1227:9
+getCurrentUser @ client.ts:81
+runtime-ce5395c6430e1877.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/static/background/index.ts
+auth-handler.ts:53 Auth state changed: INITIAL_SESSION - No user
+auth-handler.ts:39 Auth initialized: No user signed in
+react-jsx-dev-runtime.development.js:89 Warning: React.jsx: type is invalid -- expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+
+Check your code at FeatureShowcaseStep.tsx:17.
+printWarning @ react-jsx-dev-runtime.development.js:89
+runtime-5852f8adb9fecec5.js:1 🔵 INFO   | [plasmo/parcel-runtime]: Connected to HMR server for /Users/matthewngo/Documents/dev/projects/fluent-flow/.plasmo/tabs/onboarding.tsx
+errors.mjs:10 'oklch(20.5% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(20.5% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(98.5% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate background from "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box" to "linear-gradient(to right, var(--border), var(--border))". rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box to a value animatable to linear-gradient(to right, var(--border), var(--border)) via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate backgroundColor from "rgba(0, 0, 0, 0)" to "transparent". rgba(0, 0, 0, 0) is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) to a value animatable to transparent via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(92.2% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(55.6% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate background from "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box" to "linear-gradient(to right, var(--border), var(--border))". rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box to a value animatable to linear-gradient(to right, var(--border), var(--border)) via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate backgroundColor from "rgba(0, 0, 0, 0)" to "transparent". rgba(0, 0, 0, 0) is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) to a value animatable to transparent via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(92.2% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(55.6% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate background from "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box" to "linear-gradient(to right, var(--border), var(--border))". rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box to a value animatable to linear-gradient(to right, var(--border), var(--border)) via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate backgroundColor from "rgba(0, 0, 0, 0)" to "transparent". rgba(0, 0, 0, 0) is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) to a value animatable to transparent via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(92.2% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(55.6% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate background from "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box" to "linear-gradient(to right, var(--border), var(--border))". rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box to a value animatable to linear-gradient(to right, var(--border), var(--border)) via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate backgroundColor from "rgba(0, 0, 0, 0)" to "transparent". rgba(0, 0, 0, 0) is not an animatable value - to enable this animation set rgba(0, 0, 0, 0) to a value animatable to transparent via the `style` property.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(92.2% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 'oklch(55.6% 0 0)' is not an animatable color. Use the equivalent color code instead.
+warning @ errors.mjs:10
+errors.mjs:10 You are trying to animate backgroundColor from "transparent" to "oklch(20.5% 0 0)". transparent is not an animatable value - to enable this animation set transparent to a value animatable to oklch(20.5% 0 0) via the `style` property.
+warning @ errors.mjs:10
+react-dom.development.js:28441 Uncaught Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at createFiberFromTypeAndProps (react-dom.development.js:28441:5)
+    at createFiberFromElement (react-dom.development.js:28468:11)
+    at reconcileSingleElement (react-dom.development.js:15752:23)
+    at reconcileChildFibers (react-dom.development.js:15810:14)
+    at reconcileChildren (react-dom.development.js:19169:5)
+    at updateHostComponent (react-dom.development.js:19925:3)
+    at beginWork (react-dom.development.js:21620:10)
+    at HTMLUnknownElement.callCallback (react-dom.development.js:4165:9)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4215:11)
+    at invokeGuardedCallback (react-dom.development.js:4278:1)
+react-dom.development.js:28441 Uncaught Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at createFiberFromTypeAndProps (react-dom.development.js:28441:5)
+    at createFiberFromElement (react-dom.development.js:28468:11)
+    at reconcileSingleElement (react-dom.development.js:15752:23)
+    at reconcileChildFibers (react-dom.development.js:15810:14)
+    at reconcileChildren (react-dom.development.js:19169:5)
+    at updateHostComponent (react-dom.development.js:19925:3)
+    at beginWork (react-dom.development.js:21620:10)
+    at HTMLUnknownElement.callCallback (react-dom.development.js:4165:9)
+    at Object.invokeGuardedCallbackDev (react-dom.development.js:4215:11)
+    at invokeGuardedCallback (react-dom.development.js:4278:1)
+react-dom.development.js:18694 The above error occurred in the <div> component:
+
+    at div
+    at div
+    at div
+    at div
+    at div
+    at _c8 (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:145329:62)
+    at div
+    at _c (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:145285:54)
+    at div
+    at MotionComponent (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:27618:38)
+    at OnboardingLayout (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:145206:29)
+    at FeatureShowcaseStep (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:145534:32)
+    at div
+    at PresenceChild (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:26546:26)
+    at AnimatePresence (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:25556:32)
+    at div
+    at MotionComponent (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:27618:38)
+    at div
+    at Onboarding (chrome-extension://hpnbcgffcajhcepaocaemadlclmjdfje/tabs/onboarding.45d95c92.js:25160:63)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+logCapturedError @ react-dom.development.js:18694
+react-dom.development.js:26924 Uncaught Error: Element type is invalid: expected a string (for built-in components) or a class/function (for composite components) but got: undefined. You likely forgot to export your component from the file it's defined in, or you might have mixed up default and named imports.
+    at createFiberFromTypeAndProps (react-dom.development.js:28441:5)
+    at createFiberFromElement (react-dom.development.js:28468:11)
+    at reconcileSingleElement (react-dom.development.js:15752:23)
+    at reconcileChildFibers (react-dom.development.js:15810:14)
+    at reconcileChildren (react-dom.development.js:19169:5)
+    at updateHostComponent (react-dom.development.js:19925:3)
+    at beginWork (react-dom.development.js:21620:10)
+    at beginWork$1 (react-dom.development.js:27427:14)
+    at performUnitOfWork (react-dom.development.js:26558:5)
+    at workLoopSync (react-dom.development.js:26468:1)
