@@ -15,7 +15,11 @@ interface TranscriptResult {
   language?: string
 }
 
-type ApiResult = TranscriptResult | { languages: string[] } | { available: boolean } | { error: string }
+type ApiResult =
+  | TranscriptResult
+  | { languages: string[] }
+  | { available: boolean }
+  | { error: string }
 
 export default function Home() {
   const [videoId, setVideoId] = useState('dQw4w9WgXcQ')
@@ -40,7 +44,8 @@ export default function Home() {
           action: 'getSegment',
           videoId,
           startTime,
-          endTime
+          endTime,
+          language: 'en'
         })
       })
 
@@ -71,7 +76,8 @@ export default function Home() {
         },
         body: JSON.stringify({
           action: 'checkAvailability',
-          videoId
+          videoId,
+          language: 'en'
         })
       })
 
@@ -90,21 +96,19 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">
-            FluentFlow Transcript Service
-          </h1>
+    <div className="min-h-screen bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-900">FluentFlow Transcript Service</h1>
           <p className="mt-2 text-lg text-gray-600">
             YouTube Transcript Extraction API using YouTube.js
           </p>
         </div>
 
-        <div className="bg-white shadow rounded-lg p-6 mb-6">
-          <h2 className="text-xl font-semibold mb-4">Test Transcript Extraction</h2>
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-xl font-semibold">Test Transcript Extraction</h2>
 
-          <div className="grid grid-cols-1 gap-4 mb-4">
+          <div className="mb-4 grid grid-cols-1 gap-4">
             <div>
               <label htmlFor="videoId" className="block text-sm font-medium text-gray-700">
                 Video ID or URL
@@ -114,7 +118,7 @@ export default function Home() {
                 id="videoId"
                 value={videoId}
                 onChange={e => setVideoId(e.target.value)}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 placeholder="dQw4w9WgXcQ or https://youtube.com/watch?v=dQw4w9WgXcQ"
               />
             </div>
@@ -129,7 +133,7 @@ export default function Home() {
                   id="startTime"
                   value={startTime}
                   onChange={e => setStartTime(Number(e.target.value))}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
 
@@ -142,7 +146,7 @@ export default function Home() {
                   id="endTime"
                   value={endTime}
                   onChange={e => setEndTime(Number(e.target.value))}
-                  className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                 />
               </div>
             </div>
@@ -152,7 +156,7 @@ export default function Home() {
             <button
               onClick={testTranscript}
               disabled={loading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 disabled:opacity-50"
+              className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Get Transcript'}
             </button>
@@ -160,7 +164,7 @@ export default function Home() {
             <button
               onClick={checkAvailability}
               disabled={loading}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 disabled:opacity-50"
+              className="rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
             >
               {loading ? 'Loading...' : 'Check Availability'}
             </button>
@@ -168,7 +172,7 @@ export default function Home() {
         </div>
 
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4">
             <div className="flex">
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
@@ -181,12 +185,12 @@ export default function Home() {
         )}
 
         {result && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
+          <div className="rounded-md border border-green-200 bg-green-50 p-4">
             <div className="flex">
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-green-800">Result</h3>
                 <div className="mt-2 text-sm text-green-700">
-                  <pre className="whitespace-pre-wrap overflow-auto max-h-96">
+                  <pre className="max-h-96 overflow-auto whitespace-pre-wrap">
                     {JSON.stringify(result, null, 2)}
                   </pre>
                 </div>
@@ -195,8 +199,8 @@ export default function Home() {
           </div>
         )}
 
-        <div className="bg-gray-50 rounded-lg p-6 mt-6">
-          <h3 className="text-lg font-medium text-gray-900 mb-3">API Usage</h3>
+        <div className="mt-6 rounded-lg bg-gray-50 p-6">
+          <h3 className="mb-3 text-lg font-medium text-gray-900">API Usage</h3>
           <div className="space-y-2 text-sm text-gray-600">
             <p>
               <strong>Endpoint:</strong> POST /api/transcript
@@ -204,7 +208,7 @@ export default function Home() {
             <p>
               <strong>Actions:</strong>
             </p>
-            <ul className="list-disc list-inside ml-4 space-y-1">
+            <ul className="ml-4 list-inside list-disc space-y-1">
               <li>
                 <code>getSegment</code> - Extract transcript for time range
               </li>

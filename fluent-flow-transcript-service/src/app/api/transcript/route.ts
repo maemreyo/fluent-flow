@@ -64,7 +64,7 @@ class YouTubeTranscriptService {
     videoId: string,
     startTime: number,
     endTime: number,
-    language?: string
+    language?: 'en'
   ): Promise<TranscriptResult> {
     if (!videoId || videoId.trim().length === 0) {
       throw this.createError('VIDEO_NOT_FOUND', 'Video ID is required')
@@ -366,6 +366,7 @@ const transcriptService = new YouTubeTranscriptService()
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
+    console.log('body', body)
     const { videoId, startTime, endTime, language, action } = body
 
     console.log('Transcript API request:', { videoId, startTime, endTime, language, action })
