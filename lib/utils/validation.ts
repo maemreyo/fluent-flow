@@ -1,34 +1,36 @@
 // Validation Utilities - Input validation and sanitization
 // Centralized validation logic with proper error handling
 
-import { any, ZodError, ZodSchema } from 'zod'
-import type { ValidationResult } from "../types"
+import * as z from 'zod'
+import type { ValidationResult } from '../types'
 
 // Schema definitions
-const featureDataSchema = any()
-const apiRequestSchema = any()
+// const featureDataSchema = any()
+// const apiRequestSchema = any()
 
-// const featureDataSchema = z.object({
-//   input: z.string().min(1, "Input cannot be empty").max(10000, "Input too long"),
-//   options: z.object({
-//     timeout: z.number().min(1000).max(300000).optional(),
-//     retries: z.number().min(0).max(5).optional(),
-//     priority: z.enum(['low', 'normal', 'high']).optional()
-//   }).optional()
-// })
+const featureDataSchema = z.object({
+  input: z.string().min(1, 'Input cannot be empty').max(10000, 'Input too long'),
+  options: z
+    .object({
+      timeout: z.number().min(1000).max(300000).optional(),
+      retries: z.number().min(0).max(5).optional(),
+      priority: z.enum(['low', 'normal', 'high']).optional()
+    })
+    .optional()
+})
 
-// const apiRequestSchema = z.object({
-//   url: z.string().url("Invalid URL").optional(),
-//   method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).optional(),
-//   headers: z.record(z.string(), z.string()).optional(),
-//   body: z.any().optional()
-// })
+const apiRequestSchema = z.object({
+  url: z.string().url('Invalid URL').optional(),
+  method: z.enum(['GET', 'POST', 'PUT', 'DELETE']).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  body: z.any().optional()
+})
 
 // Main validation functions
 export function validateInput(data: unknown, context?: any): ValidationResult {
   try {
     const validated = featureDataSchema.parse(data)
-    
+
     // Additional business logic validation
     if (containsSuspiciousContent(validated.input, context)) {
       return {
@@ -42,7 +44,7 @@ export function validateInput(data: unknown, context?: any): ValidationResult {
       data: validated
     }
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return {
         isValid: false,
         error: error.issues[0]?.message || 'Invalid input format',
@@ -68,11 +70,7 @@ export function validateApiRequest(endpoint: string, data: any): ValidationResul
     }
 
     // Validate allowed endpoints
-    const allowedEndpoints = [
-      'example-api',
-      'custom-endpoint',
-      'health-check'
-    ]
+    const allowedEndpoints = ['example-api', 'custom-endpoint', 'health-check']
 
     if (!allowedEndpoints.includes(endpoint)) {
       return {
@@ -84,7 +82,7 @@ export function validateApiRequest(endpoint: string, data: any): ValidationResul
     // Validate request data for custom endpoints
     if (endpoint === 'custom-endpoint') {
       const validated = apiRequestSchema.parse(data)
-      
+
       // Additional URL validation
       if (validated.url && !isAllowedUrl(validated.url)) {
         return {
@@ -99,7 +97,7 @@ export function validateApiRequest(endpoint: string, data: any): ValidationResul
       data
     }
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (error instanceof z.ZodError) {
       return {
         isValid: false,
         error: error.issues[0]?.message || 'Invalid API request format',
@@ -168,7 +166,8 @@ export function validateStorageOperation(
 
       // Check value size (Chrome storage limit)
       const serialized = JSON.stringify(value)
-      if (serialized.length > 8192) { // 8KB limit per value
+      if (serialized.length > 8192) {
+        // 8KB limit per value
         return {
           isValid: false,
           error: 'Value too large for storage'
@@ -209,10 +208,12 @@ export function sanitizeText(text: string): string {
 export function sanitizeUrl(url: string): string {
   try {
     const parsed = new URL(url)
-    
+
     // Only allow HTTPS and specific HTTP localhost
-    if (parsed.protocol !== 'https:' && 
-        !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
+    if (
+      parsed.protocol !== 'https:' &&
+      !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')
+    ) {
       throw new Error('Invalid protocol')
     }
 
@@ -246,16 +247,12 @@ function containsSuspiciousContent(text: string, context?: any): boolean {
 function isAllowedUrl(url: string): boolean {
   try {
     const parsed = new URL(url)
-    
-    // Allowed domains
-    const allowedDomains = [
-      'jsonplaceholder.typicode.com',
-      'api.example.com',
-      'localhost'
-    ]
 
-    return allowedDomains.some(domain => 
-      parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
+    // Allowed domains
+    const allowedDomains = ['jsonplaceholder.typicode.com', 'api.example.com', 'localhost']
+
+    return allowedDomains.some(
+      domain => parsed.hostname === domain || parsed.hostname.endsWith(`.${domain}`)
     )
   } catch {
     return false
@@ -330,7 +327,7 @@ export function validateJSON(jsonString: string): ValidationResult {
 }
 
 // Create validation middleware for API calls
-export function createValidator<T>(schema: ZodSchema<T>) {
+export function createValidator<T>(schema: z.ZodSchema<T>) {
   return (data: unknown): ValidationResult => {
     try {
       const validated = schema.parse(data)
@@ -339,7 +336,7 @@ export function createValidator<T>(schema: ZodSchema<T>) {
         data: validated
       }
     } catch (error) {
-      if (error instanceof ZodError) {
+      if (error instanceof z.ZodError) {
         return {
           isValid: false,
           error: error.issues[0]?.message || 'Validation failed',

@@ -3,12 +3,8 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
-import { z } from 'zod'
-import type {
-  AICapability,
-  AIResponse,
-  ChatMessage
-} from '../types'
+import * as z from 'zod'
+import type { AICapability, AIResponse, ChatMessage } from '../types'
 import { ImprovedBaseService } from './improved-base-service'
 
 // AI Configuration Schema
@@ -42,14 +38,14 @@ export class AIService extends ImprovedBaseService {
           dangerouslyAllowBrowser: true // For extension environment
         })
         break
-        
+
       case 'anthropic':
         this.anthropic = new Anthropic({
           apiKey: this.config.apiKey,
           baseURL: this.config.baseUrl
         })
         break
-        
+
       case 'custom':
         // Initialize custom HTTP client for other providers
         super.setApiKey(this.config.apiKey)
@@ -58,24 +54,27 @@ export class AIService extends ImprovedBaseService {
   }
 
   // Main chat completion method
-  async chat(messages: ChatMessage[], options?: {
-    stream?: boolean
-    temperature?: number
-    maxTokens?: number
-  }): Promise<AIResponse> {
+  async chat(
+    messages: ChatMessage[],
+    options?: {
+      stream?: boolean
+      temperature?: number
+      maxTokens?: number
+    }
+  ): Promise<AIResponse> {
     try {
       const mergedOptions = { ...this.config, ...options }
-      
+
       switch (this.config.provider) {
         case 'openai':
           return await this.chatWithOpenAI(messages, mergedOptions)
-          
+
         case 'anthropic':
           return await this.chatWithAnthropic(messages, mergedOptions)
-          
+
         case 'custom':
           return await this.chatWithCustomProvider(messages, mergedOptions)
-          
+
         default:
           throw new Error(`Unsupported AI provider: ${this.config.provider}`)
       }
@@ -85,10 +84,7 @@ export class AIService extends ImprovedBaseService {
   }
 
   // OpenAI implementation
-  private async chatWithOpenAI(
-    messages: ChatMessage[], 
-    options: any
-  ): Promise<AIResponse> {
+  private async chatWithOpenAI(messages: ChatMessage[], options: any): Promise<AIResponse> {
     if (!this.openai) throw new Error('OpenAI client not initialized')
 
     const response = await this.openai.chat.completions.create({
@@ -129,10 +125,7 @@ export class AIService extends ImprovedBaseService {
   }
 
   // Anthropic Claude implementation
-  private async chatWithAnthropic(
-    messages: ChatMessage[], 
-    options: any
-  ): Promise<AIResponse> {
+  private async chatWithAnthropic(messages: ChatMessage[], options: any): Promise<AIResponse> {
     if (!this.anthropic) throw new Error('Anthropic client not initialized')
 
     // Convert messages to Anthropic format
@@ -163,9 +156,7 @@ export class AIService extends ImprovedBaseService {
     }
 
     const message = response as Anthropic.Messages.Message
-    const content = message.content[0]?.type === 'text' 
-      ? message.content[0].text 
-      : ''
+    const content = message.content[0]?.type === 'text' ? message.content[0].text : ''
 
     return {
       content,
@@ -181,10 +172,7 @@ export class AIService extends ImprovedBaseService {
   }
 
   // Custom provider implementation
-  private async chatWithCustomProvider(
-    messages: ChatMessage[], 
-    options: any
-  ): Promise<AIResponse> {
+  private async chatWithCustomProvider(messages: ChatMessage[], options: any): Promise<AIResponse> {
     const response = await this.post<{
       choices: Array<{
         message: { content: string }
@@ -251,8 +239,11 @@ export class AIService extends ImprovedBaseService {
   }
 
   async explainText(text: string, level: 'simple' | 'detailed' = 'simple'): Promise<string> {
-    const complexity = level === 'simple' ? 'simple terms suitable for a general audience' : 'detailed technical explanation'
-    
+    const complexity =
+      level === 'simple'
+        ? 'simple terms suitable for a general audience'
+        : 'detailed technical explanation'
+
     const messages: ChatMessage[] = [
       {
         role: 'system',
@@ -268,9 +259,13 @@ export class AIService extends ImprovedBaseService {
     return response.content
   }
 
-  async analyzeText(text: string, analysisType: 'sentiment' | 'keywords' | 'topics' | 'language'): Promise<string> {
+  async analyzeText(
+    text: string,
+    analysisType: 'sentiment' | 'keywords' | 'topics' | 'language'
+  ): Promise<string> {
     const prompts = {
-      sentiment: 'Analyze the sentiment of this text (positive, negative, neutral) and explain why.',
+      sentiment:
+        'Analyze the sentiment of this text (positive, negative, neutral) and explain why.',
       keywords: 'Extract the key terms and phrases from this text.',
       topics: 'Identify the main topics and themes discussed in this text.',
       language: 'Identify the language of this text and its linguistic characteristics.'
@@ -291,7 +286,10 @@ export class AIService extends ImprovedBaseService {
     return response.content
   }
 
-  async generateContent(prompt: string, contentType: 'email' | 'summary' | 'creative' | 'technical'): Promise<string> {
+  async generateContent(
+    prompt: string,
+    contentType: 'email' | 'summary' | 'creative' | 'technical'
+  ): Promise<string> {
     const systemPrompts = {
       email: 'Generate a professional email based on the given requirements.',
       summary: 'Create a clear and concise summary based on the given information.',
@@ -316,7 +314,7 @@ export class AIService extends ImprovedBaseService {
 
   // Batch processing for multiple texts
   async batchProcess(
-    texts: string[], 
+    texts: string[],
     operation: 'summarize' | 'translate' | 'analyze',
     options?: any
   ): Promise<string[]> {
@@ -325,8 +323,8 @@ export class AIService extends ImprovedBaseService {
 
     for (let i = 0; i < texts.length; i += batchSize) {
       const batch = texts.slice(i, i + batchSize)
-      
-      const batchPromises = batch.map(async (text) => {
+
+      const batchPromises = batch.map(async text => {
         switch (operation) {
           case 'summarize':
             return await this.summarizeText(text, options?.maxLength)
@@ -340,8 +338,8 @@ export class AIService extends ImprovedBaseService {
       })
 
       const batchResults = await Promise.allSettled(batchPromises)
-      
-      batchResults.forEach((result) => {
+
+      batchResults.forEach(result => {
         if (result.status === 'fulfilled') {
           results.push(result.value)
         } else {
@@ -383,11 +381,11 @@ export class AIService extends ImprovedBaseService {
     if (error.status === 401) {
       return new Error('AI API key is invalid or expired')
     }
-    
+
     if (error.status === 429) {
       return new Error('AI service rate limit exceeded. Please try again later.')
     }
-    
+
     if (error.status === 500) {
       return new Error('AI service is temporarily unavailable')
     }
