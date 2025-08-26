@@ -1,5 +1,6 @@
 import { CheckCircle2, KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { motion } from 'framer-motion'
 import Joyride, { type Step } from 'react-joyride'
 import { AuthComponent } from '../components/auth-component'
 import { Button } from '../components/ui/button'
@@ -11,7 +12,11 @@ import { getCurrentUser } from '../lib/supabase/client'
 import '../styles/globals.css'
 
 const GeminiApiKeyGuide = () => (
-  <div className="mt-6 space-y-6 rounded-lg border bg-muted/50 p-4 dark:bg-muted/20">
+  <motion.div
+    initial={{ opacity: 0, y: 10 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ delay: 0.2, duration: 0.5 }}
+    className="mt-6 space-y-6 rounded-lg border bg-muted/50 p-4 dark:bg-muted/20">
     <div className="space-y-4">
       <h3 className="text-center font-semibold">How to get your API Key in 30 seconds</h3>
       <ol className="space-y-3">
@@ -67,7 +72,7 @@ const GeminiApiKeyGuide = () => (
         </li>
       </ul>
     </div>
-  </div>
+  </motion.div>
 )
 
 export default function Onboarding() {
@@ -90,6 +95,21 @@ export default function Onboarding() {
     }
   ]
 
+  const pageVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.3
+      }
+    }
+  }
+
+  const itemVariants = {
+    hidden: { y: -20, opacity: 0 },
+    visible: { y: 0, opacity: 1, transition: { duration: 0.5 } }
+  }
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -102,8 +122,7 @@ export default function Onboarding() {
         console.error('Error checking auth status:', error)
       } finally {
         setLoading(false)
-        // Start the tour once everything is loaded
-        setRunTour(true)
+        setTimeout(() => setRunTour(true), 1000) // Delay tour start for animations
       }
     }
 
@@ -147,7 +166,7 @@ export default function Onboarding() {
 
   if (loading) {
     return (
-      <div className="flex min-h-screen flex-col items-center justify-center bg-background">
+      <div className="animated-gradient-background flex min-h-screen flex-col items-center justify-center">
         <div className="flex items-center gap-2 text-lg text-muted-foreground">
           <Loader2 className="h-6 w-6 animate-spin" />
           <span>Loading...</span>
@@ -157,7 +176,7 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen font-sans text-foreground animated-gradient-background">
+    <div className="animated-gradient-background min-h-screen font-sans text-foreground">
       <Joyride
         steps={tourSteps}
         run={runTour}
@@ -170,8 +189,12 @@ export default function Onboarding() {
           }
         }}
       />
-      <div className="container mx-auto flex max-w-2xl flex-col items-center justify-center space-y-8 p-4 py-12 md:p-8">
-        <div className="text-center">
+      <motion.div
+        className="container mx-auto flex max-w-2xl flex-col items-center justify-center space-y-8 p-4 py-12 md:p-8"
+        variants={pageVariants}
+        initial="hidden"
+        animate="visible">
+        <motion.div className="text-center" variants={itemVariants}>
           <h1 className="flex items-center justify-center gap-3 text-4xl font-bold">
             <PartyPopper className="h-10 w-10 text-primary" />
             Welcome to FluentFlow!
@@ -179,61 +202,65 @@ export default function Onboarding() {
           <p className="mt-2 text-lg text-muted-foreground">
             Let's get you set up for an enhanced learning experience.
           </p>
-        </div>
+        </motion.div>
 
         {!isLoggedIn ? (
-          <Card id="step-1-login" className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LogIn className="h-5 w-5" />
-                Step 1: Log In or Sign Up
-              </CardTitle>
-              <CardDescription>
-                Sync your progress and data across devices by creating an account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <AuthComponent onAuthSuccess={handleAuthSuccess} />
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants} className="w-full">
+            <Card id="step-1-login" className="w-full max-w-md mx-auto glassmorphic-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <LogIn className="h-5 w-5" />
+                  Step 1: Log In or Sign Up
+                </CardTitle>
+                <CardDescription>
+                  Sync your progress and data across devices by creating an account.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <AuthComponent onAuthSuccess={handleAuthSuccess} />
+              </CardContent>
+            </Card>
+          </motion.div>
         ) : (
-          <Card id="step-2-api-key" className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <KeyRound className="h-5 w-5" />
-                Step 2: Set Your Gemini API Key
-              </CardTitle>
-              <CardDescription>
-                Provide your API key to unlock powerful AI-driven learning features.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="apiKey">Gemini API Key</Label>
-                <Input
-                  id="apiKey"
-                  type="password"
-                  value={geminiApiKey}
-                  onChange={e => setGeminiApiKey(e.target.value)}
-                  placeholder="Enter your API key here"
-                />
-              </div>
-              <Button onClick={handleSaveApiKey} className="w-full">
-                Save and Complete Setup
-              </Button>
-              {saveStatus && (
-                <p
-                  className={`text-center text-sm ${
-                    saveStatus.includes('Error') ? 'text-destructive' : 'text-green-600'
-                  }`}>
-                  {saveStatus}
-                </p>
-              )}
-              <GeminiApiKeyGuide />
-            </CardContent>
-          </Card>
+          <motion.div variants={itemVariants} className="w-full">
+            <Card id="step-2-api-key" className="w-full max-w-md mx-auto glassmorphic-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5" />
+                  Step 2: Set Your Gemini API Key
+                </CardTitle>
+                <CardDescription>
+                  Provide your API key to unlock powerful AI-driven learning features.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="apiKey">Gemini API Key</Label>
+                  <Input
+                    id="apiKey"
+                    type="password"
+                    value={geminiApiKey}
+                    onChange={e => setGeminiApiKey(e.target.value)}
+                    placeholder="Enter your API key here"
+                  />
+                </div>
+                <Button onClick={handleSaveApiKey} className="w-full">
+                  Save and Complete Setup
+                </Button>
+                {saveStatus && (
+                  <p
+                    className={`text-center text-sm ${
+                      saveStatus.includes('Error') ? 'text-destructive' : 'text-green-600'
+                    }`}>
+                    {saveStatus}
+                  </p>
+                )}
+                <GeminiApiKeyGuide />
+              </CardContent>
+            </Card>
+          </motion.div>
         )}
-      </div>
+      </motion.div>
     </div>
   )
 }
