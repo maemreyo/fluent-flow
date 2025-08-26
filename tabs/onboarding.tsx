@@ -1,6 +1,6 @@
-import { KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
 import { useEffect, useState } from 'react'
-import { createRoot } from 'react-dom/client'
+import { KeyRound, Loader2, LogIn, PartyPopper } from 'lucide-react'
+import Joyride, { type Step } from 'react-joyride'
 import { AuthComponent } from '../components/auth-component'
 import { Button } from '../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card'
@@ -10,14 +10,26 @@ import { getFluentFlowStore } from '../lib/stores/fluent-flow-supabase-store'
 import { getCurrentUser } from '../lib/supabase/client'
 import '../styles/globals.css'
 
-const Onboarding = () => {
+export default function Onboarding() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [user, setUser] = useState(null)
   const [geminiApiKey, setGeminiApiKey] = useState('')
   const [saveStatus, setSaveStatus] = useState('')
   const [loading, setLoading] = useState(true)
+  const [runTour, setRunTour] = useState(false)
 
-  // Check if user is already logged in on component mount
+  const tourSteps: Step[] = [
+    {
+      target: '#step-1-login',
+      content: 'First, log in or sign up to sync your progress across devices.',
+      disableBeacon: true
+    },
+    {
+      target: '#step-2-api-key',
+      content: 'Next, provide your Gemini API key to enable all the AI-powered features.'
+    }
+  ]
+
   useEffect(() => {
     const checkAuthStatus = async () => {
       try {
@@ -30,6 +42,8 @@ const Onboarding = () => {
         console.error('Error checking auth status:', error)
       } finally {
         setLoading(false)
+        // Start the tour once everything is loaded
+        setRunTour(true)
       }
     }
 
@@ -37,7 +51,6 @@ const Onboarding = () => {
   }, [])
 
   const handleAuthSuccess = () => {
-    // The auth component will handle setting the user state via the auth state change listener
     setIsLoggedIn(true)
   }
 
@@ -48,7 +61,6 @@ const Onboarding = () => {
     }
 
     try {
-      // Save to both Chrome storage and Supabase
       await new Promise((resolve, reject) => {
         chrome.storage.sync.set({ geminiApiKey: geminiApiKey.trim() }, () => {
           if (chrome.runtime.lastError) {
@@ -59,7 +71,6 @@ const Onboarding = () => {
         })
       })
 
-      // Also save to Supabase if user is logged in
       if (user) {
         const { supabaseService } = getFluentFlowStore()
         await supabaseService.updateApiConfig({
@@ -87,6 +98,18 @@ const Onboarding = () => {
 
   return (
     <div className="min-h-screen bg-background font-sans text-foreground">
+      <Joyride
+        steps={tourSteps}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        styles={{
+          options: {
+            primaryColor: '#3b82f6'
+          }
+        }}
+      />
       <div className="container mx-auto flex max-w-2xl flex-col items-center justify-center space-y-8 p-4 py-12 md:p-8">
         <div className="text-center">
           <h1 className="flex items-center justify-center gap-3 text-4xl font-bold">
@@ -99,7 +122,7 @@ const Onboarding = () => {
         </div>
 
         {!isLoggedIn ? (
-          <Card className="w-full max-w-md">
+          <Card id="step-1-login" className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <LogIn className="h-5 w-5" />
@@ -114,7 +137,7 @@ const Onboarding = () => {
             </CardContent>
           </Card>
         ) : (
-          <Card className="w-full max-w-md">
+          <Card id="step-2-api-key" className="w-full max-w-md">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <KeyRound className="h-5 w-5" />
@@ -161,13 +184,3 @@ const Onboarding = () => {
     </div>
   )
 }
-
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('root')
-  if (container) {
-    const root = createRoot(container)
-    root.render(<Onboarding />)
-  } else {
-    console.error('Root element not found. Ensure <div id="root"></div> exists in your HTML.')
-  }
-})
