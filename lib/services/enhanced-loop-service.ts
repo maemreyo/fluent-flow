@@ -1,5 +1,4 @@
 import type { SavedLoop } from '../types/fluent-flow-types'
-import { AudioCaptureService } from './audio-capture-service'
 import { createClient } from '@supabase/supabase-js'
 import { v4 as uuidv4 } from 'uuid'
 
@@ -16,11 +15,9 @@ export interface CreateLoopWithAudioData {
 }
 
 export class EnhancedLoopService {
-  private audioCaptureService: AudioCaptureService
   private storageService: any // Will be injected
 
   constructor(storageService: any) {
-    this.audioCaptureService = new AudioCaptureService()
     this.storageService = storageService
   }
   /**
@@ -59,7 +56,8 @@ export class EnhancedLoopService {
     }
 
     // Step 2: Capture audio if requested and supported
-    if (loopData.captureAudio !== false && AudioCaptureService.isSupported()) {
+    // Audio capture functionality removed
+    if (false) {
       try {
         const videoElement = this.getVideoElement()
         if (videoElement) {
@@ -260,7 +258,8 @@ export class EnhancedLoopService {
       throw new Error('Loop not found')
     }
 
-    if (!AudioCaptureService.isSupported()) {
+    // Audio capture functionality removed
+    if (true) {
       throw new Error('Audio capture not supported in this browser')
     }
 

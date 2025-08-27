@@ -3,9 +3,7 @@ import {
   AlertTriangle,
   BarChart3,
   Bug,
-  FileAudio,
   Loader2,
-  Music,
   RefreshCw,
   Repeat,
   Search,
@@ -14,7 +12,6 @@ import {
   User,
   UserX
 } from 'lucide-react'
-import { AudioPlayer } from './components/audio-player'
 import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
 import { Dashboard } from './components/dashboard'
 import { YouTubeExtractionTestPanel } from './components/debug/youtube-extraction-test-panel'
@@ -44,16 +41,13 @@ import type {
 import type { GoalProgress, GoalSuggestion, LearningGoal } from './lib/utils/goals-analysis'
 import { calculateGoalProgress } from './lib/utils/goals-analysis'
 import type { SessionPlan, SessionTemplate } from './lib/utils/session-templates'
-import './styles/react-h5-audio-player.css'
 import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'loops' | 'recordings' | 'conversations' | 'debug'
+    'dashboard' | 'loops' | 'conversations' | 'debug'
   >('dashboard')
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
-  const [savedRecordings, setSavedRecordings] = useState<any[]>([])
-  const [loadingRecordings, setLoadingRecordings] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [checkingAuth, setCheckingAuth] = useState(true)
   const [loopFilter, setLoopFilter] = useState('')
@@ -91,14 +85,11 @@ function FluentFlowSidePanelContent() {
     currentVideo,
     deleteLoop: deleteLoopFromStore,
     deleteAllUserLoops: deleteAllLoopsFromStore,
-    getAllUserRecordings,
-    deleteUserRecording
   } = useFluentFlowStore()
 
   // Load saved recordings and initialize on component mount
   useEffect(() => {
     checkAuthStatus()
-    loadSavedRecordings()
     initializeIntegration()
     initializeVideoInformation()
     loadGoals()
@@ -178,13 +169,30 @@ function FluentFlowSidePanelContent() {
           })
 
           if (response?.success && response.videoInfo) {
-            const { currentVideo: currentStoreVideo, initializePlayer } =
-              useFluentFlowStore.getState()
+            const videoInfo = response.videoInfo
+            
+            // Validate video info has required fields
+            if (videoInfo.id && videoInfo.title && videoInfo.url) {
+              // Convert from content script VideoInfo to YouTubeVideoInfo
+              const youtubeVideoInfo = {
+                videoId: videoInfo.id,
+                title: videoInfo.title,
+                channel: 'Unknown Channel', // Default fallback
+                duration: 0, // Default fallback
+                url: videoInfo.url,
+                hasSubtitles: false // Default fallback
+              }
+              
+              const { currentVideo: currentStoreVideo, initializePlayer } =
+                useFluentFlowStore.getState()
 
-            // Only update if video actually changed
-            if (!currentStoreVideo || currentStoreVideo.videoId !== response.videoInfo.videoId) {
-              initializePlayer(response.videoInfo)
-              console.log('FluentFlow: Video updated in sidepanel:', response.videoInfo)
+              // Only update if video actually changed
+              if (!currentStoreVideo || currentStoreVideo.videoId !== youtubeVideoInfo.videoId) {
+                initializePlayer(youtubeVideoInfo)
+                console.log('FluentFlow: Video updated in sidepanel:', youtubeVideoInfo)
+              }
+            } else {
+              console.warn('FluentFlow: Incomplete video info received from content script:', videoInfo)
             }
           }
         } catch (error) {
@@ -229,13 +237,30 @@ function FluentFlowSidePanelContent() {
           })
 
           if (response?.success && response.videoInfo) {
-            // Initialize the store with video information
-            const { initializePlayer } = useFluentFlowStore.getState()
-            initializePlayer(response.videoInfo)
-            console.log(
-              'FluentFlow: Video information initialized in sidepanel:',
-              response.videoInfo
-            )
+            const videoInfo = response.videoInfo
+            
+            // Validate video info has required fields
+            if (videoInfo.id && videoInfo.title && videoInfo.url) {
+              // Convert from content script VideoInfo to YouTubeVideoInfo
+              const youtubeVideoInfo = {
+                videoId: videoInfo.id,
+                title: videoInfo.title,
+                channel: 'Unknown Channel', // Default fallback
+                duration: 0, // Default fallback
+                url: videoInfo.url,
+                hasSubtitles: false // Default fallback
+              }
+              
+              // Initialize the store with video information
+              const { initializePlayer } = useFluentFlowStore.getState()
+              initializePlayer(youtubeVideoInfo)
+              console.log(
+                'FluentFlow: Video information initialized in sidepanel:',
+                youtubeVideoInfo
+              )
+            } else {
+              console.warn('FluentFlow: Incomplete video info during initialization:', videoInfo)
+            }
           }
         } catch (error) {
           console.log('FluentFlow: Content script not available or no video info:', error)
@@ -253,18 +278,26 @@ function FluentFlowSidePanelContent() {
         case 'OPEN_SIDE_PANEL':
           // Handle video info and notes from content script
           if (message.videoInfo) {
-            const { initializePlayer } = useFluentFlowStore.getState()
-            // Ensure the videoInfo object conforms to the YouTubeVideoInfo type
-            const formattedVideoInfo = {
-              videoId: message.videoInfo.id || message.videoInfo.videoId,
-              title: message.videoInfo.title,
-              channel: message.videoInfo.channel,
-              duration: message.videoInfo.duration,
-              url: message.videoInfo.url,
-              hasSubtitles: message.videoInfo.hasSubtitles
+            const videoInfo = message.videoInfo
+            const videoId = videoInfo.id || videoInfo.videoId
+            
+            // Validate video info has required fields
+            if (videoId && videoInfo.title && videoInfo.url) {
+              const { initializePlayer } = useFluentFlowStore.getState()
+              // Ensure the videoInfo object conforms to the YouTubeVideoInfo type
+              const formattedVideoInfo = {
+                videoId: videoId,
+                title: videoInfo.title,
+                channel: videoInfo.channel || 'Unknown Channel',
+                duration: videoInfo.duration || 0,
+                url: videoInfo.url,
+                hasSubtitles: videoInfo.hasSubtitles || false
+              }
+              initializePlayer(formattedVideoInfo)
+              console.log('FluentFlow: Updated video information from content script')
+            } else {
+              console.warn('FluentFlow: Incomplete video info in message handler:', videoInfo)
             }
-            initializePlayer(formattedVideoInfo)
-            console.log('FluentFlow: Updated video information from content script')
           }
           break
         case 'SIDEPANEL_DATA':
@@ -347,30 +380,6 @@ function FluentFlowSidePanelContent() {
     }
   }
 
-  const loadSavedRecordings = async () => {
-    setLoadingRecordings(true)
-    try {
-      // Use Supabase store instead of chrome.runtime.sendMessage
-      const recordings = await getAllUserRecordings()
-      setSavedRecordings(recordings)
-    } catch (error) {
-      console.error('Error loading recordings:', error)
-    } finally {
-      setLoadingRecordings(false)
-    }
-  }
-  // Utility function to convert Base64 to Blob
-  const base64ToBlob = (base64: string, mimeType: string): Blob => {
-    const byteCharacters = atob(base64)
-    const byteNumbers = new Array(byteCharacters.length)
-
-    for (let i = 0; i < byteCharacters.length; i++) {
-      byteNumbers[i] = byteCharacters.charCodeAt(i)
-    }
-
-    const byteArray = new Uint8Array(byteNumbers)
-    return new Blob([byteArray], { type: mimeType })
-  }
 
   const deleteLoop = async (loopId: string) => {
     try {
@@ -654,16 +663,6 @@ function FluentFlowSidePanelContent() {
 
       // Get goal suggestions
       if (allSessions && allSessions.length > 0) {
-        const practiceData = {
-          totalSessions: allSessions.length,
-          totalPracticeTime: allSessions.reduce(
-            (acc, session) => acc + session.totalPracticeTime,
-            0
-          ),
-          practiceStreak: analytics.practiceStreak,
-          dailyAverages: analytics.dailyAverages,
-          allSessions: allSessions.map(s => ({ videoId: s.videoId }))
-        }
         const suggestions = await learningGoalsService.getGoalSuggestions()
         setGoalSuggestions(suggestions)
       }
@@ -698,7 +697,7 @@ function FluentFlowSidePanelContent() {
       // Calculate progress for display
       const progressData: { [goalId: string]: GoalProgress } = {}
       const uniqueVideos = [...new Set(allSessions.map(s => s.videoId))].length
-      const recentTrend = analytics.weeklyTrend.map(day => day.practiceTime)
+      const recentTrend = analytics.weeklyTrend.map((day: { practiceTime: number }) => day.practiceTime)
 
       updatedGoals.forEach(goal => {
         progressData[goal.id] = calculateGoalProgress(goal, {
@@ -824,41 +823,7 @@ function FluentFlowSidePanelContent() {
     console.log('View plan requested:', planId)
   }
 
-  const deleteRecording = async (recordingId: string) => {
-    try {
-      // Use Supabase store instead of chrome.runtime.sendMessage
-      const success = await deleteUserRecording(recordingId)
 
-      if (success) {
-        setSavedRecordings(recordings => recordings.filter(rec => rec.id !== recordingId))
-      } else {
-        console.error('Failed to delete recording: Recording not found or user not authenticated')
-      }
-    } catch (error) {
-      console.error('Error deleting recording:', error)
-    }
-  }
-
-  const exportRecording = async (recording: any) => {
-    try {
-      // Convert Base64 to Blob for export
-      if (!recording.audioDataBase64) {
-        throw new Error('No audio data available for export')
-      }
-
-      const audioBlob = base64ToBlob(recording.audioDataBase64, 'audio/webm')
-      const audioURL = URL.createObjectURL(audioBlob)
-      const a = document.createElement('a')
-      a.href = audioURL
-      a.download = `fluent-flow-recording-${recording.id}.webm`
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
-      URL.revokeObjectURL(audioURL)
-    } catch (error) {
-      console.error('Failed to export recording:', error)
-    }
-  }
 
   const renderDashboard = () => (
     <Dashboard
@@ -1063,73 +1028,6 @@ function FluentFlowSidePanelContent() {
     </div>
   )
 
-  const renderRecordings = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <FileAudio className="h-5 w-5" />
-                Recording Library
-              </CardTitle>
-              <CardDescription>{savedRecordings.length} saved recordings</CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={loadSavedRecordings}
-              disabled={loadingRecordings}
-            >
-              {loadingRecordings ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              ) : (
-                <RefreshCw className="mr-2 h-4 w-4" />
-              )}
-              {loadingRecordings ? 'Loading...' : 'Refresh'}
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      <div className="space-y-4">
-        {loadingRecordings && (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading recordings...</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loadingRecordings && savedRecordings.length === 0 && (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Music className="mb-4 h-12 w-12 text-muted-foreground" />
-              <CardTitle className="mb-2 text-lg">No recordings saved yet</CardTitle>
-              <CardDescription>
-                Record audio on YouTube videos to save them here for practice
-              </CardDescription>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loadingRecordings &&
-          savedRecordings.map(recording => (
-            <div key={recording.id}>
-              <AudioPlayer
-                recording={recording}
-                onDelete={deleteRecording}
-                onExport={exportRecording}
-                base64ToBlob={base64ToBlob}
-              />
-            </div>
-          ))}
-      </div>
-    </div>
-  )
 
   // Filter loops based on search query
   const filteredLoops = savedLoops.filter(
@@ -1321,9 +1219,6 @@ function FluentFlowSidePanelContent() {
           </TabsContent>
           <TabsContent value="conversations" className="mt-0 h-full overflow-y-auto">
             {renderConversations()}
-          </TabsContent>
-          <TabsContent value="recordings" className="mt-0 h-full overflow-y-auto">
-            {renderRecordings()}
           </TabsContent>
           <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
             {renderDebug()}

@@ -240,12 +240,17 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) throw new Error('User not authenticated')
 
+    // Validate required fields to prevent database constraint violations
+    if (!videoInfo.videoId || !videoInfo.title || !videoInfo.url) {
+      throw new Error('Invalid video info: missing required fields (videoId, title, url)')
+    }
+
     const sessionData: SessionInsert = {
       user_id: user.id,
       video_id: videoInfo.videoId,
       video_title: videoInfo.title,
-      video_channel: videoInfo.channel,
-      video_duration: videoInfo.duration,
+      video_channel: videoInfo.channel || 'Unknown Channel',
+      video_duration: videoInfo.duration || 0,
       video_url: videoInfo.url,
       status: 'active'
     }

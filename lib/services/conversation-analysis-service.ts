@@ -4,7 +4,6 @@ import type {
   ConversationQuestions,
   SavedLoop
 } from '../types/fluent-flow-types'
-import { AudioCaptureService } from './audio-capture-service'
 
 export interface GeminiConfig {
   apiKey: string
@@ -23,11 +22,9 @@ export interface GeminiResponse {
 
 export class ConversationAnalysisService {
   private config: GeminiConfig
-  private audioCaptureService: AudioCaptureService
 
   constructor(config: GeminiConfig) {
     this.config = config
-    this.audioCaptureService = new AudioCaptureService()
 
     if (!config.apiKey) {
       throw new Error('Gemini API key is required')

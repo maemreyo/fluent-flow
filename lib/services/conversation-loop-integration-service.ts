@@ -6,8 +6,6 @@ import type {
   SavedLoop,
   StorageStats
 } from '../types/fluent-flow-types'
-import { AudioStorageCleanupService } from './audio-storage-cleanup-service'
-import { CleanupSchedulerManager } from './auto-cleanup-scheduler'
 import { ConversationAnalysisService, type GeminiConfig } from './conversation-analysis-service'
 import { EnhancedLoopService, type CreateLoopWithAudioData } from './enhanced-loop-service'
 import { youtubeTranscriptService, type TranscriptError } from './youtube-transcript-service'
@@ -18,20 +16,14 @@ import { youtubeTranscriptService, type TranscriptError } from './youtube-transc
 export class ConversationLoopIntegrationService {
   private loopService: EnhancedLoopService
   private analysisService: ConversationAnalysisService | null = null
-  private cleanupService: AudioStorageCleanupService
   private storageService: any
 
   constructor(storageService: any, geminiConfig?: GeminiConfig) {
     this.storageService = storageService
     this.loopService = new EnhancedLoopService(storageService)
-    this.cleanupService = new AudioStorageCleanupService(storageService)
-
     if (geminiConfig) {
       this.analysisService = new ConversationAnalysisService(geminiConfig)
     }
-
-    // Initialize auto cleanup scheduler
-    CleanupSchedulerManager.initialize(this.cleanupService)
   }
 
   /**
@@ -76,13 +68,13 @@ export class ConversationLoopIntegrationService {
           result.questions = questions
 
           // Schedule cleanup for successful question generation (after 7 days)
-          await this.cleanupService.scheduleCleanup(loop.id, 7)
+          // Audio cleanup removed
         } catch (questionError) {
           console.error('Question generation failed:', questionError)
           result.error = `Loop created but question generation failed: ${questionError instanceof Error ? questionError.message : 'Unknown error'}`
 
           // Schedule earlier cleanup for failed question generation (after 2 days)
-          await this.cleanupService.scheduleCleanup(loop.id, 2)
+          // Audio cleanup removed
         }
       }
 
@@ -1949,35 +1941,40 @@ Please analyze the video content and generate conversation practice questions th
    * Manually removes audio from a loop
    */
   async cleanupLoopAudio(loopId: string): Promise<boolean> {
-    return await this.cleanupService.cleanupSpecificLoop(loopId)
+    // Audio cleanup functionality removed
+    return { success: true, message: 'Audio cleanup disabled' }
   }
 
   /**
    * Runs storage cleanup
    */
   async runStorageCleanup(): Promise<CleanupResult> {
-    return await this.cleanupService.cleanupAudioStorage()
+    // Audio cleanup functionality removed
+    return { success: true, message: 'Audio cleanup disabled' }
   }
 
   /**
    * Gets storage statistics
    */
   async getStorageStats(): Promise<StorageStats> {
-    return await this.cleanupService.getStorageStats()
+    // Audio storage stats removed
+    return { totalSize: 0, fileCount: 0, oldestFile: null }
   }
 
   /**
    * Gets loops scheduled for cleanup
    */
   async getScheduledCleanups(): Promise<SavedLoop[]> {
-    return await this.cleanupService.getScheduledCleanups()
+    // Audio cleanup scheduling removed
+    return []
   }
 
   /**
    * Emergency cleanup - removes all temporary and scheduled files
    */
   async emergencyCleanup(): Promise<CleanupResult> {
-    return await this.cleanupService.emergencyCleanup()
+    // Audio cleanup functionality removed
+    return { success: true, message: 'Audio cleanup disabled' }
   }
 
   /**
@@ -1987,7 +1984,8 @@ Please analyze the video content and generate conversation practice questions th
     loopIds: string[],
     policy: 'temporary' | 'keep' | 'auto-cleanup'
   ): Promise<number> {
-    return await this.cleanupService.bulkSetRetentionPolicy(loopIds, policy)
+    // Audio retention policy removed
+    return { success: true, updatedCount: 0 }
   }
 
   /**
@@ -2090,7 +2088,7 @@ Please analyze the video content and generate conversation practice questions th
     nextCleanupTime: Date | null
     intervalHours: number
   } {
-    const scheduler = CleanupSchedulerManager.getInstance()
+    // Audio cleanup scheduler removed
     return scheduler.getStatus()
   }
 
@@ -2098,7 +2096,7 @@ Please analyze the video content and generate conversation practice questions th
    * Manually triggers cleanup
    */
   async triggerCleanup(): Promise<void> {
-    const scheduler = CleanupSchedulerManager.getInstance()
+    // Audio cleanup scheduler removed
     await scheduler.triggerCleanup()
   }
 
@@ -2134,7 +2132,7 @@ Please analyze the video content and generate conversation practice questions th
    * Shutdown cleanup scheduler and services
    */
   shutdown(): void {
-    CleanupSchedulerManager.shutdown()
+    // Audio cleanup scheduler removed
   }
 }
 
