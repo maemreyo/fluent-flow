@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Innertube } from 'youtubei.js/web'
+import { Innertube } from 'youtubei.js'
 
 interface TranscriptSegment {
   text: string
@@ -47,19 +47,27 @@ class YouTubeTranscriptService {
   private async getInnertube(): Promise<Innertube> {
     if (!this.innertube) {
       try {
-        console.log('Initializing YouTube.js Innertube client')
+        console.log('Initializing YouTube.js Innertube client');
+        const cookie = process.env.YOUTUBE_COOKIE || '';
+        if (cookie) {
+          console.log('Using YouTube cookie from environment variable.');
+        } else {
+          console.warn('YOUTUBE_COOKIE environment variable not set. Some videos may not be accessible.');
+        }
+
         this.innertube = await Innertube.create({
+          cookie: cookie,
           lang: 'en',
           location: 'US',
-          retrieve_player: false
-        })
-        console.log('✅ Innertube client initialized successfully')
+          retrieve_player: false,
+        });
+        console.log('✅ Innertube client initialized successfully');
       } catch (error) {
-        console.error('Failed to initialize Innertube client:', error)
-        throw this.createError('NETWORK_ERROR', `Failed to initialize YouTube client: ${error}`)
+        console.error('Failed to initialize Innertube client:', error);
+        throw this.createError('NETWORK_ERROR', `Failed to initialize YouTube client: ${error}`);
       }
     }
-    return this.innertube
+    return this.innertube;
   }
 
   async getTranscriptSegment(
@@ -153,7 +161,17 @@ class YouTubeTranscriptService {
 
       const info = await yt.getInfo(cleanVideoId)
       console.log(`[isTranscriptAvailable] Video info obtained.`)
-      console.log(`[isTranscriptAvailable] Full video info object:`, JSON.stringify(info, null, 2))
+      console.log(
+        `[isTranscriptAvailable] Video Info:`,
+        JSON.stringify(
+          {
+            playability_status: info.playability_status,
+            captions: info.captions?.caption_tracks?.map(t => t.language_code),
+          },
+          null,
+          2
+        )
+      )
 
       if (!info.captions) {
         console.log(`[isTranscriptAvailable] No captions property in video info. Returning false.`)
