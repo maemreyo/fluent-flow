@@ -1,16 +1,12 @@
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import {
-  ApiKeyStep,
-  CompletionStep,
-  FeatureShowcaseStep,
-  LoginStep,
-  Stepper,
-  WelcomeStep
-} from '../components/onboarding'
+import { ImpressiveWelcomeStep } from '../components/onboarding/ImpressiveWelcomeStep'
+import { InteractiveFeatureStep } from '../components/onboarding/InteractiveFeatureStep'
+import { ModernApiKeyStep } from '../components/onboarding/ModernApiKeyStep'
+import { CompletionStep } from '../components/onboarding/CompletionStep'
 import '../styles/globals.css'
 
-const TOTAL_STEPS = 5
+const TOTAL_STEPS = 4
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -19,25 +15,22 @@ export default function Onboarding() {
   const handlePrevious = () => setCurrentStep(prev => Math.max(prev - 1, 1))
 
   return (
-    <div className="animated-gradient-background min-h-screen font-sans text-foreground">
-      <motion.div
-        className="container mx-auto flex flex-col items-center justify-center min-h-screen p-4"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}>
-        <Stepper currentStep={currentStep} totalSteps={TOTAL_STEPS} />
-        <AnimatePresence mode="wait">
-          <div key={currentStep} className="w-full">
-            {currentStep === 1 && <WelcomeStep onNext={handleNext} />}
-            {currentStep === 2 && <LoginStep onNext={handleNext} onPrevious={handlePrevious} />}
-            {currentStep === 3 && (
-              <FeatureShowcaseStep onNext={handleNext} onPrevious={handlePrevious} />
-            )}
-            {currentStep === 4 && <ApiKeyStep onNext={handleNext} onPrevious={handlePrevious} />}
-            {currentStep === 5 && <CompletionStep />}
-          </div>
-        </AnimatePresence>
-      </motion.div>
+    <div className="min-h-screen font-sans text-foreground">
+      <AnimatePresence mode="wait">
+        <motion.div 
+          key={currentStep} 
+          className="w-full"
+          initial={{ opacity: 0, x: 50 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: -50 }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        >
+          {currentStep === 1 && <ImpressiveWelcomeStep onNext={handleNext} />}
+          {currentStep === 2 && <InteractiveFeatureStep onNext={handleNext} onPrevious={handlePrevious} />}
+          {currentStep === 3 && <ModernApiKeyStep onNext={handleNext} onPrevious={handlePrevious} />}
+          {currentStep === 4 && <CompletionStep onNext={handleNext} onPrevious={handlePrevious} />}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
