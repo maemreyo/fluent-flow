@@ -246,8 +246,9 @@ export class MultipleLoopsFeature {
     
     const videoInfo = this.player.getVideoInfo()
     
+    // Generate NEW IDs for each export to ensure each Control+E creates NEW loops
     const exported = this.activeLoops.map(loop => ({
-      id: loop.id,
+      id: uuidv4(), // 🔥 NEW ID for each export - this prevents updating existing loops
       title: loop.title,
       videoId: videoInfo.id,
       videoTitle: videoInfo.title,
@@ -255,11 +256,11 @@ export class MultipleLoopsFeature {
       startTime: loop.startTime,
       endTime: loop.endTime,
       description: loop.description,
-      createdAt: loop.createdAt,
+      createdAt: new Date(), // New creation time for each export
       updatedAt: new Date()
     }))
     
-    console.log('FluentFlow: Exported loops:', exported.length, exported.map(l => ({ id: l.id, title: l.title })))
+    console.log('FluentFlow: Exported loops with NEW IDs:', exported.length, exported.map(l => ({ id: l.id, title: l.title })))
     return exported
   }
 
