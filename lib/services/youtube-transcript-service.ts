@@ -33,7 +33,7 @@ export interface TranscriptError {
 }
 
 export class YouTubeTranscriptService {
-  private readonly transcriptServerUrl = 'https://fluent-flow.vercel.app/api/transcript'
+  // Removed: External transcript server no longer needed with content script approach
   private static readonly DEFAULT_TIMEOUT = 10000
   private dataExtractor: YouTubeDataExtractor
   private monitor: YouTubeExtractionMonitor
@@ -45,64 +45,8 @@ export class YouTubeTranscriptService {
     this.monitor.startContinuousMonitoring(15)
   }
 
-  public async fetchFromTranscriptServer(
-    videoId: string,
-    language = 'en'
-  ): Promise<TranscriptResult> {
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), YouTubeTranscriptService.DEFAULT_TIMEOUT)
-
-    try {
-      console.log('Fetching transcript for video:', videoId, 'language:', language)
-
-      const response = await fetch(
-        `${this.transcriptServerUrl}?videoId=${videoId}&lang=${language}`,
-        {
-          signal: controller.signal,
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'Cache-Control': 'max-age=300'
-          }
-        }
-      )
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw this.createError(
-            'TRANSCRIPT_NOT_FOUND',
-            `No transcript available for video ${videoId}`
-          )
-        }
-        throw this.createError(
-          'TRANSCRIPT_FETCH_ERROR',
-          `Server error: ${response.status} ${response.statusText}`
-        )
-      }
-
-      const segments = await response.json()
-
-      if (!Array.isArray(segments)) {
-        throw this.createError('TRANSCRIPT_PARSE_ERROR', 'Invalid transcript data format')
-      }
-
-      const fullText = segments.map(segment => segment.text).join(' ')
-
-      return {
-        segments: segments as TranscriptSegment[],
-        fullText,
-        videoId,
-        language
-      }
-    } catch (error) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        throw this.createError('TRANSCRIPT_TIMEOUT', 'Transcript fetch timeout')
-      }
-      throw error
-    } finally {
-      clearTimeout(timeoutId)
-    }
-  }
+  // Removed: External transcript server no longer needed with content script approach
+  // Content script provides same-origin access to InnerTube API with browser context
 
   public async fetchFromInnerTubeAPI(videoId: string, language = 'en'): Promise<TranscriptResult> {
     try {
@@ -257,18 +201,9 @@ export class YouTubeTranscriptService {
     language = 'en'
   ): Promise<TranscriptResult> {
     try {
-      // Try InnerTube API first (more reliable in 2025)
-      let fullTranscript: TranscriptResult
-
-      try {
-        fullTranscript = await this.fetchFromInnerTubeAPI(videoId, language)
-        console.log('Successfully fetched transcript via InnerTube API')
-      } catch (innerTubeError) {
-        console.warn('InnerTube API failed, falling back to transcript server:', innerTubeError)
-        // Fallback to transcript server
-        fullTranscript = await this.fetchFromTranscriptServer(videoId, language)
-        console.log('Successfully fetched transcript via transcript server fallback')
-      }
+      // Use InnerTube API with content script (most reliable approach)
+      const fullTranscript = await this.fetchFromInnerTubeAPI(videoId, language)
+      console.log('Successfully fetched transcript via InnerTube API')
 
       const filteredSegments = fullTranscript.segments.filter(segment => {
         const segmentStart = segment.start
@@ -361,28 +296,21 @@ export class YouTubeTranscriptService {
 
   public async isTranscriptAvailable(videoId: string): Promise<boolean> {
     try {
-      // Try InnerTube API first for accurate availability check
+      // Try InnerTube API for accurate availability check
+      const testTranscript = await this.fetchFromInnerTubeAPI(videoId, 'en')
+      return testTranscript.segments.length > 0
+    } catch (error) {
+      // If InnerTube fails, fallback to data extractor
       try {
-        const testTranscript = await this.fetchFromInnerTubeAPI(videoId, 'en')
-        return testTranscript.segments.length > 0
-      } catch (innerTubeError) {
-        console.warn(
-          'InnerTube availability check failed, trying fallback methods:',
-          innerTubeError
-        )
-
-        // Fallback to data extractor
         const extractionResult = await this.dataExtractor.extractVideoData(videoId)
-
+        
         if (extractionResult.success && extractionResult.data?.captions) {
           return extractionResult.data.captions.length > 0
         }
-
-        // Final fallback to transcript server
-        const testTranscript = await this.fetchFromTranscriptServer(videoId, 'en')
-        return testTranscript.segments.length > 0
+      } catch (extractorError) {
+        console.warn('Both InnerTube and data extractor failed:', extractorError)
       }
-    } catch (error) {
+      
       return false
     }
   }

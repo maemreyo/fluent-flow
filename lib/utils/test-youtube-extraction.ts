@@ -131,18 +131,6 @@ export async function testInnerTubeTranscriptExtraction() {
             }
           } catch (innerTubeError) {
             console.log(`❌ InnerTube extraction failed: ${innerTubeError}`)
-
-            // Test fallback to transcript server
-            try {
-              const fallbackTranscript = await transcriptService.fetchFromTranscriptServer(
-                videoId,
-                'en'
-              )
-              console.log(`✅ Fallback extraction successful`)
-              console.log(`📝 Fallback segments: ${fallbackTranscript.segments.length}`)
-            } catch (fallbackError) {
-              console.log(`❌ Fallback extraction failed: ${fallbackError}`)
-            }
           }
 
           // Test segment filtering
