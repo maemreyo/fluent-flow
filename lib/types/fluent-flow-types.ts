@@ -19,20 +19,20 @@ export interface SavedLoop {
   description?: string
   createdAt: Date
   updatedAt: Date
-  
+
   // Audio extraction fields
   hasAudioSegment?: boolean
-  audioSegmentBlob?: string  // Base64 encoded
+  audioSegmentBlob?: string // Base64 encoded
   audioFormat?: 'webm' | 'wav' | 'mp3'
   audioSize?: number
   audioCreatedAt?: Date
   audioLastUsed?: Date
-  
+
   // Question generation fields
   questionsGenerated?: boolean
   questionsGeneratedAt?: Date
   totalQuestionsGenerated?: number
-  questions?: any[]  // Array of generated questions
+  questions?: any[] // Array of generated questions
   questionMetadata?: {
     createdAt: string
     questionCount: number
@@ -54,7 +54,7 @@ export interface SavedLoop {
     segmentCount: number
     lastAnalyzed: string
   }
-  
+
   // Cleanup management fields
   audioRetentionPolicy?: 'temporary' | 'keep' | 'auto-cleanup'
   cleanupScheduledAt?: Date
@@ -64,10 +64,10 @@ export interface SavedLoop {
 export interface TimestampedNote {
   id: string
   videoId: string
-  timestamp: number  // Video time in seconds
-  content: string   // Note text content
+  timestamp: number // Video time in seconds
+  content: string // Note text content
   type: 'observation' | 'question' | 'vocabulary' | 'grammar' | 'pronunciation'
-  tags?: string[]   // Optional tags for categorization
+  tags?: string[] // Optional tags for categorization
   createdAt: Date
   updatedAt: Date
 }
@@ -79,7 +79,7 @@ export interface RecordingSession {
   videoUrl: string
   audioBlob?: Blob
   duration: number
-  notes: TimestampedNote[]  // Notes taken during this session
+  notes: TimestampedNote[] // Notes taken during this session
   createdAt: Date
   updatedAt: Date
 }
@@ -97,7 +97,7 @@ export interface VideoNotes {
   videoUrl: string
   totalNotes: number
   sessions: RecordingSession[]
-  allNotes: TimestampedNote[]  // Aggregated notes from all sessions
+  allNotes: TimestampedNote[] // Aggregated notes from all sessions
   lastUpdated: Date
 }
 
@@ -221,7 +221,7 @@ export interface PracticeStatistics {
   }[]
 }
 
-export type FluentFlowMessage = 
+export type FluentFlowMessage =
   | { type: 'INIT_PLAYER'; payload: {} }
   | { type: 'SET_LOOP_SEGMENT'; payload: { startTime: number; endTime: number } }
   | { type: 'START_RECORDING'; payload: {} }
@@ -236,21 +236,21 @@ export interface FluentFlowStore {
   // Player state
   playerState: YouTubePlayerState
   currentVideo: YouTubeVideoInfo | null
-  
+
   // Practice state
   loopState: LoopState
   recordingState: RecordingState
   comparisonState: AudioComparisonState
-  
+
   // UI state
   uiState: FluentFlowUIState
   settings: FluentFlowSettings
-  
+
   // Data
   currentSession: PracticeSession | null
   allSessions: PracticeSession[]
   statistics: PracticeStatistics
-  
+
   // Actions
   initializePlayer: (videoInfo: YouTubeVideoInfo) => void
   updatePlayerState: (state: Partial<YouTubePlayerState>) => void
@@ -316,7 +316,19 @@ export interface YouTubePlayerAPI {
 }
 
 export interface FluentFlowError extends Error {
-  code: 'PLAYER_NOT_READY' | 'RECORDING_FAILED' | 'STORAGE_ERROR' | 'PERMISSION_DENIED' | 'INVALID_SEGMENT'
+  code:
+    | 'PLAYER_NOT_READY'
+    | 'RECORDING_FAILED'
+    | 'STORAGE_ERROR'
+    | 'PERMISSION_DENIED'
+    | 'INVALID_SEGMENT'
+    | 'TRANSCRIPT_NOT_FOUND'
+    | 'TRANSCRIPT_FETCH_ERROR'
+    | 'TRANSCRIPT_PARSE_ERROR'
+    | 'TRANSCRIPT_TIMEOUT'
+    | 'API_KEY_NOT_FOUND'
+    | 'PLAYER_REQUEST_FAILED'
+    | 'CAPTION_URL_NOT_FOUND'
   context?: Record<string, any>
 }
 
@@ -324,12 +336,12 @@ export interface FluentFlowError extends Error {
 export interface ConversationQuestion {
   id: string
   question: string
-  options: string[]  // Array of 4 options (A, B, C, D)
-  correctAnswer: string  // e.g., "A", "B", "C", "D"
+  options: string[] // Array of 4 options (A, B, C, D)
+  correctAnswer: string // e.g., "A", "B", "C", "D"
   explanation: string
   difficulty: 'easy' | 'medium' | 'hard'
   type: 'main_idea' | 'detail' | 'vocabulary' | 'inference' | 'grammar'
-  timestamp?: number  // Time in audio where this relates
+  timestamp?: number // Time in audio where this relates
 }
 
 export interface ConversationQuestions {
@@ -360,7 +372,7 @@ export interface QuestionPracticeResult {
   questionId: string
   selectedAnswer: string
   isCorrect: boolean
-  timeSpent: number  // seconds
+  timeSpent: number // seconds
   attemptedAt: Date
 }
 
@@ -369,9 +381,9 @@ export interface ConversationPracticeSession {
   loopId: string
   questionsId: string
   results: QuestionPracticeResult[]
-  totalScore: number  // percentage
+  totalScore: number // percentage
   completedAt: Date
-  timeSpent: number  // total time in seconds
+  timeSpent: number // total time in seconds
 }
 
 // Storage cleanup types

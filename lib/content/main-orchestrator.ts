@@ -389,12 +389,69 @@ export class FluentFlowOrchestrator {
           })
           return true
 
+        case 'EXTRACT_YOUTUBE_DATA':
+          this.handleYouTubeDataExtraction(message.videoId, sendResponse)
+          return true
+
         default:
           return false
       }
     })
 
     console.log('FluentFlow: Message handlers setup complete')
+  }
+
+  private handleYouTubeDataExtraction(videoId: string, sendResponse: (response: any) => void): void {
+    try {
+      // Get window objects for YouTube data
+      const playerResponse = (window as any).ytInitialPlayerResponse
+      const initialData = (window as any).ytInitialData
+
+      if (!playerResponse) {
+        sendResponse({
+          success: false,
+          error: 'ytInitialPlayerResponse not found in window'
+        })
+        return
+      }
+
+      // Extract basic video metadata
+      const videoDetails = playerResponse.videoDetails || {}
+      const streamingData = playerResponse.streamingData || {}
+      const captions = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks || []
+
+      // Parse captions
+      const parsedCaptions = captions.map((caption: any) => ({
+        languageCode: caption.languageCode,
+        languageName: caption.name?.simpleText || caption.name?.runs?.[0]?.text || caption.languageCode,
+        baseUrl: caption.baseUrl,
+        isTranslatable: caption.isTranslatable || false
+      }))
+
+      // Extract metadata
+      const metadata = {
+        videoId: videoId,
+        title: videoDetails.title || 'Unknown Title',
+        author: videoDetails.author || 'Unknown Channel',
+        channelId: videoDetails.channelId || '',
+        duration: parseInt(videoDetails.lengthSeconds || '0', 10),
+        viewCount: videoDetails.viewCount || '0',
+        description: videoDetails.shortDescription || '',
+        thumbnails: videoDetails.thumbnail?.thumbnails || [],
+        captions: parsedCaptions.length > 0 ? parsedCaptions : undefined
+      }
+
+      sendResponse({
+        success: true,
+        data: metadata
+      })
+    } catch (error) {
+      console.error('FluentFlow: YouTube data extraction failed:', error)
+      sendResponse({
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      })
+    }
   }
 
   private setupVideoChangeDetection(): void {

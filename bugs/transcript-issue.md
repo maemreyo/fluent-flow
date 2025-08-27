@@ -133,3 +133,271 @@ Approach này tối ưu cho Chrome extension vì:
 - Bypass authentication issues
 - Access full range of data
 - Cost-effective
+
+==============
+
+# YouTube Window Objects - Data Structure Reference
+
+## 1. `window.ytInitialPlayerResponse`
+
+**Mục đích**: Chứa thông tin chi tiết về video player và metadata
+
+### Core Structure:
+
+```javascript
+{
+  videoDetails: {
+    videoId: "string",
+    title: "string",
+    lengthSeconds: "string",
+    keywords: ["array"],
+    channelId: "string",
+    isLiveContent: boolean,
+    shortDescription: "string",
+    viewCount: "string",
+    author: "string",
+    isPrivate: boolean,
+    allowRatings: boolean,
+    thumbnail: {
+      thumbnails: [
+        { url: "string", width: number, height: number }
+      ]
+    }
+  },
+
+  streamingData: {
+    formats: [
+      {
+        itag: number,
+        url: "string",
+        mimeType: "string",
+        quality: "string",
+        qualityLabel: "string", // "720p", "1080p"
+        fps: number,
+        audioQuality: "string"
+      }
+    ],
+    adaptiveFormats: [
+      // Riêng audio hoặc video
+      {
+        itag: number,
+        url: "string",
+        mimeType: "string",
+        bitrate: number,
+        width?: number, // cho video
+        height?: number, // cho video
+        audioSampleRate?: "string" // cho audio
+      }
+    ]
+  },
+
+  captions: {
+    playerCaptionsTracklistRenderer: {
+      captionTracks: [
+        {
+          baseUrl: "string", // URL subtitle
+          name: { simpleText: "string" }, // Language name
+          languageCode: "string", // "en", "vi"
+          isTranslatable: boolean
+        }
+      ]
+    }
+  },
+
+  playabilityStatus: {
+    status: "string", // "OK", "ERROR", "LOGIN_REQUIRED"
+    reason?: "string" // Error message if not OK
+  },
+
+  microformat: {
+    playerMicroformatRenderer: {
+      publishDate: "string",
+      uploadDate: "string",
+      category: "string",
+      liveBroadcastDetails?: {
+        isLiveNow: boolean,
+        startTimestamp: "string",
+        endTimestamp: "string"
+      }
+    }
+  }
+}
+```
+
+## 2. `window.ytInitialData`
+
+**Mục đích**: Chứa thông tin page layout, comments, recommendations, channel
+info
+
+### Core Structure:
+
+```javascript
+{
+  contents: {
+    twoColumnWatchNextResults: {
+      results: {
+        results: {
+          contents: [
+            {
+              videoPrimaryInfoRenderer: {
+                title: { runs: [{ text: "string" }] },
+                viewCount: {
+                  videoViewCountRenderer: {
+                    viewCount: { simpleText: "string" }
+                  }
+                },
+                dateText: { simpleText: "string" },
+                relativeDateText: { simpleText: "string" }
+              }
+            },
+            {
+              videoSecondaryInfoRenderer: {
+                owner: {
+                  videoOwnerRenderer: {
+                    title: { runs: [{ text: "string" }] },
+                    subscriberCountText: { simpleText: "string" },
+                    thumbnail: { thumbnails: [] }
+                  }
+                },
+                description: { runs: [] },
+                subscribeButton: {
+                  subscribeButtonRenderer: {
+                    subscriberCountText: { simpleText: "string" }
+                  }
+                }
+              }
+            }
+          ]
+        }
+      },
+
+      secondaryResults: {
+        secondaryResults: {
+          results: [
+            // Recommended videos
+            {
+              compactVideoRenderer: {
+                videoId: "string",
+                title: { simpleText: "string" },
+                viewCountText: { simpleText: "string" },
+                lengthText: { simpleText: "string" }
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+
+  // Comments section
+  engagementPanels: [
+    {
+      engagementPanelSectionListRenderer: {
+        content: {
+          sectionListRenderer: {
+            contents: [
+              {
+                itemSectionRenderer: {
+                  contents: [
+                    {
+                      continuationItemRenderer: {
+                        trigger: "string",
+                        continuationEndpoint: {
+                          // API endpoint để load comments
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+
+  // Page metadata
+  metadata: {
+    channelMetadataRenderer: {
+      title: "string",
+      description: "string",
+      keywords: "string",
+      channelUrl: "string"
+    }
+  },
+
+  header: {
+    c4TabbedHeaderRenderer: {
+      channelId: "string",
+      title: "string",
+      subscriberCountText: { simpleText: "string" }
+    }
+  }
+}
+```
+
+## Key Information Available:
+
+### From `ytInitialPlayerResponse`:
+
+- ✅ **Video streaming URLs** (formats, adaptive formats)
+- ✅ **Subtitle/Caption URLs**
+- ✅ **Video metadata** (title, description, duration, views)
+- ✅ **Channel info** (author, channelId)
+- ✅ **Playability status** (available, restricted, etc.)
+- ✅ **Live stream info** (if applicable)
+- ✅ **Thumbnails** (various sizes)
+
+### From `ytInitialData`:
+
+- ✅ **Page UI data** (like/dislike buttons, comments count)
+- ✅ **Related/recommended videos**
+- ✅ **Channel subscriber count**
+- ✅ **Video description with formatting**
+- ✅ **Comments continuation endpoints**
+- ✅ **Channel header info**
+- ❌ **Direct comment content** (cần additional API calls)
+
+## Practical Usage:
+
+### Essential Video Info:
+
+```javascript
+// Basic video data
+const title = ytInitialPlayerResponse.videoDetails.title
+const views = ytInitialPlayerResponse.videoDetails.viewCount
+const duration = ytInitialPlayerResponse.videoDetails.lengthSeconds
+
+// Channel info
+const channelName = ytInitialPlayerResponse.videoDetails.author
+const subscriberCount =
+  ytInitialData.contents.twoColumnWatchNextResults.results.results.contents[1]
+    .videoSecondaryInfoRenderer.owner.videoOwnerRenderer.subscriberCountText
+    .simpleText
+```
+
+### Download URLs:
+
+```javascript
+// Video + Audio combined
+const progressiveFormats = ytInitialPlayerResponse.streamingData.formats
+
+// Separate video/audio (higher quality)
+const adaptiveFormats = ytInitialPlayerResponse.streamingData.adaptiveFormats
+```
+
+### Subtitles:
+
+```javascript
+const captionTracks =
+  ytInitialPlayerResponse.captions?.playerCaptionsTracklistRenderer
+    ?.captionTracks || []
+```
+
+## Limitations:
+
+- Structure có thể thay đổi khi YouTube update
+- Một số field có thể undefined với certain video types
+- viewCount is under videoDetails nhưng cần handle string format
+- Streaming URLs có thể expire sau một thời gian

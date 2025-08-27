@@ -89,5 +89,80 @@ class FluentFlowContentScript {
   }
 }
 
+// Listen for messages from background/sidepanel for InnerTube API calls
+chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === 'GET_INNERTUBE_DATA') {
+    getInnerTubeData(message.videoId, message.language)
+      .then(sendResponse)
+      .catch(error => sendResponse({ success: false, error: error.message }))
+    return true // Keep message channel open
+  }
+})
+
+async function getInnerTubeData(videoId: string, _language: string = 'en') {
+  try {
+    console.log('Content script: Fetching InnerTube data for', videoId)
+    
+    // Extract API key from current page
+    const apiKeyMatch = document.documentElement.innerHTML.match(/"INNERTUBE_API_KEY":"([^"]+)"/)
+    if (!apiKeyMatch) {
+      throw new Error('INNERTUBE_API_KEY not found')
+    }
+    const apiKey = apiKeyMatch[1]
+    
+    // Make request from content script context (same-origin)
+    const response = await fetch(`https://www.youtube.com/youtubei/v1/player?key=${apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Cache-Control': 'no-cache',
+        'Origin': 'https://www.youtube.com',
+        'Referer': window.location.href,
+        'User-Agent': navigator.userAgent
+      },
+      credentials: 'include', // Include cookies automatically
+      body: JSON.stringify({
+        context: {
+          client: {
+            clientName: 'WEB',
+            clientVersion: '2.20241217.01.00'
+          }
+        },
+        videoId: videoId
+      })
+    })
+
+    if (!response.ok) {
+      throw new Error(`InnerTube API failed: ${response.status} ${response.statusText}`)
+    }
+
+    const playerData = await response.json()
+    console.log('Content script: InnerTube API success')
+    
+    // Extract captions
+    const captions = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks
+    
+    return {
+      success: true,
+      data: {
+        videoId: playerData?.videoDetails?.videoId || videoId,
+        captions: captions ? captions.map((track: any) => ({
+          languageCode: track.languageCode || 'unknown',
+          baseUrl: track.baseUrl || '',
+          name: track.name?.simpleText || track.name?.runs?.[0]?.text || 'Unknown'
+        })) : []
+      }
+    }
+  } catch (error) {
+    console.error('Content script InnerTube extraction failed:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    }
+  }
+}
+
 // Initialize when content script is loaded (handled by Plasmo)
 new FluentFlowContentScript()

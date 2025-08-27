@@ -109,9 +109,9 @@ export class TranscriptDebugUtil {
       // Show suggestions for videos that work
       console.log('\n💡 Try these videos that typically have captions:')
       const suggestions = youtubeTranscriptService.getSuggestedVideosWithCaptions()
-      suggestions.forEach(video => {
-        console.log(`   • ${video.title} (${video.id})`)
-        console.log(`     ${video.description}`)
+      suggestions.forEach(videoId => {
+        console.log(`   • Video ID: ${videoId}`)
+        console.log(`     URL: https://www.youtube.com/watch?v=${videoId}`)
       })
 
       return { success: false, error }

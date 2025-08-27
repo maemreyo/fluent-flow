@@ -56,6 +56,14 @@ chrome.commands.onCommand.addListener((command, tab) => {
 
 // Message router - ONLY routing logic, NO business logic
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+  // Only handle messages that have a 'type' property (non-Plasmo messages)
+  // Plasmo messages are handled automatically by Plasmo's messaging system
+  if (!message || typeof message.type === 'undefined') {
+    // This is likely a Plasmo message, let it be handled by Plasmo
+    // Don't log or process it here to avoid conflicts
+    return false
+  }
+
   console.log('Background received message:', message.type)
 
   switch (message.type) {
@@ -139,6 +147,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       break
 
     default:
+      // Only log for actual typed messages, not Plasmo messages
       console.warn('Unknown message type:', message.type)
       sendResponse({
         success: false,

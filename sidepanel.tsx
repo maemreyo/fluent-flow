@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import {
   AlertTriangle,
   BarChart3,
+  Bug,
   FileAudio,
   Loader2,
   Music,
@@ -16,6 +17,7 @@ import {
 import { AudioPlayer } from './components/audio-player'
 import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
 import { Dashboard } from './components/dashboard'
+import { YouTubeExtractionTestPanel } from './components/debug/youtube-extraction-test-panel'
 import { EnhancedLoopCardWithIntegration } from './components/enhanced-loop-card-with-integration'
 import { QueryProvider } from './components/providers/query-provider'
 import { StorageManagementPanel } from './components/storage-management-panel'
@@ -47,7 +49,7 @@ import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
   const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'loops' | 'recordings' | 'conversations'
+    'dashboard' | 'loops' | 'recordings' | 'conversations' | 'debug'
   >('dashboard')
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [savedRecordings, setSavedRecordings] = useState<any[]>([])
@@ -127,13 +129,13 @@ function FluentFlowSidePanelContent() {
     let trackingInterval: NodeJS.Timeout | null = null
 
     // Track active tab changes
-    const handleTabActivated = async (activeInfo: chrome.tabs.TabActiveInfo) => {
+    const handleTabActivated = async (activeInfo: { tabId: number; windowId: number }) => {
       currentTabId = activeInfo.tabId
       await updateVideoInformation()
     }
 
     // Track tab updates (URL changes within same tab)
-    const handleTabUpdated = async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo) => {
+    const handleTabUpdated = async (tabId: number, changeInfo: { url?: string; status?: string }) => {
       if (changeInfo.url && tabId === currentTabId) {
         await updateVideoInformation()
       }
@@ -1138,6 +1140,8 @@ function FluentFlowSidePanelContent() {
       loop.description?.toLowerCase().includes(loopFilter.toLowerCase())
   )
 
+  const renderDebug = () => <YouTubeExtractionTestPanel />
+
   const renderLoops = () => (
     <div className="space-y-6">
       <Card>
@@ -1284,7 +1288,7 @@ function FluentFlowSidePanelContent() {
         onValueChange={value => setActiveTab(value as any)}
         className="flex flex-1 flex-col"
       >
-        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-2">
+        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-3">
           <TabsTrigger value="dashboard" className="text-xs">
             <BarChart3 className="mr-1 h-4 w-4" />
             Dashboard
@@ -1292,6 +1296,10 @@ function FluentFlowSidePanelContent() {
           <TabsTrigger value="loops" className="text-xs">
             <Repeat className="mr-1 h-4 w-4" />
             Loops
+          </TabsTrigger>
+          <TabsTrigger value="debug" className="text-xs">
+            <Bug className="mr-1 h-4 w-4" />
+            Debug
           </TabsTrigger>
           {/* TODO: Re-enable these tabs when ready to implement */}
           {/* <TabsTrigger value="conversations" className="text-xs">
@@ -1316,6 +1324,9 @@ function FluentFlowSidePanelContent() {
           </TabsContent>
           <TabsContent value="recordings" className="mt-0 h-full overflow-y-auto">
             {renderRecordings()}
+          </TabsContent>
+          <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
+            {renderDebug()}
           </TabsContent>
         </div>
       </Tabs>

@@ -32,6 +32,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.9",
     "@hookform/resolvers": "^5.2.1",
+    "@plasmohq/messaging": "^0.7.2",
     "@plasmohq/storage": "^1.9.0",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
@@ -146,7 +147,8 @@
       "activeTab",
       "contextMenus",
       "sidePanel",
-      "tabs"
+      "tabs",
+      "scripting"
     ],
     "commands": {
       "toggle-loop": {

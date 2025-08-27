@@ -1,3 +1,10 @@
+import type { FluentFlowError } from '../types/fluent-flow-types'
+import { YouTubeDataExtractor } from './youtube-data-extractor'
+import {
+  YouTubeExtractionMonitor,
+  type ExtractionHealthReport,
+  type ExtractionMetrics
+} from './youtube-extraction-monitor'
 
 export interface TranscriptSegment {
   text: string
@@ -26,154 +33,419 @@ export interface TranscriptError {
 }
 
 export class YouTubeTranscriptService {
-  private readonly transcriptServerUrl: string
-  private readonly DEFAULT_TIMEOUT = 15000
+  private readonly transcriptServerUrl = 'https://fluent-flow.vercel.app/api/transcript'
+  private static readonly DEFAULT_TIMEOUT = 10000
+  private dataExtractor: YouTubeDataExtractor
+  private monitor: YouTubeExtractionMonitor
 
   constructor() {
-    this.transcriptServerUrl = process.env.PLASMO_PUBLIC_TRANSCRIPT_SERVER_URL
-    if (!this.transcriptServerUrl) {
-      console.error(
-        'FluentFlow: PLASMO_PUBLIC_TRANSCRIPT_SERVER_URL environment variable is not set.'
-      )
-      throw new Error('Transcript server URL is not configured.')
-    }
+    this.dataExtractor = new YouTubeDataExtractor()
+    this.monitor = new YouTubeExtractionMonitor()
+
+    this.monitor.startContinuousMonitoring(15)
   }
 
-  private async fetchFromTranscriptServer<T>(
-    payload: Record<string, any>
-  ): Promise<T> {
+  public async fetchFromTranscriptServer(
+    videoId: string,
+    language = 'en'
+  ): Promise<TranscriptResult> {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), YouTubeTranscriptService.DEFAULT_TIMEOUT)
+
     try {
-      const response = await fetch(this.transcriptServerUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload),
-        signal: AbortSignal.timeout(this.DEFAULT_TIMEOUT)
-      })
+      console.log('Fetching transcript for video:', videoId, 'language:', language)
+
+      const response = await fetch(
+        `${this.transcriptServerUrl}?videoId=${videoId}&lang=${language}`,
+        {
+          signal: controller.signal,
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'Cache-Control': 'max-age=300'
+          }
+        }
+      )
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+        if (response.status === 404) {
+          throw this.createError(
+            'TRANSCRIPT_NOT_FOUND',
+            `No transcript available for video ${videoId}`
+          )
+        }
         throw this.createError(
-          'NETWORK_ERROR',
-          `Failed to fetch from transcript server: ${response.statusText}`,
-          JSON.stringify(errorData)
+          'TRANSCRIPT_FETCH_ERROR',
+          `Server error: ${response.status} ${response.statusText}`
         )
       }
 
-      return await response.json()
-    } catch (error) {
-      console.error(`FluentFlow: Error fetching from transcript server:`, error)
-      if (error.name === 'TimeoutError') {
-        throw this.createError('NETWORK_ERROR', 'Request to transcript server timed out.')
+      const segments = await response.json()
+
+      if (!Array.isArray(segments)) {
+        throw this.createError('TRANSCRIPT_PARSE_ERROR', 'Invalid transcript data format')
       }
-      throw this.handleTranscriptError(error, payload.videoId)
+
+      const fullText = segments.map(segment => segment.text).join(' ')
+
+      return {
+        segments: segments as TranscriptSegment[],
+        fullText,
+        videoId,
+        language
+      }
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw this.createError('TRANSCRIPT_TIMEOUT', 'Transcript fetch timeout')
+      }
+      throw error
+    } finally {
+      clearTimeout(timeoutId)
     }
   }
 
-  async getTranscriptSegment(
+  public async fetchFromInnerTubeAPI(videoId: string, language = 'en'): Promise<TranscriptResult> {
+    try {
+      console.log('Fetching transcript via InnerTube API for video:', videoId, 'language:', language)
+      
+      // Method 1: Use content script (most reliable - same origin)
+      try {
+        const { getInnerTubeDataFromContentScript } = await import('../utils/content-script-api')
+        
+        const response = await getInnerTubeDataFromContentScript(videoId, language)
+
+        if (response.success && response.data?.captions) {
+          console.log('✅ Got captions via content script (same-origin)')
+          
+          // Find the right caption track
+          let captionTrack = response.data.captions.find((track: any) => 
+            track.languageCode === language || track.languageCode?.startsWith(language)
+          )
+          
+          if (!captionTrack) {
+            captionTrack = response.data.captions[0]
+            console.warn(`Language '${language}' not found, using '${captionTrack.languageCode}' instead`)
+          }
+
+          if (!captionTrack?.baseUrl) {
+            throw new Error('Caption track URL not found')
+          }
+
+          // Fetch transcript data
+          const transcriptResponse = await fetch(captionTrack.baseUrl)
+          if (!transcriptResponse.ok) {
+            throw new Error(`Failed to fetch transcript: ${transcriptResponse.status}`)
+          }
+
+          const transcriptXml = await transcriptResponse.text()
+          const segments = this.parseTranscriptXml(transcriptXml)
+          const fullText = segments.map(segment => segment.text).join(' ')
+
+          console.log(`✅ Transcript parsed via content script: ${segments.length} segments, ${fullText.length} characters`)
+
+          return {
+            segments,
+            fullText,
+            videoId,
+            language: captionTrack.languageCode || language
+          }
+        } else {
+          throw new Error(response.error || 'Content script call failed')
+        }
+      } catch (contentScriptError) {
+        console.warn('Content script method failed:', contentScriptError)
+        
+        // Method 2: Fallback to background script with executeScript
+        try {
+          const { sendToBackground } = await import("@plasmohq/messaging")
+          
+          const response = await sendToBackground({
+            name: "extract-youtube-data", 
+            body: { videoId, requestType: 'innertube_transcript', language }
+          })
+
+          if (response?.success && response.data?.captions) {
+            console.log('✅ Got captions via background script with browser context')
+            
+            // Find the right caption track
+            let captionTrack = response.data.captions.find((track: any) => 
+              track.languageCode === language || track.languageCode?.startsWith(language)
+            )
+            
+            if (!captionTrack) {
+              captionTrack = response.data.captions[0]
+              console.warn(`Language '${language}' not found, using '${captionTrack.languageCode}' instead`)
+            }
+
+            if (!captionTrack?.baseUrl) {
+              throw new Error('Caption track URL not found')
+            }
+
+            // Fetch transcript data
+            const transcriptResponse = await fetch(captionTrack.baseUrl)
+            if (!transcriptResponse.ok) {
+              throw new Error(`Failed to fetch transcript: ${transcriptResponse.status}`)
+            }
+
+            const transcriptXml = await transcriptResponse.text()
+            const segments = this.parseTranscriptXml(transcriptXml)
+            const fullText = segments.map(segment => segment.text).join(' ')
+
+            console.log(`✅ Transcript parsed via background: ${segments.length} segments, ${fullText.length} characters`)
+
+            return {
+              segments,
+              fullText,
+              videoId,
+              language: captionTrack.languageCode || language
+            }
+          } else {
+            throw new Error(response?.error || 'Background script call failed')
+          }
+        } catch (backgroundError) {
+          console.warn('Background script extraction failed:', backgroundError)
+          throw new Error(`Both content script and background methods failed: ${backgroundError}`)
+        }
+      }
+    } catch (error) {
+      console.error('All InnerTube API transcript extraction methods failed:', error)
+      throw this.handleTranscriptError(error, videoId)
+    }
+  }
+
+  private parseTranscriptXml(xmlContent: string): TranscriptSegment[] {
+    const segments: TranscriptSegment[] = []
+
+    try {
+      // Parse XML using regex (lightweight alternative to XML parser)
+      const textMatches = xmlContent.matchAll(
+        /<text start="([^"]*)" dur="([^"]*)">([^<]*)<\/text>/g
+      )
+
+      for (const match of textMatches) {
+        const start = parseFloat(match[1]) || 0
+        const duration = parseFloat(match[2]) || 0
+        const text =
+          match[3]
+            ?.replace(/&amp;/g, '&')
+            ?.replace(/&lt;/g, '<')
+            ?.replace(/&gt;/g, '>')
+            ?.replace(/&quot;/g, '"')
+            ?.replace(/&#39;/g, "'")
+            ?.trim() || ''
+
+        if (text) {
+          segments.push({
+            start,
+            duration,
+            text
+          })
+        }
+      }
+
+      return segments
+    } catch (error) {
+      console.error('Failed to parse transcript XML:', error)
+      throw this.createError('TRANSCRIPT_PARSE_ERROR', 'Failed to parse transcript XML content')
+    }
+  }
+
+  public async getTranscriptSegment(
     videoId: string,
     startTime: number,
     endTime: number,
-    language?: string
+    language = 'en'
   ): Promise<TranscriptResult> {
-    const cleanVideoId = this.extractVideoId(videoId)
     try {
-      const result = await this.fetchFromTranscriptServer<TranscriptResult>({
-        action: 'getSegment',
-        videoId: cleanVideoId,
-        startTime,
-        endTime,
-        language
+      // Try InnerTube API first (more reliable in 2025)
+      let fullTranscript: TranscriptResult
+
+      try {
+        fullTranscript = await this.fetchFromInnerTubeAPI(videoId, language)
+        console.log('Successfully fetched transcript via InnerTube API')
+      } catch (innerTubeError) {
+        console.warn('InnerTube API failed, falling back to transcript server:', innerTubeError)
+        // Fallback to transcript server
+        fullTranscript = await this.fetchFromTranscriptServer(videoId, language)
+        console.log('Successfully fetched transcript via transcript server fallback')
+      }
+
+      const filteredSegments = fullTranscript.segments.filter(segment => {
+        const segmentStart = segment.start
+        const segmentEnd = segment.start + segment.duration
+
+        return (
+          (segmentStart >= startTime && segmentStart <= endTime) ||
+          (segmentEnd >= startTime && segmentEnd <= endTime) ||
+          (segmentStart <= startTime && segmentEnd >= endTime)
+        )
       })
-      return result
+
+      const segmentText = filteredSegments.map(segment => segment.text).join(' ')
+
+      return {
+        segments: filteredSegments,
+        fullText: segmentText,
+        videoId,
+        language: fullTranscript.language
+      }
     } catch (error) {
-      console.error(`FluentFlow: Transcript extraction failed for ${cleanVideoId}:`, error)
-      throw this.handleTranscriptError(error, cleanVideoId)
+      throw this.handleTranscriptError(error, videoId)
     }
   }
 
-  async getAvailableLanguages(videoId: string): Promise<string[]> {
-    const cleanVideoId = this.extractVideoId(videoId)
+  public async getAvailableLanguages(videoId: string): Promise<string[]> {
     try {
-      const response = await this.fetchFromTranscriptServer<{ languages: string[] }>({
-        action: 'getLanguages',
-        videoId: cleanVideoId
-      })
-      return response.languages || []
+      // Try InnerTube API first for accurate language list
+      try {
+        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`
+        const html = await fetch(videoUrl, {
+          headers: {
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+          }
+        }).then(res => res.text())
+
+        const apiKeyMatch = html.match(/"INNERTUBE_API_KEY":"([^"]+)"/)
+        if (!apiKeyMatch) {
+          throw new Error('API key not found')
+        }
+        const apiKey = apiKeyMatch[1]
+
+        const endpoint = `https://www.youtube.com/youtubei/v1/player?key=${apiKey}`
+
+        const body = {
+          context: {
+            client: {
+              clientName: 'ANDROID',
+              clientVersion: '20.10.38'
+            }
+          },
+          videoId: videoId
+        }
+
+        const playerResponse = await fetch(endpoint, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'User-Agent': 'com.google.android.youtube/20.10.38 (Linux; U; Android 11) gzip'
+          },
+          body: JSON.stringify(body)
+        })
+
+        if (playerResponse.ok) {
+          const playerData = await playerResponse.json()
+          const captions = playerData?.captions?.playerCaptionsTracklistRenderer?.captionTracks
+
+          if (captions && Array.isArray(captions)) {
+            return captions.map((track: any) => track.languageCode).filter(Boolean)
+          }
+        }
+      } catch (innerTubeError) {
+        console.warn('InnerTube language detection failed, trying fallback:', innerTubeError)
+      }
+
+      // Fallback to data extractor
+      const extractionResult = await this.dataExtractor.extractVideoData(videoId)
+
+      if (extractionResult.success && extractionResult.data?.captions) {
+        return extractionResult.data.captions.map(caption => caption.languageCode)
+      }
+
+      return ['en']
     } catch (error) {
-      console.log(`FluentFlow: Failed to get available languages for ${cleanVideoId}:`, error)
-      return []
+      console.warn('Failed to get available languages:', error)
+      return ['en']
     }
   }
 
-  async isTranscriptAvailable(videoId: string, language?: string): Promise<boolean> {
-    const cleanVideoId = this.extractVideoId(videoId)
+  public async isTranscriptAvailable(videoId: string): Promise<boolean> {
     try {
-      const response = await this.fetchFromTranscriptServer<{ available: boolean }>({
-        action: 'checkAvailability',
-        videoId: cleanVideoId,
-        language
-      })
-      return response.available || false
+      // Try InnerTube API first for accurate availability check
+      try {
+        const testTranscript = await this.fetchFromInnerTubeAPI(videoId, 'en')
+        return testTranscript.segments.length > 0
+      } catch (innerTubeError) {
+        console.warn(
+          'InnerTube availability check failed, trying fallback methods:',
+          innerTubeError
+        )
+
+        // Fallback to data extractor
+        const extractionResult = await this.dataExtractor.extractVideoData(videoId)
+
+        if (extractionResult.success && extractionResult.data?.captions) {
+          return extractionResult.data.captions.length > 0
+        }
+
+        // Final fallback to transcript server
+        const testTranscript = await this.fetchFromTranscriptServer(videoId, 'en')
+        return testTranscript.segments.length > 0
+      }
     } catch (error) {
-      console.log(`FluentFlow: Transcript availability check failed for ${videoId}:`, error)
       return false
     }
   }
 
-  getSuggestedVideosWithCaptions(): Array<{ id: string; title: string; description: string }> {
+  public getSuggestedVideosWithCaptions(): string[] {
     return [
-      { id: 'dQw4w9WgXcQ', title: 'Rick Astley - Never Gonna Give You Up', description: 'Popular music video with auto-generated captions' },
-      { id: 'jNQXAC9IVRw', title: 'Me at the zoo', description: 'First YouTube video with captions' },
-      { id: 'VQH8ZTgna3Q', title: 'Khan Academy Lesson', description: 'Educational content with captions' },
-      { id: 'fJ9rUzIMcZQ', title: 'BBC News Video', description: 'News videos often have captions' }
+      'dQw4w9WgXcQ', // Rick Roll
+      'jNQXAC9IVRw', // Me at the zoo
+      '9bZkp7q19f0' // Popular music video
     ]
   }
 
-  private extractVideoId(input: string): string {
-    if (!input || typeof input !== 'string') {
-      throw this.createError('VIDEO_NOT_FOUND', 'Invalid video identifier')
-    }
-    const trimmed = input.trim()
-    if (/^[a-zA-Z0-9_-]{11}$/.test(trimmed)) {
-      return trimmed
-    }
-    const patterns = [
-      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-      /youtube\.com\/.*[?&]v=([a-zA-Z0-9_-]{11})/,
-      /^([a-zA-Z0-9_-]{11})$/
-    ]
-    for (const pattern of patterns) {
-      const match = trimmed.match(pattern)
-      if (match && match[1]) {
-        return match[1]
+  private extractVideoId(url: string): string | null {
+    try {
+      const urlObj = new URL(url)
+
+      if (urlObj.hostname === 'youtu.be') {
+        return urlObj.pathname.slice(1) || null
       }
+
+      if (urlObj.hostname.includes('youtube.com')) {
+        const videoId = urlObj.searchParams.get('v')
+        if (videoId) return videoId
+
+        const embedMatch = urlObj.pathname.match(/\/embed\/([^/?]+)/)
+        if (embedMatch) return embedMatch[1]
+      }
+
+      const regex =
+        /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+      const match = url.match(regex)
+      return match ? match[1] : null
+    } catch {
+      return null
     }
-    throw this.createError('VIDEO_NOT_FOUND', `Could not extract video ID from: ${input}`)
   }
 
-  private handleTranscriptError(error: any, videoId: string): TranscriptError {
-    if (error.code) {
-      return error
+  private handleTranscriptError(error: any, videoId?: string): Error {
+    console.error('Transcript error:', error, 'for video:', videoId)
+
+    if (error instanceof Error && error.message.includes('404')) {
+      return this.createError('TRANSCRIPT_NOT_FOUND', 'Transcript not available for this video')
     }
-    return this.createError(
-      'NETWORK_ERROR',
-      `An error occurred while communicating with the transcript service for video ${videoId}.`,
-      error.message
-    )
+
+    return this.createError('TRANSCRIPT_FETCH_ERROR', error?.message || 'Unknown transcript error')
   }
 
-  private createError(
-    code: TranscriptError['code'],
-    message: string,
-    details?: string
-  ): TranscriptError {
-    const error = new Error(message) as Error & TranscriptError
+  public async getExtractionHealth(): Promise<ExtractionHealthReport> {
+    return await this.monitor.performHealthCheck()
+  }
+
+  public getExtractionMetrics(): ExtractionMetrics {
+    return this.monitor.getHealthMetrics()
+  }
+
+  private createError(code: FluentFlowError['code'], message: string): FluentFlowError {
+    const error = new Error(message) as FluentFlowError
     error.code = code
-    error.message = message
-    if (details) {
-      error.details = details
+    error.context = {
+      service: 'YouTubeTranscriptService',
+      url: typeof window !== 'undefined' ? window.location.href : '',
+      timestamp: Date.now(),
+      healthMetrics: this.monitor.getHealthMetrics()
     }
     return error
   }
