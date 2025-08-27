@@ -13,6 +13,17 @@ export interface ButtonConfig {
   group?: string
 }
 
+export interface ToastOptions {
+  type?: 'loading' | 'success' | 'error' | 'warning' | 'info'
+  persistent?: boolean
+  duration?: number
+  id?: string
+  action?: {
+    text: string
+    handler: () => void
+  }
+}
+
 export class UIUtilities {
   private static instance: UIUtilities
   private sidebar: FluentFlowSidebar | null = null
@@ -66,44 +77,322 @@ export class UIUtilities {
     })
   }
 
-  // Toast notification system
-  public showToast(message: string): void {
-    // Create a simple toast notification
-    const toast = document.createElement('div')
-    toast.style.cssText = `
-      position: fixed;
-      top: 80px;
-      right: 20px;
-      background: rgba(0, 0, 0, 0.8);
-      color: white;
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-family: Arial, sans-serif;
-      font-size: 14px;
-      z-index: 10000;
-      animation: fadeInOut 2s ease-in-out;
-    `
+  // Enhanced Toast notification system
+  private activeToasts = new Map<string, HTMLElement>()
+  private toastCounter = 0
 
-    toast.textContent = `FluentFlow: ${message}`
 
-    // Add animation
-    const style = document.createElement('style')
-    style.textContent = `
-      @keyframes fadeInOut {
-        0% { opacity: 0; transform: translateX(100%); }
-        20% { opacity: 1; transform: translateX(0); }
-        80% { opacity: 1; transform: translateX(0); }
-        100% { opacity: 0; transform: translateX(100%); }
-      }
-    `
-    document.head.appendChild(style)
+  public showToast(message: string, options: ToastOptions = {}): string {
+    const {
+      type = 'info',
+      persistent = false,
+      duration = type === 'error' ? 8000 : type === 'warning' ? 6000 : 3000,
+      id = `toast-${++this.toastCounter}`,
+      action
+    } = options
+
+    // Remove existing toast with same ID if it exists
+    this.hideToast(id)
+
+    const toast = this.createToastElement(message, type, action, id)
+    this.activeToasts.set(id, toast)
+
+    // Inject toast styles if not already present
+    this.injectToastStyles()
 
     document.body.appendChild(toast)
 
-    setTimeout(() => {
-      toast.remove()
-      style.remove()
-    }, 2000)
+    // Auto-remove toast unless persistent or has action
+    if (!persistent && !action && type !== 'loading') {
+      setTimeout(() => {
+        this.hideToast(id)
+      }, duration)
+    }
+
+    return id
+  }
+
+  public hideToast(id: string): void {
+    const toast = this.activeToasts.get(id)
+    if (toast) {
+      toast.classList.add('ff-toast-exit')
+      setTimeout(() => {
+        if (toast.parentNode) {
+          toast.parentNode.removeChild(toast)
+        }
+        this.activeToasts.delete(id)
+      }, 300)
+    }
+  }
+
+  public updateToast(id: string, message: string, options: Partial<ToastOptions> = {}): void {
+    const toast = this.activeToasts.get(id)
+    if (toast) {
+      const messageEl = toast.querySelector('.ff-toast-message')
+      if (messageEl) {
+        messageEl.textContent = message
+      }
+
+      // Update type if provided
+      if (options.type) {
+        // Remove old type classes
+        toast.classList.remove('ff-toast-loading', 'ff-toast-success', 'ff-toast-error', 'ff-toast-warning', 'ff-toast-info')
+        toast.classList.add(`ff-toast-${options.type}`)
+      }
+
+      // Auto-hide if changed from loading/persistent to non-persistent
+      if (options.type && options.type !== 'loading' && !options.persistent && !options.action) {
+        const duration = options.duration || (options.type === 'error' ? 8000 : options.type === 'warning' ? 6000 : 3000)
+        setTimeout(() => {
+          this.hideToast(id)
+        }, duration)
+      }
+    }
+  }
+
+  private createToastElement(message: string, type: string, action?: { text: string; handler: () => void }, id?: string): HTMLElement {
+    const toast = document.createElement('div')
+    toast.className = `ff-toast ff-toast-${type}`
+    toast.setAttribute('data-toast-id', id || '')
+
+    // Toast content container
+    const content = document.createElement('div')
+    content.className = 'ff-toast-content'
+
+    // Icon
+    const icon = document.createElement('span')
+    icon.className = 'ff-toast-icon'
+    icon.innerHTML = this.getToastIcon(type)
+
+    // Message
+    const messageEl = document.createElement('span')
+    messageEl.className = 'ff-toast-message'
+    messageEl.textContent = message
+
+    content.appendChild(icon)
+    content.appendChild(messageEl)
+    toast.appendChild(content)
+
+    // Add action button if provided
+    if (action) {
+      const actionBtn = document.createElement('button')
+      actionBtn.className = 'ff-toast-action'
+      actionBtn.textContent = action.text
+      actionBtn.onclick = (e) => {
+        e.stopPropagation()
+        action.handler()
+      }
+      toast.appendChild(actionBtn)
+    }
+
+    // Add close button for persistent toasts
+    if (type === 'error' || action) {
+      const closeBtn = document.createElement('button')
+      closeBtn.className = 'ff-toast-close'
+      closeBtn.innerHTML = '×'
+      closeBtn.onclick = () => id && this.hideToast(id)
+      toast.appendChild(closeBtn)
+    }
+
+    return toast
+  }
+
+  private getToastIcon(type: string): string {
+    const icons = {
+      loading: `<svg class="ff-toast-spinner" width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2V6M12 18V22M4.93 4.93L7.76 7.76M16.24 16.24L19.07 19.07M2 12H6M18 12H22M4.93 19.07L7.76 16.24M16.24 7.76L19.07 4.93" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      success: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M20 6L9 17L4 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      error: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+        <line x1="15" y1="9" x2="9" y2="15" stroke="currentColor" stroke-width="2"/>
+        <line x1="9" y1="9" x2="15" y2="15" stroke="currentColor" stroke-width="2"/>
+      </svg>`,
+      warning: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 9V13M12 17H12.01M10.29 3.86L1.82 18A2 2 0 003.64 21H20.36A2 2 0 0022.18 18L13.71 3.86A2 2 0 0010.29 3.86Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+      info: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+        <path d="M12 16V12M12 8H12.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`
+    }
+    return icons[type] || icons.info
+  }
+
+  private injectToastStyles(): void {
+    if (!document.getElementById('ff-toast-styles')) {
+      const style = document.createElement('style')
+      style.id = 'ff-toast-styles'
+      style.textContent = `
+        .ff-toast {
+          position: fixed;
+          top: 80px;
+          right: 20px;
+          min-width: 300px;
+          max-width: 400px;
+          padding: 16px;
+          border-radius: 12px;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+          font-size: 14px;
+          line-height: 1.4;
+          z-index: 10001;
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          animation: ff-toast-enter 0.3s ease-out;
+          margin-bottom: 8px;
+        }
+
+        .ff-toast:not(:last-child) {
+          transform: translateY(calc(-100% - 8px));
+        }
+
+        .ff-toast-content {
+          display: flex;
+          align-items: flex-start;
+          gap: 12px;
+        }
+
+        .ff-toast-icon {
+          flex-shrink: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin-top: 2px;
+        }
+
+        .ff-toast-spinner {
+          animation: ff-spin 1s linear infinite;
+        }
+
+        .ff-toast-message {
+          flex: 1;
+          font-weight: 500;
+        }
+
+        .ff-toast-action {
+          background: rgba(255, 255, 255, 0.2);
+          border: 1px solid rgba(255, 255, 255, 0.3);
+          color: white;
+          padding: 8px 16px;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          cursor: pointer;
+          margin-left: 12px;
+          transition: all 0.2s ease;
+        }
+
+        .ff-toast-action:hover {
+          background: rgba(255, 255, 255, 0.3);
+          transform: translateY(-1px);
+        }
+
+        .ff-toast-close {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          background: none;
+          border: none;
+          color: rgba(255, 255, 255, 0.7);
+          font-size: 18px;
+          cursor: pointer;
+          padding: 4px;
+          border-radius: 4px;
+          transition: all 0.2s ease;
+        }
+
+        .ff-toast-close:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: white;
+        }
+
+        /* Toast Types */
+        .ff-toast-loading {
+          background: linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(29, 78, 216, 0.9) 100%);
+          color: white;
+          border-left: 4px solid #60a5fa;
+        }
+
+        .ff-toast-success {
+          background: linear-gradient(135deg, rgba(16, 185, 129, 0.9) 0%, rgba(5, 150, 105, 0.9) 100%);
+          color: white;
+          border-left: 4px solid #34d399;
+        }
+
+        .ff-toast-error {
+          background: linear-gradient(135deg, rgba(239, 68, 68, 0.9) 0%, rgba(220, 38, 38, 0.9) 100%);
+          color: white;
+          border-left: 4px solid #f87171;
+        }
+
+        .ff-toast-warning {
+          background: linear-gradient(135deg, rgba(245, 158, 11, 0.9) 0%, rgba(217, 119, 6, 0.9) 100%);
+          color: white;
+          border-left: 4px solid #fbbf24;
+        }
+
+        .ff-toast-info {
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.9) 0%, rgba(79, 70, 229, 0.9) 100%);
+          color: white;
+          border-left: 4px solid #a5b4fc;
+        }
+
+        /* Animations */
+        @keyframes ff-toast-enter {
+          0% {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        .ff-toast-exit {
+          animation: ff-toast-exit 0.3s ease-in forwards;
+        }
+
+        @keyframes ff-toast-exit {
+          0% {
+            opacity: 1;
+            transform: translateX(0);
+          }
+          100% {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+        }
+
+        @keyframes ff-spin {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+          .ff-toast {
+            right: 16px;
+            left: 16px;
+            min-width: unset;
+            max-width: unset;
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
+  }
+
+  // Legacy method for backward compatibility
+  public showSimpleToast(message: string): void {
+    this.showToast(message, { type: 'info' })
   }
 
   // Button state management - now works with sidebar

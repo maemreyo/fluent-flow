@@ -14,7 +14,8 @@ export interface YouTubePlayerIntegration {
 }
 
 export interface UIUtilities {
-  showToast(message: string): void
+  showToast(message: string, options?: any): string
+  updateToast(id: string, message: string, options?: any): void
   updateButtonState(buttonId: string, state: 'inactive' | 'active' | 'setting' | 'paused'): void
   formatTime(seconds: number | null): string
 }
@@ -310,7 +311,7 @@ export class LoopFeature {
     }
   }
 
-  public exportCurrentLoop(title?: string, description?: string): SavedLoop | null {
+  public async exportCurrentLoop(title?: string, description?: string): Promise<SavedLoop | null> {
     const context = this.stateMachine.getContext()
 
     if (context.data.startTime === null || context.data.endTime === null) {
@@ -363,14 +364,101 @@ export class LoopFeature {
       updatedAt: new Date()
     }
 
-    // Send to background for storage
-    chrome.runtime.sendMessage({
-      type: 'SAVE_LOOP',
-      data: savedLoop
+    // Send to background for storage with enhanced feedback
+    const toastId = this.ui.showToast(`Saving loop: ${savedLoop.title}`, { 
+      type: 'loading',
+      persistent: true 
+    } as any)
+
+    try {
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          type: 'SAVE_LOOP',
+          data: savedLoop
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            resolve(response)
+          }
+        })
+      })
+
+      // Update toast based on response
+      if (response.status === 'success') {
+        this.ui.updateToast(toastId, `✅ Loop saved: ${savedLoop.title}`, { 
+          type: 'success' 
+        })
+      } else if (response.status === 'local_fallback') {
+        const retryHandler = () => this.retrySaveLoop(savedLoop)
+        this.ui.updateToast(toastId, `💾 Loop saved offline: ${savedLoop.title}`, {
+          type: 'warning',
+          action: { text: 'Sync Now', handler: retryHandler }
+        })
+      } else {
+        const retryHandler = () => this.retrySaveLoop(savedLoop)
+        this.ui.updateToast(toastId, `❌ Save failed: ${response.error || 'Unknown error'}`, {
+          type: 'error',
+          action: { text: 'Retry', handler: retryHandler }
+        })
+      }
+    } catch (error: any) {
+      console.error('FluentFlow: Save message error:', error)
+      const retryHandler = () => this.retrySaveLoop(savedLoop)
+      this.ui.updateToast(toastId, `❌ Connection failed`, {
+        type: 'error',
+        action: { text: 'Retry', handler: retryHandler }
+      })
+    }
+
+    return savedLoop
+  }
+
+  // Retry save method for failed saves
+  private async retrySaveLoop(savedLoop: SavedLoop): Promise<void> {
+    const toastId = this.ui.showToast(`Retrying save: ${savedLoop.title}`, {
+      type: 'loading',
+      persistent: true
     })
 
-    this.ui.showToast(`Loop exported: ${savedLoop.title}`)
-    return savedLoop
+    try {
+      const response = await new Promise<any>((resolve, reject) => {
+        chrome.runtime.sendMessage({
+          type: 'SAVE_LOOP',
+          data: savedLoop
+        }, (response) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message))
+          } else {
+            resolve(response)
+          }
+        })
+      })
+
+      // Update toast based on retry response
+      if (response.status === 'success') {
+        this.ui.updateToast(toastId, `✅ Loop synced successfully: ${savedLoop.title}`, {
+          type: 'success'
+        })
+      } else if (response.status === 'local_fallback') {
+        this.ui.updateToast(toastId, `💾 Still saved offline: ${savedLoop.title}`, {
+          type: 'warning'
+        })
+      } else {
+        const retryAgain = () => this.retrySaveLoop(savedLoop)
+        this.ui.updateToast(toastId, `❌ Retry failed: ${response.error || 'Unknown error'}`, {
+          type: 'error',
+          action: { text: 'Try Again', handler: retryAgain }
+        })
+      }
+    } catch (error: any) {
+      console.error('FluentFlow: Retry failed:', error)
+      const retryAgain = () => this.retrySaveLoop(savedLoop)
+      this.ui.updateToast(toastId, `❌ Connection still failed`, {
+        type: 'error',
+        action: { text: 'Try Again', handler: retryAgain }
+      })
+    }
   }
 
   // Cleanup

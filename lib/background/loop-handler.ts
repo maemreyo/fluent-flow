@@ -2,6 +2,8 @@
 // Handles saving, loading, and managing saved loops
 
 import type { SavedLoop } from '../types/fluent-flow-types'
+import type { SaveResponse } from '../types/save-response-types'
+import { createSaveResponse } from '../types/save-response-types'
 
 import { getAuthHandler } from './auth-handler'
 import { supabase } from '../supabase/client'
@@ -68,7 +70,7 @@ export async function handleLoopMessage(
   }
 }
 
-async function saveLoop(loop: SavedLoop): Promise<SavedLoop> {
+async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
   console.log('FluentFlow: Saving loop:', loop)
   
   try {
@@ -83,108 +85,202 @@ async function saveLoop(loop: SavedLoop): Promise<SavedLoop> {
     })
     
     if (authState.isAuthenticated && authState.user) {
-      // Save to Supabase: create or update practice session with loop segment
-      const sessionData = {
-        user_id: authState.user.id,
-        video_id: loop.videoId,
-        video_title: loop.videoTitle,
-        video_url: loop.videoUrl,
-        metadata: {
-          savedLoop: {
-            id: loop.id,
-            title: loop.title,
-            description: loop.description,
-            createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
-            updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
+      try {
+        // Save to Supabase: create or update practice session with loop segment
+        const sessionData = {
+          user_id: authState.user.id,
+          video_id: loop.videoId,
+          video_title: loop.videoTitle,
+          video_url: loop.videoUrl,
+          metadata: {
+            savedLoop: {
+              id: loop.id,
+              title: loop.title,
+              description: loop.description,
+              createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
+              updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
+            }
           }
         }
-      }
 
-      // Check if session already exists for this video and user
-      const { data: existingSessions } = await supabase
-        .from('practice_sessions')
-        .select('id')
-        .eq('user_id', authState.user.id)
-        .eq('video_id', loop.videoId)
-        .eq('metadata->savedLoop->>id', loop.id)
-
-      let sessionId: string
-
-      if (existingSessions && existingSessions.length > 0) {
-        // Update existing session
-        sessionId = existingSessions[0].id
-        await supabase
+        // Check if session already exists for this video and user
+        const { data: existingSessions, error: queryError } = await supabase
           .from('practice_sessions')
-          .update({
-            ...sessionData,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', sessionId)
-      } else {
-        // Create new session
-        const { data: newSession, error: sessionError } = await supabase
-          .from('practice_sessions')
-          .insert(sessionData)
           .select('id')
-          .single()
+          .eq('user_id', authState.user.id)
+          .eq('video_id', loop.videoId)
+          .eq('metadata->savedLoop->>id', loop.id)
 
-        if (sessionError) throw sessionError
-        sessionId = newSession.id
-      }
+        if (queryError) {
+          console.error('FluentFlow: Database query error:', queryError)
+          throw new SaveError(queryError.message, 'server', true, 'Database query failed')
+        }
 
-      // Create or update loop segment
-      const { data: existingSegments } = await supabase
-        .from('loop_segments')
-        .select('id')
-        .eq('session_id', sessionId)
+        let sessionId: string
 
-      if (existingSegments && existingSegments.length > 0) {
-        // Update existing segment
-        await supabase
+        if (existingSessions && existingSessions.length > 0) {
+          // Update existing session
+          sessionId = existingSessions[0].id
+          const { error: updateError } = await supabase
+            .from('practice_sessions')
+            .update({
+              ...sessionData,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', sessionId)
+
+          if (updateError) {
+            console.error('FluentFlow: Session update error:', updateError)
+            throw new SaveError(updateError.message, 'server', true, 'Failed to update session')
+          }
+        } else {
+          // Create new session
+          const { data: newSession, error: sessionError } = await supabase
+            .from('practice_sessions')
+            .insert(sessionData)
+            .select('id')
+            .single()
+
+          if (sessionError) {
+            console.error('FluentFlow: Session creation error:', sessionError)
+            throw new SaveError(sessionError.message, 'server', true, 'Failed to create session')
+          }
+          sessionId = newSession.id
+        }
+
+        // Create or update loop segment
+        const { data: existingSegments, error: segmentQueryError } = await supabase
           .from('loop_segments')
-          .update({
-            start_time: loop.startTime,
-            end_time: loop.endTime,
-            label: loop.title,
-            description: loop.description,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', existingSegments[0].id)
-      } else {
-        // Create new segment
-        await supabase
-          .from('loop_segments')
-          .insert({
-            session_id: sessionId,
-            start_time: loop.startTime,
-            end_time: loop.endTime,
-            label: loop.title,
-            description: loop.description
-          })
-      }
+          .select('id')
+          .eq('session_id', sessionId)
 
-      console.log('FluentFlow: Loop saved to Supabase successfully')
-      return loop
+        if (segmentQueryError) {
+          console.error('FluentFlow: Segment query error:', segmentQueryError)
+          throw new SaveError(segmentQueryError.message, 'server', true, 'Segment query failed')
+        }
+
+        if (existingSegments && existingSegments.length > 0) {
+          // Update existing segment
+          const { error: segmentUpdateError } = await supabase
+            .from('loop_segments')
+            .update({
+              start_time: loop.startTime,
+              end_time: loop.endTime,
+              label: loop.title,
+              description: loop.description,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingSegments[0].id)
+
+          if (segmentUpdateError) {
+            console.error('FluentFlow: Segment update error:', segmentUpdateError)
+            throw new SaveError(segmentUpdateError.message, 'server', true, 'Failed to update segment')
+          }
+        } else {
+          // Create new segment
+          const { error: segmentCreateError } = await supabase
+            .from('loop_segments')
+            .insert({
+              session_id: sessionId,
+              start_time: loop.startTime,
+              end_time: loop.endTime,
+              label: loop.title,
+              description: loop.description
+            })
+
+          if (segmentCreateError) {
+            console.error('FluentFlow: Segment creation error:', segmentCreateError)
+            throw new SaveError(segmentCreateError.message, 'server', true, 'Failed to create segment')
+          }
+        }
+
+        console.log('FluentFlow: Loop saved to Supabase successfully')
+        return createSaveResponse('success', {
+          savedToCloud: true,
+          savedLocally: false,
+          sessionId
+        })
+
+      } catch (supabaseError: any) {
+        console.error('FluentFlow: Supabase save failed, falling back to local storage:', supabaseError)
+        
+        // Fallback to local storage
+        await saveToLocalStorage(loop)
+        
+        // Determine error type
+        let errorType: SaveResponse['errorType'] = 'server'
+        if (supabaseError.message?.includes('Auth')) {
+          errorType = 'auth'
+        } else if (supabaseError.message?.includes('network') || supabaseError.message?.includes('fetch')) {
+          errorType = 'network'
+        }
+        
+        return createSaveResponse('local_fallback', {
+          savedToCloud: false,
+          savedLocally: true,
+          fallbackReason: `${errorType}_error`
+        })
+      }
     } else {
       // Fallback to chrome.storage for unauthenticated users
-      const result = await chrome.storage.local.get(LOOPS_STORAGE_KEY)
-      const existingLoops: SavedLoop[] = result[LOOPS_STORAGE_KEY] || []
+      await saveToLocalStorage(loop)
+      console.log('FluentFlow: Loop saved to local storage (not authenticated)')
       
-      const existingIndex = existingLoops.findIndex(l => l.id === loop.id)
-      
-      if (existingIndex >= 0) {
-        existingLoops[existingIndex] = { ...loop, updatedAt: new Date() }
-      } else {
-        existingLoops.push(loop)
-      }
-      
-      await chrome.storage.local.set({ [LOOPS_STORAGE_KEY]: existingLoops })
-      console.log('FluentFlow: Loop saved to local storage successfully')
-      return loop
+      return createSaveResponse('local_fallback', {
+        savedToCloud: false,
+        savedLocally: true,
+        fallbackReason: 'not_authenticated'
+      })
     }
-  } catch (error) {
-    console.error('FluentFlow: Failed to save loop:', error)
-    throw new Error('Failed to save loop')
+  } catch (error: any) {
+    console.error('FluentFlow: Critical save error:', error)
+    
+    // Try to save locally as last resort
+    try {
+      await saveToLocalStorage(loop)
+      return createSaveResponse('local_fallback', {
+        savedToCloud: false,
+        savedLocally: true,
+        fallbackReason: 'critical_error'
+      })
+    } catch (localError) {
+      console.error('FluentFlow: Even local save failed:', localError)
+      return createSaveResponse('error', {
+        error: 'Failed to save loop even locally',
+        errorType: 'unknown',
+        savedToCloud: false,
+        savedLocally: false
+      })
+    }
+  }
+}
+
+// Helper function to save to local storage
+async function saveToLocalStorage(loop: SavedLoop): Promise<void> {
+  const result = await chrome.storage.local.get(LOOPS_STORAGE_KEY)
+  const existingLoops: SavedLoop[] = result[LOOPS_STORAGE_KEY] || []
+  
+  const existingIndex = existingLoops.findIndex(l => l.id === loop.id)
+  
+  if (existingIndex >= 0) {
+    existingLoops[existingIndex] = { ...loop, updatedAt: new Date() }
+  } else {
+    existingLoops.push(loop)
+  }
+  
+  await chrome.storage.local.set({ [LOOPS_STORAGE_KEY]: existingLoops })
+}
+
+// Custom SaveError class
+class SaveError extends Error {
+  constructor(
+    message: string,
+    public type: 'auth' | 'network' | 'validation' | 'server' | 'unknown',
+    public retryable: boolean,
+    public userMessage: string
+  ) {
+    super(message)
+    this.name = 'SaveError'
   }
 }
 
@@ -539,28 +635,30 @@ export async function getLoopsForVideo(videoId: string): Promise<SavedLoop[]> {
   }
 }
 
-async function saveMultipleLoops(loops: SavedLoop[]): Promise<SavedLoop[]> {
+async function saveMultipleLoops(loops: SavedLoop[]): Promise<SaveResponse[]> {
   console.log('FluentFlow: Saving multiple loops:', loops.length)
   
-  const results: SavedLoop[] = []
-  const errors: string[] = []
+  const results: SaveResponse[] = []
   
   // Save each loop individually
   for (const loop of loops) {
     try {
-      const savedLoop = await saveLoop(loop)
-      results.push(savedLoop)
+      const saveResult = await saveLoop(loop)
+      results.push(saveResult)
     } catch (error) {
       console.error('FluentFlow: Failed to save loop:', loop.id, error)
-      errors.push(`Failed to save loop "${loop.title}": ${error instanceof Error ? error.message : 'Unknown error'}`)
+      results.push({
+        status: 'error',
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorType: 'unknown',
+        data: {
+          savedToCloud: false,
+          savedLocally: false
+        }
+      })
     }
   }
   
-  if (errors.length > 0) {
-    console.warn('FluentFlow: Some loops failed to save:', errors)
-    // Return partial results even if some failed
-  }
-  
-  console.log('FluentFlow: Successfully saved', results.length, 'out of', loops.length, 'loops')
+  console.log('FluentFlow: Completed saving', results.length, 'loops')
   return results
 }
