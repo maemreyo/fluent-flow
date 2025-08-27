@@ -294,7 +294,7 @@ export function CompletionStep({ onNext, onPrevious }: CompletionStepProps = {})
           <div className="text-center">
             <p className="text-gray-400 text-sm mb-2">Setup Complete!</p>
             <div className="flex items-center justify-center gap-1">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <CheckCircle
                   key={step}
                   className="w-3 h-3 text-green-400"

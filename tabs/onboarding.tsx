@@ -2,11 +2,12 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ImpressiveWelcomeStep } from '../components/onboarding/ImpressiveWelcomeStep'
 import { InteractiveFeatureStep } from '../components/onboarding/InteractiveFeatureStep'
+import { SignInUpStep } from '../components/onboarding/SignInUpStep'
 import { ModernApiKeyStep } from '../components/onboarding/ModernApiKeyStep'
 import { CompletionStep } from '../components/onboarding/CompletionStep'
 import '../styles/globals.css'
 
-const TOTAL_STEPS = 4
+const TOTAL_STEPS = 5
 
 export default function Onboarding() {
   const [currentStep, setCurrentStep] = useState(1)
@@ -27,8 +28,9 @@ export default function Onboarding() {
         >
           {currentStep === 1 && <ImpressiveWelcomeStep onNext={handleNext} />}
           {currentStep === 2 && <InteractiveFeatureStep onNext={handleNext} onPrevious={handlePrevious} />}
-          {currentStep === 3 && <ModernApiKeyStep onNext={handleNext} onPrevious={handlePrevious} />}
-          {currentStep === 4 && <CompletionStep onNext={handleNext} onPrevious={handlePrevious} />}
+          {currentStep === 3 && <SignInUpStep onNext={handleNext} onPrevious={handlePrevious} />}
+          {currentStep === 4 && <ModernApiKeyStep onNext={handleNext} onPrevious={handlePrevious} />}
+          {currentStep === 5 && <CompletionStep onNext={handleNext} onPrevious={handlePrevious} />}
         </motion.div>
       </AnimatePresence>
     </div>

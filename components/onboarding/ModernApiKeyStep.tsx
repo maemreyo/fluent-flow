@@ -350,17 +350,17 @@ export function ModernApiKeyStep({ onNext, onPrevious }: ModernApiKeyStepProps) 
             className="group bg-white/10 border-white/20 hover:bg-white/20 text-white"
           >
             <ArrowLeft className="h-5 w-5 mr-2 group-hover:-translate-x-1 transition-transform duration-300" />
-            Back to Features
+            Back to Account
           </Button>
 
           <div className="text-center">
-            <p className="text-gray-400 text-sm mb-2">Step 3 of 4</p>
+            <p className="text-gray-400 text-sm mb-2">Step 4 of 5</p>
             <div className="flex items-center justify-center gap-1">
-              {[1, 2, 3, 4].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   className={`w-2 h-2 rounded-full ${
-                    step <= 3 ? 'bg-primary' : 'bg-gray-600'
+                    step <= 4 ? 'bg-primary' : 'bg-gray-600'
                   }`}
                 />
               ))}

@@ -283,9 +283,9 @@ export function InteractiveFeatureStep({ onNext, onPrevious }: InteractiveFeatur
           </Button>
 
           <div className="text-center">
-            <p className="text-gray-400 text-sm mb-2">Ready to set up?</p>
+            <p className="text-gray-400 text-sm mb-2">Step 2 of 5</p>
             <div className="flex items-center justify-center gap-1">
-              {[1, 2, 3].map((step) => (
+              {[1, 2, 3, 4, 5].map((step) => (
                 <div
                   key={step}
                   className={`w-2 h-2 rounded-full ${
@@ -300,7 +300,7 @@ export function InteractiveFeatureStep({ onNext, onPrevious }: InteractiveFeatur
             onClick={onNext}
             className="group bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-300"
           >
-            Setup API Key
+            Create Account
             <ArrowRight className="h-5 w-5 ml-2 group-hover:translate-x-1 transition-transform duration-300" />
           </Button>
         </motion.div>
