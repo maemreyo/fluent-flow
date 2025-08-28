@@ -63,15 +63,9 @@ export class EnhancedLoopService {
         if (videoElement) {
           console.log(`Capturing audio for loop: ${loop.title} (${loopData.startTime}s - ${loopData.endTime}s)`)
           
-          const audioBlob = await this.audioCaptureService.captureVideoSegment(
-            videoElement,
-            loopData.startTime,
-            loopData.endTime
-          )
-
-          // Convert to base64 for storage
-          const audioBase64 = await this.audioCaptureService.blobToBase64(audioBlob)
-          const audioFormat = this.audioCaptureService.getAudioFormat(audioBlob.type)
+          const audioBlob = null // Audio capture removed
+          const audioBase64 = null // Audio capture removed  
+          const audioFormat = null // Audio capture removed
 
           // Update loop with audio data
           loop.hasAudioSegment = true
@@ -274,16 +268,10 @@ export class EnhancedLoopService {
         await this.removeAudioFromLoop(loopId)
       }
 
-      // Capture new audio
-      const audioBlob = await this.audioCaptureService.captureVideoSegment(
-        videoElement,
-        loop.startTime,
-        loop.endTime
-      )
-
-      // Convert and store
-      const audioBase64 = await this.audioCaptureService.blobToBase64(audioBlob)
-      const audioFormat = this.audioCaptureService.getAudioFormat(audioBlob.type)
+      // Audio capture removed
+      const audioBlob = null
+      const audioBase64 = null  
+      const audioFormat = null
 
       // Update loop with new audio
       loop.hasAudioSegment = true
@@ -314,7 +302,14 @@ export class EnhancedLoopService {
     }
 
     try {
-      return this.audioCaptureService.base64ToBlob(loop.audioSegmentBlob)
+      // Audio capture removed - convert base64 to blob manually
+      const byteCharacters = atob(loop.audioSegmentBlob)
+      const byteNumbers = new Array(byteCharacters.length)
+      for (let i = 0; i < byteCharacters.length; i++) {
+        byteNumbers[i] = byteCharacters.charCodeAt(i)
+      }
+      const byteArray = new Uint8Array(byteNumbers)
+      return new Blob([byteArray], { type: 'audio/webm' })
     } catch (error) {
       console.error('Failed to convert audio data:', error)
       return null
@@ -326,7 +321,8 @@ export class EnhancedLoopService {
    */
   estimateLoopAudioSize(startTime: number, endTime: number, format: string = 'webm'): number {
     const duration = endTime - startTime
-    return this.audioCaptureService.estimateAudioSize(duration, format)
+    // Audio capture removed - return estimated size
+    return Math.round(duration * 1024) // Rough estimate: 1KB per second
   }
 
   /**

@@ -1,46 +1,29 @@
 import { useEffect, useState } from 'react'
-import {
-  AlertTriangle,
-  BarChart3,
-  Bug,
-  Loader2,
-  RefreshCw,
-  Repeat,
-  Search,
-  Settings,
-  Target,
-  User,
-  UserX
-} from 'lucide-react'
-import { ConversationQuestionsPanel } from './components/conversation-questions-panel'
-import { Dashboard } from './components/dashboard'
-import { YouTubeExtractionTestPanel } from './components/debug/youtube-extraction-test-panel'
-import { EnhancedLoopCardWithIntegration } from './components/enhanced-loop-card-with-integration'
 import { QueryProvider } from './components/providers/query-provider'
-import { StorageManagementPanel } from './components/storage-management-panel'
-import { Badge } from './components/ui/badge'
-import { Button } from './components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './components/ui/card'
-import { Input } from './components/ui/input'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
+import { AuthStatus } from './components/shared/AuthStatus'
+import { TabNavigation } from './components/shared/TabNavigation'
+import { ConversationsTab } from './components/tabs/ConversationsTab'
+import { DashboardTab } from './components/tabs/DashboardTab'
+import { DebugTab } from './components/tabs/DebugTab'
+import { LoopsTab } from './components/tabs/LoopsTab'
+import { Tabs, TabsContent } from './components/ui/tabs'
+import { useAuthentication } from './lib/hooks/use-authentication'
+import { useGoalsManagement } from './lib/hooks/use-goals-management'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
+import { useSessionTemplates } from './lib/hooks/use-session-templates'
+import { useVideoTracking } from './lib/hooks/use-video-tracking'
 import { generateDashboardAnalytics } from './lib/services'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
-import { learningGoalsService } from './lib/services/learning-goals-service'
-import { sessionTemplatesService } from './lib/services/session-templates-service'
 import {
   getFluentFlowStore,
   useFluentFlowSupabaseStore as useFluentFlowStore
 } from './lib/stores/fluent-flow-supabase-store'
-import { getCurrentUser } from './lib/supabase/client'
 import type {
   ConversationQuestions,
-  PracticeSession,
   SavedLoop
 } from './lib/types/fluent-flow-types'
-import type { GoalProgress, GoalSuggestion, LearningGoal } from './lib/utils/goals-analysis'
-import { calculateGoalProgress } from './lib/utils/goals-analysis'
-import type { SessionPlan, SessionTemplate } from './lib/utils/session-templates'
+import { calculateAnalytics, computeRealStatistics } from './lib/utils/analytics-calculator'
+import { formatDate, formatTime } from './lib/utils/formatters'
 import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
@@ -48,9 +31,6 @@ function FluentFlowSidePanelContent() {
     'dashboard' | 'loops' | 'conversations' | 'debug'
   >('dashboard')
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
-  const [user, setUser] = useState<any>(null)
-  const [checkingAuth, setCheckingAuth] = useState(true)
-  const [loopFilter, setLoopFilter] = useState('')
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 
   // Use React Query for loops instead of manual state management
@@ -61,18 +41,7 @@ function FluentFlowSidePanelContent() {
     useState<ConversationLoopIntegrationService | null>(null)
   const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
   const [activeQuestionLoop, setActiveQuestionLoop] = useState<SavedLoop | null>(null)
-  const [showStoragePanel, setShowStoragePanel] = useState(false)
   const [geminiConfigured, setGeminiConfigured] = useState(false)
-
-  // Goals state management
-  const [goals, setGoals] = useState<LearningGoal[]>([])
-  const [goalSuggestions, setGoalSuggestions] = useState<GoalSuggestion[]>([])
-  const [goalsProgress, setGoalsProgress] = useState<{ [goalId: string]: GoalProgress }>({})
-
-  // Session templates state management
-  const [templates, setTemplates] = useState<SessionTemplate[]>([])
-  const [activePlans, setActivePlans] = useState<(SessionPlan & { id: string })[]>([])
-  const [completedPlans, setCompletedPlans] = useState<(SessionPlan & { id: string })[]>([])
 
   // Enhanced practice tracking analytics state
   const [enhancedAnalytics, setEnhancedAnalytics] = useState<any>(null)
@@ -87,307 +56,118 @@ function FluentFlowSidePanelContent() {
     deleteAllUserLoops: deleteAllLoopsFromStore,
   } = useFluentFlowStore()
 
-  // Load saved recordings and initialize on component mount
+  // Custom hooks for extracted functionality
+  const { user, checkingAuth } = useAuthentication()
+  useVideoTracking()
+
+  // Get computed statistics
+  const realStatistics = computeRealStatistics(allSessions, statistics)
+
+  // Get analytics (enhanced or computed)
+  const analytics = !analyticsLoading && enhancedAnalytics
+    ? enhancedAnalytics
+    : calculateAnalytics(allSessions || [])
+
+  // Goals management
+  const {
+    goals,
+    goalSuggestions,
+    goalsProgress,
+    handleCreateGoal,
+    handleDeleteGoal
+  } = useGoalsManagement(allSessions, analytics)
+
+  // Session templates management  
+  const {
+    templates,
+    activePlans,
+    completedPlans,
+    handleStartSession,
+    handleContinueSession,
+    handleCreateTemplate,
+    handleViewPlan
+  } = useSessionTemplates(allSessions, currentVideo)
+
+  // Initialize integration service
   useEffect(() => {
-    checkAuthStatus()
-    initializeIntegration()
-    initializeVideoInformation()
-    loadGoals()
-    loadTemplates()
-    const messageCleanup = setupMessageHandlers()
-    const videoTrackingCleanup = setupVideoTracking()
-
-    // Cleanup function
-    return () => {
-      messageCleanup()
-      videoTrackingCleanup()
-    }
-  }, [])
-
-  // Update goals progress when session data changes
-  useEffect(() => {
-    updateGoalsProgress()
-  }, [allSessions, goals])
-
-  // Update session plans when session data changes
-  useEffect(() => {
-    loadSessionPlans()
-  }, [allSessions])
-
-  // Setup video tracking for tab changes and navigation
-  const setupVideoTracking = () => {
-    let currentTabId: number | null = null
-    let trackingInterval: NodeJS.Timeout | null = null
-
-    // Track active tab changes
-    const handleTabActivated = async (activeInfo: { tabId: number; windowId: number }) => {
-      currentTabId = activeInfo.tabId
-      await updateVideoInformation()
-    }
-
-    // Track tab updates (URL changes within same tab)
-    const handleTabUpdated = async (tabId: number, changeInfo: { url?: string; status?: string }) => {
-      if (changeInfo.url && tabId === currentTabId) {
-        await updateVideoInformation()
-      }
-    }
-
-    // Periodic check for video changes (fallback for SPA navigation)
-    const startPeriodicCheck = () => {
-      trackingInterval = setInterval(async () => {
-        await updateVideoInformation()
-      }, 2000) // Check every 2 seconds
-    }
-
-    // Setup Chrome API listeners
-    chrome.tabs.onActivated.addListener(handleTabActivated)
-    chrome.tabs.onUpdated.addListener(handleTabUpdated)
-
-    // Start periodic checking
-    startPeriodicCheck()
-
-    // Cleanup function
-    return () => {
-      chrome.tabs.onActivated.removeListener(handleTabActivated)
-      chrome.tabs.onUpdated.removeListener(handleTabUpdated)
-      if (trackingInterval) {
-        clearInterval(trackingInterval)
-      }
-    }
-  }
-
-  // Update video information (reusable function)
-  const updateVideoInformation = async () => {
-    try {
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-      const activeTab = tabs[0]
-
-      if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
-        try {
-          const response = await chrome.tabs.sendMessage(activeTab.id, {
-            type: 'GET_VIDEO_INFO'
-          })
-
-          if (response?.success && response.videoInfo) {
-            const videoInfo = response.videoInfo
-            
-            // Validate video info has required fields
-            if (videoInfo.id && videoInfo.title && videoInfo.url) {
-              // Convert from content script VideoInfo to YouTubeVideoInfo
-              const youtubeVideoInfo = {
-                videoId: videoInfo.id,
-                title: videoInfo.title,
-                channel: 'Unknown Channel', // Default fallback
-                duration: 0, // Default fallback
-                url: videoInfo.url,
-                hasSubtitles: false // Default fallback
-              }
-              
-              const { currentVideo: currentStoreVideo, initializePlayer } =
-                useFluentFlowStore.getState()
-
-              // Only update if video actually changed
-              if (!currentStoreVideo || currentStoreVideo.videoId !== youtubeVideoInfo.videoId) {
-                initializePlayer(youtubeVideoInfo)
-                console.log('FluentFlow: Video updated in sidepanel:', youtubeVideoInfo)
-              }
-            } else {
-              console.warn('FluentFlow: Incomplete video info received from content script:', videoInfo)
-            }
-          }
-        } catch (error) {
-          // Content script not available or no response - clear current video
-          const { currentVideo: currentStoreVideo, updatePlayerState } =
-            useFluentFlowStore.getState()
-          if (currentStoreVideo) {
-            // Clear current video if we can't get info anymore
-            updatePlayerState({ isReady: false })
-            console.log('FluentFlow: Content script not available - video info may be stale')
-          }
-        }
-      } else {
-        // Not on YouTube - clear current video
-        const { currentVideo: currentStoreVideo } = useFluentFlowStore.getState()
-        if (currentStoreVideo) {
-          // Use store's setState to clear currentVideo
-          useFluentFlowStore.setState({
-            currentVideo: null,
-            playerState: { ...useFluentFlowStore.getState().playerState, isReady: false }
-          })
-          console.log('FluentFlow: Cleared video info - not on YouTube')
-        }
-      }
-    } catch (error) {
-      console.error('FluentFlow: Failed to update video information:', error)
-    }
-  }
-
-  // Initialize video information from active tab
-  const initializeVideoInformation = async () => {
-    try {
-      // Get the active tab
-      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-      const activeTab = tabs[0]
-
-      if (activeTab?.id && activeTab.url?.includes('youtube.com/watch')) {
-        // Send message to content script to get video information
-        try {
-          const response = await chrome.tabs.sendMessage(activeTab.id, {
-            type: 'GET_VIDEO_INFO'
-          })
-
-          if (response?.success && response.videoInfo) {
-            const videoInfo = response.videoInfo
-            
-            // Validate video info has required fields
-            if (videoInfo.id && videoInfo.title && videoInfo.url) {
-              // Convert from content script VideoInfo to YouTubeVideoInfo
-              const youtubeVideoInfo = {
-                videoId: videoInfo.id,
-                title: videoInfo.title,
-                channel: 'Unknown Channel', // Default fallback
-                duration: 0, // Default fallback
-                url: videoInfo.url,
-                hasSubtitles: false // Default fallback
-              }
-              
-              // Initialize the store with video information
-              const { initializePlayer } = useFluentFlowStore.getState()
-              initializePlayer(youtubeVideoInfo)
-              console.log(
-                'FluentFlow: Video information initialized in sidepanel:',
-                youtubeVideoInfo
-              )
-            } else {
-              console.warn('FluentFlow: Incomplete video info during initialization:', videoInfo)
-            }
-          }
-        } catch (error) {
-          console.log('FluentFlow: Content script not available or no video info:', error)
-        }
-      }
-    } catch (error) {
-      console.error('FluentFlow: Failed to initialize video information:', error)
-    }
-  }
-
-  // Setup message handlers for receiving data from content script
-  const setupMessageHandlers = () => {
-    const messageHandler = (message: any) => {
-      switch (message.type) {
-        case 'OPEN_SIDE_PANEL':
-          // Handle video info and notes from content script
-          if (message.videoInfo) {
-            const videoInfo = message.videoInfo
-            const videoId = videoInfo.id || videoInfo.videoId
-            
-            // Validate video info has required fields
-            if (videoId && videoInfo.title && videoInfo.url) {
-              const { initializePlayer } = useFluentFlowStore.getState()
-              // Ensure the videoInfo object conforms to the YouTubeVideoInfo type
-              const formattedVideoInfo = {
-                videoId: videoId,
-                title: videoInfo.title,
-                channel: videoInfo.channel || 'Unknown Channel',
-                duration: videoInfo.duration || 0,
-                url: videoInfo.url,
-                hasSubtitles: videoInfo.hasSubtitles || false
-              }
-              initializePlayer(formattedVideoInfo)
-              console.log('FluentFlow: Updated video information from content script')
-            } else {
-              console.warn('FluentFlow: Incomplete video info in message handler:', videoInfo)
-            }
-          }
-          break
-        case 'SIDEPANEL_DATA':
-          // Handle any additional data from background script
-          console.log('FluentFlow: Received sidepanel data:', message)
-          break
-        default:
-          break
-      }
-    }
-
-    chrome.runtime.onMessage.addListener(messageHandler)
-
-    // Cleanup function
-    return () => {
-      chrome.runtime.onMessage.removeListener(messageHandler)
-    }
-  }
-
-  const checkAuthStatus = async () => {
-    try {
-      const currentUser = await getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      console.error('Error checking auth status:', error)
-    } finally {
-      setCheckingAuth(false)
-    }
-  }
-
-  const initializeIntegration = async () => {
-    try {
-      let geminiConfig = null
-
+    const initializeIntegration = async () => {
       try {
-        // First try to get config from Supabase
-        const { supabaseService } = getFluentFlowStore()
-        const apiConfig = await supabaseService.getApiConfig()
-        geminiConfig = apiConfig?.gemini
-        console.log('FluentFlow: Loaded Gemini config from Supabase:', !!geminiConfig?.apiKey)
-      } catch (supabaseError) {
-        console.log(
-          'FluentFlow: Failed to load from Supabase, trying Chrome storage:',
-          supabaseError
-        )
+        let geminiConfig = null
 
-        // Fallback to Chrome storage
         try {
-          const response = await chrome.runtime.sendMessage({
-            type: 'STORAGE_OPERATION',
-            operation: 'get',
-            key: 'api_config'
-          })
-          geminiConfig = response.data?.gemini
+          // First try to get config from Supabase
+          const { supabaseService } = getFluentFlowStore()
+          const apiConfig = await supabaseService.getApiConfig()
+          geminiConfig = apiConfig?.gemini
+          console.log('FluentFlow: Loaded Gemini config from Supabase:', !!geminiConfig?.apiKey)
+        } catch (supabaseError) {
           console.log(
-            'FluentFlow: Loaded Gemini config from Chrome storage:',
-            !!geminiConfig?.apiKey
+            'FluentFlow: Failed to load from Supabase, trying Chrome storage:',
+            supabaseError
           )
-        } catch (chromeError) {
-          console.log('FluentFlow: Failed to load from Chrome storage:', chromeError)
-        }
-      }
 
-      if (geminiConfig?.apiKey) {
-        console.log('FluentFlow: Initializing conversation loop integration')
-        const service = new ConversationLoopIntegrationService(
-          useFluentFlowStore.getState(), // storage service
-          geminiConfig
-        )
-        setIntegrationService(service)
-        setGeminiConfigured(true)
-        console.log('FluentFlow: Conversation loop integration ready')
-      } else {
-        console.log('FluentFlow: Gemini API not configured')
+          // Fallback to Chrome storage
+          try {
+            const response = await chrome.runtime.sendMessage({
+              type: 'STORAGE_OPERATION',
+              operation: 'get',
+              key: 'api_config'
+            })
+            geminiConfig = response.data?.gemini
+            console.log(
+              'FluentFlow: Loaded Gemini config from Chrome storage:',
+              !!geminiConfig?.apiKey
+            )
+          } catch (chromeError) {
+            console.log('FluentFlow: Failed to load from Chrome storage:', chromeError)
+          }
+        }
+
+        if (geminiConfig?.apiKey) {
+          console.log('FluentFlow: Initializing conversation loop integration')
+          const service = new ConversationLoopIntegrationService(
+            useFluentFlowStore.getState(), // storage service
+            geminiConfig
+          )
+          setIntegrationService(service)
+          setGeminiConfigured(true)
+          console.log('FluentFlow: Conversation loop integration ready')
+        } else {
+          console.log('FluentFlow: Gemini API not configured')
+          setGeminiConfigured(false)
+        }
+      } catch (error) {
+        console.error('Failed to initialize conversation integration:', error)
         setGeminiConfigured(false)
       }
-    } catch (error) {
-      console.error('Failed to initialize conversation integration:', error)
-      setGeminiConfigured(false)
     }
-  }
 
+    initializeIntegration()
+  }, [])
 
+  // Load enhanced practice analytics
+  useEffect(() => {
+    const loadEnhancedAnalytics = async () => {
+      try {
+        setAnalyticsLoading(true)
+        const data = await generateDashboardAnalytics()
+        setEnhancedAnalytics(data)
+      } catch (error) {
+        console.error('Failed to load enhanced practice analytics:', error)
+        setEnhancedAnalytics(null)
+      } finally {
+        setAnalyticsLoading(false)
+      }
+    }
+
+    loadEnhancedAnalytics()
+  }, [allSessions]) // Reload when sessions change
+
+  // Loop management functions
   const deleteLoop = async (loopId: string) => {
     try {
-      // Use Supabase store instead of chrome.runtime.sendMessage
       const success = await deleteLoopFromStore(loopId)
-
       if (success) {
-        // React Query will automatically refetch the loops data
         refetchLoops()
       } else {
         console.error('Failed to delete loop: Loop not found or user not authenticated')
@@ -408,9 +188,7 @@ function FluentFlowSidePanelContent() {
     setDeletingAllLoops(true)
     try {
       const success = await deleteAllLoopsFromStore()
-
       if (success) {
-        // React Query will automatically refetch the loops data
         refetchLoops()
         console.log('All loops deleted successfully')
       } else {
@@ -427,7 +205,6 @@ function FluentFlowSidePanelContent() {
     setApplyingLoopId(loop.id)
 
     try {
-      // Check if we need to navigate to the video
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const currentTab = tabs[0]
 
@@ -463,7 +240,6 @@ function FluentFlowSidePanelContent() {
           }
         }
 
-        // Start applying after initial delay
         setTimeout(() => applyWithRetry(), 4000)
       }
     } catch (error) {
@@ -491,666 +267,6 @@ function FluentFlowSidePanelContent() {
     }
   }
 
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  const formatDate = (date: Date): string => {
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    }).format(date)
-  }
-
-  // Compute real statistics from session data
-  const computeRealStatistics = () => {
-    if (!allSessions || allSessions.length === 0) {
-      return statistics // Return default statistics if no sessions
-    }
-
-    const totalSessions = allSessions.length
-    const totalRecordings = allSessions.reduce((acc, session) => acc + session.recordings.length, 0)
-    const totalPracticeTime = allSessions.reduce(
-      (acc, session) => acc + session.totalPracticeTime,
-      0
-    )
-    const avgSessionTime = totalSessions > 0 ? totalPracticeTime / totalSessions : 0
-
-    return {
-      ...statistics,
-      totalSessions,
-      totalRecordings,
-      totalPracticeTime,
-      avgSessionTime
-    }
-  }
-
-  // Get computed statistics
-  const realStatistics = computeRealStatistics()
-
-  // Analytics calculations for time-based trends
-  const calculateAnalytics = () => {
-    // Use enhanced analytics if available and not loading
-    if (!analyticsLoading && enhancedAnalytics) {
-      return enhancedAnalytics
-    }
-
-    // Fallback to existing calculation logic
-    if (!allSessions || allSessions.length === 0) {
-      return {
-        weeklyTrend: [],
-        monthlyTrend: [],
-        dailyAverages: { thisWeek: 0, lastWeek: 0, thisMonth: 0 },
-        practiceStreak: 0,
-        mostActiveDay: null,
-        improvementRate: 0
-      }
-    }
-
-    const now = new Date()
-    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000)
-    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000)
-
-    // Weekly trend (last 7 days)
-    const weeklyTrend = Array.from({ length: 7 }, (_, i) => {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-
-      const daySessions = allSessions.filter(
-        session => session.createdAt >= dayStart && session.createdAt < dayEnd
-      )
-
-      return {
-        date: dayStart,
-        sessions: daySessions.length,
-        practiceTime: daySessions.reduce((acc, session) => acc + session.totalPracticeTime, 0),
-        recordings: daySessions.reduce((acc, session) => acc + session.recordings.length, 0)
-      }
-    }).reverse()
-
-    // Monthly trend (last 30 days by week)
-    const monthlyTrend = Array.from({ length: 4 }, (_, i) => {
-      const weekStart = new Date(now.getTime() - (i + 1) * 7 * 24 * 60 * 60 * 1000)
-      const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000)
-
-      const weekSessions = allSessions.filter(
-        session => session.createdAt >= weekStart && session.createdAt < weekEnd
-      )
-
-      return {
-        weekStart,
-        sessions: weekSessions.length,
-        practiceTime: weekSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0),
-        recordings: weekSessions.reduce((acc, session) => acc + session.recordings.length, 0)
-      }
-    }).reverse()
-
-    // Daily averages
-    const thisWeekSessions = allSessions.filter(session => session.createdAt >= oneWeekAgo)
-    const lastWeekSessions = allSessions.filter(
-      session => session.createdAt >= twoWeeksAgo && session.createdAt < oneWeekAgo
-    )
-    const thisMonthSessions = allSessions.filter(session => session.createdAt >= oneMonthAgo)
-
-    const dailyAverages = {
-      thisWeek: thisWeekSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0) / 7,
-      lastWeek: lastWeekSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0) / 7,
-      thisMonth: thisMonthSessions.reduce((acc, session) => acc + session.totalPracticeTime, 0) / 30
-    }
-
-    // Practice streak (consecutive days with sessions)
-    let practiceStreak = 0
-    for (let i = 0; i < 365; i++) {
-      const date = new Date(now.getTime() - i * 24 * 60 * 60 * 1000)
-      const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate())
-      const dayEnd = new Date(dayStart.getTime() + 24 * 60 * 60 * 1000)
-
-      const hasSession = allSessions.some(
-        session => session.createdAt >= dayStart && session.createdAt < dayEnd
-      )
-
-      if (hasSession) {
-        practiceStreak++
-      } else {
-        break
-      }
-    }
-
-    // Most active day of week
-    const dayActivity = Array.from({ length: 7 }, () => 0)
-    allSessions.forEach(session => {
-      const dayOfWeek = session.createdAt.getDay()
-      dayActivity[dayOfWeek] += session.totalPracticeTime
-    })
-    const mostActiveDay = dayActivity.indexOf(Math.max(...dayActivity))
-
-    // Improvement rate (this week vs last week)
-    const thisWeekTime = thisWeekSessions.reduce(
-      (acc, session) => acc + session.totalPracticeTime,
-      0
-    )
-    const lastWeekTime = lastWeekSessions.reduce(
-      (acc, session) => acc + session.totalPracticeTime,
-      0
-    )
-    const improvementRate =
-      lastWeekTime > 0 ? ((thisWeekTime - lastWeekTime) / lastWeekTime) * 100 : 0
-
-    return {
-      weeklyTrend,
-      monthlyTrend,
-      dailyAverages,
-      practiceStreak,
-      mostActiveDay,
-      improvementRate
-    }
-  }
-
-  // Get computed analytics
-  const analytics = calculateAnalytics()
-
-  // Goals management functions
-  const loadGoals = async () => {
-    try {
-      const userGoals = await learningGoalsService.getGoals()
-      setGoals(userGoals)
-
-      // Get goal suggestions
-      if (allSessions && allSessions.length > 0) {
-        const suggestions = await learningGoalsService.getGoalSuggestions()
-        setGoalSuggestions(suggestions)
-      }
-    } catch (error) {
-      console.error('Failed to load goals:', error)
-    }
-  }
-
-  const updateGoalsProgress = async () => {
-    if (!goals.length || !allSessions || allSessions.length === 0) return
-
-    try {
-      // Create a mock practice session from the most recent session for progress update
-      const latestSession = allSessions[allSessions.length - 1]
-      const mockSession: PracticeSession = {
-        id: latestSession.id || `session_${Date.now()}`,
-        videoId: latestSession.videoId,
-        videoTitle: latestSession.videoTitle || 'Practice Session',
-        videoUrl: latestSession.videoUrl || '',
-        segments: [],
-        recordings: [],
-        totalPracticeTime: latestSession.totalPracticeTime,
-        vocabularyCount: latestSession.vocabularyCount || 0,
-        createdAt: latestSession.createdAt,
-        updatedAt: new Date()
-      }
-
-      await learningGoalsService.updateAllGoalsProgress(mockSession)
-      const updatedGoals = await learningGoalsService.getGoals()
-      setGoals(updatedGoals)
-
-      // Calculate progress for display
-      const progressData: { [goalId: string]: GoalProgress } = {}
-      const uniqueVideos = [...new Set(allSessions.map(s => s.videoId))].length
-      const recentTrend = analytics.weeklyTrend.map((day: { practiceTime: number }) => day.practiceTime)
-
-      updatedGoals.forEach(goal => {
-        progressData[goal.id] = calculateGoalProgress(goal, {
-          totalSessions: allSessions.length,
-          totalPracticeTime: allSessions.reduce((acc, s) => acc + s.totalPracticeTime, 0),
-          practiceStreak: analytics.practiceStreak,
-          uniqueVideos,
-          recentTrend
-        })
-      })
-
-      setGoalsProgress(progressData)
-    } catch (error) {
-      console.error('Failed to update goals progress:', error)
-    }
-  }
-  // Load enhanced practice analytics
-  useEffect(() => {
-    const loadEnhancedAnalytics = async () => {
-      try {
-        setAnalyticsLoading(true)
-        const data = await generateDashboardAnalytics()
-        setEnhancedAnalytics(data)
-      } catch (error) {
-        console.error('Failed to load enhanced practice analytics:', error)
-        setEnhancedAnalytics(null)
-      } finally {
-        setAnalyticsLoading(false)
-      }
-    }
-
-    loadEnhancedAnalytics()
-  }, [allSessions]) // Reload when sessions change
-
-  const handleCreateGoal = async (suggestion: GoalSuggestion) => {
-    try {
-      await learningGoalsService.createGoalFromSuggestion(suggestion)
-      await loadGoals() // Reload goals
-    } catch (error) {
-      console.error('Failed to create goal:', error)
-    }
-  }
-
-  const handleDeleteGoal = async (goalId: string) => {
-    try {
-      await learningGoalsService.deleteGoal(goalId)
-      await loadGoals() // Reload goals
-    } catch (error) {
-      console.error('Failed to delete goal:', error)
-    }
-  }
-
-  // Session templates management functions
-  const loadTemplates = async () => {
-    try {
-      const userTemplates = await sessionTemplatesService.getTemplates()
-      setTemplates(userTemplates)
-    } catch (error) {
-      console.error('Failed to load templates:', error)
-    }
-  }
-
-  const loadSessionPlans = async () => {
-    try {
-      const active = await sessionTemplatesService.getActiveSessionPlans()
-      const completed = await sessionTemplatesService.getCompletedSessionPlans()
-      setActivePlans(active)
-      setCompletedPlans(completed)
-    } catch (error) {
-      console.error('Failed to load session plans:', error)
-    }
-  }
-
-  const handleStartSession = async (templateId: string) => {
-    if (!currentVideo) {
-      alert('Please select a YouTube video first')
-      return
-    }
-
-    try {
-      const planId = await sessionTemplatesService.createSessionPlan(
-        templateId,
-        currentVideo.videoId,
-        currentVideo.title,
-        0, // Start time
-        currentVideo.duration || 300 // End time or default 5 minutes
-      )
-      await loadSessionPlans()
-      console.log('Session plan created:', planId)
-    } catch (error) {
-      console.error('Failed to start session:', error)
-    }
-  }
-
-  const handleContinueSession = async (planId: string) => {
-    try {
-      const plans = await sessionTemplatesService.getSessionPlans()
-      const plan = plans.find(p => p.id === planId)
-
-      if (plan && currentVideo?.videoId === plan.videoId) {
-        // Continue current session
-        console.log('Continuing session:', planId)
-      } else if (plan) {
-        // Navigate to video for this session
-        const videoUrl = `https://www.youtube.com/watch?v=${plan.videoId}&t=${plan.startTime}s`
-        const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
-        if (tabs[0]?.id) {
-          chrome.tabs.update(tabs[0].id, { url: videoUrl })
-        }
-      }
-    } catch (error) {
-      console.error('Failed to continue session:', error)
-    }
-  }
-
-  const handleCreateTemplate = () => {
-    // TODO: Implement template creation modal
-    console.log('Create template requested')
-  }
-
-  const handleViewPlan = (planId: string) => {
-    // TODO: Implement plan details modal
-    console.log('View plan requested:', planId)
-  }
-
-
-
-  const renderDashboard = () => (
-    <Dashboard
-      currentVideo={currentVideo}
-      statistics={realStatistics}
-      allSessions={allSessions}
-      currentSession={currentSession}
-      savedLoops={savedLoops}
-      analytics={analytics}
-      goals={goals}
-      goalsProgress={goalsProgress}
-      goalSuggestions={goalSuggestions}
-      templates={templates}
-      activePlans={activePlans}
-      completedPlans={completedPlans}
-      formatTime={formatTime}
-      formatDate={formatDate}
-      onViewLoops={() => setActiveTab('loops')}
-      onCreateGoal={handleCreateGoal}
-      onDeleteGoal={handleDeleteGoal}
-      onStartSession={handleStartSession}
-      onContinueSession={handleContinueSession}
-      onCreateTemplate={handleCreateTemplate}
-      onViewPlan={handleViewPlan}
-    />
-  )
-
-  const renderConversations = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                AI Conversation Practice
-              </CardTitle>
-              <CardDescription>
-                Create loops with audio and generate AI-powered practice questions
-              </CardDescription>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowStoragePanel(!showStoragePanel)}
-            >
-              <Settings className="mr-2 h-4 w-4" />
-              Storage
-            </Button>
-          </div>
-        </CardHeader>
-      </Card>
-
-      {/* Gemini Configuration Status */}
-      <Card>
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div
-                className={`h-2 w-2 rounded-full ${geminiConfigured ? 'bg-green-500' : 'bg-red-500'}`}
-              />
-              <span className="text-sm font-medium">
-                {geminiConfigured ? 'Gemini API Configured' : 'Gemini API Not Configured'}
-              </span>
-            </div>
-            {!geminiConfigured && (
-              <Button variant="outline" size="sm" onClick={() => chrome.runtime.openOptionsPage()}>
-                Configure API
-              </Button>
-            )}
-          </div>
-
-          {geminiConfigured && integrationService && (
-            <div className="mt-3 text-sm text-muted-foreground">
-              <p>✅ Audio capture enabled</p>
-              <p>✅ Question generation ready</p>
-              <p>✅ Storage management active</p>
-            </div>
-          )}
-
-          {!geminiConfigured && (
-            <div className="mt-3 text-sm text-muted-foreground">
-              <p>Configure your Gemini API key in Options → API tab to enable:</p>
-              <ul className="ml-4 mt-2 list-disc space-y-1">
-                <li>Audio-powered question generation</li>
-                <li>Interactive practice sessions</li>
-                <li>Automatic storage cleanup</li>
-              </ul>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Storage Management Panel */}
-      {showStoragePanel && integrationService && (
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Storage Management</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setShowStoragePanel(false)}>
-                ✕
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <StorageManagementPanel
-              onGetStorageStats={() => integrationService.getStorageStats()}
-              onCleanupNow={() => integrationService.runStorageCleanup()}
-              onEmergencyCleanup={() => integrationService.emergencyCleanup()}
-              onGetScheduledCleanups={() => integrationService.getScheduledCleanups()}
-              onBulkSetRetentionPolicy={(loopIds, policy) =>
-                integrationService.bulkUpdateRetentionPolicies(loopIds, policy)
-              }
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Active Questions Panel */}
-      {activeQuestions && activeQuestionLoop && geminiConfigured && (
-        <ConversationQuestionsPanel
-          questions={activeQuestions}
-          loop={activeQuestionLoop}
-          onComplete={(results, score) => {
-            console.log('Practice session completed:', { results, score })
-            setActiveQuestions(null)
-            setActiveQuestionLoop(null)
-          }}
-          onClose={() => {
-            setActiveQuestions(null)
-            setActiveQuestionLoop(null)
-          }}
-        />
-      )}
-
-      {/* Integration Instructions */}
-      {!geminiConfigured && (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-            <Target className="mb-4 h-12 w-12 text-muted-foreground" />
-            <CardTitle className="mb-2 text-lg">Ready to Practice Conversations?</CardTitle>
-            <CardDescription className="mb-6 max-w-md">
-              Configure your Gemini API key to unlock AI-powered conversation analysis and question
-              generation.
-            </CardDescription>
-
-            <div className="max-w-lg space-y-3 text-left text-sm text-muted-foreground">
-              <div className="flex items-start gap-2">
-                <Badge className="mt-0.5">1</Badge>
-                <span>Create loops on YouTube videos with audio capture enabled</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Badge className="mt-0.5">2</Badge>
-                <span>AI analyzes audio and generates 10 practice questions</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Badge className="mt-0.5">3</Badge>
-                <span>Interactive quiz with scoring and detailed feedback</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <Badge className="mt-0.5">4</Badge>
-                <span>Automatic storage cleanup and retention management</span>
-              </div>
-            </div>
-
-            <div className="mt-6 flex gap-2">
-              <Button
-                onClick={() => chrome.runtime.openOptionsPage()}
-                className="flex items-center gap-2"
-              >
-                <Settings className="h-4 w-4" />
-                Configure Gemini API
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Feature Summary for Configured Users */}
-      {geminiConfigured && !activeQuestions && !showStoragePanel && (
-        <Card>
-          <CardContent className="py-8 text-center">
-            <CardTitle className="mb-4 text-lg">🎉 Conversation Practice Ready!</CardTitle>
-            <CardDescription className="mb-6">
-              Go to the Loops tab to create conversation loops with audio capture, then return here
-              to see generated practice questions.
-            </CardDescription>
-
-            <div className="flex justify-center gap-2">
-              <Button variant="outline" onClick={() => setActiveTab('loops')}>
-                <Repeat className="mr-2 h-4 w-4" />
-                Create Loops
-              </Button>
-              <Button variant="outline" onClick={() => setShowStoragePanel(true)}>
-                <Settings className="mr-2 h-4 w-4" />
-                Manage Storage
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-    </div>
-  )
-
-
-  // Filter loops based on search query
-  const filteredLoops = savedLoops.filter(
-    loop =>
-      loopFilter === '' ||
-      loop.title.toLowerCase().includes(loopFilter.toLowerCase()) ||
-      loop.videoTitle.toLowerCase().includes(loopFilter.toLowerCase()) ||
-      loop.description?.toLowerCase().includes(loopFilter.toLowerCase())
-  )
-
-  const renderDebug = () => <YouTubeExtractionTestPanel />
-
-  const renderLoops = () => (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardDescription>
-                {filteredLoops.length} of {savedLoops.length} loops
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => refetchLoops()}
-                disabled={loadingLoops}
-              >
-                {loadingLoops ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                )}
-                {loadingLoops ? 'Loading...' : 'Refresh'}
-              </Button>
-              {savedLoops.length > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={deleteAllLoops}
-                  disabled={deletingAllLoops || loadingLoops}
-                >
-                  {deletingAllLoops ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <AlertTriangle className="mr-2 h-4 w-4" />
-                  )}
-                  {deletingAllLoops ? 'Deleting...' : 'Delete All'}
-                </Button>
-              )}
-            </div>
-          </div>
-          {/* Search/Filter Input */}
-          {savedLoops.length > 0 && (
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-              <Input
-                placeholder="Search loops by title, video, or description..."
-                value={loopFilter}
-                onChange={e => setLoopFilter(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          )}
-        </CardHeader>
-      </Card>
-
-      <div
-        className="flex-1 space-y-4 overflow-y-scroll pr-1"
-        style={{ height: `calc(100vh - 222px)` }}
-      >
-        {loadingLoops && (
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Loading loops...</span>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loadingLoops && savedLoops.length === 0 && (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Repeat className="mb-4 h-12 w-12 text-muted-foreground" />
-              <CardTitle className="mb-2 text-lg">No loops saved yet</CardTitle>
-              <CardDescription>
-                Create loops on YouTube videos to save them here for later use
-              </CardDescription>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loadingLoops && savedLoops.length > 0 && filteredLoops.length === 0 && loopFilter && (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="mb-4 h-12 w-12 text-muted-foreground" />
-              <CardTitle className="mb-2 text-lg">No loops found</CardTitle>
-              <CardDescription>
-                No loops match your search criteria. Try different keywords.
-              </CardDescription>
-            </CardContent>
-          </Card>
-        )}
-
-        {!loadingLoops &&
-          filteredLoops.map(loop => (
-            <EnhancedLoopCardWithIntegration
-              key={loop.id}
-              loop={loop}
-              integrationService={integrationService}
-              onApply={() => applyLoop(loop)}
-              onDelete={loopId => deleteLoop(loopId)}
-              onExport={() => exportLoop(loop)}
-              isApplying={applyingLoopId === loop.id}
-            />
-          ))}
-      </div>
-    </div>
-  )
-
   return (
     <div className="flex flex-col bg-background">
       <div className="flex-shrink-0 border-b p-4">
@@ -1160,23 +276,7 @@ function FluentFlowSidePanelContent() {
             <p className="text-sm text-muted-foreground">Learning via Youtube</p>
           </div>
           <div className="flex items-center gap-2">
-            {checkingAuth ? (
-              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-            ) : user ? (
-              <div className="flex items-center gap-2 text-green-600">
-                <User className="h-4 w-4" />
-                <span className="text-xs">Synced</span>
-              </div>
-            ) : (
-              <div
-                className="flex cursor-pointer items-center gap-2 text-orange-600 hover:text-orange-700"
-                onClick={() => chrome.runtime.openOptionsPage()}
-                title="Click to sign in for cloud sync"
-              >
-                <UserX className="h-4 w-4" />
-                <span className="text-xs">Sign in</span>
-              </div>
-            )}
+            <AuthStatus user={user} checkingAuth={checkingAuth} />
           </div>
         </div>
       </div>
@@ -1186,42 +286,61 @@ function FluentFlowSidePanelContent() {
         onValueChange={value => setActiveTab(value as any)}
         className="flex flex-1 flex-col"
       >
-        <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-3">
-          <TabsTrigger value="dashboard" className="text-xs">
-            <BarChart3 className="mr-1 h-4 w-4" />
-            Dashboard
-          </TabsTrigger>
-          <TabsTrigger value="loops" className="text-xs">
-            <Repeat className="mr-1 h-4 w-4" />
-            Loops
-          </TabsTrigger>
-          <TabsTrigger value="debug" className="text-xs">
-            <Bug className="mr-1 h-4 w-4" />
-            Debug
-          </TabsTrigger>
-          {/* TODO: Re-enable these tabs when ready to implement */}
-          {/* <TabsTrigger value="conversations" className="text-xs">
-            <Target className="mr-1 h-4 w-4" />
-            AI Chat
-          </TabsTrigger>
-          <TabsTrigger value="recordings" className="text-xs">
-            <Music className="mr-1 h-4 w-4" />
-            Records
-          </TabsTrigger> */}
-        </TabsList>
+        <TabNavigation activeTab={activeTab} />
 
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           <TabsContent value="dashboard" className="mt-0 h-full overflow-y-auto">
-            {renderDashboard()}
+            <DashboardTab
+              currentVideo={currentVideo}
+              statistics={realStatistics}
+              allSessions={allSessions}
+              currentSession={currentSession}
+              savedLoops={savedLoops}
+              analytics={analytics}
+              goals={goals}
+              goalsProgress={goalsProgress}
+              goalSuggestions={goalSuggestions}
+              templates={templates}
+              activePlans={activePlans}
+              completedPlans={completedPlans}
+              formatTime={formatTime}
+              formatDate={formatDate}
+              onViewLoops={() => setActiveTab('loops')}
+              onCreateGoal={handleCreateGoal}
+              onDeleteGoal={handleDeleteGoal}
+              onStartSession={handleStartSession}
+              onContinueSession={handleContinueSession}
+              onCreateTemplate={handleCreateTemplate}
+              onViewPlan={handleViewPlan}
+            />
           </TabsContent>
           <TabsContent value="loops" className="mt-0 h-full overflow-y-auto">
-            {renderLoops()}
+            <LoopsTab
+              savedLoops={savedLoops}
+              loadingLoops={loadingLoops}
+              integrationService={integrationService}
+              onRefetch={refetchLoops}
+              onDeleteAll={deleteAllLoops}
+              onApplyLoop={applyLoop}
+              onDeleteLoop={deleteLoop}
+              onExportLoop={exportLoop}
+              applyingLoopId={applyingLoopId}
+              deletingAllLoops={deletingAllLoops}
+            />
           </TabsContent>
           <TabsContent value="conversations" className="mt-0 h-full overflow-y-auto">
-            {renderConversations()}
+            <ConversationsTab
+              integrationService={integrationService}
+              activeQuestions={activeQuestions}
+              activeQuestionLoop={activeQuestionLoop}
+              geminiConfigured={geminiConfigured}
+              onSetActiveTab={(tab: string) => setActiveTab(tab as any)}
+              onSetActiveQuestions={setActiveQuestions}
+              onSetActiveQuestionLoop={setActiveQuestionLoop}
+            />
           </TabsContent>
           <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
-            {renderDebug()}
+            <DebugTab />
           </TabsContent>
         </div>
       </Tabs>

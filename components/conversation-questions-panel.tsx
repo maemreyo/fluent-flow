@@ -1,29 +1,28 @@
-import React, { useState, useEffect } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from './ui/card'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { 
+import {
   Brain,
   CheckCircle,
-  XCircle,
   Clock,
   RotateCcw,
   Target,
   Volume2,
-  X
+  X,
+  XCircle
 } from 'lucide-react'
-import type { 
-  ConversationQuestions, 
-  ConversationQuestion,
+import React, { useEffect, useState } from 'react'
+import type {
+  ConversationQuestions,
   QuestionPracticeResult,
   SavedLoop
 } from '../lib/types/fluent-flow-types'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle
+} from './ui/card'
 
 interface ConversationQuestionsPanelProps {
   questions: ConversationQuestions
@@ -315,7 +314,7 @@ export const ConversationQuestionsPanel: React.FC<ConversationQuestionsPanelProp
                     }`}>
                       {letter}
                     </div>
-                    <span>{option.substring(3)}</span> {/* Remove "A) " prefix */}
+                    <span>{option}</span> {/* Remove "A) " prefix */}
                   </div>
                 </button>
               )

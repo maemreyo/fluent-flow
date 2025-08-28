@@ -263,7 +263,7 @@ export class ConversationLoopIntegrationService {
       }
 
       // Generate questions using transcript instead of audio
-      const questions = await this.analysisService.generateQuestionsFromTranscript(transcriptLoop)
+      const questions = await this.analysisService.generateQuestionsFromTranscript(transcriptLoop, transcriptResult.fullText || "")
 
       // Save questions to database for future caching using dynamic import
       try {
@@ -343,11 +343,7 @@ export class ConversationLoopIntegrationService {
 
       // Step 4: Analyze with Gemini (use audio analysis method)
       const analysisPrompt = this.buildAudioAnalysisPrompt(loop)
-      const analysis = await this.analysisService!.analyzeAudioForQuestions(
-        base64Audio,
-        audioBlob.type,
-        analysisPrompt
-      )
+      const analysis = await this.analysisService!.analyzeAudioForQuestions(loop)
 
       console.log(`FluentFlow: ✅ Audio analysis completed for loop ${loopId}`)
 
@@ -1942,7 +1938,7 @@ Please analyze the video content and generate conversation practice questions th
    */
   async cleanupLoopAudio(loopId: string): Promise<boolean> {
     // Audio cleanup functionality removed
-    return { success: true, message: 'Audio cleanup disabled' }
+    return true
   }
 
   /**
@@ -1950,7 +1946,12 @@ Please analyze the video content and generate conversation practice questions th
    */
   async runStorageCleanup(): Promise<CleanupResult> {
     // Audio cleanup functionality removed
-    return { success: true, message: 'Audio cleanup disabled' }
+    return {
+      totalLoops: 0,
+      cleanedCount: 0,
+      spaceFreedMB: 0,
+      errors: []
+    }
   }
 
   /**
@@ -1958,7 +1959,12 @@ Please analyze the video content and generate conversation practice questions th
    */
   async getStorageStats(): Promise<StorageStats> {
     // Audio storage stats removed
-    return { totalSize: 0, fileCount: 0, oldestFile: null }
+    return {
+      totalAudioFiles: 0,
+      totalSizeMB: 0,
+      scheduledForCleanup: 0,
+      largestFiles: []
+    }
   }
 
   /**
@@ -1974,7 +1980,12 @@ Please analyze the video content and generate conversation practice questions th
    */
   async emergencyCleanup(): Promise<CleanupResult> {
     // Audio cleanup functionality removed
-    return { success: true, message: 'Audio cleanup disabled' }
+    return {
+      totalLoops: 0,
+      cleanedCount: 0,
+      spaceFreedMB: 0,
+      errors: []
+    }
   }
 
   /**
@@ -1985,7 +1996,7 @@ Please analyze the video content and generate conversation practice questions th
     policy: 'temporary' | 'keep' | 'auto-cleanup'
   ): Promise<number> {
     // Audio retention policy removed
-    return { success: true, updatedCount: 0 }
+    return 0
   }
 
   /**
@@ -2065,7 +2076,13 @@ Please analyze the video content and generate conversation practice questions th
     if (!this.analysisService) {
       return null
     }
-    return this.analysisService.estimateTokenUsage(loop)
+    const loopText = `${loop.title} ${loop.description || ''} ${loop.videoTitle}`
+    const estimatedTokens = this.analysisService.estimateTokenUsage(loopText)
+    return {
+      promptTokens: estimatedTokens,
+      audioProcessingCost: 0, // Audio processing disabled
+      estimatedResponseTokens: Math.ceil(estimatedTokens * 0.3) // Rough estimate
+    }
   }
 
   /**
@@ -2089,7 +2106,11 @@ Please analyze the video content and generate conversation practice questions th
     intervalHours: number
   } {
     // Audio cleanup scheduler removed
-    return scheduler.getStatus()
+    return {
+      isRunning: false,
+      nextCleanupTime: null,
+      intervalHours: 24
+    }
   }
 
   /**
@@ -2097,7 +2118,7 @@ Please analyze the video content and generate conversation practice questions th
    */
   async triggerCleanup(): Promise<void> {
     // Audio cleanup scheduler removed
-    await scheduler.triggerCleanup()
+    // No-op since audio cleanup is disabled
   }
 
   /**
