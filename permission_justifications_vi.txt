@@ -34,3 +34,6 @@ DANH SÁCH QUYỀN VÀ LÝ DO SỬ DỤNG CHO FLUENT FLOW
 
 - Quyền: tabs
   Lý do: Cho phép tiện ích quản lý và lấy thông tin về các tab đang mở, ví dụ như kiểm tra xem tab có phải là trang YouTube hay không.
+
+- Quyền: scripting
+  Lý do: Cần thiết để tiện ích có thể chèn code JavaScript vào trang YouTube nhằm tương tác với trình phát video, thêm các nút điều khiển vòng lặp, thu thập thông tin video, và đồng bộ hóa dữ liệu giữa trang web và bảng điều khiển tiện ích.
