@@ -29,7 +29,7 @@ export class QuestionSharingService {
       isPublic?: boolean
       sharedBy?: string
     } = {}
-  ): Promise<{ shareToken: string; shareUrl: string }> {
+  ): Promise<{ shareToken: string; shareUrl: string; expirationMessage?: string }> {
     try {
       // Send to backend
       const response = await this.sendToBackend('/api/share-questions', {
@@ -47,7 +47,8 @@ export class QuestionSharingService {
 
       return {
         shareToken: response.data.shareToken,
-        shareUrl: response.data.shareUrl
+        shareUrl: response.data.shareUrl,
+        expirationMessage: response.data.expirationMessage
       }
     } catch (error) {
       console.error('Failed to share questions:', error)

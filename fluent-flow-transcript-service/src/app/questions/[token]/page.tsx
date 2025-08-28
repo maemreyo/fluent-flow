@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 
 interface Question {
@@ -28,6 +28,12 @@ interface QuestionSet {
     difficulty: string
     topics: string[]
   }
+  expirationInfo?: {
+    expiresAt: number
+    timeRemaining: number
+    hoursRemaining: number
+    minutesRemaining: number
+  }
 }
 
 interface QuestionResponse {
@@ -52,7 +58,7 @@ export default function QuestionsPage() {
   const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  
+
   // Quiz state
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState<QuestionResponse[]>([])
@@ -66,7 +72,7 @@ export default function QuestionsPage() {
     async function loadQuestions() {
       try {
         const response = await fetch(`/api/questions/${token}`)
-        
+
         if (!response.ok) {
           throw new Error('Failed to load questions')
         }
@@ -88,13 +94,13 @@ export default function QuestionsPage() {
   const handleAnswerSelect = (answer: string) => {
     const newResponses = [...responses]
     const existingIndex = newResponses.findIndex(r => r.questionIndex === currentQuestionIndex)
-    
+
     if (existingIndex >= 0) {
       newResponses[existingIndex] = { questionIndex: currentQuestionIndex, answer }
     } else {
       newResponses.push({ questionIndex: currentQuestionIndex, answer })
     }
-    
+
     setResponses(newResponses)
   }
 
@@ -122,12 +128,12 @@ export default function QuestionsPage() {
     if (!questionSet) return
 
     setSubmitting(true)
-    
+
     try {
       const response = await fetch(`/api/questions/${token}/submit`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({ responses })
       })
@@ -148,10 +154,14 @@ export default function QuestionsPage() {
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'text-green-600 bg-green-100'
-      case 'medium': return 'text-yellow-600 bg-yellow-100'
-      case 'hard': return 'text-red-600 bg-red-100'
-      default: return 'text-gray-600 bg-gray-100'
+      case 'easy':
+        return 'text-green-600 bg-green-100'
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-100'
+      case 'hard':
+        return 'text-red-600 bg-red-100'
+      default:
+        return 'text-gray-600 bg-gray-100'
     }
   }
 
@@ -163,9 +173,9 @@ export default function QuestionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <p className="mt-4 text-gray-600">Loading questions...</p>
         </div>
       </div>
@@ -174,12 +184,12 @@ export default function QuestionsPage() {
 
   if (error || !questionSet) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-lg shadow-md max-w-md">
-          <div className="text-red-500 text-5xl mb-4">⚠️</div>
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Questions Not Found</h1>
-          <p className="text-gray-600 mb-4">
-            {error || 'The questions you\'re looking for may have expired or been removed.'}
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="max-w-md rounded-lg bg-white p-8 text-center shadow-md">
+          <div className="mb-4 text-5xl text-red-500">⚠️</div>
+          <h1 className="mb-2 text-2xl font-bold text-gray-900">Questions Not Found</h1>
+          <p className="mb-4 text-gray-600">
+            {error || "The questions you're looking for may have expired or been removed."}
           </p>
           <a href="/" className="text-blue-600 hover:text-blue-500">
             Go back to home
@@ -192,16 +202,16 @@ export default function QuestionsPage() {
   if (submitted && results) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-4xl mx-auto px-4">
-          <div className="bg-white rounded-lg shadow-md p-8 mb-6">
-            <div className="text-center mb-8">
-              <div className="text-6xl mb-4">🎉</div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Quiz Complete!</h1>
+        <div className="mx-auto max-w-4xl px-4">
+          <div className="mb-6 rounded-lg bg-white p-8 shadow-md">
+            <div className="mb-8 text-center">
+              <div className="mb-4 text-6xl">🎉</div>
+              <h1 className="mb-2 text-3xl font-bold text-gray-900">Quiz Complete!</h1>
               <p className="text-gray-600">Here are your results</p>
             </div>
 
-            <div className="bg-gray-50 rounded-lg p-6 mb-8">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+            <div className="mb-8 rounded-lg bg-gray-50 p-6">
+              <div className="grid grid-cols-1 gap-4 text-center md:grid-cols-3">
                 <div>
                   <div className={`text-3xl font-bold ${getScoreColor(results.score)}`}>
                     {results.score}%
@@ -209,15 +219,11 @@ export default function QuestionsPage() {
                   <div className="text-gray-600">Overall Score</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-green-600">
-                    {results.correctAnswers}
-                  </div>
+                  <div className="text-3xl font-bold text-green-600">{results.correctAnswers}</div>
                   <div className="text-gray-600">Correct Answers</div>
                 </div>
                 <div>
-                  <div className="text-3xl font-bold text-gray-600">
-                    {results.totalQuestions}
-                  </div>
+                  <div className="text-3xl font-bold text-gray-600">{results.totalQuestions}</div>
                   <div className="text-gray-600">Total Questions</div>
                 </div>
               </div>
@@ -226,42 +232,42 @@ export default function QuestionsPage() {
             <div className="space-y-6">
               <h2 className="text-2xl font-bold text-gray-900">Question Review</h2>
               {results.results.map((result: EvaluationResult, index: number) => (
-                <div 
-                  key={result.questionId} 
-                  className={`border rounded-lg p-6 ${result.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}
+                <div
+                  key={result.questionId}
+                  className={`rounded-lg border p-6 ${result.isCorrect ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Question {index + 1}
-                    </h3>
-                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${result.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <div className="mb-4 flex items-start justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">Question {index + 1}</h3>
+                    <span
+                      className={`rounded-full px-2 py-1 text-sm font-medium ${result.isCorrect ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}
+                    >
                       {result.isCorrect ? '✓ Correct' : '✗ Incorrect'}
                     </span>
                   </div>
-                  
-                  <p className="text-gray-800 mb-4">{result.question}</p>
-                  
-                  <div className="space-y-2 mb-4">
+
+                  <p className="mb-4 text-gray-800">{result.question}</p>
+
+                  <div className="mb-4 space-y-2">
                     <div className="flex flex-col gap-1">
                       <span className="text-sm text-gray-600">Your answer:</span>
-                      <span className={`font-medium ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                      <span
+                        className={`font-medium ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}
+                      >
                         {result.userAnswer}
                       </span>
                     </div>
-                    
+
                     {!result.isCorrect && (
                       <div className="flex flex-col gap-1">
                         <span className="text-sm text-gray-600">Correct answer:</span>
-                        <span className="font-medium text-green-700">
-                          {result.correctAnswer}
-                        </span>
+                        <span className="font-medium text-green-700">{result.correctAnswer}</span>
                       </div>
                     )}
                   </div>
-                  
+
                   {result.explanation && (
-                    <div className="bg-white border-l-4 border-blue-500 p-4 rounded">
-                      <h4 className="font-medium text-gray-900 mb-1">Explanation:</h4>
+                    <div className="rounded border-l-4 border-blue-500 bg-white p-4">
+                      <h4 className="mb-1 font-medium text-gray-900">Explanation:</h4>
                       <p className="text-gray-700">{result.explanation}</p>
                     </div>
                   )}
@@ -272,7 +278,7 @@ export default function QuestionsPage() {
             <div className="mt-8 text-center">
               <button
                 onClick={() => window.location.reload()}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium"
+                className="rounded-lg bg-blue-600 px-6 py-3 font-medium text-white hover:bg-blue-700"
               >
                 Try Again
               </button>
@@ -290,13 +296,13 @@ export default function QuestionsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="mx-auto max-w-4xl px-4">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+        <div className="mb-6 overflow-hidden rounded-lg bg-white shadow-md">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 p-6 text-white">
             <div className="flex items-center justify-between">
               <div className="flex-1">
-                <h1 className="text-2xl font-bold mb-2">{questionSet.title}</h1>
+                <h1 className="mb-2 text-2xl font-bold">{questionSet.title}</h1>
                 <div className="flex items-center gap-6 text-blue-100">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">📺</span>
@@ -306,31 +312,47 @@ export default function QuestionsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-xl">⏱️</span>
                       <span>
-                        {Math.floor(Math.round(questionSet.startTime) / 60)}:{(Math.round(questionSet.startTime) % 60).toString().padStart(2, '0')} - {Math.floor(Math.round(questionSet.endTime) / 60)}:{(Math.round(questionSet.endTime) % 60).toString().padStart(2, '0')}
+                        {Math.floor(Math.round(questionSet.startTime) / 60)}:
+                        {(Math.round(questionSet.startTime) % 60).toString().padStart(2, '0')} -{' '}
+                        {Math.floor(Math.round(questionSet.endTime) / 60)}:
+                        {(Math.round(questionSet.endTime) % 60).toString().padStart(2, '0')}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
               <div className="text-right">
-                <div className="flex items-center gap-2 mb-2">
+                <div className="mb-2 flex items-center gap-2">
                   <button
                     onClick={() => setViewMode(viewMode === 'single' ? 'grid' : 'single')}
-                    className="px-3 py-1 text-sm bg-white bg-opacity-20 text-blue-100 rounded-md hover:bg-opacity-30 transition-colors"
+                    className="rounded-md bg-white bg-opacity-20 px-3 py-1 text-sm text-blue-100 transition-colors hover:bg-opacity-30"
                   >
                     {viewMode === 'single' ? '📋 Grid View' : '📝 Single View'}
                   </button>
                 </div>
-                <div className="text-blue-200 text-sm mb-1">Progress</div>
+                <div className="mb-1 text-sm text-blue-200">Progress</div>
                 <div className="text-2xl font-bold">
                   {currentQuestionIndex + 1} / {questionSet.questions.length}
                 </div>
               </div>
             </div>
           </div>
-          
-          <div className="p-6 bg-gray-50">
-            <div className="flex items-center justify-between mb-4">
+
+          <div className="bg-gray-50 p-6">
+            {/* Expiration Warning */}
+            {questionSet.expirationInfo && (
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <span className="text-sm">⏰</span>
+                  <span className="text-sm font-medium">
+                    Expired in {questionSet.expirationInfo.hoursRemaining}h{' '}
+                    {questionSet.expirationInfo.minutesRemaining}m
+                  </span>
+                </div>
+              </div>
+            )}
+
+            <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <span>👤</span>
@@ -345,13 +367,13 @@ export default function QuestionsPage() {
                   <span>{questionSet.metadata.totalQuestions} questions</span>
                 </div>
               </div>
-              
+
               {questionSet.videoUrl && (
-                <a 
-                  href={questionSet.videoUrl} 
-                  target="_blank" 
+                <a
+                  href={questionSet.videoUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                  className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-800"
                 >
                   <span>🔗</span>
                   <span>Watch Original Video</span>
@@ -359,10 +381,10 @@ export default function QuestionsPage() {
                 </a>
               )}
             </div>
-            
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out" 
+
+            <div className="h-3 w-full overflow-hidden rounded-full bg-gray-200">
+              <div
+                className="h-3 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 transition-all duration-500 ease-out"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
@@ -371,23 +393,23 @@ export default function QuestionsPage() {
 
         {/* Grid View */}
         {viewMode === 'grid' && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {questionSet.questions.map((question, index) => (
-              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+              <div key={index} className="overflow-hidden rounded-lg bg-white shadow-md">
+                <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
                   <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-gray-900">
-                      Question {index + 1}
-                    </h3>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+                    <h3 className="text-lg font-semibold text-gray-900">Question {index + 1}</h3>
+                    <span
+                      className={`rounded-full px-2 py-1 text-xs font-medium ${getDifficultyColor(question.difficulty)}`}
+                    >
                       {question.difficulty} • {question.type}
                     </span>
                   </div>
                 </div>
-                
+
                 <div className="p-4">
-                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4 rounded-r-lg">
-                    <p className="text-base text-gray-900 leading-relaxed font-medium">
+                  <div className="mb-4 rounded-r-lg border-l-4 border-blue-400 bg-blue-50 p-3">
+                    <p className="text-base font-medium leading-relaxed text-gray-900">
                       {question.question}
                     </p>
                   </div>
@@ -398,33 +420,31 @@ export default function QuestionsPage() {
                         key={optionIndex}
                         onClick={() => {
                           const newResponses = [...responses]
-                          const existingIndex = newResponses.findIndex(r => r.questionIndex === index)
-                          
+                          const existingIndex = newResponses.findIndex(
+                            r => r.questionIndex === index
+                          )
+
                           if (existingIndex >= 0) {
                             newResponses[existingIndex] = { questionIndex: index, answer: option }
                           } else {
                             newResponses.push({ questionIndex: index, answer: option })
                           }
-                          
+
                           setResponses(newResponses)
                         }}
-                        className={`w-full text-left p-3 border-2 rounded-lg transition-all duration-200 text-sm ${
+                        className={`w-full rounded-lg border-2 p-3 text-left text-sm transition-all duration-200 ${
                           responses.find(r => r.questionIndex === index)?.answer === option
                             ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
-                            : 'border-gray-300 hover:border-blue-300 hover:bg-blue-25 hover:shadow-sm text-gray-800 bg-white'
+                            : 'hover:bg-blue-25 border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex items-start gap-2">
-                          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 font-semibold text-xs">
+                          <span className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600">
                             {String.fromCharCode(65 + optionIndex)}
                           </span>
-                          <span className="flex-1 text-gray-900 leading-relaxed">
-                            {option}
-                          </span>
+                          <span className="flex-1 leading-relaxed text-gray-900">{option}</span>
                           {responses.find(r => r.questionIndex === index)?.answer === option && (
-                            <span className="flex-shrink-0 text-blue-500 text-sm">
-                              ✓
-                            </span>
+                            <span className="flex-shrink-0 text-sm text-blue-500">✓</span>
                           )}
                         </div>
                       </button>
@@ -438,106 +458,104 @@ export default function QuestionsPage() {
 
         {/* Single Question View */}
         {viewMode === 'single' && (
-        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
-          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900">
-                Question {currentQuestionIndex + 1}
-              </h2>
-              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(currentQuestion.difficulty)}`}>
-                {currentQuestion.difficulty} • {currentQuestion.type}
-              </span>
-            </div>
-          </div>
-          
-          <div className="p-6">
-            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
-              <p className="text-xl text-gray-900 leading-relaxed font-medium">
-                {currentQuestion.question}
-              </p>
+          <div className="mb-6 overflow-hidden rounded-lg bg-white shadow-md">
+            <div className="border-b border-gray-200 bg-gray-50 px-6 py-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-xl font-bold text-gray-900">
+                  Question {currentQuestionIndex + 1}
+                </h2>
+                <span
+                  className={`rounded-full px-3 py-1 text-sm font-medium ${getDifficultyColor(currentQuestion.difficulty)}`}
+                >
+                  {currentQuestion.difficulty} • {currentQuestion.type}
+                </span>
+              </div>
             </div>
 
-          <div className="space-y-4">
-            {currentQuestion.options.map((option, index) => (
-              <button
-                key={index}
-                onClick={() => handleAnswerSelect(option)}
-                className={`w-full text-left p-5 border-2 rounded-xl transition-all duration-200 ${
-                  getCurrentResponse() === option
-                    ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
-                    : 'border-gray-300 hover:border-blue-300 hover:bg-blue-25 hover:shadow-sm text-gray-800 bg-white'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-semibold text-sm">
-                    {String.fromCharCode(65 + index)}
-                  </span>
-                  <span className="flex-1 text-gray-900 leading-relaxed">
-                    {option}
-                  </span>
-                  {getCurrentResponse() === option && (
-                    <span className="flex-shrink-0 text-blue-500">
-                      ✓
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+            <div className="p-6">
+              <div className="mb-6 rounded-r-lg border-l-4 border-blue-400 bg-blue-50 p-4">
+                <p className="text-xl font-medium leading-relaxed text-gray-900">
+                  {currentQuestion.question}
+                </p>
+              </div>
+
+              <div className="space-y-4">
+                {currentQuestion.options.map((option, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleAnswerSelect(option)}
+                    className={`w-full rounded-xl border-2 p-5 text-left transition-all duration-200 ${
+                      getCurrentResponse() === option
+                        ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
+                        : 'hover:bg-blue-25 border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:shadow-sm'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600">
+                        {String.fromCharCode(65 + index)}
+                      </span>
+                      <span className="flex-1 leading-relaxed text-gray-900">{option}</span>
+                      {getCurrentResponse() === option && (
+                        <span className="flex-shrink-0 text-blue-500">✓</span>
+                      )}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
-          </div>
-        </div>
         )}
 
         {/* Navigation */}
-        <div className="bg-white rounded-lg shadow-md p-6">
+        <div className="rounded-lg bg-white p-6 shadow-md">
           {viewMode === 'single' ? (
-          <div className="flex items-center justify-between">
-            <button
-              onClick={previousQuestion}
-              disabled={currentQuestionIndex === 0}
-              className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              ← Previous
-            </button>
+            <div className="flex items-center justify-between">
+              <button
+                onClick={previousQuestion}
+                disabled={currentQuestionIndex === 0}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                ← Previous
+              </button>
 
-            <div className="text-sm text-gray-500">
-              {responses.length} / {questionSet.questions.length} questions answered
+              <div className="text-sm text-gray-500">
+                {responses.length} / {questionSet.questions.length} questions answered
+              </div>
+
+              {isLastQuestion ? (
+                <button
+                  onClick={submitAnswers}
+                  disabled={!allQuestionsAnswered || submitting}
+                  className="rounded-lg bg-green-600 px-6 py-2 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Quiz'}
+                </button>
+              ) : (
+                <button
+                  onClick={nextQuestion}
+                  disabled={!canProceed()}
+                  className="rounded-lg bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  Next →
+                </button>
+              )}
             </div>
-
-            {isLastQuestion ? (
+          ) : (
+            /* Grid Navigation */
+            <div className="text-center">
+              <div className="mb-4">
+                <span className="text-sm text-gray-500">
+                  {responses.length} / {questionSet.questions.length} questions answered
+                </span>
+              </div>
               <button
                 onClick={submitAnswers}
-                disabled={!allQuestionsAnswered || submitting}
-                className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={responses.length !== questionSet.questions.length || submitting}
+                className="rounded-lg bg-green-600 px-6 py-3 font-medium text-white hover:bg-green-700 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {submitting ? 'Submitting...' : 'Submit Quiz'}
+                {submitting ? 'Submitting...' : 'Submit All Answers'}
               </button>
-            ) : (
-              <button
-                onClick={nextQuestion}
-                disabled={!canProceed()}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next →
-              </button>
-            )}
-          </div>
-          ) : (
-          /* Grid Navigation */
-          <div className="text-center">
-            <div className="mb-4">
-              <span className="text-sm text-gray-500">
-                {responses.length} / {questionSet.questions.length} questions answered
-              </span>
             </div>
-            <button
-              onClick={submitAnswers}
-              disabled={responses.length !== questionSet.questions.length || submitting}
-              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {submitting ? 'Submitting...' : 'Submit All Answers'}
-            </button>
-          </div>
           )}
         </div>
       </div>

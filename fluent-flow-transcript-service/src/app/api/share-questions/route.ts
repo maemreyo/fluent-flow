@@ -48,20 +48,24 @@ export async function POST(request: NextRequest) {
       sessions: [] // Track user sessions
     }
 
-    // Store in memory
-    sharedQuestions.set(shareToken, sharedQuestionSet)
+    // Store in memory with 4-hour expiration (perfect for classroom sessions)
+    const { expiresAt, expiresIn } = sharedQuestions.set(shareToken, sharedQuestionSet)
 
     console.log(`Questions shared successfully: ${shareToken}`)
     console.log(`Stored question set:`, {
       token: shareToken,
-      keys: Array.from(sharedQuestions.keys()),
-      size: sharedQuestions.size
+      keys: sharedQuestions.keys(),
+      size: sharedQuestions.size(),
+      expiresAt: new Date(expiresAt).toLocaleString()
     })
 
     return corsResponse({
       shareToken,
       shareUrl: sharedQuestionSet.shareUrl,
-      id: shareId
+      id: shareId,
+      expiresAt,
+      expiresIn,
+      expirationMessage: "Link sẽ hết hạn sau 4 tiếng"
     })
 
   } catch (error) {

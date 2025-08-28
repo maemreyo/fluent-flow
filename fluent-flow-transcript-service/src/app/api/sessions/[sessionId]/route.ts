@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sharedQuestions } from '../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../lib/cors'
 
 export async function OPTIONS() {
@@ -10,7 +9,7 @@ export async function OPTIONS() {
 }
 
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
@@ -27,7 +26,9 @@ export async function GET(
     let foundSession = null
     let foundQuestionSet = null
 
-    for (const [token, questionSet] of sharedQuestions.entries()) {
+    const storage = globalThis.__sharedQuestions ?? new Map()
+    for (const [_token, stored] of storage.entries()) {
+      const questionSet = stored.data
       if (questionSet.sessions) {
         const session = questionSet.sessions.find((s: any) => s.id === sessionId)
         if (session) {

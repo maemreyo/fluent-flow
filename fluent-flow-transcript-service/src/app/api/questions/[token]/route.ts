@@ -24,22 +24,29 @@ export async function GET(
     }
 
     console.log(`Looking for token: ${token}`)
-    console.log(`Available tokens:`, Array.from(sharedQuestions.keys()))
-    console.log(`Storage size:`, sharedQuestions.size)
+    console.log(`Available tokens:`, sharedQuestions.keys())
+    console.log(`Storage size:`, sharedQuestions.size())
     
     const questionSet = sharedQuestions.get(token)
 
     if (!questionSet) {
-      console.log(`Token ${token} not found in storage`)
+      console.log(`Token ${token} not found in storage or expired`)
       return corsResponse(
         { error: 'Questions not found or expired' },
         404
       )
     }
 
+    // Get expiration info
+    const expirationInfo = sharedQuestions.getExpirationInfo(token)
+    
     console.log(`Found question set for token: ${token}`)
+    console.log(`Expires in: ${expirationInfo?.hoursRemaining}h ${expirationInfo?.minutesRemaining}m`)
 
-    return corsResponse(questionSet)
+    return corsResponse({
+      ...questionSet,
+      expirationInfo
+    })
 
   } catch (error) {
     console.error('Failed to get shared questions:', error)

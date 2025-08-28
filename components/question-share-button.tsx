@@ -21,6 +21,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showDialog, setShowDialog] = useState(false)
+  const [expirationMessage, setExpirationMessage] = useState<string>('')
 
   const sharingService = new QuestionSharingService({ backendUrl })
 
@@ -41,6 +42,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
       })
 
       setShareUrl(result.shareUrl)
+      setExpirationMessage(result.expirationMessage || 'Expired in 4 hours')
       setShowDialog(true)
       console.log('Questions shared successfully:', result.shareUrl)
     } catch (err) {
@@ -75,11 +77,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
         className={`inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
         title="Share questions as a public link"
       >
-        {isSharing ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
-        ) : (
-          <Share2 className="h-4 w-4" />
-        )}
+        {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
         {isSharing ? 'Sharing...' : 'Share'}
       </button>
 
@@ -92,10 +90,12 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
       {/* Success Dialog */}
       {showDialog && shareUrl && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="relative max-w-md w-full mx-4 bg-white rounded-lg shadow-xl">
+          <div className="relative mx-4 w-full max-w-md rounded-lg bg-white shadow-xl">
             <div className="p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Questions Shared Successfully!</h3>
+              <div className="mb-4 flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-900">
+                  Questions Shared Successfully!
+                </h3>
                 <button
                   onClick={() => setShowDialog(false)}
                   className="text-gray-400 hover:text-gray-600"
@@ -104,16 +104,29 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
                 </button>
               </div>
 
-              <div className="mb-4">
-                <div className="flex items-center gap-2 text-sm text-green-800 mb-3">
-                  <Check className="h-4 w-4" />
-                  <span>🎯 <strong>{questions?.questions.length} questions</strong> ready for practice</span>
+              {/* Expiration Warning */}
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="flex items-center gap-2 text-amber-800">
+                  <span className="text-sm">⏰</span>
+                  <span className="text-sm font-medium">{expirationMessage}</span>
                 </div>
-                
-                <div className="text-xs text-gray-600 space-y-1">
+              </div>
+
+              <div className="mb-4">
+                <div className="mb-3 flex items-center gap-2 text-sm text-green-800">
+                  <Check className="h-4 w-4" />
+                  <span>
+                    🎯 <strong>{questions?.questions.length} questions</strong> ready for practice
+                  </span>
+                </div>
+
+                <div className="space-y-1 text-xs text-gray-600">
                   <p>📺 From: {loop?.videoTitle}</p>
                   {loop && (
-                    <p>⏱️ Duration: {Math.floor(Math.round(loop.endTime - loop.startTime) / 60)}m {Math.round(loop.endTime - loop.startTime) % 60}s</p>
+                    <p>
+                      ⏱️ Duration: {Math.floor(Math.round(loop.endTime - loop.startTime) / 60)}m{' '}
+                      {Math.round(loop.endTime - loop.startTime) % 60}s
+                    </p>
                   )}
                 </div>
               </div>
@@ -131,7 +144,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
                 <div className="flex gap-2">
                   <button
                     onClick={handleCopy}
-                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     {copied ? (
                       <>
@@ -148,7 +161,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
 
                   <button
                     onClick={handleOpenLink}
-                    className="flex-1 inline-flex items-center justify-center gap-1 rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                    className="inline-flex flex-1 items-center justify-center gap-1 rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Open Quiz
