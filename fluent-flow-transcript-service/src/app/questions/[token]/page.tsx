@@ -59,6 +59,7 @@ export default function QuestionsPage() {
   const [submitted, setSubmitted] = useState(false)
   const [results, setResults] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [viewMode, setViewMode] = useState<'single' | 'grid'>('single')
 
   // Load questions
   useEffect(() => {
@@ -305,13 +306,21 @@ export default function QuestionsPage() {
                     <div className="flex items-center gap-2">
                       <span className="text-xl">⏱️</span>
                       <span>
-                        {Math.floor(questionSet.startTime / 60)}:{(questionSet.startTime % 60).toString().padStart(2, '0')} - {Math.floor(questionSet.endTime / 60)}:{(questionSet.endTime % 60).toString().padStart(2, '0')}
+                        {Math.floor(Math.round(questionSet.startTime) / 60)}:{(Math.round(questionSet.startTime) % 60).toString().padStart(2, '0')} - {Math.floor(Math.round(questionSet.endTime) / 60)}:{(Math.round(questionSet.endTime) % 60).toString().padStart(2, '0')}
                       </span>
                     </div>
                   )}
                 </div>
               </div>
               <div className="text-right">
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    onClick={() => setViewMode(viewMode === 'single' ? 'grid' : 'single')}
+                    className="px-3 py-1 text-sm bg-white bg-opacity-20 text-blue-100 rounded-md hover:bg-opacity-30 transition-colors"
+                  >
+                    {viewMode === 'single' ? '📋 Grid View' : '📝 Single View'}
+                  </button>
+                </div>
                 <div className="text-blue-200 text-sm mb-1">Progress</div>
                 <div className="text-2xl font-bold">
                   {currentQuestionIndex + 1} / {questionSet.questions.length}
@@ -321,7 +330,7 @@ export default function QuestionsPage() {
           </div>
           
           <div className="p-6 bg-gray-50">
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
                   <span>👤</span>
@@ -336,17 +345,8 @@ export default function QuestionsPage() {
                   <span>{questionSet.metadata.totalQuestions} questions</span>
                 </div>
               </div>
-            </div>
-            
-            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
-              <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out" 
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            
-            {questionSet.videoUrl && (
-              <div className="mt-3">
+              
+              {questionSet.videoUrl && (
                 <a 
                   href={questionSet.videoUrl} 
                   target="_blank" 
@@ -357,12 +357,87 @@ export default function QuestionsPage() {
                   <span>Watch Original Video</span>
                   <span className="text-xs">↗</span>
                 </a>
-              </div>
-            )}
+              )}
+            </div>
+            
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
           </div>
         </div>
 
-        {/* Question */}
+        {/* Grid View */}
+        {viewMode === 'grid' && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            {questionSet.questions.map((question, index) => (
+              <div key={index} className="bg-white rounded-lg shadow-md overflow-hidden">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Question {index + 1}
+                    </h3>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(question.difficulty)}`}>
+                      {question.difficulty} • {question.type}
+                    </span>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  <div className="bg-blue-50 border-l-4 border-blue-400 p-3 mb-4 rounded-r-lg">
+                    <p className="text-base text-gray-900 leading-relaxed font-medium">
+                      {question.question}
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {question.options.map((option, optionIndex) => (
+                      <button
+                        key={optionIndex}
+                        onClick={() => {
+                          const newResponses = [...responses]
+                          const existingIndex = newResponses.findIndex(r => r.questionIndex === index)
+                          
+                          if (existingIndex >= 0) {
+                            newResponses[existingIndex] = { questionIndex: index, answer: option }
+                          } else {
+                            newResponses.push({ questionIndex: index, answer: option })
+                          }
+                          
+                          setResponses(newResponses)
+                        }}
+                        className={`w-full text-left p-3 border-2 rounded-lg transition-all duration-200 text-sm ${
+                          responses.find(r => r.questionIndex === index)?.answer === option
+                            ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
+                            : 'border-gray-300 hover:border-blue-300 hover:bg-blue-25 hover:shadow-sm text-gray-800 bg-white'
+                        }`}
+                      >
+                        <div className="flex items-start gap-2">
+                          <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-gray-100 text-gray-600 font-semibold text-xs">
+                            {String.fromCharCode(65 + optionIndex)}
+                          </span>
+                          <span className="flex-1 text-gray-900 leading-relaxed">
+                            {option}
+                          </span>
+                          {responses.find(r => r.questionIndex === index)?.answer === option && (
+                            <span className="flex-shrink-0 text-blue-500 text-sm">
+                              ✓
+                            </span>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Single Question View */}
+        {viewMode === 'single' && (
         <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
           <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
             <div className="flex items-center justify-between">
@@ -411,9 +486,11 @@ export default function QuestionsPage() {
           </div>
           </div>
         </div>
+        )}
 
         {/* Navigation */}
         <div className="bg-white rounded-lg shadow-md p-6">
+          {viewMode === 'single' ? (
           <div className="flex items-center justify-between">
             <button
               onClick={previousQuestion}
@@ -445,6 +522,23 @@ export default function QuestionsPage() {
               </button>
             )}
           </div>
+          ) : (
+          /* Grid Navigation */
+          <div className="text-center">
+            <div className="mb-4">
+              <span className="text-sm text-gray-500">
+                {responses.length} / {questionSet.questions.length} questions answered
+              </span>
+            </div>
+            <button
+              onClick={submitAnswers}
+              disabled={responses.length !== questionSet.questions.length || submitting}
+              className="px-6 py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? 'Submitting...' : 'Submit All Answers'}
+            </button>
+          </div>
+          )}
         </div>
       </div>
     </div>

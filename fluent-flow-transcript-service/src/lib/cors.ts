@@ -9,7 +9,7 @@ export function corsHeaders() {
   }
 }
 
-export function corsResponse(data?: any, status = 200) {
+export function corsResponse(data?: unknown, status = 200) {
   return NextResponse.json(data, {
     status,
     headers: corsHeaders()

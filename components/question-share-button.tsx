@@ -113,7 +113,7 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
                 <div className="text-xs text-gray-600 space-y-1">
                   <p>📺 From: {loop?.videoTitle}</p>
                   {loop && (
-                    <p>⏱️ Duration: {Math.round((loop.endTime - loop.startTime) / 60)}m {Math.round((loop.endTime - loop.startTime) % 60)}s</p>
+                    <p>⏱️ Duration: {Math.floor(Math.round(loop.endTime - loop.startTime) / 60)}m {Math.round(loop.endTime - loop.startTime) % 60}s</p>
                   )}
                 </div>
               </div>
