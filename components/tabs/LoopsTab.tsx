@@ -52,26 +52,37 @@ export function LoopsTab({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardDescription>
-                {filteredLoops.length} of {savedLoops.length} loops
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-3">
+            <CardDescription className="flex-shrink-0">
+              {filteredLoops.length} of {savedLoops.length} loops
+            </CardDescription>
+            
+            {savedLoops.length > 0 && (
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+                <Input
+                  placeholder="Search loops..."
+                  value={loopFilter}
+                  onChange={e => setLoopFilter(e.target.value)}
+                  className="pl-10 h-8"
+                />
+              </div>
+            )}
+            
+            <div className="flex gap-1 flex-shrink-0">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={onRefetch}
                 disabled={loadingLoops}
+                className="h-8 px-2"
               >
                 {loadingLoops ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="h-3 w-3 animate-spin" />
                 ) : (
-                  <RefreshCw className="mr-2 h-4 w-4" />
+                  <RefreshCw className="h-3 w-3" />
                 )}
-                {loadingLoops ? 'Loading...' : 'Refresh'}
               </Button>
               {savedLoops.length > 0 && (
                 <Button
@@ -79,29 +90,17 @@ export function LoopsTab({
                   size="sm"
                   onClick={onDeleteAll}
                   disabled={deletingAllLoops || loadingLoops}
+                  className="h-8 px-2"
                 >
                   {deletingAllLoops ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="h-3 w-3 animate-spin" />
                   ) : (
-                    <AlertTriangle className="mr-2 h-4 w-4" />
+                    <AlertTriangle className="h-3 w-3" />
                   )}
-                  {deletingAllLoops ? 'Deleting...' : 'Delete All'}
                 </Button>
               )}
             </div>
           </div>
-          {/* Search/Filter Input */}
-          {savedLoops.length > 0 && (
-            <div className="relative mt-4">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
-              <Input
-                placeholder="Search loops by title, video, or description..."
-                value={loopFilter}
-                onChange={e => setLoopFilter(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          )}
         </CardHeader>
       </Card>
 
