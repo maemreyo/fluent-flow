@@ -9,6 +9,7 @@ import {
   Monitor,
   Play,
   RotateCcw,
+  Share2,
   Target,
   Trash2
 } from 'lucide-react'
@@ -20,6 +21,7 @@ import type {
   SavedLoop
 } from '../lib/types/fluent-flow-types'
 import { ConversationQuestionsPanel } from './conversation-questions-panel'
+import { QuestionShareButton } from './question-share-button'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
@@ -329,6 +331,21 @@ export function EnhancedLoopCardWithIntegration({
                 <RotateCcw className="mr-1 h-4 w-4" />
                 Regenerate
               </Button>
+              <QuestionShareButton
+                questions={{
+                  loopId: loop.id,
+                  questions: questions,
+                  metadata: {
+                    totalQuestions: questions.length,
+                    analysisDate: new Date().toISOString(),
+                    generatedFromTranscript: true,
+                    canRegenerateQuestions: true
+                  }
+                }}
+                loop={loop}
+                className="flex-shrink-0"
+                backendUrl="http://localhost:3838"
+              />
             </div>
           </div>
         )}
@@ -364,6 +381,7 @@ export function EnhancedLoopCardWithIntegration({
       </div>
     )
   }
+        
 
   // Show questions panel if active
   if (showQuestions && activeQuestions) {

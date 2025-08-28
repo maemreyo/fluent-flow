@@ -349,6 +349,44 @@ export interface ConversationQuestions {
   }
 }
 
+// Shared Questions Types for NextJS Backend
+export interface SharedQuestionSet {
+  id: string
+  title: string
+  videoTitle?: string
+  videoUrl?: string
+  startTime?: number
+  endTime?: number
+  questions: ConversationQuestion[]
+  metadata: {
+    totalQuestions: number
+    createdAt: string
+    sharedBy?: string
+    difficulty: 'mixed' | 'easy' | 'medium' | 'hard'
+    topics: string[]
+  }
+  isPublic: boolean
+  shareToken: string
+}
+
+export interface QuestionResponse {
+  questionId: string
+  selectedAnswer: string
+  isCorrect?: boolean
+  timeSpent?: number
+  answeredAt: Date
+}
+
+export interface SharedQuestionSession {
+  id: string
+  shareToken: string
+  responses: QuestionResponse[]
+  score: number
+  totalQuestions: number
+  completedAt?: Date
+  timeSpent: number
+}
+
 export interface QuestionPracticeResult {
   questionId: string
   selectedAnswer: string
