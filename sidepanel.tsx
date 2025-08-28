@@ -4,7 +4,7 @@ import { AuthStatus } from './components/shared/AuthStatus'
 import { TabNavigation } from './components/shared/TabNavigation'
 import { ConversationsTab } from './components/tabs/ConversationsTab'
 import { DashboardTab } from './components/tabs/DashboardTab'
-import { DebugTab } from './components/tabs/DebugTab'
+// import { DebugTab } from './components/tabs/DebugTab'
 import { LoopsTab } from './components/tabs/LoopsTab'
 import { Tabs, TabsContent } from './components/ui/tabs'
 import { useAuthentication } from './lib/hooks/use-authentication'
@@ -339,9 +339,9 @@ function FluentFlowSidePanelContent() {
               onSetActiveQuestionLoop={setActiveQuestionLoop}
             />
           </TabsContent>
-          <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
+          {/* <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
             <DebugTab />
-          </TabsContent>
+          </TabsContent> */}
         </div>
       </Tabs>
     </div>
