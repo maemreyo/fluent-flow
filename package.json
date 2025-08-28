@@ -1,7 +1,7 @@
 {
   "name": "fluent-flow",
   "displayName": "FluentFlow - Master Interactive Video Lessons",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Learning on YouTube with interactive video looping, AI-generated comprehension questions, and integrated learning analytics.",
   "author": "Matthew Ngo",
   "scripts": {
