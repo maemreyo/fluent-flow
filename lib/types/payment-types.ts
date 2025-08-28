@@ -318,6 +318,7 @@ export interface PaymentError extends Error {
   code: PaymentErrorCode
   details?: any
   userMessage?: string
+  originalError?: any
 }
 
 export type PaymentErrorCode = 
@@ -332,6 +333,14 @@ export type PaymentErrorCode =
   | 'LICENSE_INVALID'
   | 'LICENSE_EXPIRED'
   | 'PAYMENT_REQUIRED'
+  | 'SUBSCRIPTION_FETCH_ERROR'
+  | 'RPC_ERROR'
+  | 'USAGE_UPDATE_ERROR'
+  | 'USAGE_FETCH_ERROR'
+  | 'ACCESS_CHECK_ERROR'
+  | 'LICENSE_FETCH_ERROR'
+  | 'LICENSE_REFRESH_ERROR'
+  | 'NOTIFICATIONS_FETCH_ERROR'
 
 // =============================================================================
 // SUPABASE INTEGRATION TYPES
@@ -449,26 +458,30 @@ export interface SupabaseSubscriptionSummary {
 // Supabase service interface
 export interface SupabasePaymentService {
   // Subscription queries
-  getSubscription(userId: string): Promise<DatabaseSubscription | null>
+  getSubscription(): Promise<DatabaseSubscription | null>
   getSubscriptionSummary(): Promise<SupabaseSubscriptionSummary>
   
   // Usage tracking
   incrementUsage(featureId: string, amount?: number): Promise<SupabaseUsageResponse>
-  getCurrentUsage(userId: string, monthYear?: string): Promise<DatabaseUsage | null>
+  getCurrentUsage(featureId: string): Promise<SupabaseUsageResponse>
   
   // Feature access
   checkFeatureAccess(featureId: string): Promise<SupabaseFeatureAccessResponse>
+  requireFeatureAccess(featureId: string): Promise<void>
   
   // License management
-  getLicense(userId: string): Promise<DatabaseLicense | null>
-  validateLicense(token: string): Promise<boolean>
+  getLicense(): Promise<DatabaseLicense | null>
+  refreshLicense(): Promise<DatabaseLicense>
+  
+  // Data sync
+  syncPaymentData(subscription: any): Promise<void>
   
   // Notifications
-  getNotifications(userId: string): Promise<DatabasePaymentNotification[]>
+  getNotifications(limit?: number): Promise<DatabasePaymentNotification[]>
   markNotificationRead(notificationId: string): Promise<void>
   
   // Activity logging
-  logActivity(action: string, featureId?: string, metadata?: Record<string, any>): Promise<void>
+  logActivity(activityType: string, featureId: string, metadata?: Record<string, any>): Promise<void>
 }
 
 // Feature gate configuration

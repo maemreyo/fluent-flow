@@ -386,7 +386,15 @@ export class PaymentService extends ImprovedBaseService {
       FEATURE_NOT_AVAILABLE: 'This feature is not available in your current plan.',
       LICENSE_INVALID: 'Your license is invalid. Please contact support.',
       LICENSE_EXPIRED: 'Your license has expired. Please renew your subscription.',
-      PAYMENT_REQUIRED: 'Payment is required to continue using this feature.'
+      PAYMENT_REQUIRED: 'Payment is required to continue using this feature.',
+      SUBSCRIPTION_FETCH_ERROR: 'Unable to load subscription information. Please try again.',
+      RPC_ERROR: 'Service temporarily unavailable. Please try again.',
+      USAGE_UPDATE_ERROR: 'Failed to update usage data. Please try again.',
+      USAGE_FETCH_ERROR: 'Unable to load usage information. Please try again.',
+      ACCESS_CHECK_ERROR: 'Unable to verify feature access. Please try again.',
+      LICENSE_FETCH_ERROR: 'Unable to load license information. Please try again.',
+      LICENSE_REFRESH_ERROR: 'Failed to refresh license. Please try again.',
+      NOTIFICATIONS_FETCH_ERROR: 'Unable to load notifications. Please try again.'
     }
 
     error.userMessage = userMessages[code] || message
