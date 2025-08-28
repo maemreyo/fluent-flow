@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
+import { corsHeaders, corsResponse } from '../../../lib/cors'
 import { sharedQuestions } from '../../../lib/shared-storage'
-import { corsResponse, corsHeaders } from '../../../lib/cors'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -16,16 +16,13 @@ export async function POST(request: NextRequest) {
     const { questions, loop, options = {} } = body
 
     if (!questions || !loop) {
-      return corsResponse(
-        { error: 'Questions and loop data are required' },
-        400
-      )
+      return corsResponse({ error: 'Questions and loop data are required' }, 400)
     }
 
     // Generate unique tokens
     const shareToken = uuidv4()
     const shareId = uuidv4()
-    
+
     // Create shared question set
     const sharedQuestionSet = {
       id: shareId,
@@ -41,7 +38,9 @@ export async function POST(request: NextRequest) {
         createdAt: new Date().toISOString(),
         sharedBy: options.sharedBy || 'FluentFlow User',
         difficulty: 'mixed' as const,
-        topics: questions.questions.map((q: any) => q.type).filter((t: any, i: number, arr: any[]) => arr.indexOf(t) === i)
+        topics: questions.questions
+          .map((q: any) => q.type)
+          .filter((t: any, i: number, arr: any[]) => arr.indexOf(t) === i)
       },
       isPublic: options.isPublic !== false,
       shareUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/questions/${shareToken}`,
@@ -65,14 +64,10 @@ export async function POST(request: NextRequest) {
       id: shareId,
       expiresAt,
       expiresIn,
-      expirationMessage: "Link sẽ hết hạn sau 4 tiếng"
+      expirationMessage: 'Expired in 4h'
     })
-
   } catch (error) {
     console.error('Failed to share questions:', error)
-    return corsResponse(
-      { error: 'Failed to share questions' },
-      500
-    )
+    return corsResponse({ error: 'Failed to share questions' }, 500)
   }
 }

@@ -4,12 +4,10 @@ import {
   Brain,
   CheckCircle,
   Clock,
-  Download,
   Loader2,
   Monitor,
   Play,
   RotateCcw,
-  Share2,
   Target,
   Trash2
 } from 'lucide-react'
@@ -219,7 +217,18 @@ export function EnhancedLoopCardWithIntegration({
 
         {transcriptData && (
           <div className="space-y-2">
-            <p className="text-sm leading-relaxed text-gray-700">{transcriptData.fullText}</p>
+            <div className="max-h-32 overflow-y-auto rounded border border-gray-200 bg-white p-3">
+              <div className="space-y-2">
+                {transcriptData.segments.map((segment: any, index: number) => (
+                  <div key={index} className="flex gap-3 text-sm">
+                    <span className="flex-shrink-0 font-mono text-xs text-blue-600 min-w-[45px]">
+                      {Math.floor(segment.start / 60)}:{(Math.round(segment.start) % 60).toString().padStart(2, '0')}
+                    </span>
+                    <span className="text-gray-700 leading-relaxed">{segment.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span>{transcriptData.segments.length} segments</span>
               <span>•</span>
@@ -286,7 +295,7 @@ export function EnhancedLoopCardWithIntegration({
 
         {questions && questions.length > 0 && (
           <div className="space-y-2">
-            {questions.slice(0, 3).map((question, index) => (
+            {questions.slice(0, 2).map((question, index) => (
               <div key={index} className="rounded border bg-white p-2 text-sm">
                 <p className="font-medium text-gray-800">{question.question}</p>
                 {question.difficulty && (
@@ -296,8 +305,8 @@ export function EnhancedLoopCardWithIntegration({
                 )}
               </div>
             ))}
-            {questions.length > 3 && (
-              <p className="mt-2 text-xs text-gray-500">+{questions.length - 3} more questions</p>
+            {questions.length > 2 && (
+              <p className="mt-2 text-xs text-gray-500">+{questions.length - 2} more questions</p>
             )}
             <div className="mt-3 flex gap-2">
               <Button
@@ -323,7 +332,7 @@ export function EnhancedLoopCardWithIntegration({
                 <Play className="mr-1 h-4 w-4" />
                 Practice
               </Button>
-              <Button
+              {/* <Button
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateQuestions}
@@ -332,7 +341,7 @@ export function EnhancedLoopCardWithIntegration({
               >
                 <RotateCcw className="mr-1 h-4 w-4" />
                 Regenerate
-              </Button>
+              </Button> */}
               <QuestionShareButton
                 questions={{
                   loopId: loop.id,
@@ -383,7 +392,6 @@ export function EnhancedLoopCardWithIntegration({
       </div>
     )
   }
-        
 
   // Show questions panel if active
   if (showQuestions && activeQuestions) {
@@ -404,17 +412,17 @@ export function EnhancedLoopCardWithIntegration({
     <Card className={`mb-4 transition-shadow hover:shadow-md ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="flex-1">
+          <div className="w-[100%] flex-1">
             <CardTitle className="truncate text-base font-semibold">{loop.title}</CardTitle>
             <CardDescription className="mt-1 truncate text-sm text-gray-600">
               {loop.videoTitle}
             </CardDescription>
           </div>
-          <div className="ml-2 flex flex-col items-end gap-1">
+          {/* <div className="ml-2 flex flex-col items-end gap-1">
             <Badge variant="outline" className="text-xs">
               {formatDuration(loop.startTime, loop.endTime)}
             </Badge>
-          </div>
+          </div> */}
         </div>
       </CardHeader>
 
@@ -456,11 +464,11 @@ export function EnhancedLoopCardWithIntegration({
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => setShowTranscript(!showTranscript)}
-            title={showTranscript ? "Hide transcript" : "Show transcript"}
+            title={showTranscript ? 'Hide transcript' : 'Show transcript'}
           >
             <Target className="mr-1 h-4 w-4" />
             {/* Transcript */}
@@ -488,19 +496,19 @@ export function EnhancedLoopCardWithIntegration({
             {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
           </Button>
 
-          <Button 
-            variant="outline" 
-            size="sm" 
+          {/* <Button
+            variant="outline"
+            size="sm"
             onClick={() => onExport?.(loop)}
             title="Export loop data as JSON file"
           >
             <Download className="mr-1 h-4 w-4" />
-            {/* Export */}
-          </Button>
+            Export
+          </Button> */}
 
-          <Button 
-            variant="outline" 
-            size="sm" 
+          <Button
+            variant="destructive"
+            size="sm"
             onClick={() => onDelete?.(loop.id)}
             title="Delete this loop permanently"
           >

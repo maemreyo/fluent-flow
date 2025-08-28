@@ -303,7 +303,7 @@ export default function QuestionsPage() {
             <div className="flex items-center justify-between">
               <div className="flex-1">
                 <h1 className="mb-2 text-2xl font-bold">{questionSet.title}</h1>
-                <div className="flex items-center gap-6 text-blue-100">
+                <div className="flex flex-col items-start text-blue-100">
                   <div className="flex items-center gap-2">
                     <span className="text-xl">📺</span>
                     <span className="font-medium">{questionSet.videoTitle}</span>
@@ -319,20 +319,6 @@ export default function QuestionsPage() {
                       </span>
                     </div>
                   )}
-                </div>
-              </div>
-              <div className="text-right">
-                <div className="mb-2 flex items-center gap-2">
-                  <button
-                    onClick={() => setViewMode(viewMode === 'single' ? 'grid' : 'single')}
-                    className="rounded-md bg-white bg-opacity-20 px-3 py-1 text-sm text-blue-100 transition-colors hover:bg-opacity-30"
-                  >
-                    {viewMode === 'single' ? '📋 Grid View' : '📝 Single View'}
-                  </button>
-                </div>
-                <div className="mb-1 text-sm text-blue-200">Progress</div>
-                <div className="text-2xl font-bold">
-                  {currentQuestionIndex + 1} / {questionSet.questions.length}
                 </div>
               </div>
             </div>
@@ -391,12 +377,27 @@ export default function QuestionsPage() {
           </div>
         </div>
 
+        <div className="text-right">
+          <div className="mb-2 flex items-center gap-2">
+            <button
+              onClick={() => setViewMode(viewMode === 'single' ? 'grid' : 'single')}
+              className="rounded-md bg-white bg-opacity-20 px-3 py-1 text-sm text-blue-500 transition-colors hover:bg-opacity-30"
+            >
+              {viewMode === 'single' ? '📋 Grid View' : '📝 Single View'}
+            </button>
+          </div>
+          <div className="mb-1 text-sm text-blue-700">Progress</div>
+          <div className="text-2xl font-bold text-gray-700">
+            {currentQuestionIndex + 1} / {questionSet.questions.length}
+          </div>
+        </div>
+
         {/* Grid View */}
         {viewMode === 'grid' && (
           <div className="mb-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
             {questionSet.questions.map((question, index) => (
               <div key={index} className="overflow-hidden rounded-lg bg-white shadow-md">
-                <div className="border-b border-gray-200 bg-gray-50 px-4 py-3">
+                <div className="border-b border-gray-200 bg-gray-200 px-4 py-3">
                   <div className="flex items-center justify-between">
                     <h3 className="text-lg font-semibold text-gray-900">Question {index + 1}</h3>
                     <span

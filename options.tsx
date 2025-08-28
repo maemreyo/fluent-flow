@@ -228,7 +228,7 @@ export default function OptionsPage() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="account" className="flex items-center gap-2">
               <Shield className="h-4 w-4" />
               Account
@@ -249,10 +249,10 @@ export default function OptionsPage() {
               <Database className="h-4 w-4" />
               API
             </TabsTrigger>
-            <TabsTrigger value="advanced" className="flex items-center gap-2">
+            {/* <TabsTrigger value="advanced" className="flex items-center gap-2">
               <Zap className="h-4 w-4" />
               Advanced
-            </TabsTrigger>
+            </TabsTrigger> */}
             <TabsTrigger value="about" className="flex items-center gap-2">
               <Info className="h-4 w-4" />
               About
@@ -534,7 +534,7 @@ export default function OptionsPage() {
                   </p>
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="gemini-model">Model</Label>
                   <Select
                     value={apiConfig.gemini?.model || 'gemini-2.5-flash-lite'}
@@ -579,9 +579,9 @@ export default function OptionsPage() {
                   <p className="text-sm text-muted-foreground">
                     Gemini 2.0 Flash supports native audio processing (recommended)
                   </p>
-                </div>
+                </div> */}
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <Label htmlFor="gemini-base-url">Base URL (Optional)</Label>
                   <Input
                     id="gemini-base-url"
@@ -601,7 +601,7 @@ export default function OptionsPage() {
                   <p className="text-sm text-muted-foreground">
                     Leave empty to use default Google API endpoint
                   </p>
-                </div>
+                </div> */}
 
                 <div className="space-y-3 pt-4">
                   <div className="flex items-center gap-2 text-sm">
@@ -982,7 +982,7 @@ export default function OptionsPage() {
                     </Button> */}
                     <Button variant="outline" size="sm" asChild>
                       <a
-                        href="https://developer.chrome.com/docs/extensions/"
+                        href="https://chromewebstore.google.com/detail/fluentflow-master-interac/lffdllhebmjfackhpepilijkdpkfbpab?fbclid=IwY2xjawMdYfZleHRuA2FlbQIxMABicmlkETFwTk93bkgwTEJONlZOU1BkAR7a4KDGHIssy_6Fo6wBs_KmwoGNLAZ2Ns5pv2pLfNneCUAC5bk_FWkwi0FlvA_aem_M_quvcdIQkmG-Ezi2lE_cQ"
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex items-center gap-2"

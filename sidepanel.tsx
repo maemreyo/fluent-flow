@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react'
 import { QueryProvider } from './components/providers/query-provider'
 import { AuthStatus } from './components/shared/AuthStatus'
 import { TabNavigation } from './components/shared/TabNavigation'
-import { ConversationsTab } from './components/tabs/ConversationsTab'
 import { DashboardTab } from './components/tabs/DashboardTab'
 // import { DebugTab } from './components/tabs/DebugTab'
 import { LoopsTab } from './components/tabs/LoopsTab'
@@ -18,18 +17,15 @@ import {
   getFluentFlowStore,
   useFluentFlowSupabaseStore as useFluentFlowStore
 } from './lib/stores/fluent-flow-supabase-store'
-import type {
-  ConversationQuestions,
-  SavedLoop
-} from './lib/types/fluent-flow-types'
+import type { ConversationQuestions, SavedLoop } from './lib/types/fluent-flow-types'
 import { calculateAnalytics, computeRealStatistics } from './lib/utils/analytics-calculator'
 import { formatDate, formatTime } from './lib/utils/formatters'
 import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
-  const [activeTab, setActiveTab] = useState<
-    'dashboard' | 'loops' | 'conversations' | 'debug'
-  >('dashboard')
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'conversations' | 'debug'>(
+    'dashboard'
+  )
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 
@@ -53,7 +49,7 @@ function FluentFlowSidePanelContent() {
     currentSession,
     currentVideo,
     deleteLoop: deleteLoopFromStore,
-    deleteAllUserLoops: deleteAllLoopsFromStore,
+    deleteAllUserLoops: deleteAllLoopsFromStore
   } = useFluentFlowStore()
 
   // Custom hooks for extracted functionality
@@ -64,20 +60,16 @@ function FluentFlowSidePanelContent() {
   const realStatistics = computeRealStatistics(allSessions, statistics)
 
   // Get analytics (enhanced or computed)
-  const analytics = !analyticsLoading && enhancedAnalytics
-    ? enhancedAnalytics
-    : calculateAnalytics(allSessions || [])
+  const analytics =
+    !analyticsLoading && enhancedAnalytics
+      ? enhancedAnalytics
+      : calculateAnalytics(allSessions || [])
 
   // Goals management
-  const {
-    goals,
-    goalSuggestions,
-    goalsProgress,
-    handleCreateGoal,
-    handleDeleteGoal
-  } = useGoalsManagement(allSessions, analytics)
+  const { goals, goalSuggestions, goalsProgress, handleCreateGoal, handleDeleteGoal } =
+    useGoalsManagement(allSessions, analytics)
 
-  // Session templates management  
+  // Session templates management
   const {
     templates,
     activePlans,
@@ -328,7 +320,7 @@ function FluentFlowSidePanelContent() {
               deletingAllLoops={deletingAllLoops}
             />
           </TabsContent>
-          <TabsContent value="conversations" className="mt-0 h-full overflow-y-auto">
+          {/* <TabsContent value="conversations" className="mt-0 h-full overflow-y-auto">
             <ConversationsTab
               integrationService={integrationService}
               activeQuestions={activeQuestions}
@@ -338,7 +330,7 @@ function FluentFlowSidePanelContent() {
               onSetActiveQuestions={setActiveQuestions}
               onSetActiveQuestionLoop={setActiveQuestionLoop}
             />
-          </TabsContent>
+          </TabsContent> */}
           {/* <TabsContent value="debug" className="mt-0 h-full overflow-y-auto">
             <DebugTab />
           </TabsContent> */}

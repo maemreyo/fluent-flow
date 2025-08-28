@@ -74,18 +74,12 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
       <button
         onClick={handleShare}
         disabled={isSharing || !questions || !loop}
-        className={`inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-600 px-3 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-        title="Share questions as a public link"
+        className={`inline-flex items-center gap-2 rounded-md border border-transparent bg-blue-600 px-3 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+        title={'Share questions as a public link'}
       >
         {isSharing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Share2 className="h-4 w-4" />}
         {isSharing ? 'Sharing...' : 'Share'}
       </button>
-
-      {error && (
-        <div className="mt-2 rounded-md border border-red-300 bg-red-100 p-2 text-sm text-red-700">
-          {error}
-        </div>
-      )}
 
       {/* Success Dialog */}
       {showDialog && shareUrl && (
@@ -170,6 +164,11 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
               </div>
             </div>
           </div>
+        </div>
+      )}
+      {error && (
+        <div className="mt-2 rounded-md border border-red-300 bg-red-100 p-2 text-sm text-red-700">
+          {error}
         </div>
       )}
     </>
