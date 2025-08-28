@@ -121,7 +121,7 @@ Please generate exactly 15 multiple-choice questions with the following criteria
       }
 
       const questions: ConversationQuestion[] = aiResponse.questions
-        .slice(0, 5)
+        .slice(0, 15)
         .map((q: any, index: number) => {
           // Validate question structure
           if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
@@ -135,26 +135,26 @@ Please generate exactly 15 multiple-choice questions with the following criteria
             correctAnswer: q.correctAnswer || 'A',
             explanation: q.explanation || 'No explanation provided',
             difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
-            type: ['main_idea', 'detail', 'vocabulary', 'inference', 'grammar'].includes(q.type)
+            type: ['main_idea', 'specific_detail', 'vocabulary_in_context', 'inference', 'speaker_tone', 'language_function'].includes(q.type)
               ? q.type
               : 'main_idea',
-            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 5
+            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
           }
         })
 
-      // Ensure we have exactly 5 questions
-      while (questions.length < 5) {
+      // Ensure we have exactly 15 questions
+      while (questions.length < 15) {
         const fallbackQuestions = this.generateFallbackQuestions(loop, transcript)
-        questions.push(...fallbackQuestions.questions.slice(questions.length, 5))
+        questions.push(...fallbackQuestions.questions.slice(questions.length, 15))
       }
 
       const duration = loop.endTime - loop.startTime
 
       return {
         loopId: loop.id,
-        questions: questions.slice(0, 5),
+        questions: questions.slice(0, 15),
         metadata: {
-          totalQuestions: 5,
+          totalQuestions: 15,
           analysisDate: new Date().toISOString(),
           generatedFromTranscript: true,
           transcriptLength: transcript.length,
@@ -282,15 +282,148 @@ Please generate exactly 15 multiple-choice questions with the following criteria
           'Effective educational content typically uses multiple types of supporting details.',
         difficulty: 'medium',
         type: 'detail'
+      },
+      {
+        question: 'What can you infer about the target audience of this video?',
+        options: [
+          'Complete beginners in the subject',
+          'Intermediate learners seeking improvement',
+          'Advanced professionals in the field',
+          'General audience with mixed backgrounds'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational videos typically target a general audience with varied backgrounds.',
+        difficulty: 'medium',
+        type: 'inference'
+      },
+      {
+        question: 'Which aspect of language learning does this segment emphasize most?',
+        options: [
+          'Reading comprehension skills',
+          'Writing and composition',
+          'Listening and comprehension',
+          'Speaking and pronunciation'
+        ],
+        correctAnswer: 'C',
+        explanation: 'Video content primarily focuses on listening and comprehension skills.',
+        difficulty: 'easy',
+        type: 'main_idea'
+      },
+      {
+        question: 'What tone does the speaker adopt throughout this segment?',
+        options: [
+          'Formal and academic',
+          'Casual and conversational',
+          'Serious and authoritative',
+          'Varies depending on content'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational speakers often adapt their tone based on the content being discussed.',
+        difficulty: 'hard',
+        type: 'speaker_tone'
+      },
+      {
+        question: 'What organizational pattern is used to present the information?',
+        options: [
+          'Chronological order',
+          'Problem-solution format',
+          'Compare and contrast',
+          'Sequential steps or topics'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational content typically follows a sequential or topical organization.',
+        difficulty: 'medium',
+        type: 'language_function'
+      },
+      {
+        question: 'Which learning strategy would be most effective for this type of content?',
+        options: [
+          'Memorization and repetition',
+          'Active listening with note-taking',
+          'Translation to native language',
+          'Focus only on individual words'
+        ],
+        correctAnswer: 'B',
+        explanation: 'Active listening with note-taking is most effective for educational video content.',
+        difficulty: 'medium',
+        type: 'inference'
+      },
+      {
+        question: 'What makes this segment challenging for English learners?',
+        options: [
+          'Complex grammatical structures only',
+          'Fast speaking pace throughout',
+          'Technical vocabulary and concepts',
+          'Combination of various factors'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational content challenges learners through multiple linguistic and conceptual factors.',
+        difficulty: 'hard',
+        type: 'vocabulary_in_context'
+      },
+      {
+        question: 'How does the speaker engage with the audience?',
+        options: [
+          'Through direct questions only',
+          'Using examples and illustrations',
+          'With formal academic language',
+          'Multiple engagement strategies'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Effective educators use various strategies to engage their audience.',
+        difficulty: 'medium',
+        type: 'language_function'
+      },
+      {
+        question: 'What cultural knowledge might enhance understanding of this content?',
+        options: [
+          'No cultural knowledge needed',
+          'Basic understanding of context',
+          'Deep cultural familiarity required',
+          'Varies with specific topics discussed'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Cultural knowledge requirements vary depending on the specific content being discussed.',
+        difficulty: 'hard',
+        type: 'inference'
+      },
+      {
+        question: 'What listening skills are being developed through this segment?',
+        options: [
+          'Understanding main ideas only',
+          'Identifying specific details',
+          'Following logical connections',
+          'All of the above'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Comprehensive listening involves multiple sub-skills working together.',
+        difficulty: 'easy',
+        type: 'specific_detail'
+      },
+      {
+        question: 'How can learners best prepare for similar content?',
+        options: [
+          'Focus on grammar rules only',
+          'Build relevant vocabulary first',
+          'Practice listening to similar materials',
+          'Combine multiple preparation strategies'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Effective preparation involves multiple complementary strategies.',
+        difficulty: 'medium',
+        type: 'language_function'
       }
     ]
 
-    // Generate 5 questions with unique IDs
-    const questions: ConversationQuestion[] = baseQuestions.slice(0, 5).map((q, index) => ({
-      ...q,
-      id: `q_${loop.id}_${index + 1}`,
-      timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 5
-    }))
+    // Generate 15 questions with unique IDs, cycling through base questions if needed
+    const questions: ConversationQuestion[] = Array.from({ length: 15 }, (_, index) => {
+      const baseQuestion = baseQuestions[index % baseQuestions.length]
+      return {
+        ...baseQuestion,
+        id: `q_${loop.id}_${index + 1}`,
+        timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
+      }
+    })
 
     const duration = loop.endTime - loop.startTime
 
@@ -298,7 +431,7 @@ Please generate exactly 15 multiple-choice questions with the following criteria
       loopId: loop.id,
       questions,
       metadata: {
-        totalQuestions: questions.length,
+        totalQuestions: 15,
         analysisDate: new Date().toISOString(),
         generatedFromTranscript: !!transcript,
         transcriptLength: transcript?.length,

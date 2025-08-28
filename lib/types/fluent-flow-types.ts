@@ -328,7 +328,7 @@ export interface ConversationQuestion {
   correctAnswer: string // e.g., "A", "B", "C", "D"
   explanation: string
   difficulty: 'easy' | 'medium' | 'hard'
-  type: 'main_idea' | 'detail' | 'vocabulary' | 'inference' | 'grammar'
+  type: 'main_idea' | 'specific_detail' | 'vocabulary_in_context' | 'inference' | 'speaker_tone' | 'language_function' | 'detail' | 'vocabulary' | 'grammar'
   timestamp?: number // Time in audio where this relates
 }
 
