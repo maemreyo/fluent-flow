@@ -1,36 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sharedQuestions } from '../../../../lib/shared-storage'
+import { corsResponse, corsHeaders } from '../../../../lib/cors'
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders()
+  })
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params
+    const { token } = await params
 
     if (!token) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Token is required' },
-        { status: 400 }
+        400
       )
     }
 
+    console.log(`Looking for token: ${token}`)
+    console.log(`Available tokens:`, Array.from(sharedQuestions.keys()))
+    console.log(`Storage size:`, sharedQuestions.size)
+    
     const questionSet = sharedQuestions.get(token)
 
     if (!questionSet) {
-      return NextResponse.json(
+      console.log(`Token ${token} not found in storage`)
+      return corsResponse(
         { error: 'Questions not found or expired' },
-        { status: 404 }
+        404
       )
     }
 
-    return NextResponse.json(questionSet)
+    console.log(`Found question set for token: ${token}`)
+
+    return corsResponse(questionSet)
 
   } catch (error) {
     console.error('Failed to get shared questions:', error)
-    return NextResponse.json(
+    return corsResponse(
       { error: 'Failed to load questions' },
-      { status: 500 }
+      500
     )
   }
 }

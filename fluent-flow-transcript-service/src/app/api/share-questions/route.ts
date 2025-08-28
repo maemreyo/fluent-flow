@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { sharedQuestions } from '../../../lib/shared-storage'
+import { corsResponse, corsHeaders } from '../../../lib/cors'
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders()
+  })
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -8,9 +16,9 @@ export async function POST(request: NextRequest) {
     const { questions, loop, options = {} } = body
 
     if (!questions || !loop) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Questions and loop data are required' },
-        { status: 400 }
+        400
       )
     }
 
@@ -44,8 +52,13 @@ export async function POST(request: NextRequest) {
     sharedQuestions.set(shareToken, sharedQuestionSet)
 
     console.log(`Questions shared successfully: ${shareToken}`)
+    console.log(`Stored question set:`, {
+      token: shareToken,
+      keys: Array.from(sharedQuestions.keys()),
+      size: sharedQuestions.size
+    })
 
-    return NextResponse.json({
+    return corsResponse({
       shareToken,
       shareUrl: sharedQuestionSet.shareUrl,
       id: shareId
@@ -53,9 +66,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Failed to share questions:', error)
-    return NextResponse.json(
+    return corsResponse(
       { error: 'Failed to share questions' },
-      { status: 500 }
+      500
     )
   }
 }

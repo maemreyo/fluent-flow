@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sharedQuestions } from '../../../../lib/shared-storage'
+import { corsResponse, corsHeaders } from '../../../../lib/cors'
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders()
+  })
+}
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { sessionId: string } }
+  { params }: { params: Promise<{ sessionId: string }> }
 ) {
   try {
-    const { sessionId } = params
+    const { sessionId } = await params
 
     if (!sessionId) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Session ID is required' },
-        { status: 400 }
+        400
       )
     }
 
@@ -31,9 +39,9 @@ export async function GET(
     }
 
     if (!foundSession || !foundQuestionSet) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Session not found' },
-        { status: 404 }
+        404
       )
     }
 
@@ -47,13 +55,13 @@ export async function GET(
       submittedAt: foundSession.submittedAt
     }
 
-    return NextResponse.json(result)
+    return corsResponse(result)
 
   } catch (error) {
     console.error('Failed to get session results:', error)
-    return NextResponse.json(
+    return corsResponse(
       { error: 'Failed to load session results' },
-      { status: 500 }
+      500
     )
   }
 }

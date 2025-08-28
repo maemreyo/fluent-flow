@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { sharedQuestions } from '../../../../../lib/shared-storage'
+import { corsResponse, corsHeaders } from '../../../../../lib/cors'
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders()
+  })
+}
 
 // Helper function to check answers and calculate score
 function checkAnswers(questions: any[], responses: any[]) {
@@ -28,33 +36,33 @@ function checkAnswers(questions: any[], responses: any[]) {
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { token: string } }
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
-    const { token } = params
+    const { token } = await params
     const body = await request.json()
     const { responses } = body
 
     if (!token) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Token is required' },
-        { status: 400 }
+        400
       )
     }
 
     if (!responses || !Array.isArray(responses)) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Valid responses array is required' },
-        { status: 400 }
+        400
       )
     }
 
     const questionSet = sharedQuestions.get(token)
 
     if (!questionSet) {
-      return NextResponse.json(
+      return corsResponse(
         { error: 'Questions not found or expired' },
-        { status: 404 }
+        404
       )
     }
 
@@ -90,13 +98,13 @@ export async function POST(
       submittedAt: session.submittedAt
     }
 
-    return NextResponse.json(result)
+    return corsResponse(result)
 
   } catch (error) {
     console.error('Failed to submit answers:', error)
-    return NextResponse.json(
+    return corsResponse(
       { error: 'Failed to submit answers' },
-      { status: 500 }
+      500
     )
   }
 }

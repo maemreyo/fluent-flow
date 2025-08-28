@@ -318,15 +318,17 @@ export function EnhancedLoopCardWithIntegration({
                   }
                   setShowQuestions(true)
                 }}
+                title="Start interactive practice session with generated questions"
               >
                 <Play className="mr-1 h-4 w-4" />
-                Start Practice
+                Practice
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleGenerateQuestions}
                 disabled={generateQuestionsMutation.isPending}
+                title="Generate new questions from the transcript"
               >
                 <RotateCcw className="mr-1 h-4 w-4" />
                 Regenerate
@@ -444,6 +446,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => onApply?.(loop)}
             disabled={isApplying}
             className="flex-1"
+            title="Navigate to the video and apply this loop's time segment"
           >
             {isApplying ? (
               <Loader2 className="mr-1 h-4 w-4 animate-spin" />
@@ -453,9 +456,14 @@ export function EnhancedLoopCardWithIntegration({
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => setShowTranscript(!showTranscript)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setShowTranscript(!showTranscript)}
+            title={showTranscript ? "Hide transcript" : "Show transcript"}
+          >
             <Target className="mr-1 h-4 w-4" />
-            Transcript
+            {/* Transcript */}
           </Button>
 
           {/* Show Overlay Button */}
@@ -468,7 +476,7 @@ export function EnhancedLoopCardWithIntegration({
             }
             title={
               cachedQuestions || activeQuestions
-                ? 'Show questions on YouTube tab (perfect for screen sharing)'
+                ? 'Show questions on YouTube tab'
                 : 'Generate and show questions on YouTube tab'
             }
           >
@@ -477,17 +485,27 @@ export function EnhancedLoopCardWithIntegration({
             ) : (
               <Monitor className="mr-1 h-4 w-4" />
             )}
-            {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'}
+            {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => onExport?.(loop)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onExport?.(loop)}
+            title="Export loop data as JSON file"
+          >
             <Download className="mr-1 h-4 w-4" />
-            Export
+            {/* Export */}
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => onDelete?.(loop.id)}>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => onDelete?.(loop.id)}
+            title="Delete this loop permanently"
+          >
             <Trash2 className="mr-1 h-4 w-4" />
-            Delete
+            {/* Delete */}
           </Button>
         </div>
 

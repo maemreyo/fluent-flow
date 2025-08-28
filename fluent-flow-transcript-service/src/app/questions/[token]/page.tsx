@@ -18,6 +18,8 @@ interface QuestionSet {
   title: string
   videoTitle: string
   videoUrl: string
+  startTime?: number
+  endTime?: number
   questions: Question[]
   metadata: {
     totalQuestions: number
@@ -289,60 +291,124 @@ export default function QuestionsPage() {
     <div className="min-h-screen bg-gray-50 py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">{questionSet.title}</h1>
-              <p className="text-gray-600">📺 {questionSet.videoTitle}</p>
-              <p className="text-sm text-gray-500">
-                Shared by {questionSet.metadata.sharedBy} • {new Date(questionSet.metadata.createdAt).toLocaleDateString()}
-              </p>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-500">Progress</div>
-              <div className="text-lg font-semibold text-gray-900">
-                {currentQuestionIndex + 1} / {questionSet.questions.length}
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <h1 className="text-2xl font-bold mb-2">{questionSet.title}</h1>
+                <div className="flex items-center gap-6 text-blue-100">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">📺</span>
+                    <span className="font-medium">{questionSet.videoTitle}</span>
+                  </div>
+                  {questionSet.startTime !== undefined && questionSet.endTime !== undefined && (
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">⏱️</span>
+                      <span>
+                        {Math.floor(questionSet.startTime / 60)}:{(questionSet.startTime % 60).toString().padStart(2, '0')} - {Math.floor(questionSet.endTime / 60)}:{(questionSet.endTime % 60).toString().padStart(2, '0')}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="text-right">
+                <div className="text-blue-200 text-sm mb-1">Progress</div>
+                <div className="text-2xl font-bold">
+                  {currentQuestionIndex + 1} / {questionSet.questions.length}
+                </div>
               </div>
             </div>
           </div>
           
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div 
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300" 
-              style={{ width: `${progress}%` }}
-            ></div>
+          <div className="p-6 bg-gray-50">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-4 text-sm text-gray-600">
+                <div className="flex items-center gap-1">
+                  <span>👤</span>
+                  <span>Shared by {questionSet.metadata.sharedBy}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>📅</span>
+                  <span>{new Date(questionSet.metadata.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>🎯</span>
+                  <span>{questionSet.metadata.totalQuestions} questions</span>
+                </div>
+              </div>
+            </div>
+            
+            <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-indigo-500 h-3 rounded-full transition-all duration-500 ease-out" 
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
+            
+            {questionSet.videoUrl && (
+              <div className="mt-3">
+                <a 
+                  href={questionSet.videoUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  <span>🔗</span>
+                  <span>Watch Original Video</span>
+                  <span className="text-xs">↗</span>
+                </a>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Question */}
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">
-              Question {currentQuestionIndex + 1}
-            </h2>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(currentQuestion.difficulty)}`}>
-              {currentQuestion.difficulty} • {currentQuestion.type}
-            </span>
+        <div className="bg-white rounded-lg shadow-md overflow-hidden mb-6">
+          <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-bold text-gray-900">
+                Question {currentQuestionIndex + 1}
+              </h2>
+              <span className={`px-3 py-1 rounded-full text-sm font-medium ${getDifficultyColor(currentQuestion.difficulty)}`}>
+                {currentQuestion.difficulty} • {currentQuestion.type}
+              </span>
+            </div>
           </div>
           
-          <p className="text-lg text-gray-800 mb-6 leading-relaxed">
-            {currentQuestion.question}
-          </p>
+          <div className="p-6">
+            <div className="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+              <p className="text-xl text-gray-900 leading-relaxed font-medium">
+                {currentQuestion.question}
+              </p>
+            </div>
 
-          <div className="space-y-3">
+          <div className="space-y-4">
             {currentQuestion.options.map((option, index) => (
               <button
                 key={index}
                 onClick={() => handleAnswerSelect(option)}
-                className={`w-full text-left p-4 border-2 rounded-lg transition-all ${
+                className={`w-full text-left p-5 border-2 rounded-xl transition-all duration-200 ${
                   getCurrentResponse() === option
-                    ? 'border-blue-500 bg-blue-50 text-blue-900'
-                    : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                    ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
+                    : 'border-gray-300 hover:border-blue-300 hover:bg-blue-25 hover:shadow-sm text-gray-800 bg-white'
                 }`}
               >
-                <span className="font-medium">{String.fromCharCode(65 + index)}.</span> {option}
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 font-semibold text-sm">
+                    {String.fromCharCode(65 + index)}
+                  </span>
+                  <span className="flex-1 text-gray-900 leading-relaxed">
+                    {option}
+                  </span>
+                  {getCurrentResponse() === option && (
+                    <span className="flex-shrink-0 text-blue-500">
+                      ✓
+                    </span>
+                  )}
+                </div>
               </button>
             ))}
+          </div>
           </div>
         </div>
 

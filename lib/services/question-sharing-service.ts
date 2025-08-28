@@ -31,43 +31,23 @@ export class QuestionSharingService {
     } = {}
   ): Promise<{ shareToken: string; shareUrl: string }> {
     try {
-      // Generate a unique share token
-      const shareToken = this.generateShareToken()
-
-      // Prepare the shared question set
-      const sharedQuestionSet: Omit<SharedQuestionSet, 'id'> = {
-        title: options.title || loop.videoTitle || `Questions for ${loop.title}`,
-        videoTitle: loop.videoTitle,
-        videoUrl: loop.videoUrl,
-        startTime: loop.startTime,
-        endTime: loop.endTime,
-        questions: questions.questions,
-        metadata: {
-          totalQuestions: questions.questions.length,
-          createdAt: new Date().toISOString(),
-          sharedBy: options.sharedBy,
-          difficulty: this.calculateOverallDifficulty(questions.questions),
-          topics: this.extractTopics(questions.questions)
-        },
-        isPublic: options.isPublic ?? true,
-        shareToken
-      }
-
       // Send to backend
-      const response = await this.sendToBackend('/api/questions/share', {
+      const response = await this.sendToBackend('/api/share-questions', {
         method: 'POST',
-        body: JSON.stringify(sharedQuestionSet)
+        body: JSON.stringify({
+          questions,
+          loop,
+          options
+        })
       })
 
       if (!response.success) {
         throw new Error(response.error || 'Failed to share questions')
       }
 
-      const shareUrl = `${this.config.backendUrl}/questions/${shareToken}`
-
       return {
-        shareToken,
-        shareUrl
+        shareToken: response.data.shareToken,
+        shareUrl: response.data.shareUrl
       }
     } catch (error) {
       console.error('Failed to share questions:', error)

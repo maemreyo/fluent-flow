@@ -1,0 +1,28 @@
+1. Tôi lại thấy được rồi:
+```
+
+Questions shared successfully: 543be2c7-4269-47b9-8710-3dce0f1a9be3
+Stored question set: {
+  token: '543be2c7-4269-47b9-8710-3dce0f1a9be3',
+  keys: [ '543be2c7-4269-47b9-8710-3dce0f1a9be3' ],
+  size: 1
+}
+ POST /api/share-questions 200 in 309ms
+ GET /questions/543be2c7-4269-47b9-8710-3dce0f1a9be3 200 in 124ms
+Looking for token: 543be2c7-4269-47b9-8710-3dce0f1a9be3
+Available tokens: [ '543be2c7-4269-47b9-8710-3dce0f1a9be3' ]
+Storage size: 1
+Found question set for token: 543be2c7-4269-47b9-8710-3dce0f1a9be3
+ GET /api/questions/543be2c7-4269-47b9-8710-3dce0f1a9be3 200 in 257ms
+ GET /questions/543be2c7-4269-47b9-8710-3dce0f1a9be3 200 in 106ms
+Looking for token: 543be2c7-4269-47b9-8710-3dce0f1a9be3
+Available tokens: [ '543be2c7-4269-47b9-8710-3dce0f1a9be3' ]
+Storage size: 1
+Found question set for token: 543be2c7-4269-47b9-8710-3dce0f1a9be3
+ GET /api/questions/543be2c7-4269-47b9-8710-3dce0f1a9be3 200 in 240ms
+
+```
+trong tương lai, cần triển khai thế nào, storage đang ở đâu vậy?
+2. Cần làm tròn starttime và endtime
+3. cần có chế độ show toàn bộ câu hỏi theo grid với 2 cột
+4. progress cần chuyển xuống dưới, thay vì trên info của video
