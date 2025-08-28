@@ -1,27 +1,28 @@
-import React, { useState } from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { 
-  Play, 
-  Pause, 
-  RotateCcw, 
-  MessageSquare, 
-  Clock, 
-  Target,
-  Loader2,
+import { useState } from 'react'
+import {
   AlertCircle,
-  CheckCircle,
-  Download,
-  Trash2,
-  Settings,
   Brain,
-  Monitor
+  CheckCircle,
+  Clock,
+  Download,
+  Loader2,
+  Monitor,
+  Play,
+  RotateCcw,
+  Target,
+  Trash2
 } from 'lucide-react'
+import { useGenerateQuestionsMutation, useQuestionsQuery } from '../lib/hooks/use-question-query'
 import { useTranscriptQuery } from '../lib/hooks/use-transcript-query'
-import { useQuestionsQuery, useGenerateQuestionsMutation } from '../lib/hooks/use-question-query'
+import type {
+  ConversationQuestions,
+  QuestionPracticeResult,
+  SavedLoop
+} from '../lib/types/fluent-flow-types'
 import { ConversationQuestionsPanel } from './conversation-questions-panel'
-import type { SavedLoop, ConversationQuestions, QuestionPracticeResult } from '../lib/types/fluent-flow-types'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 
 interface EnhancedLoopCardWithIntegrationProps {
   loop: SavedLoop
@@ -33,14 +34,14 @@ interface EnhancedLoopCardWithIntegrationProps {
   className?: string
 }
 
-export function EnhancedLoopCardWithIntegration({ 
-  loop, 
+export function EnhancedLoopCardWithIntegration({
+  loop,
   integrationService,
-  onApply, 
-  onDelete, 
+  onApply,
+  onDelete,
   onExport,
   isApplying = false,
-  className = ""
+  className = ''
 }: EnhancedLoopCardWithIntegrationProps) {
   const [showTranscript, setShowTranscript] = useState(false)
   const [showQuestions, setShowQuestions] = useState(false)
@@ -48,18 +49,14 @@ export function EnhancedLoopCardWithIntegration({
   const [questionsCompleted, setQuestionsCompleted] = useState(false)
   const [lastScore, setLastScore] = useState<number | null>(null)
   const [isShowingOverlay, setIsShowingOverlay] = useState(false)
-  
+
   // Use React Query for transcript data
   const {
     data: transcriptData,
     isLoading: transcriptLoading,
     error: transcriptError,
     refetch: refetchTranscript
-  } = useTranscriptQuery(
-    loop.videoId || '',
-    loop.startTime,
-    loop.endTime
-  )
+  } = useTranscriptQuery(loop.videoId || '', loop.startTime, loop.endTime)
 
   // Use React Query for questions data (check if already cached)
   const {
@@ -90,7 +87,7 @@ export function EnhancedLoopCardWithIntegration({
         loopId: loop.id,
         integrationService
       })
-      
+
       setActiveQuestions(result)
       setShowQuestions(true)
     } catch (error) {
@@ -141,9 +138,11 @@ export function EnhancedLoopCardWithIntegration({
       // Send questions to overlay on YouTube tab
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const activeTab = tabs[0]
-      
+
       if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
-        const questionsArray = Array.isArray(questionsToShow) ? questionsToShow : questionsToShow.questions || []
+        const questionsArray = Array.isArray(questionsToShow)
+          ? questionsToShow
+          : questionsToShow.questions || []
         await chrome.tabs.sendMessage(activeTab.id!, {
           type: 'SHOW_QUESTION_OVERLAY',
           questions: {
@@ -174,9 +173,9 @@ export function EnhancedLoopCardWithIntegration({
     if (!showTranscript) return null
 
     return (
-      <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-sm">Transcript</h4>
+      <div className="mt-4 rounded-lg bg-gray-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-sm font-medium">Transcript</h4>
           <div className="flex items-center gap-2">
             {transcriptLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {transcriptError && (
@@ -193,34 +192,32 @@ export function EnhancedLoopCardWithIntegration({
             )}
           </div>
         </div>
-        
+
         {transcriptLoading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             <span className="text-sm text-gray-600">Loading transcript...</span>
           </div>
         )}
-        
+
         {transcriptError && (
-          <div className="text-red-600 text-sm py-2">
+          <div className="py-2 text-sm text-red-600">
             <p>Failed to load transcript</p>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={() => refetchTranscript()}
               className="mt-2"
             >
-              <RotateCcw className="h-4 w-4 mr-1" />
+              <RotateCcw className="mr-1 h-4 w-4" />
               Retry
             </Button>
           </div>
         )}
-        
+
         {transcriptData && (
           <div className="space-y-2">
-            <p className="text-sm text-gray-700 leading-relaxed">
-              {transcriptData.fullText}
-            </p>
+            <p className="text-sm leading-relaxed text-gray-700">{transcriptData.fullText}</p>
             <div className="flex items-center gap-2 text-xs text-gray-500">
               <span>{transcriptData.segments.length} segments</span>
               <span>•</span>
@@ -237,9 +234,9 @@ export function EnhancedLoopCardWithIntegration({
     const isLoading = questionsLoading || generateQuestionsMutation.isPending
 
     return (
-      <div className="mt-4 p-3 bg-blue-50 rounded-lg">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="font-medium text-sm">Conversation Questions</h4>
+      <div className="mt-4 rounded-lg bg-blue-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <h4 className="text-sm font-medium">Conversation Questions</h4>
           <div className="flex items-center gap-2">
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {(questionsError || generateQuestionsMutation.error) && (
@@ -256,37 +253,39 @@ export function EnhancedLoopCardWithIntegration({
             )}
           </div>
         </div>
-        
+
         {isLoading && (
           <div className="flex items-center justify-center py-4">
-            <Loader2 className="h-5 w-5 animate-spin mr-2" />
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             <span className="text-sm text-gray-600">
-              {generateQuestionsMutation.isPending ? 'Generating questions...' : 'Loading questions...'}
+              {generateQuestionsMutation.isPending
+                ? 'Generating questions...'
+                : 'Loading questions...'}
             </span>
           </div>
         )}
-        
+
         {(questionsError || generateQuestionsMutation.error) && (
-          <div className="text-red-600 text-sm py-2">
+          <div className="py-2 text-sm text-red-600">
             <p>Failed to load questions</p>
-            <div className="flex gap-2 mt-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+            <div className="mt-2 flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleGenerateQuestions}
                 disabled={generateQuestionsMutation.isPending}
               >
-                <Brain className="h-4 w-4 mr-1" />
+                <Brain className="mr-1 h-4 w-4" />
                 Generate
               </Button>
             </div>
           </div>
         )}
-        
+
         {questions && questions.length > 0 && (
           <div className="space-y-2">
             {questions.slice(0, 3).map((question, index) => (
-              <div key={index} className="p-2 bg-white rounded border text-sm">
+              <div key={index} className="rounded border bg-white p-2 text-sm">
                 <p className="font-medium text-gray-800">{question.question}</p>
                 {question.difficulty && (
                   <Badge variant="secondary" className="mt-1 text-xs">
@@ -296,14 +295,12 @@ export function EnhancedLoopCardWithIntegration({
               </div>
             ))}
             {questions.length > 3 && (
-              <p className="text-xs text-gray-500 mt-2">
-                +{questions.length - 3} more questions
-              </p>
+              <p className="mt-2 text-xs text-gray-500">+{questions.length - 3} more questions</p>
             )}
-            <div className="flex gap-2 mt-3">
-              <Button 
-                variant="default" 
-                size="sm" 
+            <div className="mt-3 flex gap-2">
+              <Button
+                variant="default"
+                size="sm"
                 onClick={() => {
                   if (cachedQuestions) {
                     setActiveQuestions({
@@ -320,48 +317,46 @@ export function EnhancedLoopCardWithIntegration({
                   setShowQuestions(true)
                 }}
               >
-                <Play className="h-4 w-4 mr-1" />
+                <Play className="mr-1 h-4 w-4" />
                 Start Practice
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={handleGenerateQuestions}
                 disabled={generateQuestionsMutation.isPending}
               >
-                <RotateCcw className="h-4 w-4 mr-1" />
+                <RotateCcw className="mr-1 h-4 w-4" />
                 Regenerate
               </Button>
             </div>
           </div>
         )}
-        
+
         {questions && questions.length === 0 && (
-          <div className="text-center py-4">
-            <p className="text-sm text-gray-600 mb-3">
-              No questions available for this segment.
-            </p>
-            <Button 
-              variant="default" 
-              size="sm" 
+          <div className="py-4 text-center">
+            <p className="mb-3 text-sm text-gray-600">No questions available for this segment.</p>
+            <Button
+              variant="default"
+              size="sm"
               onClick={handleGenerateQuestions}
               disabled={generateQuestionsMutation.isPending}
             >
-              <Brain className="h-4 w-4 mr-1" />
+              <Brain className="mr-1 h-4 w-4" />
               Generate Questions
             </Button>
           </div>
         )}
 
         {!questions && !isLoading && (
-          <div className="text-center py-4">
-            <Button 
-              variant="default" 
-              size="sm" 
+          <div className="py-4 text-center">
+            <Button
+              variant="default"
+              size="sm"
               onClick={handleGenerateQuestions}
               disabled={generateQuestionsMutation.isPending || !integrationService}
             >
-              <Brain className="h-4 w-4 mr-1" />
+              <Brain className="mr-1 h-4 w-4" />
               Generate Questions
             </Button>
           </div>
@@ -386,18 +381,16 @@ export function EnhancedLoopCardWithIntegration({
   }
 
   return (
-    <Card className={`mb-4 hover:shadow-md transition-shadow ${className}`}>
+    <Card className={`mb-4 transition-shadow hover:shadow-md ${className}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <CardTitle className="text-base font-semibold truncate">
-              {loop.title}
-            </CardTitle>
-            <CardDescription className="text-sm text-gray-600 mt-1 truncate">
+            <CardTitle className="truncate text-base font-semibold">{loop.title}</CardTitle>
+            <CardDescription className="mt-1 truncate text-sm text-gray-600">
               {loop.videoTitle}
             </CardDescription>
           </div>
-          <div className="flex flex-col items-end gap-1 ml-2">
+          <div className="ml-2 flex flex-col items-end gap-1">
             <Badge variant="outline" className="text-xs">
               {formatDuration(loop.startTime, loop.endTime)}
             </Badge>
@@ -406,19 +399,19 @@ export function EnhancedLoopCardWithIntegration({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <div className="flex items-center justify-between text-sm text-gray-600 mb-3">
+        <div className="mb-3 flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              <span>{formatTime(loop.startTime)} - {formatTime(loop.endTime)}</span>
+              <span>
+                {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
+              </span>
             </div>
           </div>
         </div>
 
         {loop.description && (
-          <p className="text-sm text-gray-700 mb-3 line-clamp-2">
-            {loop.description}
-          </p>
+          <p className="mb-3 line-clamp-2 text-sm text-gray-700">{loop.description}</p>
         )}
 
         {/* Enhanced sections with React Query */}
@@ -426,7 +419,7 @@ export function EnhancedLoopCardWithIntegration({
         {renderQuestionsSection()}
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-2 mt-4">
+        <div className="mt-4 flex flex-wrap gap-2">
           <Button
             variant="default"
             size="sm"
@@ -435,19 +428,15 @@ export function EnhancedLoopCardWithIntegration({
             className="flex-1"
           >
             {isApplying ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
             ) : (
-              <Play className="h-4 w-4 mr-1" />
+              <Play className="mr-1 h-4 w-4" />
             )}
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowTranscript(!showTranscript)}
-          >
-            <Target className="h-4 w-4 mr-1" />
+
+          <Button variant="outline" size="sm" onClick={() => setShowTranscript(!showTranscript)}>
+            <Target className="mr-1 h-4 w-4" />
             Transcript
           </Button>
 
@@ -456,41 +445,36 @@ export function EnhancedLoopCardWithIntegration({
             variant="outline"
             size="sm"
             onClick={handleShowOverlay}
-            disabled={isShowingOverlay || generateQuestionsMutation.isPending || !integrationService}
-            title={cachedQuestions || activeQuestions 
-              ? "Show questions on YouTube tab (perfect for screen sharing)" 
-              : "Generate and show questions on YouTube tab"
+            disabled={
+              isShowingOverlay || generateQuestionsMutation.isPending || !integrationService
+            }
+            title={
+              cachedQuestions || activeQuestions
+                ? 'Show questions on YouTube tab (perfect for screen sharing)'
+                : 'Generate and show questions on YouTube tab'
             }
           >
             {isShowingOverlay ? (
-              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
             ) : (
-              <Monitor className="h-4 w-4 mr-1" />
+              <Monitor className="mr-1 h-4 w-4" />
             )}
             {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'}
           </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onExport?.(loop)}
-          >
-            <Download className="h-4 w-4 mr-1" />
+
+          <Button variant="outline" size="sm" onClick={() => onExport?.(loop)}>
+            <Download className="mr-1 h-4 w-4" />
             Export
           </Button>
 
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDelete?.(loop.id)}
-          >
-            <Trash2 className="h-4 w-4 mr-1" />
+          <Button variant="outline" size="sm" onClick={() => onDelete?.(loop.id)}>
+            <Trash2 className="mr-1 h-4 w-4" />
             Delete
           </Button>
         </div>
 
         {/* Status indicators */}
-        <div className="flex items-center gap-3 mt-3 pt-3 border-t">
+        <div className="mt-3 flex items-center gap-3 border-t pt-3">
           <div className="flex items-center gap-1 text-xs text-gray-500">
             {transcriptData ? (
               <CheckCircle className="h-3 w-3 text-green-500" />
@@ -501,7 +485,7 @@ export function EnhancedLoopCardWithIntegration({
             )}
             <span>Transcript</span>
           </div>
-          
+
           <div className="flex items-center gap-1 text-xs text-gray-500">
             {cachedQuestions && cachedQuestions.length > 0 ? (
               <CheckCircle className="h-3 w-3 text-green-500" />
@@ -512,30 +496,21 @@ export function EnhancedLoopCardWithIntegration({
             )}
             <span>Questions ({cachedQuestions?.length || 0})</span>
           </div>
-
-          {loop.hasAudioSegment && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <CheckCircle className="h-3 w-3 text-blue-500" />
-              <span>Audio</span>
-            </div>
-          )}
         </div>
 
         {/* Show completion results */}
         {questionsCompleted && lastScore !== null && (
-          <div className="mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+          <div className="mt-3 rounded-lg border border-green-200 bg-green-50 p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <CheckCircle className="h-4 w-4 text-green-600" />
                 <span className="text-sm font-medium text-green-800">Practice Completed!</span>
               </div>
-              <Badge className="bg-green-100 text-green-800 border-green-300">
+              <Badge className="border-green-300 bg-green-100 text-green-800">
                 Score: {Math.round(lastScore)}%
               </Badge>
             </div>
-            <p className="text-xs text-green-700 mt-1">
-              Great job! Your results have been saved.
-            </p>
+            <p className="mt-1 text-xs text-green-700">Great job! Your results have been saved.</p>
           </div>
         )}
       </CardContent>

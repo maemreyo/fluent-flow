@@ -1,8 +1,9 @@
-import type { SavedLoop } from '../types/fluent-flow-types'
-import { createClient } from '@supabase/supabase-js'
-import { v4 as uuidv4 } from 'uuid'
+import { createClient } from '@supabase/supabase-js';
+import { v4 as uuidv4 } from 'uuid';
+import type { SavedLoop } from '../types/fluent-flow-types';
 
-export interface CreateLoopWithAudioData {
+
+export interface CreateLoopData {
   title: string
   videoId: string
   videoTitle: string
@@ -10,8 +11,6 @@ export interface CreateLoopWithAudioData {
   startTime: number
   endTime: number
   description?: string
-  audioRetentionPolicy?: 'temporary' | 'keep' | 'auto-cleanup'
-  captureAudio?: boolean
 }
 
 export class EnhancedLoopService {
@@ -20,6 +19,7 @@ export class EnhancedLoopService {
   constructor(storageService: any) {
     this.storageService = storageService
   }
+  
   /**
    * Helper method to get a single loop by ID
    */
@@ -29,13 +29,23 @@ export class EnhancedLoopService {
   }
 
   /**
-   * Creates a loop with optional audio capture
+   * Creates a loop
    */
-  async createLoopWithAudio(loopData: CreateLoopWithAudioData): Promise<SavedLoop> {
-    // Step 0: Validate input data
+  async createLoop(loopData: CreateLoopData): Promise<SavedLoop> {
     this.validateLoopData(loopData)
+    
+    const existingLoops = await this.storageService.getAllUserLoops()
+    const duplicateLoop = existingLoops.find((loop: SavedLoop) => 
+      loop.videoId === loopData.videoId && 
+      Math.abs(loop.startTime - loopData.startTime) < 1 && 
+      Math.abs(loop.endTime - loopData.endTime) < 1
+    )
+    
+    if (duplicateLoop) {
+      throw new Error('A loop with the same video and time range already exists')
+    }
 
-    // Step 1: Create basic loop structure
+    // Create base loop object
     const loop: SavedLoop = {
       id: this.generateId(),
       title: loopData.title,
@@ -47,83 +57,17 @@ export class EnhancedLoopService {
       description: loopData.description,
       createdAt: new Date(),
       updatedAt: new Date(),
-      
-      // Initialize audio fields
-      hasAudioSegment: false,
-      audioRetentionPolicy: loopData.audioRetentionPolicy || 'auto-cleanup',
-      questionsGenerated: false,
-      totalQuestionsGenerated: 0
+      // Initialize transcript fields
+      hasTranscript: false,
+      questionsGenerated: false
     }
 
-    // Step 2: Capture audio if requested and supported
-    // Audio capture functionality removed
-    if (false) {
-      try {
-        const videoElement = this.getVideoElement()
-        if (videoElement) {
-          console.log(`Capturing audio for loop: ${loop.title} (${loopData.startTime}s - ${loopData.endTime}s)`)
-          
-          const audioBlob = null // Audio capture removed
-          const audioBase64 = null // Audio capture removed  
-          const audioFormat = null // Audio capture removed
-
-          // Update loop with audio data
-          loop.hasAudioSegment = true
-          loop.audioSegmentBlob = audioBase64
-          loop.audioFormat = audioFormat
-          loop.audioSize = audioBlob.size
-          loop.audioCreatedAt = new Date()
-          loop.audioLastUsed = new Date()
-
-          console.log(`Audio captured: ${audioFormat}, ${(audioBlob.size / 1024).toFixed(1)}KB`)
-        }
-      } catch (error) {
-        console.warn('Audio capture failed, saving loop without audio:', error)
-        // Continue without audio - this is not a fatal error
-      }
-    }
-
-    // Step 3: Save to storage
-    await this.storageService.saveLoop(loop)
+    // Save the loop
+    await this.storageService.updateUserLoop(loop)
+    
+    console.log(`Loop created successfully: ${loop.title} (${loopData.startTime}s - ${loopData.endTime}s)`)
     
     return loop
-  }
-
-  /**
-   * Updates audio retention policy for a loop
-   */
-  async updateRetentionPolicy(
-    loopId: string, 
-    policy: 'temporary' | 'keep' | 'auto-cleanup'
-  ): Promise<void> {
-    const loop = await this.getLoop(loopId)
-    if (!loop) {
-      throw new Error('Loop not found')
-    }
-
-    loop.audioRetentionPolicy = policy
-    loop.updatedAt = new Date()
-
-    // If changing to temporary, schedule for cleanup
-    if (policy === 'temporary') {
-      loop.cleanupScheduledAt = new Date()
-    } else if (policy === 'keep') {
-      loop.cleanupScheduledAt = undefined
-    }
-
-    await this.storageService.saveLoop(loop)
-  }
-
-  /**
-   * Marks audio as recently used (updates audioLastUsed)
-   */
-  async markAudioAsUsed(loopId: string): Promise<void> {
-    const loop = await this.getLoop(loopId)
-    if (loop && loop.hasAudioSegment) {
-      loop.audioLastUsed = new Date()
-      loop.updatedAt = new Date()
-      await this.storageService.saveLoop(loop)
-    }
   }
 
   /**
@@ -143,11 +87,6 @@ export class EnhancedLoopService {
     loop.totalQuestionsGenerated = totalQuestions
     loop.questionsGeneratedAt = questionsGenerated ? new Date() : undefined
     loop.updatedAt = new Date()
-
-    // Mark audio as used when questions are generated
-    if (questionsGenerated && loop.hasAudioSegment) {
-      loop.audioLastUsed = new Date()
-    }
 
     await this.storageService.saveLoop(loop)
   }
@@ -219,113 +158,6 @@ export class EnhancedLoopService {
   }
 
   /**
-   * Removes audio data from loop but keeps the loop itself
-   */
-  async removeAudioFromLoop(loopId: string): Promise<boolean> {
-    const loop = await this.getLoop(loopId)
-    if (!loop || !loop.hasAudioSegment) {
-      return false
-    }
-
-    const originalSize = loop.audioSize || 0
-
-    // Remove audio fields
-    loop.hasAudioSegment = false
-    loop.audioSegmentBlob = undefined
-    loop.audioFormat = undefined
-    loop.audioSize = undefined
-    loop.cleanupScheduledAt = new Date()
-    loop.updatedAt = new Date()
-
-    await this.storageService.saveLoop(loop)
-
-    console.log(`Removed audio from loop ${loopId}: freed ${(originalSize / 1024).toFixed(1)}KB`)
-    return true
-  }
-
-  /**
-   * Re-captures audio for an existing loop
-   */
-  async recaptureAudio(loopId: string): Promise<boolean> {
-    const loop = await this.getLoop(loopId)
-    if (!loop) {
-      throw new Error('Loop not found')
-    }
-
-    // Audio capture functionality removed
-    if (true) {
-      throw new Error('Audio capture not supported in this browser')
-    }
-
-    const videoElement = this.getVideoElement()
-    if (!videoElement) {
-      throw new Error('No video element found')
-    }
-
-    try {
-      // Remove old audio data first
-      if (loop.hasAudioSegment) {
-        await this.removeAudioFromLoop(loopId)
-      }
-
-      // Audio capture removed
-      const audioBlob = null
-      const audioBase64 = null  
-      const audioFormat = null
-
-      // Update loop with new audio
-      loop.hasAudioSegment = true
-      loop.audioSegmentBlob = audioBase64
-      loop.audioFormat = audioFormat
-      loop.audioSize = audioBlob.size
-      loop.audioCreatedAt = new Date()
-      loop.audioLastUsed = new Date()
-      loop.cleanupScheduledAt = undefined
-      loop.updatedAt = new Date()
-
-      await this.storageService.saveLoop(loop)
-
-      console.log(`Audio recaptured for loop ${loopId}: ${audioFormat}, ${(audioBlob.size / 1024).toFixed(1)}KB`)
-      return true
-    } catch (error) {
-      console.error('Failed to recapture audio:', error)
-      throw error
-    }
-  }
-
-  /**
-   * Gets audio blob from loop for analysis
-   */
-  getAudioBlob(loop: SavedLoop): Blob | null {
-    if (!loop.hasAudioSegment || !loop.audioSegmentBlob) {
-      return null
-    }
-
-    try {
-      // Audio capture removed - convert base64 to blob manually
-      const byteCharacters = atob(loop.audioSegmentBlob)
-      const byteNumbers = new Array(byteCharacters.length)
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i)
-      }
-      const byteArray = new Uint8Array(byteNumbers)
-      return new Blob([byteArray], { type: 'audio/webm' })
-    } catch (error) {
-      console.error('Failed to convert audio data:', error)
-      return null
-    }
-  }
-
-  /**
-   * Estimates storage usage for a potential loop
-   */
-  estimateLoopAudioSize(startTime: number, endTime: number, format: string = 'webm'): number {
-    const duration = endTime - startTime
-    // Audio capture removed - return estimated size
-    return Math.round(duration * 1024) // Rough estimate: 1KB per second
-  }
-
-  /**
    * Gets the YouTube video element from the page
    */
   private getVideoElement(): HTMLVideoElement | null {
@@ -361,7 +193,7 @@ export class EnhancedLoopService {
   /**
    * Validates loop data before creation
    */
-  private validateLoopData(data: CreateLoopWithAudioData): void {
+  private validateLoopData(data: CreateLoopData): void {
     if (!data.title.trim()) {
       throw new Error('Loop title is required')
     }
@@ -393,23 +225,11 @@ export class EnhancedLoopService {
    */
   async getLoopStats(): Promise<{
     totalLoops: number
-    loopsWithAudio: number
-    totalAudioSize: number
-    averageAudioSize: number
   }> {
     const allLoops = await this.storageService.getAllUserLoops()
-    const loopsWithAudio = allLoops.filter((loop: SavedLoop) => loop.hasAudioSegment)
     
-    const totalAudioSize = loopsWithAudio.reduce(
-      (sum: number, loop: SavedLoop) => sum + (loop.audioSize || 0), 
-      0
-    )
-
     return {
-      totalLoops: allLoops.length,
-      loopsWithAudio: loopsWithAudio.length,
-      totalAudioSize,
-      averageAudioSize: loopsWithAudio.length > 0 ? totalAudioSize / loopsWithAudio.length : 0
+      totalLoops: allLoops.length
     }
   }
 }

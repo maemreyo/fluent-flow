@@ -1,41 +1,25 @@
 import React, { useState } from 'react'
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from './ui/card'
-import { Button } from './ui/button'
-import { Badge } from './ui/badge'
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select'
-import { 
-  Play,
+import {
   Brain,
-  Mic,
-  Download,
-  Trash2,
-  Loader2,
-  RefreshCw,
-  Settings,
-  Clock,
-  AlertTriangle,
   CheckCircle,
-  Volume2,
-  Monitor
+  Clock,
+  Download,
+  Loader2,
+  Monitor,
+  Play,
+  Settings,
+  Trash2,
+  Volume2
 } from 'lucide-react'
-import ConversationQuestionsPanel from './conversation-questions-panel'
-import type { 
-  SavedLoop, 
+import type {
   ConversationQuestions,
-  QuestionPracticeResult
+  QuestionPracticeResult,
+  SavedLoop
 } from '../lib/types/fluent-flow-types'
+import ConversationQuestionsPanel from './conversation-questions-panel'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 
 interface EnhancedLoopCardProps {
   loop: SavedLoop
@@ -60,14 +44,13 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
   onRecaptureAudio,
   onCleanupAudio,
   isApplying = false,
-  className = ""
+  className = ''
 }) => {
   const [questions, setQuestions] = useState<ConversationQuestions | null>(null)
   const [showQuestions, setShowQuestions] = useState(false)
   const [isGenerating, setIsGenerating] = useState(false)
   const [isRecapturing, setIsRecapturing] = useState(false)
   const [isCleaning, setIsCleaning] = useState(false)
-  const [retentionPolicy, setRetentionPolicy] = useState(loop.audioRetentionPolicy || 'auto-cleanup')
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [isShowingOverlay, setIsShowingOverlay] = useState(false)
 
@@ -95,9 +78,9 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
   const handleGenerateQuestions = async () => {
     if (!onGenerateQuestions) return
-    
+
     // Check if we can generate questions (either audio or transcript available)
-    const canGenerateQuestions = loop.hasAudioSegment || loop.videoId
+    const canGenerateQuestions = loop.videoId
     if (!canGenerateQuestions) return
 
     setIsGenerating(true)
@@ -115,15 +98,12 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
   const handleRetentionPolicyChange = async (newPolicy: string) => {
     const policy = newPolicy as 'temporary' | 'keep' | 'auto-cleanup'
-    setRetentionPolicy(policy)
-    
+
     if (onUpdateRetentionPolicy) {
       try {
         onUpdateRetentionPolicy(loop.id, policy)
       } catch (error) {
         console.error('Failed to update retention policy:', error)
-        // Revert on error
-        setRetentionPolicy(loop.audioRetentionPolicy || 'auto-cleanup')
       }
     }
   }
@@ -169,7 +149,7 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
     // Generate questions first if not available
     if (!questionsToShow) {
-      if (!onGenerateQuestions || (!loop.hasAudioSegment && !loop.videoId)) {
+      if (!onGenerateQuestions || !loop.videoId) {
         alert('No audio or transcript data available to generate questions.')
         return
       }
@@ -191,7 +171,7 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
       // Send questions to overlay on YouTube tab
       const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
       const activeTab = tabs[0]
-      
+
       if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
         await chrome.tabs.sendMessage(activeTab.id!, {
           type: 'SHOW_QUESTION_OVERLAY',
@@ -207,19 +187,6 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
       alert('Failed to show overlay. Make sure you have a YouTube video open.')
     } finally {
       setIsShowingOverlay(false)
-    }
-  }
-
-  const getRetentionPolicyBadge = () => {
-    switch (retentionPolicy) {
-      case 'keep':
-        return <Badge className="bg-green-100 text-green-800">Keep</Badge>
-      case 'temporary':
-        return <Badge className="bg-red-100 text-red-800">Temporary</Badge>
-      case 'auto-cleanup':
-        return <Badge className="bg-blue-100 text-blue-800">Auto</Badge>
-      default:
-        return <Badge variant="secondary">Auto</Badge>
     }
   }
 
@@ -239,55 +206,35 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1 space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex flex-wrap items-center gap-2">
               <CardTitle className="text-base">{loop.title}</CardTitle>
-              {loop.hasAudioSegment && (
-                <Badge variant="secondary" className="flex items-center gap-1">
-                  <Mic className="w-3 h-3" />
-                  Audio
-                </Badge>
-              )}
+
               {loop.videoId && (
                 <Badge variant="outline" className="flex items-center gap-1">
-                  <Volume2 className="w-3 h-3" />
+                  <Volume2 className="h-3 w-3" />
                   Transcript
                 </Badge>
               )}
               {loop.questionsGenerated && (
-                <Badge className="bg-green-100 text-green-800 flex items-center gap-1">
-                  <Brain className="w-3 h-3" />
+                <Badge className="flex items-center gap-1 bg-green-100 text-green-800">
+                  <Brain className="h-3 w-3" />
                   {loop.totalQuestionsGenerated || 0} Questions
                 </Badge>
               )}
-              {loop.cleanupScheduledAt && (
-                <Badge className="bg-orange-100 text-orange-800 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
-                  Cleanup Scheduled
-                </Badge>
-              )}
             </div>
-            
+
             <CardDescription className="text-sm">{loop.videoTitle}</CardDescription>
-            
+
             <div className="flex items-center gap-4 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
-                <Clock className="w-3 h-3" />
+                <Clock className="h-3 w-3" />
                 {formatTime(loop.startTime)} - {formatTime(loop.endTime)}
               </span>
               <span>Duration: {formatTime(loop.endTime - loop.startTime)}</span>
-              {loop.hasAudioSegment && loop.audioSize && (
-                <span className="flex items-center gap-1">
-                  <Volume2 className="w-3 h-3" />
-                  {formatFileSize(loop.audioSize)}
-                </span>
-              )}
             </div>
-            
+
             <div className="text-xs text-muted-foreground">
               Created: {formatDate(new Date(loop.createdAt))}
-              {loop.audioLastUsed && (
-                <span className="ml-2">• Audio used: {formatDate(loop.audioLastUsed)}</span>
-              )}
             </div>
 
             {loop.description && (
@@ -299,30 +246,26 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
       <CardContent className="space-y-4">
         {/* Main Actions */}
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            onClick={() => onApply(loop)}
-            disabled={isApplying}
-            className="flex-1 min-w-0"
-          >
+        <div className="flex flex-wrap gap-2">
+          <Button onClick={() => onApply(loop)} disabled={isApplying} className="min-w-0 flex-1">
             {isApplying ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Play className="w-4 h-4 mr-2" />
+              <Play className="mr-2 h-4 w-4" />
             )}
             {isApplying ? 'Applying...' : 'Practice'}
           </Button>
 
           <Button
             onClick={handleGenerateQuestions}
-            disabled={(!loop.hasAudioSegment && !loop.videoId) || isGenerating}
+            disabled={!loop.videoId || isGenerating}
             variant="outline"
-            className="flex-1 min-w-0"
+            className="min-w-0 flex-1"
           >
             {isGenerating ? (
-              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
-              <Brain className="w-4 h-4 mr-2" />
+              <Brain className="mr-2 h-4 w-4" />
             )}
             {isGenerating ? 'Analyzing...' : 'Questions'}
           </Button>
@@ -330,116 +273,41 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
           {/* Show Overlay Button */}
           <Button
             onClick={handleShowOverlay}
-            disabled={isShowingOverlay || (!loop.hasAudioSegment && !loop.videoId) || !onGenerateQuestions}
+            disabled={isShowingOverlay || !loop.videoId || !onGenerateQuestions}
             variant="outline"
             className="flex items-center gap-1 px-3"
-            title={questions 
-              ? "Show questions on YouTube tab (perfect for screen sharing)" 
-              : "Generate and show questions on YouTube tab"
+            title={
+              questions
+                ? 'Show questions on YouTube tab (perfect for screen sharing)'
+                : 'Generate and show questions on YouTube tab'
             }
           >
             {isShowingOverlay ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Monitor className="w-4 h-4" />
+              <Monitor className="h-4 w-4" />
             )}
-            <span className="hidden sm:inline">
-              {questions ? 'Overlay' : 'Gen & Show'}
-            </span>
+            <span className="hidden sm:inline">{questions ? 'Overlay' : 'Gen & Show'}</span>
           </Button>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            <Settings className="w-4 h-4" />
+          <Button variant="ghost" size="sm" onClick={() => setShowAdvanced(!showAdvanced)}>
+            <Settings className="h-4 w-4" />
           </Button>
         </div>
 
         {/* Audio Management - Show if has audio or advanced mode */}
-        {(loop.hasAudioSegment || showAdvanced) && (
-          <div className="space-y-3 p-3 bg-gray-50 rounded-lg">
+        {showAdvanced && (
+          <div className="space-y-3 rounded-lg bg-gray-50 p-3">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Audio Management</span>
-              {loop.hasAudioSegment && getRetentionPolicyBadge()}
             </div>
-
-            {loop.hasAudioSegment ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Select value={retentionPolicy} onValueChange={handleRetentionPolicyChange}>
-                    <SelectTrigger className="w-32">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="keep">Keep</SelectItem>
-                      <SelectItem value="auto-cleanup">Auto</SelectItem>
-                      <SelectItem value="temporary">Temporary</SelectItem>
-                    </SelectContent>
-                  </Select>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleRecaptureAudio}
-                    disabled={isRecapturing}
-                  >
-                    {isRecapturing ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <RefreshCw className="w-4 h-4" />
-                    )}
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCleanupAudio}
-                    disabled={isCleaning}
-                  >
-                    {isCleaning ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Trash2 className="w-4 h-4" />
-                    )}
-                  </Button>
-                </div>
-
-                {loop.audioCreatedAt && (
-                  <p className="text-xs text-muted-foreground">
-                    Audio captured: {formatDate(loop.audioCreatedAt)} • 
-                    Format: {loop.audioFormat?.toUpperCase()}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="text-center py-4">
-                <p className="text-sm text-muted-foreground mb-2">
-                  No audio available for question generation
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleRecaptureAudio}
-                  disabled={isRecapturing}
-                >
-                  {isRecapturing ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <Mic className="w-4 h-4 mr-2" />
-                  )}
-                  Capture Audio
-                </Button>
-              </div>
-            )}
           </div>
         )}
 
         {/* Question Status */}
         {loop.questionsGenerated && loop.questionsGeneratedAt && (
-          <div className="flex items-center gap-2 p-2 bg-green-50 rounded text-sm">
-            <CheckCircle className="w-4 h-4 text-green-500" />
+          <div className="flex items-center gap-2 rounded bg-green-50 p-2 text-sm">
+            <CheckCircle className="h-4 w-4 text-green-500" />
             <span>
               {loop.totalQuestionsGenerated} questions generated on{' '}
               {formatDate(loop.questionsGeneratedAt)}
@@ -449,20 +317,12 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
 
         {/* Standard Actions */}
         <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onExport(loop)}
-          >
-            <Download className="w-4 h-4" />
+          <Button variant="outline" size="sm" onClick={() => onExport(loop)}>
+            <Download className="h-4 w-4" />
           </Button>
-          
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(loop.id)}
-          >
-            <Trash2 className="w-4 h-4" />
+
+          <Button variant="destructive" size="sm" onClick={() => onDelete(loop.id)}>
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
       </CardContent>

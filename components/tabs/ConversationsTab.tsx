@@ -1,17 +1,11 @@
 import { useState } from 'react'
-import {
-  Monitor,
-  Repeat,
-  Settings,
-  Target
-} from 'lucide-react'
+import { Monitor, Repeat, Settings, Target } from 'lucide-react'
+import type { ConversationLoopIntegrationService } from '../../lib/services/conversation-loop-integration-service'
+import type { ConversationQuestions, SavedLoop } from '../../lib/types/fluent-flow-types'
 import { ConversationQuestionsPanel } from '../conversation-questions-panel'
-import { StorageManagementPanel } from '../storage-management-panel'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import type { ConversationQuestions, SavedLoop } from '../../lib/types/fluent-flow-types'
-import type { ConversationLoopIntegrationService } from '../../lib/services/conversation-loop-integration-service'
 
 interface ConversationsTabProps {
   integrationService: ConversationLoopIntegrationService | null
@@ -37,16 +31,16 @@ export function ConversationsTab({
 
   const handleOverlayToggle = async () => {
     if (!activeQuestions) return
-    
+
     const newMode = !overlayMode
     setOverlayMode(newMode)
-    
+
     try {
       if (newMode) {
         // Send questions to overlay on YouTube tab
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
         const activeTab = tabs[0]
-        
+
         if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
           await chrome.tabs.sendMessage(activeTab.id!, {
             type: 'SHOW_QUESTION_OVERLAY',
@@ -61,7 +55,7 @@ export function ConversationsTab({
         // Hide overlay and show in sidepanel
         const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
         const activeTab = tabs[0]
-        
+
         if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
           await chrome.tabs.sendMessage(activeTab.id!, {
             type: 'HIDE_QUESTION_OVERLAY'
@@ -151,17 +145,6 @@ export function ConversationsTab({
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
-            <StorageManagementPanel
-              onGetStorageStats={() => integrationService.getStorageStats()}
-              onCleanupNow={() => integrationService.runStorageCleanup()}
-              onEmergencyCleanup={() => integrationService.emergencyCleanup()}
-              onGetScheduledCleanups={() => integrationService.getScheduledCleanups()}
-              onBulkSetRetentionPolicy={(loopIds, policy) =>
-                integrationService.bulkUpdateRetentionPolicies(loopIds, policy)
-              }
-            />
-          </CardContent>
         </Card>
       )}
 
@@ -173,7 +156,7 @@ export function ConversationsTab({
               <CardTitle className="text-base">Question Display Mode</CardTitle>
               <div className="flex items-center gap-2">
                 <Button
-                  variant={!overlayMode ? "default" : "outline"}
+                  variant={!overlayMode ? 'default' : 'outline'}
                   size="sm"
                   onClick={() => overlayMode && handleOverlayToggle()}
                   disabled={!overlayMode}
@@ -181,7 +164,7 @@ export function ConversationsTab({
                   Sidepanel
                 </Button>
                 <Button
-                  variant={overlayMode ? "default" : "outline"}
+                  variant={overlayMode ? 'default' : 'outline'}
                   size="sm"
                   onClick={handleOverlayToggle}
                   className="flex items-center gap-1"
@@ -192,9 +175,9 @@ export function ConversationsTab({
               </div>
             </div>
             <CardDescription className="text-sm">
-              {overlayMode 
-                ? "Questions are displayed on the YouTube tab (perfect for screen sharing)" 
-                : "Questions are displayed here in the sidepanel"}
+              {overlayMode
+                ? 'Questions are displayed on the YouTube tab (perfect for screen sharing)'
+                : 'Questions are displayed here in the sidepanel'}
             </CardDescription>
           </CardHeader>
         </Card>

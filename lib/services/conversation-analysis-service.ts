@@ -15,18 +15,11 @@ export class ConversationAnalysisService {
   constructor(private geminiConfig: { apiKey: string }) {}
 
   /**
-   * Generate questions from audio analysis (main method expected by integration service)
-   */
-  async analyzeLoopAudio(loop: SavedLoop): Promise<ConversationQuestions> {
-    // Since audio functionality is disabled, generate fallback questions
-    return this.generateFallbackQuestions(loop)
-  }
-
-  /**
-   * Generate questions from a loop (expected by integration service)
+   * Generate questions from a loop (main method expected by integration service)
    */
   async generateQuestions(loop: SavedLoop): Promise<ConversationQuestions> {
-    return this.analyzeLoopAudio(loop)
+    // Always use transcript-based generation now
+    return this.generateFallbackQuestions(loop)
   }
 
   /**
@@ -48,10 +41,12 @@ export class ConversationAnalysisService {
 
     try {
       const genAI = new GoogleGenerativeAI(this.geminiConfig.apiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
 
       const prompt = `
-Based on the following YouTube video transcript, generate 5 comprehension questions that would help someone learning English improve their understanding. The transcript is from a video segment from ${this.formatTime(loop.startTime)} to ${this.formatTime(loop.endTime)}.
+You are an expert ESL/EFL instructor designing a learning module for a group of ambitious entry-level students aiming for advanced proficiency in 3 months. The primary focus is on improving **active listening skills**, moving beyond literal comprehension to understand nuance, tone, and implied meaning.
+
+Based on the following YouTube video transcript, generate 15 comprehension questions. The transcript is from a video segment from ${this.formatTime(loop.startTime)} to ${this.formatTime(loop.endTime)}.
 
 Video Title: ${loop.videoTitle || 'YouTube Video'}
 Duration: ${this.formatTime(loop.endTime - loop.startTime)}
@@ -59,29 +54,48 @@ Duration: ${this.formatTime(loop.endTime - loop.startTime)}
 Transcript:
 ${transcript}
 
-Please generate exactly 5 multiple choice questions with the following criteria:
-1. Mix of difficulty levels (2 easy, 2 medium, 1 hard)
-2. Different question types: main idea, details, vocabulary, inference, grammar
-3. Each question should have 4 options (A, B, C, D)
-4. Include explanations for the correct answers
-5. Questions should focus on language learning and comprehension
+Please generate exactly 15 multiple-choice questions with the following criteria:
 
-Format your response as JSON with this exact structure:
+**1. Difficulty Distribution (Builds a learning curve):**
+   - **4 Easy:** Questions that can be answered by finding explicitly stated information in the text.
+   - **7 Medium:** Questions that require connecting ideas or understanding vocabulary/idioms in context.
+   - **4 Hard:** Questions that require deep inference, understanding the speaker's tone, or analyzing the function of their language.
+
+**2. Question Type Variety (Focus on Listening Sub-skills):**
+   - **Main Idea/Gist:** What is the overall point of this segment?
+   - **Specific Detail:** Who, what, when, where, why?
+   - **Vocabulary in Context:** What does a specific word, phrasal verb, or idiom mean *in this situation*?
+   - **Inference & Implication:** What is the speaker suggesting but not saying directly?
+   - **Speaker's Attitude/Tone:** What is the speaker's emotion or opinion (e.g., sarcastic, enthusiastic, skeptical)? This requires listening to *how* things are said.
+   - **Function of Language:** *Why* did the speaker say something? (e.g., to persuade, to clarify, to soften a statement, to express doubt).
+
+**3. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D).
+   - The correct answer must be clearly supported by the transcript.
+   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
+
+**4. Explanations for Learning:**
+   - Provide a clear and concise explanation for why the correct answer is right.
+   - Briefly explain why the other options are incorrect, if it adds learning value.
+
+**5. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below.
+
 {
   "questions": [
     {
       "question": "Question text here?",
       "options": ["Option A", "Option B", "Option C", "Option D"],
       "correctAnswer": "A",
-      "explanation": "Explanation of why A is correct",
+      "explanation": "Explanation of why A is correct and why others might be wrong.",
       "difficulty": "easy",
-      "type": "main_idea"
+      "type": "specific_detail"
     }
   ]
 }
 
-Types to use: "main_idea", "detail", "vocabulary", "inference", "grammar"
-Difficulties to use: "easy", "medium", "hard"
+**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
+**Difficulties to use:** "easy", "medium", "hard"
 `
 
       const result = await model.generateContent(prompt)
@@ -142,13 +156,13 @@ Difficulties to use: "easy", "medium", "hard"
         metadata: {
           totalQuestions: 5,
           analysisDate: new Date().toISOString(),
-          generatedFromAudio: false,
           generatedFromTranscript: true,
           transcriptLength: transcript.length,
-          videoSegmentDuration: duration,
+          transcriptSegmentCount: 0, // We don't have segment data here
+          transcriptLanguage: 'en',
           canRegenerateQuestions: true,
           videoAnalysis: true,
-          audioAnalysis: false
+          videoSegmentDuration: duration
         }
       }
     } catch (error) {
@@ -160,13 +174,6 @@ Difficulties to use: "easy", "medium", "hard"
 
       return fallback
     }
-  }
-
-  /**
-   * Analyze audio for questions (alternative method name)
-   */
-  async analyzeAudioForQuestions(loop: SavedLoop): Promise<ConversationQuestions> {
-    return this.analyzeLoopAudio(loop)
   }
 
   /**
@@ -188,20 +195,20 @@ Difficulties to use: "easy", "medium", "hard"
   }
 
   /**
+   * Estimate token usage for a given input
+   */
+  estimateTokenUsage(text: string): number {
+    // Rough estimation: ~4 characters per token
+    return Math.ceil(text.length / 4)
+  }
+
+  /**
    * Format seconds to MM:SS format
    */
   private formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60)
     const secs = Math.floor(seconds % 60)
     return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
-
-  /**
-   * Estimate token usage for a given input
-   */
-  estimateTokenUsage(text: string): number {
-    // Rough estimation: ~4 characters per token
-    return Math.ceil(text.length / 4)
   }
 
   /**
@@ -293,13 +300,13 @@ Difficulties to use: "easy", "medium", "hard"
       metadata: {
         totalQuestions: questions.length,
         analysisDate: new Date().toISOString(),
-        generatedFromAudio: false,
         generatedFromTranscript: !!transcript,
         transcriptLength: transcript?.length,
-        videoSegmentDuration: duration,
+        transcriptSegmentCount: 0,
+        transcriptLanguage: transcript ? 'en' : undefined,
         canRegenerateQuestions: true,
         videoAnalysis: true,
-        audioAnalysis: false
+        videoSegmentDuration: duration
       }
     }
   }

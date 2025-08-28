@@ -20,14 +20,6 @@ export interface SavedLoop {
   createdAt: Date
   updatedAt: Date
 
-  // Audio extraction fields
-  hasAudioSegment?: boolean
-  audioSegmentBlob?: string // Base64 encoded
-  audioFormat?: 'webm' | 'wav' | 'mp3'
-  audioSize?: number
-  audioCreatedAt?: Date
-  audioLastUsed?: Date
-
   // Question generation fields
   questionsGenerated?: boolean
   questionsGeneratedAt?: Date
@@ -54,10 +46,6 @@ export interface SavedLoop {
     segmentCount: number
     lastAnalyzed: string
   }
-
-  // Cleanup management fields
-  audioRetentionPolicy?: 'temporary' | 'keep' | 'auto-cleanup'
-  cleanupScheduledAt?: Date
 }
 
 // Time-based Notes Feature Types
@@ -349,11 +337,8 @@ export interface ConversationQuestions {
   questions: ConversationQuestion[]
   metadata: {
     totalQuestions: number
-    audioLength?: number
     analysisDate: string
-    generatedFromAudio?: boolean
     generatedFromTranscript?: boolean
-    originalAudioSize?: number
     transcriptLength?: number
     transcriptSegmentCount?: number
     transcriptLanguage?: string
@@ -361,10 +346,6 @@ export interface ConversationQuestions {
     // Video analysis specific fields
     videoAnalysis?: boolean
     videoSegmentDuration?: number
-    // Audio analysis specific fields
-    audioAnalysis?: boolean
-    audioSegmentDuration?: number
-    audioFormat?: string
   }
 }
 
