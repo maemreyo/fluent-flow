@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { QueryProvider } from './components/providers/query-provider'
+import { CompactSubscriptionStatus, UsageLimitBanner } from './components/payment/compact-subscription-status'
+import { CompactUsageTracker } from './components/payment/compact-usage-tracker'
 import { AuthStatus } from './components/shared/AuthStatus'
 import { TabNavigation } from './components/shared/TabNavigation'
 import { ConversationsTab } from './components/tabs/ConversationsTab'
@@ -7,6 +9,7 @@ import { DashboardTab } from './components/tabs/DashboardTab'
 // import { DebugTab } from './components/tabs/DebugTab'
 import { LoopsTab } from './components/tabs/LoopsTab'
 import { Tabs, TabsContent } from './components/ui/tabs'
+import { LayoutProvider } from './lib/contexts/layout-context'
 import { useAuthentication } from './lib/hooks/use-authentication'
 import { useGoalsManagement } from './lib/hooks/use-goals-management'
 import { useLoopsQuery } from './lib/hooks/use-loop-query'
@@ -14,14 +17,17 @@ import { useSessionTemplates } from './lib/hooks/use-session-templates'
 import { useVideoTracking } from './lib/hooks/use-video-tracking'
 import { generateDashboardAnalytics } from './lib/services'
 import { ConversationLoopIntegrationService } from './lib/services/conversation-loop-integration-service'
+import { supabasePaymentService } from './lib/services/supabase-payment-service'
 import {
   getFluentFlowStore,
   useFluentFlowSupabaseStore as useFluentFlowStore
 } from './lib/stores/fluent-flow-supabase-store'
+import { usePaymentStore } from './lib/stores/payment-store'
 import type {
   ConversationQuestions,
   SavedLoop
 } from './lib/types/fluent-flow-types'
+import type { PaymentError } from './lib/types/payment-types'
 import { calculateAnalytics, computeRealStatistics } from './lib/utils/analytics-calculator'
 import { formatDate, formatTime } from './lib/utils/formatters'
 import './styles/sidepanel.css'
@@ -250,6 +256,9 @@ function FluentFlowSidePanelContent() {
 
   const exportLoop = async (loop: SavedLoop) => {
     try {
+      // Check feature access for loop export
+      await supabasePaymentService.requireFeatureAccess('export_loops')
+      
       const data = JSON.stringify(loop, null, 2)
       const blob = new Blob([data], { type: 'application/json' })
       const url = URL.createObjectURL(blob)
@@ -262,7 +271,30 @@ function FluentFlowSidePanelContent() {
       document.body.removeChild(a)
 
       URL.revokeObjectURL(url)
+
+      // Track export usage
+      try {
+        await supabasePaymentService.incrementUsage('export_loops', 1)
+        await supabasePaymentService.logActivity('loop_exported', 'export_loops', {
+          loop_id: loop.id,
+          format: 'json',
+          size_bytes: data.length
+        })
+      } catch (usageError) {
+        console.warn('Failed to track export usage:', usageError)
+      }
     } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        // Handle payment errors with upgrade prompts
+        const paymentError = error as PaymentError
+        if (paymentError.code === 'USAGE_LIMIT_EXCEEDED') {
+          usePaymentStore.getState().showUpgrade('export_loops')
+          return
+        } else if (paymentError.code === 'FEATURE_NOT_AVAILABLE') {
+          usePaymentStore.getState().showUpgrade('export_loops')
+          return
+        }
+      }
       console.error('Failed to export loop:', error)
     }
   }
@@ -276,9 +308,18 @@ function FluentFlowSidePanelContent() {
             <p className="text-sm text-muted-foreground">Learning via Youtube</p>
           </div>
           <div className="flex items-center gap-2">
+            <CompactUsageTracker 
+              featureId="ai_conversations" 
+              variant="compact"
+              className="hidden sm:flex"
+            />
+            <CompactSubscriptionStatus variant="compact" />
             <AuthStatus user={user} checkingAuth={checkingAuth} />
           </div>
         </div>
+        
+        {/* Usage limit warning banner */}
+        <UsageLimitBanner variant="compact" className="mt-3" />
       </div>
 
       <Tabs
@@ -351,7 +392,11 @@ function FluentFlowSidePanelContent() {
 export default function FluentFlowSidePanel() {
   return (
     <QueryProvider>
-      <FluentFlowSidePanelContent />
+      <LayoutProvider forceMode="sidepanel">
+        <div data-layout-container>
+          <FluentFlowSidePanelContent />
+        </div>
+      </LayoutProvider>
     </QueryProvider>
   )
 }

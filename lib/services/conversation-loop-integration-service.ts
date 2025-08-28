@@ -6,8 +6,11 @@ import type {
   SavedLoop,
   StorageStats
 } from '../types/fluent-flow-types'
+import type { PaymentError, SupabaseFeatureAccessResponse } from '../types/payment-types'
 import { ConversationAnalysisService, type GeminiConfig } from './conversation-analysis-service'
 import { EnhancedLoopService, type CreateLoopWithAudioData } from './enhanced-loop-service'
+import { licenseValidator } from './license-validator'
+import { supabasePaymentService } from './supabase-payment-service'
 import { youtubeTranscriptService, type TranscriptError } from './youtube-transcript-service'
 
 /**
@@ -46,6 +49,16 @@ export class ConversationLoopIntegrationService {
       throw new Error('generateQuestions must be a boolean')
     }
 
+    // Check feature access for loop creation
+    try {
+      await supabasePaymentService.requireFeatureAccess('loops_created')
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error // Re-throw payment errors with proper codes
+      }
+      throw new Error('Unable to create loop: Feature access check failed')
+    }
+
     // Validate generateQuestions requirement
     if (generateQuestions && !this.analysisService) {
       throw new Error(
@@ -57,13 +70,40 @@ export class ConversationLoopIntegrationService {
       // Create loop with audio (this will validate loopData internally)
       const loop = await this.loopService.createLoopWithAudio(loopData)
 
+      // Track loop creation usage
+      try {
+        await supabasePaymentService.incrementUsage('loops_created', 1)
+        await supabasePaymentService.logActivity('loop_created', 'loops_created', {
+          loop_id: loop.id,
+          video_id: loopData.videoId,
+          duration: loopData.endTime - loopData.startTime
+        })
+      } catch (usageError) {
+        console.warn('Failed to track loop creation usage:', usageError)
+        // Don't fail the loop creation for usage tracking errors
+      }
+
       const result: any = { loop }
 
       // Generate questions if requested - use smart caching system
       if (generateQuestions && this.analysisService) {
         try {
+          // Check feature access for AI conversations
+          await supabasePaymentService.requireFeatureAccess('ai_conversations')
+          
           // Use the smart question generation that checks cache first
           const questions = await this.generateQuestions(loop.id)
+          
+          // Track AI usage
+          try {
+            await supabasePaymentService.incrementUsage('ai_conversations', 1)
+            await supabasePaymentService.logActivity('ai_questions_generated', 'ai_conversations', {
+              loop_id: loop.id,
+              questions_count: questions?.questions?.length || 0
+            })
+          } catch (usageError) {
+            console.warn('Failed to track AI usage:', usageError)
+          }
 
           result.questions = questions
 
@@ -93,6 +133,16 @@ export class ConversationLoopIntegrationService {
   async generateQuestionsForLoop(loopId: string): Promise<ConversationQuestions> {
     if (!this.analysisService) {
       throw new Error('Gemini API not configured. Please provide API credentials.')
+    }
+
+    // Check feature access for AI conversations
+    try {
+      await supabasePaymentService.requireFeatureAccess('ai_conversations')
+    } catch (error) {
+      if (error instanceof Error && 'code' in error) {
+        throw error // Re-throw payment errors with proper codes
+      }
+      throw new Error('Unable to generate questions: Feature access check failed')
     }
 
     // Get all loops and find the specific one
@@ -125,6 +175,19 @@ export class ConversationLoopIntegrationService {
 
     // Generate questions based on loop content
     const questions = await this.analysisService.generateQuestions(loop)
+
+    // Track AI usage after successful generation
+    try {
+      await supabasePaymentService.incrementUsage('ai_conversations', 1)
+      await supabasePaymentService.logActivity('ai_questions_generated', 'ai_conversations', {
+        loop_id: loopId,
+        questions_count: questions?.questions?.length || 0,
+        cache_miss: true
+      })
+    } catch (usageError) {
+      console.warn('Failed to track AI usage:', usageError)
+      // Don't fail the question generation for usage tracking errors
+    }
 
     // Save questions to database for future caching using dynamic import
     try {

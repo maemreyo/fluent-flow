@@ -1,0 +1,581 @@
+-- Payment Features Database Schema
+-- Creates tables for monetization and subscription management
+-- IMPORTANT: Only stores SAFE metadata - NO sensitive payment data
+
+-- User Subscription Status (Synced from payment backend via webhooks)
+CREATE TABLE IF NOT EXISTS user_subscriptions (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE UNIQUE,
+  
+  -- Safe subscription metadata (NO financial data)
+  plan_id TEXT NOT NULL DEFAULT 'free', -- 'free', 'starter', 'pro'
+  plan_name TEXT NOT NULL DEFAULT 'Free', -- 'Free', 'Starter', 'Pro'  
+  status TEXT NOT NULL CHECK (status IN ('active', 'canceled', 'past_due', 'unpaid', 'trialing', 'incomplete')) DEFAULT 'active',
+  
+  -- Safe dates (no financial amounts)
+  current_period_start TIMESTAMPTZ,
+  current_period_end TIMESTAMPTZ,
+  trial_start TIMESTAMPTZ,
+  trial_end TIMESTAMPTZ,
+  canceled_at TIMESTAMPTZ,
+  
+  -- Feature flags derived from plan (safe metadata)
+  features JSONB NOT NULL DEFAULT '{
+    "ai_conversations": false,
+    "export_loops": false, 
+    "advanced_analytics": false,
+    "team_features": false,
+    "priority_support": false,
+    "custom_prompts": false,
+    "whitelabel": false
+  }',
+  
+  -- Usage limits per plan (safe metadata)
+  limits JSONB NOT NULL DEFAULT '{
+    "loops_per_month": 25,
+    "ai_requests_per_month": 5,
+    "file_uploads_per_month": 0,
+    "custom_prompts_per_month": 0,
+    "export_operations_per_month": 0
+  }',
+  
+  -- External references (encrypted IDs only, NO sensitive data)
+  external_subscription_id TEXT, -- Stripe subscription ID reference
+  external_customer_id TEXT, -- Stripe customer ID reference
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Monthly Usage Tracking (User activity counters)
+CREATE TABLE IF NOT EXISTS user_usage (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- Usage period (month-year format)
+  month_year TEXT NOT NULL, -- '2025-01' format
+  
+  -- Feature usage counters (safe to store)
+  loops_created INTEGER DEFAULT 0,
+  ai_requests_made INTEGER DEFAULT 0,
+  export_operations INTEGER DEFAULT 0,
+  file_uploads INTEGER DEFAULT 0,
+  custom_prompts_used INTEGER DEFAULT 0,
+  
+  -- Detailed feature access tracking
+  features_accessed JSONB DEFAULT '{}', -- Track specific feature usage
+  
+  -- Reset tracking
+  last_reset_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  UNIQUE(user_id, month_year)
+);
+
+-- License Tokens (JWT tokens for offline validation)
+CREATE TABLE IF NOT EXISTS user_licenses (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  -- License metadata (NO payment secrets, JWT is safe as it's signed by backend)
+  license_token TEXT NOT NULL, -- JWT signed by payment backend
+  expires_at TIMESTAMPTZ NOT NULL,
+  issued_at TIMESTAMPTZ DEFAULT NOW(),
+  
+  -- License scope (duplicated for quick access without JWT parsing)
+  features JSONB NOT NULL,
+  limits JSONB NOT NULL,
+  
+  -- Validation tracking
+  is_active BOOLEAN DEFAULT TRUE,
+  last_validated_at TIMESTAMPTZ DEFAULT NOW(),
+  validation_count INTEGER DEFAULT 0,
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Payment-related notifications (safe user-facing messages only)
+CREATE TABLE IF NOT EXISTS payment_notifications (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  type TEXT NOT NULL CHECK (type IN (
+    'trial_ending', 
+    'trial_ended',
+    'subscription_canceled', 
+    'payment_failed', 
+    'usage_limit_warning',
+    'usage_limit_reached', 
+    'feature_upgrade_available',
+    'subscription_renewed',
+    'plan_changed'
+  )),
+  
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  data JSONB DEFAULT '{}', -- Safe metadata only (feature names, limits, etc.)
+  
+  read BOOLEAN DEFAULT FALSE,
+  expires_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- User activity audit (safe operations only, no financial data)
+CREATE TABLE IF NOT EXISTS user_activity_log (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  
+  action TEXT NOT NULL, -- 'feature_accessed', 'usage_limit_reached', 'license_validated', etc.
+  feature_id TEXT,
+  
+  -- Safe metadata (no sensitive information)
+  metadata JSONB DEFAULT '{}',
+  
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Indexes for performance optimization
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_user_id ON user_subscriptions(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_status ON user_subscriptions(status);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_plan_id ON user_subscriptions(plan_id);
+CREATE INDEX IF NOT EXISTS idx_user_subscriptions_external_customer ON user_subscriptions(external_customer_id) WHERE external_customer_id IS NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_user_usage_user_month ON user_usage(user_id, month_year);
+CREATE INDEX IF NOT EXISTS idx_user_usage_month ON user_usage(month_year);
+CREATE INDEX IF NOT EXISTS idx_user_usage_user_id ON user_usage(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_user_licenses_user_id ON user_licenses(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_licenses_expires ON user_licenses(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_licenses_active ON user_licenses(is_active) WHERE is_active = TRUE;
+
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_user_id ON payment_notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_read ON payment_notifications(read) WHERE read = FALSE;
+CREATE INDEX IF NOT EXISTS idx_payment_notifications_type ON payment_notifications(type);
+
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_user_id ON user_activity_log(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_action ON user_activity_log(action);
+CREATE INDEX IF NOT EXISTS idx_user_activity_log_created_at ON user_activity_log(created_at);
+
+-- Row Level Security (RLS) Policies
+ALTER TABLE user_subscriptions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_usage ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_licenses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE payment_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE user_activity_log ENABLE ROW LEVEL SECURITY;
+
+-- User Subscription Policies
+CREATE POLICY "Users can view own subscription" ON user_subscriptions 
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Allow system (service role) to update subscriptions via webhooks
+CREATE POLICY "System can manage subscriptions" ON user_subscriptions 
+  FOR ALL USING (
+    auth.jwt() ->> 'role' = 'service_role' OR 
+    auth.jwt() ->> 'role' = 'system'
+  );
+
+-- Users can't directly modify their subscription (must go through payment API)
+CREATE POLICY "Block direct user subscription updates" ON user_subscriptions
+  FOR UPDATE USING (FALSE);
+
+CREATE POLICY "Block direct user subscription inserts" ON user_subscriptions
+  FOR INSERT WITH CHECK (FALSE);
+
+-- Usage Policies (users can read and increment their own usage)
+CREATE POLICY "Users can view own usage" ON user_usage 
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own usage" ON user_usage 
+  FOR INSERT WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can modify own usage" ON user_usage 
+  FOR UPDATE USING (auth.uid() = user_id);
+
+CREATE POLICY "System can manage usage" ON user_usage
+  FOR ALL USING (
+    auth.jwt() ->> 'role' = 'service_role' OR 
+    auth.jwt() ->> 'role' = 'system'
+  );
+
+-- License Policies
+CREATE POLICY "Users can view own licenses" ON user_licenses 
+  FOR SELECT USING (auth.uid() = user_id);
+
+-- Only system can create/update licenses (generated by payment backend)
+CREATE POLICY "System can manage licenses" ON user_licenses 
+  FOR ALL USING (
+    auth.jwt() ->> 'role' = 'service_role' OR 
+    auth.jwt() ->> 'role' = 'system'
+  );
+
+-- Notification Policies
+CREATE POLICY "Users can view own notifications" ON payment_notifications 
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own notifications" ON payment_notifications 
+  FOR UPDATE USING (auth.uid() = user_id);
+
+-- System can create notifications
+CREATE POLICY "System can create notifications" ON payment_notifications 
+  FOR INSERT WITH CHECK (
+    auth.jwt() ->> 'role' = 'service_role' OR 
+    auth.jwt() ->> 'role' = 'system'
+  );
+
+-- Activity Log Policies
+CREATE POLICY "Users can view own activity" ON user_activity_log 
+  FOR SELECT USING (auth.uid() = user_id);
+
+CREATE POLICY "System can log activity" ON user_activity_log 
+  FOR INSERT WITH CHECK (
+    auth.uid() = user_id OR
+    auth.jwt() ->> 'role' = 'service_role' OR 
+    auth.jwt() ->> 'role' = 'system'
+  );
+
+-- Functions for automatic timestamp updates
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+-- Triggers for updated_at columns
+CREATE TRIGGER update_user_subscriptions_updated_at 
+  BEFORE UPDATE ON user_subscriptions 
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_user_usage_updated_at 
+  BEFORE UPDATE ON user_usage 
+  FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- RPC Function to safely increment usage (atomic operation)
+CREATE OR REPLACE FUNCTION increment_usage(
+  feature_id TEXT,
+  usage_amount INTEGER DEFAULT 1,
+  current_month TEXT DEFAULT NULL
+)
+RETURNS JSONB AS $$
+DECLARE
+  user_uuid UUID := auth.uid();
+  month_key TEXT := COALESCE(current_month, to_char(NOW(), 'YYYY-MM'));
+  current_usage JSONB;
+  subscription_limits JSONB;
+  current_count INTEGER;
+  usage_limit INTEGER;
+  column_name TEXT;
+BEGIN
+  -- Ensure user is authenticated
+  IF user_uuid IS NULL THEN
+    RAISE EXCEPTION 'Authentication required';
+  END IF;
+
+  -- Get user's subscription limits
+  SELECT limits INTO subscription_limits 
+  FROM user_subscriptions 
+  WHERE user_id = user_uuid AND status IN ('active', 'trialing');
+  
+  IF subscription_limits IS NULL THEN
+    -- Default to free tier limits if no subscription found
+    subscription_limits := '{
+      "loops_per_month": 25,
+      "ai_requests_per_month": 5,
+      "file_uploads_per_month": 0,
+      "custom_prompts_per_month": 0,
+      "export_operations_per_month": 0
+    }'::jsonb;
+  END IF;
+
+  -- Map feature_id to database column and limit key
+  column_name := CASE feature_id
+    WHEN 'loops_created' THEN 'loops_created'
+    WHEN 'ai_conversations' THEN 'ai_requests_made'
+    WHEN 'export_loops' THEN 'export_operations'
+    WHEN 'file_uploads' THEN 'file_uploads'
+    WHEN 'custom_prompts' THEN 'custom_prompts_used'
+    ELSE NULL
+  END;
+
+  -- Get usage limit for this feature
+  usage_limit := (subscription_limits ->> (feature_id || '_per_month'))::INTEGER;
+  IF usage_limit IS NULL THEN
+    usage_limit := 0; -- Default to 0 if limit not found
+  END IF;
+
+  -- Upsert usage record
+  INSERT INTO user_usage (user_id, month_year, features_accessed)
+  VALUES (user_uuid, month_key, jsonb_build_object(feature_id, usage_amount))
+  ON CONFLICT (user_id, month_year)
+  DO UPDATE SET
+    features_accessed = COALESCE(user_usage.features_accessed, '{}'::jsonb) || 
+                       jsonb_build_object(feature_id, 
+                         COALESCE((user_usage.features_accessed->>feature_id)::integer, 0) + usage_amount
+                       ),
+    updated_at = NOW();
+
+  -- Update specific column if mapped
+  IF column_name IS NOT NULL THEN
+    EXECUTE format('
+      UPDATE user_usage SET %I = %I + %L 
+      WHERE user_id = %L AND month_year = %L',
+      column_name, column_name, usage_amount, user_uuid, month_key
+    );
+  END IF;
+
+  -- Get current usage count
+  EXECUTE format('
+    SELECT COALESCE(%I, 0) FROM user_usage 
+    WHERE user_id = %L AND month_year = %L',
+    COALESCE(column_name, 'loops_created'), user_uuid, month_key
+  ) INTO current_count;
+
+  -- Check if usage exceeds limit (for unlimited plans, limit is -1)
+  IF usage_limit > 0 AND current_count > usage_limit THEN
+    -- Create notification about limit exceeded
+    INSERT INTO payment_notifications (user_id, type, title, message, data)
+    VALUES (
+      user_uuid,
+      'usage_limit_reached',
+      'Usage Limit Reached',
+      format('You have reached your monthly limit for %s. Upgrade to continue using this feature.', feature_id),
+      jsonb_build_object(
+        'feature_id', feature_id,
+        'current_usage', current_count,
+        'limit', usage_limit
+      )
+    );
+    
+    RAISE EXCEPTION 'Usage limit exceeded for feature: % (current: %, limit: %)', 
+      feature_id, current_count, usage_limit;
+  END IF;
+
+  -- Log activity
+  INSERT INTO user_activity_log (user_id, action, feature_id, metadata)
+  VALUES (
+    user_uuid, 
+    'feature_usage_tracked',
+    feature_id,
+    jsonb_build_object(
+      'usage_amount', usage_amount,
+      'current_total', current_count,
+      'limit', usage_limit,
+      'month', month_key
+    )
+  );
+
+  -- Return updated usage data
+  SELECT features_accessed INTO current_usage 
+  FROM user_usage 
+  WHERE user_id = user_uuid AND month_year = month_key;
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'feature_id', feature_id,
+    'current_usage', current_count,
+    'limit', usage_limit,
+    'remaining', CASE WHEN usage_limit = -1 THEN -1 ELSE GREATEST(0, usage_limit - current_count) END,
+    'all_usage', current_usage
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- RPC Function to check feature access and usage
+CREATE OR REPLACE FUNCTION check_feature_access(feature_id TEXT)
+RETURNS JSONB AS $$
+DECLARE
+  user_uuid UUID := auth.uid();
+  subscription_record RECORD;
+  current_month TEXT := to_char(NOW(), 'YYYY-MM');
+  current_usage INTEGER := 0;
+  usage_limit INTEGER;
+  has_feature_access BOOLEAN := FALSE;
+BEGIN
+  -- Ensure user is authenticated
+  IF user_uuid IS NULL THEN
+    RETURN jsonb_build_object(
+      'has_access', false,
+      'error', 'Authentication required'
+    );
+  END IF;
+
+  -- Get user's subscription
+  SELECT * INTO subscription_record
+  FROM user_subscriptions 
+  WHERE user_id = user_uuid;
+  
+  -- Default to free tier if no subscription
+  IF subscription_record IS NULL THEN
+    subscription_record.features := '{
+      "ai_conversations": false,
+      "export_loops": false,
+      "advanced_analytics": false,
+      "team_features": false,
+      "priority_support": false
+    }'::jsonb;
+    subscription_record.limits := '{
+      "loops_per_month": 25,
+      "ai_requests_per_month": 5,
+      "file_uploads_per_month": 0,
+      "custom_prompts_per_month": 0,
+      "export_operations_per_month": 0
+    }'::jsonb;
+    subscription_record.status := 'active';
+    subscription_record.plan_id := 'free';
+  END IF;
+
+  -- Check if subscription is active
+  IF subscription_record.status NOT IN ('active', 'trialing') THEN
+    RETURN jsonb_build_object(
+      'has_access', false,
+      'requires_upgrade', true,
+      'error', 'Subscription not active'
+    );
+  END IF;
+
+  -- Check if feature is included in plan
+  has_feature_access := COALESCE((subscription_record.features->>feature_id)::boolean, false);
+  
+  IF NOT has_feature_access THEN
+    RETURN jsonb_build_object(
+      'has_access', false,
+      'requires_upgrade', true,
+      'plan_id', subscription_record.plan_id,
+      'error', 'Feature not available in current plan'
+    );
+  END IF;
+
+  -- Get usage limit and current usage
+  usage_limit := (subscription_record.limits->>format('%s_per_month', feature_id))::INTEGER;
+  
+  -- Get current usage from user_usage table
+  SELECT COALESCE(
+    CASE feature_id
+      WHEN 'loops_created' THEN loops_created
+      WHEN 'ai_conversations' THEN ai_requests_made
+      WHEN 'export_loops' THEN export_operations
+      WHEN 'file_uploads' THEN file_uploads
+      WHEN 'custom_prompts' THEN custom_prompts_used
+      ELSE (features_accessed->>feature_id)::INTEGER
+    END, 0
+  ) INTO current_usage
+  FROM user_usage 
+  WHERE user_id = user_uuid AND month_year = current_month;
+
+  -- Check usage limits (unlimited if -1)
+  IF usage_limit > 0 AND current_usage >= usage_limit THEN
+    RETURN jsonb_build_object(
+      'has_access', false,
+      'requires_upgrade', false,
+      'usage_limit_reached', true,
+      'current_usage', current_usage,
+      'limit', usage_limit,
+      'error', 'Monthly usage limit reached'
+    );
+  END IF;
+
+  -- Access granted
+  RETURN jsonb_build_object(
+    'has_access', true,
+    'feature_id', feature_id,
+    'current_usage', current_usage,
+    'limit', usage_limit,
+    'remaining', CASE WHEN usage_limit = -1 THEN -1 ELSE GREATEST(0, usage_limit - current_usage) END,
+    'plan_id', subscription_record.plan_id
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to get user's current subscription summary
+CREATE OR REPLACE FUNCTION get_subscription_summary()
+RETURNS JSONB AS $$
+DECLARE
+  user_uuid UUID := auth.uid();
+  subscription_record RECORD;
+  usage_record RECORD;
+  current_month TEXT := to_char(NOW(), 'YYYY-MM');
+BEGIN
+  -- Ensure user is authenticated
+  IF user_uuid IS NULL THEN
+    RETURN jsonb_build_object('error', 'Authentication required');
+  END IF;
+
+  -- Get subscription
+  SELECT * INTO subscription_record
+  FROM user_subscriptions 
+  WHERE user_id = user_uuid;
+  
+  -- Get current month usage
+  SELECT * INTO usage_record
+  FROM user_usage
+  WHERE user_id = user_uuid AND month_year = current_month;
+
+  -- Return summary
+  RETURN jsonb_build_object(
+    'subscription', row_to_json(subscription_record),
+    'current_usage', row_to_json(usage_record),
+    'month', current_month
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to clean up old usage data (keep last 12 months)
+CREATE OR REPLACE FUNCTION cleanup_old_usage_data()
+RETURNS INTEGER AS $$
+DECLARE
+  deleted_count INTEGER;
+  cutoff_date TEXT := to_char(NOW() - INTERVAL '12 months', 'YYYY-MM');
+BEGIN
+  DELETE FROM user_usage 
+  WHERE month_year < cutoff_date;
+  
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  
+  RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Function to clean up expired notifications
+CREATE OR REPLACE FUNCTION cleanup_expired_notifications()
+RETURNS INTEGER AS $$
+DECLARE
+  deleted_count INTEGER;
+BEGIN
+  DELETE FROM payment_notifications 
+  WHERE expires_at IS NOT NULL AND expires_at < NOW();
+  
+  GET DIAGNOSTICS deleted_count = ROW_COUNT;
+  
+  RETURN deleted_count;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Create initial free subscription for existing users (migration helper)
+INSERT INTO user_subscriptions (user_id, plan_id, plan_name, status, features, limits)
+SELECT 
+  id,
+  'free',
+  'Free',
+  'active',
+  '{
+    "ai_conversations": false,
+    "export_loops": false,
+    "advanced_analytics": false,
+    "team_features": false,
+    "priority_support": false
+  }'::jsonb,
+  '{
+    "loops_per_month": 25,
+    "ai_requests_per_month": 5,
+    "file_uploads_per_month": 0,
+    "custom_prompts_per_month": 0,
+    "export_operations_per_month": 0
+  }'::jsonb
+FROM auth.users 
+WHERE NOT EXISTS (
+  SELECT 1 FROM user_subscriptions WHERE user_subscriptions.user_id = auth.users.id
+)
+ON CONFLICT (user_id) DO NOTHING;
