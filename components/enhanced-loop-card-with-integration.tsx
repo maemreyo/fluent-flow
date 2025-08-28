@@ -15,7 +15,8 @@ import {
   Download,
   Trash2,
   Settings,
-  Brain
+  Brain,
+  Monitor
 } from 'lucide-react'
 import { useTranscriptQuery } from '../lib/hooks/use-transcript-query'
 import { useQuestionsQuery, useGenerateQuestionsMutation } from '../lib/hooks/use-question-query'
@@ -46,6 +47,7 @@ export function EnhancedLoopCardWithIntegration({
   const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
   const [questionsCompleted, setQuestionsCompleted] = useState(false)
   const [lastScore, setLastScore] = useState<number | null>(null)
+  const [isShowingOverlay, setIsShowingOverlay] = useState(false)
   
   // Use React Query for transcript data
   const {
@@ -107,6 +109,65 @@ export function EnhancedLoopCardWithIntegration({
       setQuestionsCompleted(false)
       setLastScore(null)
     }, 10000)
+  }
+
+  const handleShowOverlay = async () => {
+    let questionsToShow = cachedQuestions || activeQuestions
+
+    // Generate questions first if not available
+    if (!questionsToShow) {
+      if (!integrationService) {
+        alert('Integration service not available.')
+        return
+      }
+
+      setIsShowingOverlay(true)
+      try {
+        const result = await generateQuestionsMutation.mutateAsync({
+          loopId: loop.id,
+          integrationService
+        })
+        questionsToShow = result
+      } catch (error) {
+        console.error('Failed to generate questions for overlay:', error)
+        alert('Failed to generate questions. Please try again.')
+        setIsShowingOverlay(false)
+        return
+      }
+    }
+
+    setIsShowingOverlay(true)
+    try {
+      // Send questions to overlay on YouTube tab
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const activeTab = tabs[0]
+      
+      if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
+        const questionsArray = Array.isArray(questionsToShow) ? questionsToShow : questionsToShow.questions || []
+        await chrome.tabs.sendMessage(activeTab.id!, {
+          type: 'SHOW_QUESTION_OVERLAY',
+          questions: {
+            loopId: loop.id,
+            questions: questionsArray,
+            metadata: {
+              totalQuestions: questionsArray.length,
+              analysisDate: new Date().toISOString(),
+              generatedFromTranscript: true,
+              canRegenerateQuestions: true
+            }
+          }
+        })
+        console.log('FluentFlow: Questions sent to overlay from loop card')
+      } else {
+        console.log('FluentFlow: No YouTube tab found for overlay')
+        alert('Please make sure you have a YouTube video tab open to show the question overlay.')
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to show overlay:', error)
+      alert('Failed to show overlay. Make sure you have a YouTube video open.')
+    } finally {
+      setIsShowingOverlay(false)
+    }
   }
 
   const renderTranscriptSection = () => {
@@ -388,6 +449,25 @@ export function EnhancedLoopCardWithIntegration({
           >
             <Target className="h-4 w-4 mr-1" />
             Transcript
+          </Button>
+
+          {/* Show Overlay Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleShowOverlay}
+            disabled={isShowingOverlay || generateQuestionsMutation.isPending || !integrationService}
+            title={cachedQuestions || activeQuestions 
+              ? "Show questions on YouTube tab (perfect for screen sharing)" 
+              : "Generate and show questions on YouTube tab"
+            }
+          >
+            {isShowingOverlay ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Monitor className="h-4 w-4 mr-1" />
+            )}
+            {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'}
           </Button>
           
           <Button

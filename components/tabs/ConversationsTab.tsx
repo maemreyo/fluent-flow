@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import {
+  Monitor,
   Repeat,
   Settings,
   Target
@@ -32,6 +33,46 @@ export function ConversationsTab({
   onSetActiveQuestionLoop
 }: ConversationsTabProps) {
   const [showStoragePanel, setShowStoragePanel] = useState(false)
+  const [overlayMode, setOverlayMode] = useState(false)
+
+  const handleOverlayToggle = async () => {
+    if (!activeQuestions) return
+    
+    const newMode = !overlayMode
+    setOverlayMode(newMode)
+    
+    try {
+      if (newMode) {
+        // Send questions to overlay on YouTube tab
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+        const activeTab = tabs[0]
+        
+        if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
+          await chrome.tabs.sendMessage(activeTab.id!, {
+            type: 'SHOW_QUESTION_OVERLAY',
+            questions: activeQuestions
+          })
+          console.log('FluentFlow: Questions sent to overlay')
+        } else {
+          console.log('FluentFlow: No YouTube tab found for overlay')
+          setOverlayMode(false) // Reset if no YouTube tab
+        }
+      } else {
+        // Hide overlay and show in sidepanel
+        const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+        const activeTab = tabs[0]
+        
+        if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
+          await chrome.tabs.sendMessage(activeTab.id!, {
+            type: 'HIDE_QUESTION_OVERLAY'
+          })
+        }
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to toggle overlay mode:', error)
+      setOverlayMode(!newMode) // Reset on error
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -124,8 +165,43 @@ export function ConversationsTab({
         </Card>
       )}
 
-      {/* Active Questions Panel */}
+      {/* Display Mode Toggle */}
       {activeQuestions && activeQuestionLoop && geminiConfigured && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Question Display Mode</CardTitle>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant={!overlayMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => overlayMode && handleOverlayToggle()}
+                  disabled={!overlayMode}
+                >
+                  Sidepanel
+                </Button>
+                <Button
+                  variant={overlayMode ? "default" : "outline"}
+                  size="sm"
+                  onClick={handleOverlayToggle}
+                  className="flex items-center gap-1"
+                >
+                  <Monitor className="h-3 w-3" />
+                  Overlay
+                </Button>
+              </div>
+            </div>
+            <CardDescription className="text-sm">
+              {overlayMode 
+                ? "Questions are displayed on the YouTube tab (perfect for screen sharing)" 
+                : "Questions are displayed here in the sidepanel"}
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Active Questions Panel */}
+      {activeQuestions && activeQuestionLoop && geminiConfigured && !overlayMode && (
         <ConversationQuestionsPanel
           questions={activeQuestions}
           loop={activeQuestionLoop}
@@ -133,10 +209,12 @@ export function ConversationsTab({
             console.log('Practice session completed:', { results, score })
             onSetActiveQuestions(null)
             onSetActiveQuestionLoop(null)
+            setOverlayMode(false)
           }}
           onClose={() => {
             onSetActiveQuestions(null)
             onSetActiveQuestionLoop(null)
+            setOverlayMode(false)
           }}
         />
       )}

@@ -25,10 +25,10 @@ import {
   RefreshCw,
   Settings,
   Clock,
-  Calendar,
   AlertTriangle,
   CheckCircle,
-  Volume2
+  Volume2,
+  Monitor
 } from 'lucide-react'
 import ConversationQuestionsPanel from './conversation-questions-panel'
 import type { 
@@ -69,6 +69,7 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
   const [isCleaning, setIsCleaning] = useState(false)
   const [retentionPolicy, setRetentionPolicy] = useState(loop.audioRetentionPolicy || 'auto-cleanup')
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [isShowingOverlay, setIsShowingOverlay] = useState(false)
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60)
@@ -118,7 +119,7 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
     
     if (onUpdateRetentionPolicy) {
       try {
-        await onUpdateRetentionPolicy(loop.id, policy)
+        onUpdateRetentionPolicy(loop.id, policy)
       } catch (error) {
         console.error('Failed to update retention policy:', error)
         // Revert on error
@@ -161,6 +162,52 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
   const handleQuestionComplete = (results: QuestionPracticeResult[], score: number) => {
     console.log('Question practice completed:', { results, score })
     // You might want to save results to storage here
+  }
+
+  const handleShowOverlay = async () => {
+    let questionsToShow = questions
+
+    // Generate questions first if not available
+    if (!questionsToShow) {
+      if (!onGenerateQuestions || (!loop.hasAudioSegment && !loop.videoId)) {
+        alert('No audio or transcript data available to generate questions.')
+        return
+      }
+
+      setIsShowingOverlay(true)
+      try {
+        questionsToShow = await onGenerateQuestions(loop)
+        setQuestions(questionsToShow)
+      } catch (error) {
+        console.error('Failed to generate questions for overlay:', error)
+        alert('Failed to generate questions. Please try again.')
+        setIsShowingOverlay(false)
+        return
+      }
+    }
+
+    setIsShowingOverlay(true)
+    try {
+      // Send questions to overlay on YouTube tab
+      const tabs = await chrome.tabs.query({ active: true, currentWindow: true })
+      const activeTab = tabs[0]
+      
+      if (activeTab && activeTab.url?.includes('youtube.com/watch')) {
+        await chrome.tabs.sendMessage(activeTab.id!, {
+          type: 'SHOW_QUESTION_OVERLAY',
+          questions: questionsToShow
+        })
+        console.log('FluentFlow: Questions sent to overlay from loop card')
+      } else {
+        console.log('FluentFlow: No YouTube tab found for overlay')
+        alert('Please make sure you have a YouTube video tab open to show the question overlay.')
+      }
+    } catch (error) {
+      console.error('FluentFlow: Failed to show overlay:', error)
+      alert('Failed to show overlay. Make sure you have a YouTube video open.')
+    } finally {
+      setIsShowingOverlay(false)
+    }
   }
 
   const getRetentionPolicyBadge = () => {
@@ -278,6 +325,27 @@ export const EnhancedLoopCard: React.FC<EnhancedLoopCardProps> = ({
               <Brain className="w-4 h-4 mr-2" />
             )}
             {isGenerating ? 'Analyzing...' : 'Questions'}
+          </Button>
+
+          {/* Show Overlay Button */}
+          <Button
+            onClick={handleShowOverlay}
+            disabled={isShowingOverlay || (!loop.hasAudioSegment && !loop.videoId) || !onGenerateQuestions}
+            variant="outline"
+            className="flex items-center gap-1 px-3"
+            title={questions 
+              ? "Show questions on YouTube tab (perfect for screen sharing)" 
+              : "Generate and show questions on YouTube tab"
+            }
+          >
+            {isShowingOverlay ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Monitor className="w-4 h-4" />
+            )}
+            <span className="hidden sm:inline">
+              {questions ? 'Overlay' : 'Gen & Show'}
+            </span>
           </Button>
 
           <Button

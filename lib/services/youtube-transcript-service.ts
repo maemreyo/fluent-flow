@@ -1,4 +1,5 @@
 import type { FluentFlowError } from '../types/fluent-flow-types'
+import { getInnerTubeDataFromContentScript } from '../utils/content-script-api'
 import { YouTubeDataExtractor } from './youtube-data-extractor'
 import {
   YouTubeExtractionMonitor,
@@ -50,25 +51,31 @@ export class YouTubeTranscriptService {
 
   public async fetchFromInnerTubeAPI(videoId: string, language = 'en'): Promise<TranscriptResult> {
     try {
-      console.log('Fetching transcript via InnerTube API for video:', videoId, 'language:', language)
-      
+      console.log(
+        'Fetching transcript via InnerTube API for video:',
+        videoId,
+        'language:',
+        language
+      )
+
       // Method 1: Use content script (most reliable - same origin)
       try {
-        const { getInnerTubeDataFromContentScript } = await import('../utils/content-script-api')
-        
         const response = await getInnerTubeDataFromContentScript(videoId, language)
 
         if (response.success && response.data?.captions) {
           console.log('✅ Got captions via content script (same-origin)')
-          
+
           // Find the right caption track
-          let captionTrack = response.data.captions.find((track: any) => 
-            track.languageCode === language || track.languageCode?.startsWith(language)
+          let captionTrack = response.data.captions.find(
+            (track: any) =>
+              track.languageCode === language || track.languageCode?.startsWith(language)
           )
-          
+
           if (!captionTrack) {
             captionTrack = response.data.captions[0]
-            console.warn(`Language '${language}' not found, using '${captionTrack.languageCode}' instead`)
+            console.warn(
+              `Language '${language}' not found, using '${captionTrack.languageCode}' instead`
+            )
           }
 
           if (!captionTrack?.baseUrl) {
@@ -85,7 +92,9 @@ export class YouTubeTranscriptService {
           const segments = this.parseTranscriptXml(transcriptXml)
           const fullText = segments.map(segment => segment.text).join(' ')
 
-          console.log(`✅ Transcript parsed via content script: ${segments.length} segments, ${fullText.length} characters`)
+          console.log(
+            `✅ Transcript parsed via content script: ${segments.length} segments, ${fullText.length} characters`
+          )
 
           return {
             segments,
@@ -98,27 +107,30 @@ export class YouTubeTranscriptService {
         }
       } catch (contentScriptError) {
         console.warn('Content script method failed:', contentScriptError)
-        
+
         // Method 2: Fallback to background script with executeScript
         try {
-          const { sendToBackground } = await import("@plasmohq/messaging")
-          
+          const { sendToBackground } = await import('@plasmohq/messaging')
+
           const response = await sendToBackground({
-            name: "extract-youtube-data", 
+            name: 'extract-youtube-data',
             body: { videoId, requestType: 'innertube_transcript', language }
           })
 
           if (response?.success && response.data?.captions) {
             console.log('✅ Got captions via background script with browser context')
-            
+
             // Find the right caption track
-            let captionTrack = response.data.captions.find((track: any) => 
-              track.languageCode === language || track.languageCode?.startsWith(language)
+            let captionTrack = response.data.captions.find(
+              (track: any) =>
+                track.languageCode === language || track.languageCode?.startsWith(language)
             )
-            
+
             if (!captionTrack) {
               captionTrack = response.data.captions[0]
-              console.warn(`Language '${language}' not found, using '${captionTrack.languageCode}' instead`)
+              console.warn(
+                `Language '${language}' not found, using '${captionTrack.languageCode}' instead`
+              )
             }
 
             if (!captionTrack?.baseUrl) {
@@ -135,7 +147,9 @@ export class YouTubeTranscriptService {
             const segments = this.parseTranscriptXml(transcriptXml)
             const fullText = segments.map(segment => segment.text).join(' ')
 
-            console.log(`✅ Transcript parsed via background: ${segments.length} segments, ${fullText.length} characters`)
+            console.log(
+              `✅ Transcript parsed via background: ${segments.length} segments, ${fullText.length} characters`
+            )
 
             return {
               segments,
@@ -303,14 +317,14 @@ export class YouTubeTranscriptService {
       // If InnerTube fails, fallback to data extractor
       try {
         const extractionResult = await this.dataExtractor.extractVideoData(videoId)
-        
+
         if (extractionResult.success && extractionResult.data?.captions) {
           return extractionResult.data.captions.length > 0
         }
       } catch (extractorError) {
         console.warn('Both InnerTube and data extractor failed:', extractorError)
       }
-      
+
       return false
     }
   }

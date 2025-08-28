@@ -8,6 +8,7 @@ import { RecordingFeature } from './features/recording'
 import { TimeBasedNotesFeature } from './features/time-based-notes'
 import { YouTubePlayerService, type VideoInfo } from './integrations/youtube-player'
 import { UIUtilities, type ButtonConfig } from './ui/utilities'
+import { QuestionOverlayService } from '../services/question-overlay-service'
 
 export class FluentFlowOrchestrator {
   private multipleLoopsFeature: MultipleLoopsFeature
@@ -16,6 +17,7 @@ export class FluentFlowOrchestrator {
   private timeBasedNotesFeature: TimeBasedNotesFeature
   private playerService: YouTubePlayerService
   private uiUtilities: UIUtilities
+  private questionOverlayService: QuestionOverlayService
   private isApplyingLoop: boolean = false
   private keyboardEventHandler: ((event: KeyboardEvent) => void) | null = null
 
@@ -23,6 +25,7 @@ export class FluentFlowOrchestrator {
     // Initialize services and utilities first
     this.playerService = new YouTubePlayerService()
     this.uiUtilities = UIUtilities.getInstance()
+    this.questionOverlayService = new QuestionOverlayService()
 
     // Initialize features with their dependencies
     this.multipleLoopsFeature = new MultipleLoopsFeature(this.playerService, this.uiUtilities)
@@ -393,6 +396,29 @@ export class FluentFlowOrchestrator {
           this.handleYouTubeDataExtraction(message.videoId, sendResponse)
           return true
 
+        case 'SHOW_QUESTION_OVERLAY':
+          if (message.questions) {
+            this.questionOverlayService.showQuestions(message.questions)
+            sendResponse({ success: true })
+          } else {
+            sendResponse({ success: false, error: 'No questions provided' })
+          }
+          return true
+
+        case 'HIDE_QUESTION_OVERLAY':
+          this.questionOverlayService.hideOverlay()
+          sendResponse({ success: true })
+          return true
+
+        case 'TOGGLE_QUESTION_OVERLAY':
+          if (this.questionOverlayService.isOverlayVisible()) {
+            this.questionOverlayService.hideOverlay()
+          } else if (message.questions) {
+            this.questionOverlayService.showQuestions(message.questions)
+          }
+          sendResponse({ success: true })
+          return true
+
         default:
           return false
       }
@@ -477,6 +503,11 @@ export class FluentFlowOrchestrator {
       }
       this.recordingFeature.clearRecording()
       this.comparisonFeature.destroy()
+
+      // Hide question overlay on video change
+      if (this.questionOverlayService.isOverlayVisible()) {
+        this.questionOverlayService.hideOverlay()
+      }
 
       // Check if integrations need re-setup by testing if progress bar is still available
       const progressBarExists = document.querySelector('.ytp-progress-bar')
@@ -643,6 +674,7 @@ export class FluentFlowOrchestrator {
     this.recordingFeature.destroy()
     this.comparisonFeature.destroy()
     this.timeBasedNotesFeature.destroy()
+    this.questionOverlayService.destroy()
 
     // Clean up UI elements including sidebar
     this.uiUtilities.destroy()
