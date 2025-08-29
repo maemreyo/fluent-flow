@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Book, Target, Users } from 'lucide-react'
 import { FlashcardPractice } from './components/learning/flashcard-practice'
+import { SRSFlashcardReview } from './components/learning/srs-flashcard-review'
+import { SRSDashboard } from './components/learning/srs-dashboard'
 import { EnhancedContextualLearning } from './components/learning/enhanced-contextual-learning'
 import { SocialGamification } from './components/learning/social-gamification'
 import { ContextualUsagePractice } from './components/learning/contextual-usage-practice'
@@ -12,6 +14,7 @@ import './styles/newtab.css'
 function VocabularyLearningNewTab() {
   const [activeTab, setActiveTab] = useState<'srs' | 'practice' | 'contextual' | 'social'>('srs')
   const [showFlashcards, setShowFlashcards] = useState(false)
+  const [showSRSReview, setShowSRSReview] = useState(false)
   const [showContextualUsage, setShowContextualUsage] = useState(false)
   const [showAudioRecognition, setShowAudioRecognition] = useState(false)
   const [showSpellingPractice, setShowSpellingPractice] = useState(false)
@@ -52,6 +55,32 @@ function VocabularyLearningNewTab() {
       description: 'Share words, streaks, and achievements'
     }
   ]
+
+  if (showSRSReview) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowSRSReview(false)}
+                  className="flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Target className="h-6 w-6 text-white" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">SRS Review Session</h1>
+                  <p className="text-sm text-gray-500">Smart spaced repetition practice</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <SRSFlashcardReview onComplete={() => setShowSRSReview(false)} />
+      </div>
+    )
+  }
 
   if (showFlashcards) {
     return (
@@ -227,30 +256,10 @@ function VocabularyLearningNewTab() {
         {/* Tab Content */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
           {activeTab === 'srs' && (
-            <div className="text-center py-16">
-              <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Spaced Repetition System
-              </h3>
-              <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Smart learning schedule that shows you vocabulary words at optimal intervals based on the forgetting curve. 
-                Add words from your FluentFlow sessions and track your progress.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
-                <div className="text-center p-6 bg-green-50 rounded-lg">
-                  <div className="font-semibold text-green-800">Mark as Learning</div>
-                  <div className="text-sm text-green-600 mt-1">Add to personal deck</div>
-                </div>
-                <div className="text-center p-6 bg-blue-50 rounded-lg">
-                  <div className="font-semibold text-blue-800">Smart Scheduling</div>
-                  <div className="text-sm text-blue-600 mt-1">Based on forgetting curve</div>
-                </div>
-                <div className="text-center p-6 bg-purple-50 rounded-lg">
-                  <div className="font-semibold text-purple-800">Progress Tracking</div>
-                  <div className="text-sm text-purple-600 mt-1">Monitor learning status</div>
-                </div>
-              </div>
-            </div>
+            <SRSDashboard 
+              onStartReview={() => setShowSRSReview(true)}
+              onViewAllCards={() => setActiveTab('contextual')}
+            />
           )}
 
           {activeTab === 'practice' && (

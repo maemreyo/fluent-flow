@@ -17,6 +17,9 @@ importers:
       '@hookform/resolvers':
         specifier: ^5.2.1
         version: 5.2.1(react-hook-form@7.62.0(react@18.2.0))
+      '@open-spaced-repetition/sm-2':
+        specifier: ^0.2.1
+        version: 0.2.1
       '@plasmohq/messaging':
         specifier: ^0.7.2
         version: 0.7.2(react@18.2.0)
@@ -1406,6 +1409,9 @@ packages:
   '@nodelib/fs.walk@1.2.8':
     resolution: {integrity: sha512-oGB+UxlgWcgQkgwo8GcEGwemoTFt3FIO9ababBmaGwXIoBKZ+GTy0pP185beGg7Llih/NSHSV2XAs1lnznocSg==}
     engines: {node: '>= 8'}
+
+  '@open-spaced-repetition/sm-2@0.2.1':
+    resolution: {integrity: sha512-bqHalMS8DVLDvn0baUUT/P12ZZ4rMOSLOLuLAabeUeo0m93tJl2H1IlWJGCTgSoNZjXTGYoLa3enkyPLCq8raA==}
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -7782,6 +7788,8 @@ snapshots:
     dependencies:
       '@nodelib/fs.scandir': 2.1.5
       fastq: 1.19.1
+
+  '@open-spaced-repetition/sm-2@0.2.1': {}
 
   '@opentelemetry/api@1.9.0': {}
 

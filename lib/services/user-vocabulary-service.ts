@@ -331,6 +331,47 @@ export class UserVocabularyService {
   }
 
   /**
+   * Update a vocabulary item with new SRS values
+   */
+  async updateVocabularyItem(id: string, updates: Partial<UserVocabularyItem>): Promise<boolean> {
+    try {
+      const user = await getCurrentUser()
+      if (!user) return false
+
+      const dbUpdates: any = {}
+      
+      // Map TypeScript field names to database column names
+      if (updates.learningStatus) dbUpdates.learning_status = updates.learningStatus
+      if (updates.easeFactor) dbUpdates.ease_factor = updates.easeFactor
+      if (updates.intervalDays) dbUpdates.interval_days = updates.intervalDays
+      if (updates.nextReviewDate) dbUpdates.next_review_date = updates.nextReviewDate
+      if (updates.repetitions !== undefined) dbUpdates.repetitions = updates.repetitions
+      if (updates.timesPracticed !== undefined) dbUpdates.times_practiced = updates.timesPracticed
+      if (updates.timesCorrect !== undefined) dbUpdates.times_correct = updates.timesCorrect
+      if (updates.timesIncorrect !== undefined) dbUpdates.times_incorrect = updates.timesIncorrect
+      if (updates.lastPracticedAt) dbUpdates.last_practiced_at = updates.lastPracticedAt
+      
+      dbUpdates.updated_at = new Date().toISOString()
+
+      const { error } = await (supabase as any)
+        .from('user_vocabulary_deck')
+        .update(dbUpdates)
+        .eq('id', id)
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Database error updating vocabulary item:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Failed to update vocabulary item:', error)
+      return false
+    }
+  }
+
+  /**
    * Get user learning statistics
    */
   async getUserStats(): Promise<LearningStats | null> {
