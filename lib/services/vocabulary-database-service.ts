@@ -76,7 +76,7 @@ export class VocabularyDatabaseService {
         .eq('loop_id', loopId)
         .order('created_at', { ascending: false })
         .limit(1)
-        .single()
+        .maybeSingle()
 
       if (error || !data) return null
 

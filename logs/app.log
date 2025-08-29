@@ -1,50 +1,45 @@
-
-fluent-flow-supabase-store.2ee859e8.js:9649  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/vocabulary_analysis?select=*&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5&loop_id=eq.d3c5e24e-99db-4571-b209-f0c77724cbab&order=created_at.desc&limit=1 406 (Not Acceptable)
-vocabulary-analysis-service.ts:103 AI vocabulary analysis failed: Error: Vocabulary analysis failed: Expected ',' or ']' after array element in JSON at position 7004 (line 170 column 6)
+vocabulary-analysis-service.ts:103 AI vocabulary analysis failed: Error: Vocabulary analysis failed: Malformed JSON in AI response - no matching closing brace
     at AIService.analyzeVocabulary (ai-service.ts:415:5)
     at async VocabularyAnalysisService.analyzeVocabulary (vocabulary-analysis-service.ts:74:14)
     at async handleAnalyzeVocabulary (loop-card.tsx:147:7)
-analyzeVocabulary @ vocabulary-analysis-service.ts:103
-await in analyzeVocabulary
-handleAnalyzeVocabulary @ loop-card.tsx:147
-await in handleAnalyzeVocabulary
-loop-card.tsx:159 Failed to analyze vocabulary: Error: Vocabulary analysis failed: Vocabulary analysis failed: Expected ',' or ']' after array element in JSON at position 7004 (line 170 column 6)
+loop-card.tsx:159 Failed to analyze vocabulary: Error: Vocabulary analysis failed: Vocabulary analysis failed: Malformed JSON in AI response - no matching closing brace
     at VocabularyAnalysisService.analyzeVocabulary (vocabulary-analysis-service.ts:104:5)
     at async handleAnalyzeVocabulary (loop-card.tsx:147:7)
-handleAnalyzeVocabulary @ loop-card.tsx:159
-await in handleAnalyzeVocabulary
-fluent-flow-supabase-store.2ee859e8.js:9649  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/vocabulary_analysis?select=*&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5&loop_id=eq.d3c5e24e-99db-4571-b209-f0c77724cbab&order=created_at.desc&limit=1 406 (Not Acceptable)
-use-question-query.ts:135 useGenerateQuestionsMutation: Generating questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:856 getQuestions: No questions found for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
-fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460206498
-fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
-conversation-loop-integration-service.ts:337 FluentFlow: Attempting transcript-based question generation for loop d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
-fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460207451
-fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
-fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:856 getQuestions: No questions found for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-conversation-loop-integration-service.ts:203 FluentFlow: Using cached transcript for loop d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:875 saveQuestions: Saving 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:916 saveQuestions: Creating new record for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:932 saveQuestions: Successfully saved 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
-fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460219689
-fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
-fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
-enhanced-loop-service.ts:154 FluentFlow: Updated loop d3c5e24e-99db-4571-b209-f0c77724cbab with transcript metadata
-conversation-loop-integration-service.ts:358 FluentFlow: Successfully generated/retrieved 15 questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
-use-question-query.ts:144 useGenerateQuestionsMutation: Successfully generated 15 questions
-use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
-use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8
-fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment 3b9fa66c-0ceb-4758-bc3d-8526803a70f8
-fluent-flow-supabase-store.ts:852 getQuestions: Found 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
-fluent-flow-supabase-store.ts:852 getQuestions: Found 15 questions for segment 3b9fa66c-0ceb-4758-bc3d-8526803a70f8
+  
+
+{
+    "candidates": [
+        {
+            "content": {
+                "parts": [
+                    {
+                        "text": "```json\n{\n  \"words\": [\n    {\n      \"word\": \"scrutinizing\",\n      \"partOfSpeech\": \"verb\",\n      \"pronunciation\": \"/ˈskruːtɪnaɪzɪŋ/\",\n      \"definition\": \"Examining or inspecting closely and thoroughly.\",\n      \"definitionVi\": \"Kiểm tra hoặc xem xét kỹ lưỡng và thấu đáo.\",\n      \"synonyms\": [\"examining\", \"inspecting\", \"analyzing\"],\n      \"antonyms\": [\"ignoring\", \"neglecting\"],\n      \"example\": \"She spent hours scrutinizing the details of the contract.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"self-awareness\",\n      \"partOfSpeech\": \"noun\",\n      \"pronunciation\": \"/ˌself əˈwɛərnəs/\",\n      \"definition\": \"Conscious knowledge of one's own character, feelings, motives, and desires.\",\n      \"definitionVi\": \"Sự nhận thức về bản thân, bao gồm tính cách, cảm xúc, động cơ và mong muốn của chính mình.\",\n      \"synonyms\": [\"introspection\", \"self-knowledge\", \"consciousness\"],\n      \"antonyms\": [\"obliviousness\", \"ignorance\"],\n      \"example\": \"Developing self-awareness is crucial for personal growth.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 18\n    },\n    {\n      \"word\": \"quantitatively\",\n      \"partOfSpeech\": \"adverb\",\n      \"pronunciation\": \"/ˌkwɒntɪˈteɪtɪvli/\",\n      \"definition\": \"In a way that relates to or measured by the quantity of something rather than its quality.\",\n      \"definitionVi\": \"Một cách liên quan đến hoặc được đo lường bằng số lượng của một thứ gì đó thay vì chất lượng của nó.\",\n      \"synonyms\": [\"numerically\", \"statistically\", \"measurably\"],\n      \"antonyms\": [\"qualitatively\"],\n      \"example\": \"The study quantitatively analyzed the impact of the new policy.\",\n      \"difficulty\": \"advanced\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"dramatic\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/drəˈmætɪk/\",\n      \"definition\": \"Sudden and noticeable; striking.\",\n      \"definitionVi\": \"Đột ngột và đáng chú ý; ấn tượng.\",\n      \"synonyms\": [\"striking\", \"significant\", \"remarkable\"],\n      \"antonyms\": [\"unremarkable\", \"minor\"],\n      \"example\": \"She made dramatic improvements in her performance.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 2\n    },\n    {\n      \"word\": \"ground-breaking\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/ˈɡraʊndˌbreɪkɪŋ/\",\n      \"definition\": \"Innovative; pioneering.\",\n      \"definitionVi\": \"Đổi mới; tiên phong.\",\n      \"synonyms\": [\"innovative\", \"revolutionary\", \"pioneering\"],\n      \"antonyms\": [\"conventional\", \"traditional\"],\n      \"example\": \"The discovery was truly ground-breaking.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"revelation\",\n      \"partOfSpeech\": \"noun\",\n      \"pronunciation\": \"/ˌrevəˈleɪʃən/\",\n      \"definition\": \"A surprising and previously unknown fact, especially one made known in a dramatic way.\",\n      \"definitionVi\": \"Một sự thật đáng ngạc nhiên và chưa từng được biết đến, đặc biệt là một sự thật được tiết lộ một cách ấn tượng.\",\n      \"synonyms\": [\"disclosure\", \"discovery\", \"unveiling\"],\n      \"antonyms\": [\"concealment\", \"hiding\"],\n      \"example\": \"The documentary offered a revelation about the politician's past.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"reflect\",\n      \"partOfSpeech\": \"verb\",\n      \"pronunciation\": \"/rɪˈflekt/\",\n      \"definition\": \"To think deeply or carefully about.\",\n      \"definitionVi\": \"Suy nghĩ sâu sắc hoặc cẩn thận về.\",\n      \"synonyms\": [\"ponder\", \"contemplate\", \"consider\"],\n      \"antonyms\": [\"ignore\", \"disregard\"],\n      \"example\": \"Take some time to reflect on your goals.\",\n      \"difficulty\": \"beginner\",\n      \"frequency\": 3\n    },\n    {\n      \"word\": \"shatter\",\n      \"partOfSpeech\": \"verb\",\n      \"pronunciation\": \"/ˈʃætər/\",\n      \"definition\": \"Break suddenly and violently into pieces; to destroy or ruin.\",\n      \"definitionVi\": \"Vỡ đột ngột và dữ dội thành từng mảnh; phá hủy hoặc làm hỏng.\",\n      \"synonyms\": [\"smash\", \"break\", \"destroy\"],\n      \"antonyms\": [\"mend\", \"repair\", \"unite\"],\n      \"example\": \"The vase fell and shattered on the floor.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"widely held\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/ˈwaɪdli hɛld/\",\n      \"definition\": \"Accepted or believed by many people.\",\n      \"definitionVi\": \"Được nhiều người chấp nhận hoặc tin tưởng.\",\n      \"synonyms\": [\"common\", \"popular\", \"accepted\"],\n      \"antonyms\": [\"uncommon\", \"unpopular\"],\n      \"example\": \"It's a widely held belief that practice makes perfect.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"comfort\",\n      \"partOfSpeech\": \"noun\",\n      \"pronunciation\": \"/ˈkʌmfərt/\",\n      \"definition\": \"A state of physical ease and freedom from pain or constraint.\",\n      \"definitionVi\": \"Trạng thái dễ chịu về thể chất và không bị đau đớn hoặc gò bó.\",\n      \"synonyms\": [\"ease\", \"solace\", \"relief\"],\n      \"antonyms\": [\"discomfort\", \"distress\"],\n      \"example\": \"There's a comfort in knowing yourself.\",\n      \"difficulty\": \"beginner\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"fulfilled\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/fʊlˈfɪld/\",\n      \"definition\": \"Satisfied or happy because of fully developing one's abilities or character.\",\n      \"definitionVi\": \"Hài lòng hoặc hạnh phúc vì đã phát huy đầy đủ khả năng hoặc tính cách của mình.\",\n      \"synonyms\": [\"satisfied\", \"content\", \" gratified\"],\n      \"antonyms\": [\"unfulfilled\", \"dissatisfied\"],\n      \"example\": \"She felt fulfilled after completing the challenging project.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"promotable\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/prəˈmoʊtəbəl/\",\n      \"definition\": \"Likely to be promoted.\",\n      \"definitionVi\": \"Có khả năng được thăng chức.\",\n      \"synonyms\": [\"advancable\", \"eligible for promotion\"],\n      \"antonyms\": [\"unpromotable\"],\n      \"example\": \"He's a highly promotable employee with excellent skills.\",\n      \"difficulty\": \"advanced\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"profitable\",\n      \"partOfSpeech\": \"adjective\",\n      \"pronunciation\": \"/ˈprɒfɪtəbəl/\",\n      \"definition\": \"Yielding profit or financial gain.\",\n      \"definitionVi\": \"Mang lại lợi nhuận hoặc lợi ích tài chính.\",\n      \"synonyms\": [\"lucrative\", \"gainful\", \"remunerative\"],\n      \"antonyms\": [\"unprofitable\", \"loss-making\"],\n      \"example\": \"The company is focused on becoming more profitable.\",\n      \"difficulty\": \"intermediate\",\n      \"frequency\": 1\n    },\n    {\n      \"word\": \"excavate\",\n      \"partOfSpeech\": \"verb\",\n      \"pronunciation\": \"/ˈɛkstəveɪt/\",\n      \"definition\": \"To dig out material from the ground; to unearth.\",\n      \"definitionVi\": \"Đào vật liệu từ lòng đất; khai quật.\",\n      \"synonyms\": [\"dig\", \"unearth\", \"extract\"],\n      \"antonyms\": [\"bury\", \"cover\"],\n      \"example\": \"Archaeologists are trying to excavate the ancient ruins.\",\n      \"difficulty\": \"advanced\",\n      \""
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "MAX_TOKENS",
+            "index": 0
+        }
+    ],
+    "usageMetadata": {
+        "promptTokenCount": 3389,
+        "candidatesTokenCount": 2000,
+        "totalTokenCount": 5389,
+        "cachedContentTokenCount": 3064,
+        "promptTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 3389
+            }
+        ],
+        "cacheTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 3064
+            }
+        ]
+    },
+    "modelVersion": "gemini-2.5-flash-lite",
+    "responseId": "THaxaJ-KN7X7qtsPptrt0QE"
+}

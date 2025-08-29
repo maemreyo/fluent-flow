@@ -53,8 +53,8 @@ Generate a comprehensive vocabulary analysis. Return ONLY a valid JSON object wi
 }
 
 Requirements:
-- Extract 15-20 most important words that are useful for learning
-- Include 5-10 key phrases, collocations, or idioms
+- Extract 8-12 most important words that are useful for learning
+- Include 3-5 key phrases, collocations, or idioms
 - Provide accurate pronunciation using IPA notation
 - Give clear, concise definitions in English
 - Provide Vietnamese translations for definitions
@@ -70,7 +70,7 @@ Types for phrases: "idiom", "collocation", "expression"`,
   userTemplate: (transcriptText: string) => `Transcript:\n${transcriptText}`,
   
   config: {
-    maxTokens: 2000,
+    maxTokens: 16000,
     temperature: 0.3
   }
 }
@@ -183,9 +183,9 @@ Duration: ${formatTime(context.loop.endTime - context.loop.startTime)}
 Transcript:
 ${context.transcript}`
   },
-  
+
   config: {
-    maxTokens: 3000,
+    maxTokens: 32000,
     temperature: 0.3
   }
 }
@@ -197,7 +197,10 @@ export class PromptManager {
   /**
    * Execute a prompt template with context
    */
-  static buildMessages(template: PromptTemplate, context: any): Array<{role: 'system' | 'user' | 'assistant', content: string}> {
+  static buildMessages(
+    template: PromptTemplate,
+    context: any
+  ): Array<{ role: 'system' | 'user' | 'assistant'; content: string }> {
     return [
       {
         role: 'system',
@@ -221,11 +224,41 @@ export class PromptManager {
    * Parse JSON response with error handling
    */
   static parseJSONResponse(responseText: string): any {
-    const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-    if (!jsonMatch) {
+    // Try to find the JSON object in the response
+    // Look for the first opening brace and find the matching closing brace
+    const firstBrace = responseText.indexOf('{')
+    if (firstBrace === -1) {
       throw new Error('No JSON found in AI response')
     }
-    return JSON.parse(jsonMatch[0])
+
+    let braceCount = 0
+    let jsonEndIndex = -1
+
+    for (let i = firstBrace; i < responseText.length; i++) {
+      if (responseText[i] === '{') {
+        braceCount++
+      } else if (responseText[i] === '}') {
+        braceCount--
+        if (braceCount === 0) {
+          jsonEndIndex = i
+          break
+        }
+      }
+    }
+
+    if (jsonEndIndex === -1) {
+      throw new Error('Malformed JSON in AI response - no matching closing brace')
+    }
+
+    const jsonString = responseText.substring(firstBrace, jsonEndIndex + 1)
+
+    try {
+      return JSON.parse(jsonString)
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError)
+      console.error('Attempted to parse:', jsonString)
+      throw new Error(`Invalid JSON in AI response: ${parseError.message}`)
+    }
   }
 }
 
