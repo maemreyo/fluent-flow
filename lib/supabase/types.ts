@@ -463,6 +463,42 @@ export type Database = {
           },
         ]
       }
+      payment_notifications: {
+        Row: {
+          created_at: string | null
+          data: Json | null
+          expires_at: string | null
+          id: string
+          message: string
+          read: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          data?: Json | null
+          expires_at?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       practice_sessions: {
         Row: {
           created_at: string
@@ -751,6 +787,45 @@ export type Database = {
         }
         Relationships: []
       }
+      transcript_summaries: {
+        Row: {
+          created_at: string | null
+          difficulty_assessment: string | null
+          id: string
+          key_insights: Json | null
+          loop_id: string
+          main_points: Json | null
+          metadata: Json | null
+          recommended_focus_areas: Json | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty_assessment?: string | null
+          id?: string
+          key_insights?: Json | null
+          loop_id: string
+          main_points?: Json | null
+          metadata?: Json | null
+          recommended_focus_areas?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          difficulty_assessment?: string | null
+          id?: string
+          key_insights?: Json | null
+          loop_id?: string
+          main_points?: Json | null
+          metadata?: Json | null
+          recommended_focus_areas?: Json | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       transcripts: {
         Row: {
           created_at: string | null
@@ -826,6 +901,75 @@ export type Database = {
         }
         Relationships: []
       }
+      user_activity_log: {
+        Row: {
+          action: string
+          created_at: string | null
+          feature_id: string | null
+          id: string
+          metadata: Json | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          feature_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          feature_id?: string | null
+          id?: string
+          metadata?: Json | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_licenses: {
+        Row: {
+          created_at: string | null
+          expires_at: string
+          features: Json
+          id: string
+          is_active: boolean | null
+          issued_at: string | null
+          last_validated_at: string | null
+          license_token: string
+          limits: Json
+          user_id: string
+          validation_count: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          expires_at: string
+          features: Json
+          id?: string
+          is_active?: boolean | null
+          issued_at?: string | null
+          last_validated_at?: string | null
+          license_token: string
+          limits: Json
+          user_id: string
+          validation_count?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          expires_at?: string
+          features?: Json
+          id?: string
+          is_active?: boolean | null
+          issued_at?: string | null
+          last_validated_at?: string | null
+          license_token?: string
+          limits?: Json
+          user_id?: string
+          validation_count?: number | null
+        }
+        Relationships: []
+      }
       user_social_profiles: {
         Row: {
           achievements: Json | null
@@ -880,6 +1024,153 @@ export type Database = {
         }
         Relationships: []
       }
+      user_subscriptions: {
+        Row: {
+          canceled_at: string | null
+          created_at: string | null
+          current_period_end: string | null
+          current_period_start: string | null
+          external_customer_id: string | null
+          external_subscription_id: string | null
+          features: Json
+          id: string
+          limits: Json
+          plan_id: string
+          plan_name: string
+          status: string
+          trial_end: string | null
+          trial_start: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_customer_id?: string | null
+          external_subscription_id?: string | null
+          features?: Json
+          id?: string
+          limits?: Json
+          plan_id?: string
+          plan_name?: string
+          status?: string
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          canceled_at?: string | null
+          created_at?: string | null
+          current_period_end?: string | null
+          current_period_start?: string | null
+          external_customer_id?: string | null
+          external_subscription_id?: string | null
+          features?: Json
+          id?: string
+          limits?: Json
+          plan_id?: string
+          plan_name?: string
+          status?: string
+          trial_end?: string | null
+          trial_start?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_usage: {
+        Row: {
+          ai_requests_made: number | null
+          created_at: string | null
+          custom_prompts_used: number | null
+          export_operations: number | null
+          features_accessed: Json | null
+          file_uploads: number | null
+          id: string
+          last_reset_at: string | null
+          loops_created: number | null
+          month_year: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          ai_requests_made?: number | null
+          created_at?: string | null
+          custom_prompts_used?: number | null
+          export_operations?: number | null
+          features_accessed?: Json | null
+          file_uploads?: number | null
+          id?: string
+          last_reset_at?: string | null
+          loops_created?: number | null
+          month_year: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          ai_requests_made?: number | null
+          created_at?: string | null
+          custom_prompts_used?: number | null
+          export_operations?: number | null
+          features_accessed?: Json | null
+          file_uploads?: number | null
+          id?: string
+          last_reset_at?: string | null
+          loops_created?: number | null
+          month_year?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      vocabulary_analysis: {
+        Row: {
+          created_at: string | null
+          difficulty_level: string | null
+          id: string
+          loop_id: string
+          metadata: Json | null
+          phrases: Json | null
+          suggested_focus_words: Json | null
+          total_words: number | null
+          unique_words: number | null
+          updated_at: string | null
+          user_id: string | null
+          words: Json | null
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty_level?: string | null
+          id?: string
+          loop_id: string
+          metadata?: Json | null
+          phrases?: Json | null
+          suggested_focus_words?: Json | null
+          total_words?: number | null
+          unique_words?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          words?: Json | null
+        }
+        Update: {
+          created_at?: string | null
+          difficulty_level?: string | null
+          id?: string
+          loop_id?: string
+          metadata?: Json | null
+          phrases?: Json | null
+          suggested_focus_words?: Json | null
+          total_words?: number | null
+          unique_words?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          words?: Json | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -889,9 +1180,29 @@ export type Database = {
         Args: { user_uuid: string }
         Returns: number
       }
+      check_feature_access: {
+        Args: { feature_id: string }
+        Returns: Json
+      }
       cleanup_expired_notifications: {
         Args: Record<PropertyKey, never>
-        Returns: undefined
+        Returns: number
+      }
+      cleanup_old_usage_data: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      get_subscription_summary: {
+        Args: Record<PropertyKey, never>
+        Returns: Json
+      }
+      increment_usage: {
+        Args: {
+          current_month?: string
+          feature_id: string
+          usage_amount?: number
+        }
+        Returns: Json
       }
     }
     Enums: {

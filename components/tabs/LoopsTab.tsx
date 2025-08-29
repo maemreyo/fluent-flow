@@ -6,7 +6,7 @@ import {
   Repeat,
   Search
 } from 'lucide-react'
-import { EnhancedLoopCardWithIntegration } from '../enhanced-loop-card-with-integration'
+import { LoopCard } from '../loop/loop-card'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
@@ -145,13 +145,12 @@ export function LoopsTab({
 
         {!loadingLoops &&
           filteredLoops.map(loop => (
-            <EnhancedLoopCardWithIntegration
+            <LoopCard
               key={loop.id}
               loop={loop}
               integrationService={integrationService}
               onApply={() => onApplyLoop(loop)}
               onDelete={loopId => onDeleteLoop(loopId)}
-              onExport={() => onExportLoop(loop)}
               isApplying={applyingLoopId === loop.id}
             />
           ))}

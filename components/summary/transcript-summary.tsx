@@ -65,17 +65,18 @@ export const TranscriptSummaryComponent: React.FC<TranscriptSummaryProps> = ({
           <span
             className={`rounded-full border px-2 py-1 text-xs font-medium ${getDifficultyColor(summary.difficulty)}`}
           >
-            {summary.difficulty} level
+            {summary.difficulty}
           </span>
         </div>
 
         <div className="flex items-center gap-3 text-xs text-gray-500">
+          <span className="text-gray-300">•</span>
           <div className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
             <span>{summary.estimatedReadingTime} min read</span>
           </div>
           <span className="text-gray-300">•</span>
-          <span>{isExpanded ? 'Hide' : 'Show'} details</span>
+          <span>{isExpanded ? 'Hide' : 'Show'}</span>
         </div>
       </button>
 
