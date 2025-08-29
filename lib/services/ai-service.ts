@@ -3,13 +3,14 @@
 
 import Anthropic from '@anthropic-ai/sdk'
 import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import * as z from 'zod'
 import type { AICapability, AIResponse, ChatMessage } from '../types'
 import { ImprovedBaseService } from './improved-base-service'
 
 // AI Configuration Schema
 const aiConfigSchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'custom']),
+  provider: z.enum(['openai', 'anthropic', 'google', 'custom']),
   apiKey: z.string().min(1),
   model: z.string().min(1),
   baseUrl: z.string().url().optional(),
@@ -21,6 +22,7 @@ const aiConfigSchema = z.object({
 export class AIService extends ImprovedBaseService {
   private openai?: OpenAI
   private anthropic?: Anthropic
+  private google?: GoogleGenerativeAI
   private config: z.infer<typeof aiConfigSchema>
 
   constructor(config: z.infer<typeof aiConfigSchema>) {
@@ -44,6 +46,10 @@ export class AIService extends ImprovedBaseService {
           apiKey: this.config.apiKey,
           baseURL: this.config.baseUrl
         })
+        break
+
+      case 'google':
+        this.google = new GoogleGenerativeAI(this.config.apiKey)
         break
 
       case 'custom':
@@ -71,6 +77,9 @@ export class AIService extends ImprovedBaseService {
 
         case 'anthropic':
           return await this.chatWithAnthropic(messages, mergedOptions)
+
+        case 'google':
+          return await this.chatWithGoogle(messages, mergedOptions)
 
         case 'custom':
           return await this.chatWithCustomProvider(messages, mergedOptions)
@@ -168,6 +177,53 @@ export class AIService extends ImprovedBaseService {
       model: message.model,
       provider: 'anthropic',
       finishReason: message.stop_reason || 'end_turn'
+    }
+  }
+
+  // Google Gemini implementation
+  private async chatWithGoogle(messages: ChatMessage[], options: any): Promise<AIResponse> {
+    if (!this.google) throw new Error('Google Gemini client not initialized')
+
+    // Convert messages to Gemini format
+    const systemMessage = messages.find(m => m.role === 'system')
+    const conversationMessages = messages.filter(m => m.role !== 'system')
+    
+    // Build prompt for Gemini (it uses a single prompt format)
+    let prompt = ''
+    if (systemMessage) {
+      prompt += systemMessage.content + '\n\n'
+    }
+    
+    conversationMessages.forEach(msg => {
+      const rolePrefix = msg.role === 'user' ? 'User: ' : 'Assistant: '
+      prompt += rolePrefix + msg.content + '\n'
+    })
+
+    try {
+      const model = this.google.getGenerativeModel({ 
+        model: this.config.model || 'gemini-2.5-flash-lite',
+        generationConfig: {
+          maxOutputTokens: options.maxTokens,
+          temperature: options.temperature,
+        }
+      })
+
+      const result = await model.generateContent(prompt)
+      const response = result.response
+      
+      return {
+        content: response.text(),
+        usage: {
+          totalTokens: response.usageMetadata?.totalTokenCount || 0,
+          promptTokens: response.usageMetadata?.promptTokenCount || 0,
+          completionTokens: response.usageMetadata?.candidatesTokenCount || 0
+        },
+        model: this.config.model,
+        provider: 'google',
+        finishReason: response.candidates?.[0]?.finishReason || 'stop'
+      }
+    } catch (error) {
+      throw new Error(`Google Gemini API error: ${error.message}`)
     }
   }
 
@@ -312,6 +368,127 @@ export class AIService extends ImprovedBaseService {
     return response.content
   }
 
+  /**
+   * Specialized method for vocabulary analysis from transcript text
+   */
+  async analyzeVocabulary(transcriptText: string): Promise<any> {
+    const { prompts, PromptManager } = await import('./ai-prompts')
+    const template = prompts.vocabularyAnalysis
+    
+    const messages = PromptManager.buildMessages(template, transcriptText)
+    const config = PromptManager.getConfig(template)
+
+    try {
+      const response = await this.chat(messages, config)
+      const parsedResponse = PromptManager.parseJSONResponse(response.content)
+
+      // Validate and clean response structure
+      return {
+        words: (parsedResponse.words || []).map((w: any) => ({
+          word: w.word || '',
+          partOfSpeech: w.partOfSpeech || '',
+          pronunciation: w.pronunciation || '',
+          definition: w.definition || '',
+          definitionVi: w.definitionVi || '',
+          synonyms: Array.isArray(w.synonyms) ? w.synonyms : [],
+          antonyms: Array.isArray(w.antonyms) ? w.antonyms : [],
+          example: w.example || '',
+          difficulty: w.difficulty || 'intermediate',
+          frequency: w.frequency || 1
+        })),
+        phrases: (parsedResponse.phrases || []).map((p: any) => ({
+          phrase: p.phrase || '',
+          type: p.type || 'expression',
+          definition: p.definition || '',
+          definitionVi: p.definitionVi || '',
+          example: p.example || '',
+          difficulty: p.difficulty || 'intermediate',
+          frequency: p.frequency || 1
+        })),
+        totalWords: parsedResponse.totalWords || transcriptText.split(/\s+/).length,
+        uniqueWords: parsedResponse.uniqueWords || new Set(transcriptText.toLowerCase().split(/\s+/)).size,
+        difficultyLevel: parsedResponse.difficultyLevel || 'intermediate',
+        suggestedFocusWords: Array.isArray(parsedResponse.suggestedFocusWords) ? parsedResponse.suggestedFocusWords : []
+      }
+    } catch (error) {
+      throw new Error(`Vocabulary analysis failed: ${error.message}`)
+    }
+  }
+
+  /**
+   * Specialized method for generating summaries from transcript text
+   */
+  async generateTranscriptSummary(transcriptText: string): Promise<any> {
+    const words = transcriptText.split(/\s+/).length
+    const estimatedReadingTime = Math.ceil(words / 200) // 200 WPM
+
+    const { prompts, PromptManager } = await import('./ai-prompts')
+    const template = prompts.transcriptSummary
+    
+    const messages = PromptManager.buildMessages(template, transcriptText)
+    const config = PromptManager.getConfig(template)
+
+    try {
+      const response = await this.chat(messages, config)
+      const parsedResponse = PromptManager.parseJSONResponse(response.content)
+
+      return {
+        summary: parsedResponse.summary || 'Summary not available',
+        keyPoints: Array.isArray(parsedResponse.keyPoints) ? parsedResponse.keyPoints : [],
+        topics: Array.isArray(parsedResponse.topics) ? parsedResponse.topics : [],
+        difficulty: parsedResponse.difficulty || 'intermediate',
+        estimatedReadingTime
+      }
+    } catch (error) {
+      throw new Error(`Summary generation failed: ${error.message}`)
+    }
+  }
+
+  /**
+   * Generate conversation questions from transcript text
+   */
+  async generateConversationQuestions(loop: any, transcript: string): Promise<any> {
+    const { prompts, PromptManager } = await import('./ai-prompts')
+    const template = prompts.conversationQuestions
+    
+    const messages = PromptManager.buildMessages(template, { loop, transcript })
+    const config = PromptManager.getConfig(template)
+
+    try {
+      const response = await this.chat(messages, config)
+      const parsedResponse = PromptManager.parseJSONResponse(response.content)
+
+      // Validate response structure
+      if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
+        throw new Error('AI response missing questions array')
+      }
+
+      return {
+        questions: parsedResponse.questions.slice(0, 15).map((q: any, index: number) => {
+          // Validate question structure
+          if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
+            throw new Error(`Invalid question structure at index ${index}`)
+          }
+
+          return {
+            id: `q_${loop.id}_ai_${index + 1}`,
+            question: q.question,
+            options: q.options,
+            correctAnswer: q.correctAnswer || 'A',
+            explanation: q.explanation || 'No explanation provided',
+            difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
+            type: ['main_idea', 'specific_detail', 'vocabulary_in_context', 'inference', 'speaker_tone', 'language_function'].includes(q.type)
+              ? q.type
+              : 'main_idea',
+            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
+          }
+        })
+      }
+    } catch (error) {
+      throw new Error(`Conversation questions generation failed: ${error.message}`)
+    }
+  }
+
   // Batch processing for multiple texts
   async batchProcess(
     texts: string[],
@@ -371,6 +548,8 @@ export class AIService extends ImprovedBaseService {
         return [...baseCapabilities, 'code-generation', 'function-calling']
       case 'anthropic':
         return [...baseCapabilities, 'long-context', 'reasoning']
+      case 'google':
+        return [...baseCapabilities, 'multimodal', 'fast-generation']
       default:
         return baseCapabilities
     }
@@ -406,5 +585,76 @@ export class AIService extends ImprovedBaseService {
   // Get current configuration
   getConfig(): z.infer<typeof aiConfigSchema> {
     return { ...this.config }
+  }
+
+}
+
+// Service factory function to create AIService with configuration
+export const createAIService = async (provider: 'openai' | 'anthropic' | 'google' | 'custom' = 'google'): Promise<AIService> => {
+  let apiConfig = null
+
+  try {
+    // First try to get config from Supabase
+    const { getFluentFlowStore } = await import('../stores/fluent-flow-supabase-store')
+    const { supabaseService } = getFluentFlowStore()
+    apiConfig = await supabaseService.getApiConfig()
+  } catch (supabaseError) {
+    console.log('AI Service: Failed to load from Supabase, trying Chrome storage:', supabaseError)
+
+    // Fallback to Chrome storage
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'STORAGE_OPERATION',
+        operation: 'get',
+        key: 'api_config'
+      })
+      apiConfig = response.data
+    } catch (chromeError) {
+      console.log('AI Service: Failed to load from Chrome storage:', chromeError)
+    }
+  }
+
+  // Get provider-specific config
+  let config: any
+  switch (provider) {
+    case 'openai':
+      config = apiConfig?.openai
+      if (!config?.apiKey) {
+        throw new Error('OpenAI API key not configured. Please configure your API key in settings.')
+      }
+      return new AIService({
+        provider: 'openai',
+        apiKey: config.apiKey,
+        model: config.model || 'gpt-4o-mini',
+        maxTokens: 2000,
+        temperature: 0.7
+      })
+
+    case 'anthropic':
+      config = apiConfig?.anthropic
+      if (!config?.apiKey) {
+        throw new Error('Anthropic API key not configured. Please configure your API key in settings.')
+      }
+      return new AIService({
+        provider: 'anthropic',
+        apiKey: config.apiKey,
+        model: config.model || 'claude-3-sonnet-20240229',
+        maxTokens: 2000,
+        temperature: 0.7
+      })
+
+    case 'google':
+    default:
+      config = apiConfig?.gemini
+      if (!config?.apiKey) {
+        throw new Error('Google Gemini API key not configured. Please configure your API key in settings.')
+      }
+      return new AIService({
+        provider: 'google',
+        apiKey: config.apiKey,
+        model: config.model || 'gemini-2.5-flash-lite',
+        maxTokens: 2000,
+        temperature: 0.7
+      })
   }
 }

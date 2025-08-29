@@ -1,0 +1,50 @@
+
+fluent-flow-supabase-store.2ee859e8.js:9649  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/vocabulary_analysis?select=*&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5&loop_id=eq.d3c5e24e-99db-4571-b209-f0c77724cbab&order=created_at.desc&limit=1 406 (Not Acceptable)
+vocabulary-analysis-service.ts:103 AI vocabulary analysis failed: Error: Vocabulary analysis failed: Expected ',' or ']' after array element in JSON at position 7004 (line 170 column 6)
+    at AIService.analyzeVocabulary (ai-service.ts:415:5)
+    at async VocabularyAnalysisService.analyzeVocabulary (vocabulary-analysis-service.ts:74:14)
+    at async handleAnalyzeVocabulary (loop-card.tsx:147:7)
+analyzeVocabulary @ vocabulary-analysis-service.ts:103
+await in analyzeVocabulary
+handleAnalyzeVocabulary @ loop-card.tsx:147
+await in handleAnalyzeVocabulary
+loop-card.tsx:159 Failed to analyze vocabulary: Error: Vocabulary analysis failed: Vocabulary analysis failed: Expected ',' or ']' after array element in JSON at position 7004 (line 170 column 6)
+    at VocabularyAnalysisService.analyzeVocabulary (vocabulary-analysis-service.ts:104:5)
+    at async handleAnalyzeVocabulary (loop-card.tsx:147:7)
+handleAnalyzeVocabulary @ loop-card.tsx:159
+await in handleAnalyzeVocabulary
+fluent-flow-supabase-store.2ee859e8.js:9649  GET https://fxawystovhtbuqhllswl.supabase.co/rest/v1/vocabulary_analysis?select=*&user_id=eq.39abb7b6-93ca-4f4c-b07b-1087f6224cb5&loop_id=eq.d3c5e24e-99db-4571-b209-f0c77724cbab&order=created_at.desc&limit=1 406 (Not Acceptable)
+use-question-query.ts:135 useGenerateQuestionsMutation: Generating questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:856 getQuestions: No questions found for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460206498
+fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
+conversation-loop-integration-service.ts:337 FluentFlow: Attempting transcript-based question generation for loop d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460207451
+fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
+fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:856 getQuestions: No questions found for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+conversation-loop-integration-service.ts:203 FluentFlow: Using cached transcript for loop d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:875 saveQuestions: Saving 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:916 saveQuestions: Creating new record for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:932 saveQuestions: Successfully saved 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:332 getAllUserLoops: Fetching loops for user 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+fluent-flow-supabase-store.ts:336 getAllUserLoops: Cache buster timestamp: 1756460219689
+fluent-flow-supabase-store.ts:369 getAllUserLoops: Retrieved 2 practice sessions
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop d3c5e24e-99db-4571-b209-f0c77724cbab - cache removed, using database
+fluent-flow-supabase-store.ts:380 getAllUserLoops: ✅ Processing loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8 - cache removed, using database
+enhanced-loop-service.ts:154 FluentFlow: Updated loop d3c5e24e-99db-4571-b209-f0c77724cbab with transcript metadata
+conversation-loop-integration-service.ts:358 FluentFlow: Successfully generated/retrieved 15 questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
+use-question-query.ts:144 useGenerateQuestionsMutation: Successfully generated 15 questions
+use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop d3c5e24e-99db-4571-b209-f0c77724cbab
+use-question-query.ts:20 useQuestionsQuery: Fetching questions for loop 3b9fa66c-0ceb-4758-bc3d-8526803a70f8
+fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:834 getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment 3b9fa66c-0ceb-4758-bc3d-8526803a70f8
+fluent-flow-supabase-store.ts:852 getQuestions: Found 15 questions for segment d3c5e24e-99db-4571-b209-f0c77724cbab
+fluent-flow-supabase-store.ts:852 getQuestions: Found 15 questions for segment 3b9fa66c-0ceb-4758-bc3d-8526803a70f8

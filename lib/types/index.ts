@@ -585,7 +585,7 @@ export interface UpdateHistory {
   errorMessage?: string
 }
 export type CacheStrategy = 'memory-only' | 'storage-only' | 'hybrid'
-export type AIProvider = 'openai' | 'anthropic' | 'custom'
+export type AIProvider = 'openai' | 'anthropic' | 'google' | 'custom'
 export type AICapability =
   | 'text-generation'
   | 'text-analysis'
@@ -595,3 +595,5 @@ export type AICapability =
   | 'function-calling'
   | 'long-context'
   | 'reasoning'
+  | 'multimodal'
+  | 'fast-generation'

@@ -1,4 +1,8 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+// Enhanced Conversation Analysis Service using AIService
+// This replaces the direct Gemini implementation with the universal AIService
+
+import { createAIService } from './ai-service'
+import type { AIService } from './ai-service'
 import type {
   ConversationQuestion,
   ConversationQuestions,
@@ -12,7 +16,19 @@ export interface GeminiConfig {
 }
 
 export class ConversationAnalysisService {
-  constructor(private geminiConfig: { apiKey: string }) {}
+  private aiService: AIService | null = null
+
+  constructor(private preferredProvider: 'openai' | 'anthropic' | 'google' = 'google') {}
+
+  /**
+   * Initialize the AI service (lazy loading)
+   */
+  private async getAIService(): Promise<AIService> {
+    if (!this.aiService) {
+      this.aiService = await createAIService(this.preferredProvider)
+    }
+    return this.aiService
+  }
 
   /**
    * Generate questions from a loop (main method expected by integration service)
@@ -23,7 +39,7 @@ export class ConversationAnalysisService {
   }
 
   /**
-   * Generate questions from transcript text
+   * Generate questions from transcript text using AI
    */
   async generateQuestionsFromTranscript(
     loop: SavedLoop,
@@ -34,115 +50,12 @@ export class ConversationAnalysisService {
       throw new Error('No transcript content provided')
     }
 
-    if (!this.geminiConfig?.apiKey) {
-      console.warn('Gemini API not configured, using fallback questions')
-      return this.generateFallbackQuestions(loop, transcript)
-    }
-
     try {
-      const genAI = new GoogleGenerativeAI(this.geminiConfig.apiKey)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
-
-      const prompt = `
-You are an expert ESL/EFL instructor designing a learning module for a group of ambitious entry-level students aiming for advanced proficiency in 3 months. The primary focus is on improving **active listening skills**, moving beyond literal comprehension to understand nuance, tone, and implied meaning.
-
-Based on the following YouTube video transcript, generate 15 comprehension questions. The transcript is from a video segment from ${this.formatTime(loop.startTime)} to ${this.formatTime(loop.endTime)}.
-
-Video Title: ${loop.videoTitle || 'YouTube Video'}
-Duration: ${this.formatTime(loop.endTime - loop.startTime)}
-
-Transcript:
-${transcript}
-
-Please generate exactly 15 multiple-choice questions with the following criteria:
-
-**1. Difficulty Distribution (Builds a learning curve):**
-   - **4 Easy:** Questions that can be answered by finding explicitly stated information in the text.
-   - **7 Medium:** Questions that require connecting ideas or understanding vocabulary/idioms in context.
-   - **4 Hard:** Questions that require deep inference, understanding the speaker's tone, or analyzing the function of their language.
-
-**2. Question Type Variety (Focus on Listening Sub-skills):**
-   - **Main Idea/Gist:** What is the overall point of this segment?
-   - **Specific Detail:** Who, what, when, where, why?
-   - **Vocabulary in Context:** What does a specific word, phrasal verb, or idiom mean *in this situation*?
-   - **Inference & Implication:** What is the speaker suggesting but not saying directly?
-   - **Speaker's Attitude/Tone:** What is the speaker's emotion or opinion (e.g., sarcastic, enthusiastic, skeptical)? This requires listening to *how* things are said.
-   - **Function of Language:** *Why* did the speaker say something? (e.g., to persuade, to clarify, to soften a statement, to express doubt).
-
-**3. Quality of Options:**
-   - Each question must have 4 options (A, B, C, D).
-   - The correct answer must be clearly supported by the transcript.
-   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
-
-**4. Explanations for Learning:**
-   - Provide a clear and concise explanation for why the correct answer is right.
-   - Briefly explain why the other options are incorrect, if it adds learning value.
-
-**5. JSON Output Format:**
-   - Format your response as a valid JSON object with the exact structure below.
-
-{
-  "questions": [
-    {
-      "question": "Question text here?",
-      "options": ["Option A", "Option B", "Option C", "Option D"],
-      "correctAnswer": "A",
-      "explanation": "Explanation of why A is correct and why others might be wrong.",
-      "difficulty": "easy",
-      "type": "specific_detail"
-    }
-  ]
-}
-
-**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
-**Difficulties to use:** "easy", "medium", "hard"
-`
-
-      const result = await model.generateContent(prompt)
-      const responseText = result.response.text()
-
-      // Parse the AI response
-      let aiResponse: { questions: any[] }
-      try {
-        // Try to extract JSON from the response
-        const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-        if (!jsonMatch) {
-          throw new Error('No JSON found in AI response')
-        }
-        aiResponse = JSON.parse(jsonMatch[0])
-      } catch (parseError) {
-        console.error('Failed to parse AI response:', parseError, 'Response:', responseText)
-        throw new Error('Invalid response format from AI service')
-      }
-
-      // Validate and format questions
-      if (!aiResponse.questions || !Array.isArray(aiResponse.questions)) {
-        throw new Error('AI response missing questions array')
-      }
-
-      const questions: ConversationQuestion[] = aiResponse.questions
-        .slice(0, 15)
-        .map((q: any, index: number) => {
-          // Validate question structure
-          if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
-            throw new Error(`Invalid question structure at index ${index}`)
-          }
-
-          return {
-            id: `q_${loop.id}_ai_${index + 1}`,
-            question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer || 'A',
-            explanation: q.explanation || 'No explanation provided',
-            difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
-            type: ['main_idea', 'specific_detail', 'vocabulary_in_context', 'inference', 'speaker_tone', 'language_function'].includes(q.type)
-              ? q.type
-              : 'main_idea',
-            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
-          }
-        })
+      const aiService = await this.getAIService()
+      const result = await aiService.generateConversationQuestions(loop, transcript)
 
       // Ensure we have exactly 15 questions
+      const questions = result.questions || []
       while (questions.length < 15) {
         const fallbackQuestions = this.generateFallbackQuestions(loop, transcript)
         questions.push(...fallbackQuestions.questions.slice(questions.length, 15))
@@ -171,27 +84,45 @@ Please generate exactly 15 multiple-choice questions with the following criteria
 
       // Fall back to template questions if AI fails
       const fallback = this.generateFallbackQuestions(loop, transcript)
-
       return fallback
     }
   }
 
   /**
-   * Validate Gemini API configuration
+   * Validate AI service configuration
    */
   async validateConfiguration(): Promise<boolean> {
     try {
-      return !!(this.geminiConfig?.apiKey && this.geminiConfig.apiKey.length > 0)
-    } catch {
+      await this.getAIService()
+      return true
+    } catch (error) {
+      console.error('AI service validation failed:', error)
       return false
     }
   }
 
   /**
-   * Update Gemini configuration
+   * Change AI provider (useful for switching between different AI services)
    */
-  updateConfig(config: { apiKey: string }): void {
-    this.geminiConfig = config
+  async switchProvider(provider: 'openai' | 'anthropic' | 'google'): Promise<void> {
+    this.preferredProvider = provider
+    this.aiService = null // Reset to force re-initialization
+  }
+
+  /**
+   * Get current AI provider
+   */
+  getCurrentProvider(): string {
+    return this.preferredProvider
+  }
+
+  /**
+   * Update configuration (legacy compatibility)
+   */
+  updateConfig(_config: { apiKey: string }): void {
+    // This method exists for legacy compatibility
+    // The new service handles configuration automatically
+    console.log('updateConfig called - configuration is now handled automatically')
   }
 
   /**
@@ -202,14 +133,6 @@ Please generate exactly 15 multiple-choice questions with the following criteria
     return Math.ceil(text.length / 4)
   }
 
-  /**
-   * Format seconds to MM:SS format
-   */
-  private formatTime(seconds: number): string {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, '0')}`
-  }
 
   /**
    * Generate fallback questions when AI analysis is not available
@@ -240,7 +163,7 @@ Please generate exactly 15 multiple-choice questions with the following criteria
         correctAnswer: 'B',
         explanation: 'Most educational content contains a mix of common and specialized terms.',
         difficulty: 'medium',
-        type: 'vocabulary'
+        type: 'vocabulary_in_context'
       },
       {
         question: "What is the speaker's main purpose in this segment?",
@@ -267,7 +190,7 @@ Please generate exactly 15 multiple-choice questions with the following criteria
         explanation:
           'Most educational content adapts language complexity based on the concepts being explained.',
         difficulty: 'medium',
-        type: 'grammar'
+        type: 'language_function'
       },
       {
         question: 'What details support the main ideas presented?',
@@ -281,7 +204,7 @@ Please generate exactly 15 multiple-choice questions with the following criteria
         explanation:
           'Effective educational content typically uses multiple types of supporting details.',
         difficulty: 'medium',
-        type: 'detail'
+        type: 'specific_detail'
       },
       {
         question: 'What can you infer about the target audience of this video?',
@@ -445,4 +368,5 @@ Please generate exactly 15 multiple-choice questions with the following criteria
   }
 }
 
+// Legacy compatibility export
 export default ConversationAnalysisService

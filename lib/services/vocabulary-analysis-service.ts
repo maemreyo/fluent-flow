@@ -1,7 +1,8 @@
-// Vocabulary Analysis Service for extracting and analyzing words from transcripts
+// Enhanced Vocabulary Analysis Service using AIService
+// This replaces the direct Gemini implementation with the universal AIService
 
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { getFluentFlowStore } from '../stores/fluent-flow-supabase-store'
+import { createAIService } from './ai-service'
+import type { AIService } from './ai-service'
 
 export interface VocabularyWord {
   word: string
@@ -44,206 +45,86 @@ export interface TranscriptSummary {
 }
 
 export class VocabularyAnalysisService {
-  constructor(private geminiConfig: { apiKey: string }) {}
+  private aiService: AIService | null = null
+
+  constructor(private preferredProvider: 'openai' | 'anthropic' | 'google' = 'google') {}
 
   /**
-   * Analyze vocabulary from transcript segments using Gemini AI
+   * Initialize the AI service (lazy loading)
+   */
+  private async getAIService(): Promise<AIService> {
+    if (!this.aiService) {
+      this.aiService = await createAIService(this.preferredProvider)
+    }
+    return this.aiService
+  }
+
+  /**
+   * Analyze vocabulary from transcript segments using AI
    */
   async analyzeVocabulary(
     segments: Array<{ text: string; start: number; duration: number }>
   ): Promise<VocabularyAnalysisResult> {
     const fullText = segments.map(s => s.text).join(' ')
 
-    if (!this.geminiConfig?.apiKey) {
-      throw new Error('Gemini API key is required for vocabulary analysis')
-    }
-
-    const genAI = new GoogleGenerativeAI(this.geminiConfig.apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
-
-    const prompt = `
-You are an expert English vocabulary analyst for language learners. Analyze the following transcript and extract the most important vocabulary words and phrases.
-
-Transcript:
-${fullText}
-
-Generate a comprehensive vocabulary analysis. Return ONLY a valid JSON object with this exact structure:
-
-{
-  "words": [
-    {
-      "word": "example",
-      "partOfSpeech": "noun",
-      "pronunciation": "/ɪɡˈzæmpəl/",
-      "definition": "Clear English definition",
-      "definitionVi": "Vietnamese translation",
-      "synonyms": ["sample", "instance"],
-      "antonyms": ["opposite1"],
-      "example": "Natural example sentence",
-      "difficulty": "intermediate",
-      "frequency": 3
-    }
-  ],
-  "phrases": [
-    {
-      "phrase": "example phrase",
-      "type": "collocation",
-      "definition": "Clear English definition",
-      "definitionVi": "Vietnamese translation", 
-      "example": "Natural example sentence",
-      "difficulty": "intermediate",
-      "frequency": 2
-    }
-  ],
-  "totalWords": 150,
-  "uniqueWords": 95,
-  "difficultyLevel": "intermediate",
-  "suggestedFocusWords": ["word1", "word2", "word3"]
-}
-
-Requirements:
-- Extract 15-20 most important words that are useful for learning
-- Include 5-10 key phrases, collocations, or idioms
-- Provide accurate pronunciation using IPA notation
-- Give clear, concise definitions in English
-- Provide Vietnamese translations for definitions
-- Include 2-3 synonyms and 1-2 antonyms where applicable
-- Create natural example sentences showing usage
-- Assess difficulty: "beginner", "intermediate", or "advanced"
-- Count frequency based on appearance in transcript
-- Suggest 5 focus words for priority learning
-- Assess overall difficulty level of the content
-
-Types for phrases: "idiom", "collocation", "expression"
-`
-
     try {
-      const result = await model.generateContent(prompt)
-      const responseText = result.response.text()
-
-      // Extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) {
-        throw new Error('No JSON found in Gemini response')
-      }
-
-      const aiResponse = JSON.parse(jsonMatch[0])
-
-      // Validate response structure
-      if (!aiResponse.words || !Array.isArray(aiResponse.words)) {
-        throw new Error('Invalid response structure from Gemini')
-      }
-
+      const aiService = await this.getAIService()
+      const result = await aiService.analyzeVocabulary(fullText)
+      
       return {
-        words: aiResponse.words.map((w: any) => ({
-          word: w.word,
-          partOfSpeech: w.partOfSpeech,
-          pronunciation: w.pronunciation,
-          definition: w.definition,
-          definitionVi: w.definitionVi,
+        words: result.words.map((w: any) => ({
+          word: w.word || '',
+          partOfSpeech: w.partOfSpeech || '',
+          pronunciation: w.pronunciation || '',
+          definition: w.definition || '',
+          definitionVi: w.definitionVi || '',
           synonyms: Array.isArray(w.synonyms) ? w.synonyms : [],
           antonyms: Array.isArray(w.antonyms) ? w.antonyms : [],
-          example: w.example,
+          example: w.example || '',
           difficulty: w.difficulty || 'intermediate',
           frequency: w.frequency || 1
         })),
-        phrases: (aiResponse.phrases || []).map((p: any) => ({
-          phrase: p.phrase,
+        phrases: result.phrases.map((p: any) => ({
+          phrase: p.phrase || '',
           type: p.type || 'expression',
-          definition: p.definition,
-          definitionVi: p.definitionVi,
-          example: p.example,
+          definition: p.definition || '',
+          definitionVi: p.definitionVi || '',
+          example: p.example || '',
           difficulty: p.difficulty || 'intermediate',
           frequency: p.frequency || 1
         })),
-        totalWords: aiResponse.totalWords || fullText.split(/\s+/).length,
-        uniqueWords: aiResponse.uniqueWords || new Set(fullText.toLowerCase().split(/\s+/)).size,
-        difficultyLevel: aiResponse.difficultyLevel || 'intermediate',
-        suggestedFocusWords: Array.isArray(aiResponse.suggestedFocusWords)
-          ? aiResponse.suggestedFocusWords
-          : []
+        totalWords: result.totalWords || fullText.split(/\s+/).length,
+        uniqueWords: result.uniqueWords || new Set(fullText.toLowerCase().split(/\s+/)).size,
+        difficultyLevel: result.difficultyLevel || 'intermediate',
+        suggestedFocusWords: Array.isArray(result.suggestedFocusWords) ? result.suggestedFocusWords : []
       }
     } catch (error) {
-      console.error('Gemini vocabulary analysis failed:', error)
+      console.error('AI vocabulary analysis failed:', error)
       throw new Error(`Vocabulary analysis failed: ${error.message}`)
     }
   }
 
   /**
-   * Generate summary from transcript using Gemini AI
+   * Generate summary from transcript using AI
    */
   async generateSummary(
     segments: Array<{ text: string; start: number; duration: number }>
   ): Promise<TranscriptSummary> {
     const fullText = segments.map(s => s.text).join(' ')
-    const words = fullText.split(/\s+/).length
-    const estimatedReadingTime = Math.ceil(words / 200) // 200 WPM
-
-    if (!this.geminiConfig?.apiKey) {
-      throw new Error('Gemini API key is required for summary generation')
-    }
-
-    const genAI = new GoogleGenerativeAI(this.geminiConfig.apiKey)
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-lite' })
-
-    const prompt = `
-You are an expert content summarizer for English language learners. Analyze the following transcript and create a comprehensive summary.
-
-Transcript:
-${fullText}
-
-Generate a detailed summary for language learners. Return ONLY a valid JSON object with this exact structure:
-
-{
-  "summary": "A clear 2-3 sentence summary capturing the main content and purpose",
-  "keyPoints": [
-    "First key point discussed",
-    "Second key point discussed", 
-    "Third key point discussed"
-  ],
-  "topics": [
-    "main topic 1",
-    "main topic 2",
-    "main topic 3"
-  ],
-  "difficulty": "intermediate"
-}
-
-Requirements:
-- Summary: 2-3 sentences capturing the essence and main message
-- Key Points: 3-5 most important points or takeaways
-- Topics: 3-5 main subjects or themes covered
-- Difficulty: Assess as "beginner", "intermediate", or "advanced" based on:
-  * Vocabulary complexity
-  * Sentence structure
-  * Concept difficulty
-  * Speaking pace and clarity
-  * Cultural/contextual knowledge required
-
-Focus on what would be most helpful for English language learners to understand.
-`
 
     try {
-      const result = await model.generateContent(prompt)
-      const responseText = result.response.text()
-
-      // Extract JSON from response
-      const jsonMatch = responseText.match(/\{[\s\S]*\}/)
-      if (!jsonMatch) {
-        throw new Error('No JSON found in Gemini response')
-      }
-
-      const aiResponse = JSON.parse(jsonMatch[0])
-
+      const aiService = await this.getAIService()
+      const result = await aiService.generateTranscriptSummary(fullText)
+      
       return {
-        summary: aiResponse.summary || 'Summary not available',
-        keyPoints: Array.isArray(aiResponse.keyPoints) ? aiResponse.keyPoints : [],
-        topics: Array.isArray(aiResponse.topics) ? aiResponse.topics : [],
-        difficulty: aiResponse.difficulty || 'intermediate',
-        estimatedReadingTime
+        summary: result.summary || 'Summary not available',
+        keyPoints: Array.isArray(result.keyPoints) ? result.keyPoints : [],
+        topics: Array.isArray(result.topics) ? result.topics : [],
+        difficulty: result.difficulty || 'intermediate',
+        estimatedReadingTime: result.estimatedReadingTime || Math.ceil(fullText.split(/\s+/).length / 200)
       }
     } catch (error) {
-      console.error('Gemini summary generation failed:', error)
+      console.error('AI summary generation failed:', error)
       throw new Error(`Summary generation failed: ${error.message}`)
     }
   }
@@ -266,52 +147,63 @@ Focus on what would be most helpful for English language learners to understand.
   }
 
   /**
-   * Update Gemini configuration
+   * Change AI provider (useful for switching between different AI services)
    */
-  updateConfig(config: { apiKey: string }): void {
-    this.geminiConfig = config
+  async switchProvider(provider: 'openai' | 'anthropic' | 'google'): Promise<void> {
+    this.preferredProvider = provider
+    this.aiService = null // Reset to force re-initialization
   }
 
   /**
-   * Validate Gemini API configuration
+   * Get current AI provider
+   */
+  getCurrentProvider(): string {
+    return this.preferredProvider
+  }
+
+  /**
+   * Validate AI service configuration
    */
   async validateConfiguration(): Promise<boolean> {
     try {
-      return !!(this.geminiConfig?.apiKey && this.geminiConfig.apiKey.length > 0)
-    } catch {
+      await this.getAIService()
+      return true
+    } catch (error) {
+      console.error('AI service validation failed:', error)
       return false
+    }
+  }
+
+  /**
+   * Get AI service capabilities
+   */
+  async getCapabilities(): Promise<string[]> {
+    try {
+      const aiService = await this.getAIService()
+      return await aiService.getCapabilities()
+    } catch (error) {
+      console.error('Failed to get AI capabilities:', error)
+      return []
     }
   }
 }
 
 // Service factory function to create instance with proper config
-export const createVocabularyAnalysisService = async (): Promise<VocabularyAnalysisService> => {
-  let geminiConfig = null
-
-  try {
-    // First try to get config from Supabase (same pattern as sidepanel)
-    const { supabaseService } = getFluentFlowStore()
-    const apiConfig = await supabaseService.getApiConfig()
-    geminiConfig = apiConfig?.gemini
-  } catch (supabaseError) {
-    console.log('Vocabulary Service: Failed to load from Supabase, trying Chrome storage:', supabaseError)
-
-    // Fallback to Chrome storage
-    try {
-      const response = await chrome.runtime.sendMessage({
-        type: 'STORAGE_OPERATION',
-        operation: 'get',
-        key: 'api_config'
-      })
-      geminiConfig = response.data?.gemini
-    } catch (chromeError) {
-      console.log('Vocabulary Service: Failed to load from Chrome storage:', chromeError)
-    }
+export const createVocabularyAnalysisService = async (
+  provider: 'openai' | 'anthropic' | 'google' = 'google'
+): Promise<VocabularyAnalysisService> => {
+  const service = new VocabularyAnalysisService(provider)
+  
+  // Validate configuration on creation
+  const isValid = await service.validateConfiguration()
+  if (!isValid) {
+    throw new Error(`${provider.toUpperCase()} API not properly configured. Please configure your API key in settings.`)
   }
+  
+  return service
+}
 
-  if (!geminiConfig?.apiKey) {
-    throw new Error('Gemini API key not configured. Please configure your API key in settings.')
-  }
-
-  return new VocabularyAnalysisService(geminiConfig)
+// Legacy compatibility - creates service with Google Gemini (default)
+export const createVocabularyAnalysisServiceLegacy = async (): Promise<VocabularyAnalysisService> => {
+  return createVocabularyAnalysisService('google')
 }

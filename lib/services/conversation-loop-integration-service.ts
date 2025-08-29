@@ -20,7 +20,7 @@ export class ConversationLoopIntegrationService {
     this.storageService = storageService
     this.loopService = new EnhancedLoopService(storageService)
     if (geminiConfig) {
-      this.analysisService = new ConversationAnalysisService(geminiConfig)
+      this.analysisService = new ConversationAnalysisService('google')
     }
   }
 
@@ -553,7 +553,7 @@ export class ConversationLoopIntegrationService {
       if (this.analysisService) {
         this.analysisService.updateConfig(config)
       } else {
-        this.analysisService = new ConversationAnalysisService(config)
+        this.analysisService = new ConversationAnalysisService('google')
       }
     } catch (error) {
       throw new Error(
