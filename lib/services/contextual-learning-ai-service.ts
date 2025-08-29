@@ -1,7 +1,9 @@
+import { jsonrepair } from 'jsonrepair'
 import { getCurrentUser } from '../supabase/client'
-import { createAIService } from './ai-service'
 import type { AIService } from './ai-service'
+import { createAIService } from './ai-service'
 import type { UserVocabularyItem } from './user-vocabulary-service'
+import { vocabularyDatabaseService } from './vocabulary-database-service'
 
 export interface UsageExample {
   id: string
@@ -45,13 +47,38 @@ export class ContextualLearningAIService {
   }
 
   /**
-   * Generate usage examples for vocabulary using AI
+   * Clean and repair AI response content using jsonrepair
+   */
+  private cleanJsonResponse(content: string): string {
+    // First remove markdown code block syntax
+    const cleanedContent = content
+
+    return jsonrepair(cleanedContent)
+  }
+
+  /**
+   * Generate usage examples for vocabulary using AI with caching
    */
   async generateUsageExamples(
     vocabulary: UserVocabularyItem,
-    count: number = 5
+    count: number = 5,
+    loopId?: string
   ): Promise<UsageExample[]> {
     try {
+      // Check cache first (loop-specific or standalone)
+      let cachedData = null
+      if (loopId) {
+        cachedData = await vocabularyDatabaseService.getContextualLearningData(loopId, vocabulary.id)
+      }
+      if (!cachedData) {
+        cachedData = await vocabularyDatabaseService.getStandaloneContextualData(vocabulary.text)
+      }
+      
+      if (cachedData?.examples?.length > 0) {
+        console.log('Using cached usage examples for vocabulary:', vocabulary.text)
+        return cachedData.examples
+      }
+
       const aiService = await this.getAIService()
       const prompt = `Generate ${count} diverse, natural usage examples for the ${vocabulary.itemType} "${vocabulary.text}".
 
@@ -77,18 +104,41 @@ Return JSON array with this structure:
 
 Examples should be practical and help learners understand real-world usage.`
 
-      const response = await aiService.chat([
-        { role: 'user', content: prompt }
-      ])
-      const examples = JSON.parse(response.content)
-      
-      return examples.map((example: any, index: number) => ({
+      const response = await aiService.chat([{ role: 'user', content: prompt }])
+      const cleanedContent = this.cleanJsonResponse(response.content)
+      const examples = JSON.parse(cleanedContent)
+
+      const formattedExamples = examples.map((example: any, index: number) => ({
         id: `usage_${vocabulary.id}_${index}`,
         sentence: example.sentence,
         context: example.context,
         difficulty: example.difficulty,
         domain: example.domain
       }))
+
+      // Cache the results
+      if (formattedExamples.length > 0) {
+        // Get existing collocations to preserve them
+        const existingCollocations = cachedData?.collocations || []
+        
+        if (loopId) {
+          await vocabularyDatabaseService.saveContextualLearningData(
+            loopId,
+            vocabulary.id,
+            formattedExamples,
+            existingCollocations
+          )
+        } else {
+          await vocabularyDatabaseService.saveStandaloneContextualData(
+            vocabulary.text,
+            vocabulary.id,
+            formattedExamples,
+            existingCollocations
+          )
+        }
+      }
+
+      return formattedExamples
     } catch (error) {
       console.error('Failed to generate usage examples:', error)
       return this.getFallbackUsageExamples(vocabulary, count)
@@ -96,13 +146,28 @@ Examples should be practical and help learners understand real-world usage.`
   }
 
   /**
-   * Generate collocation patterns for vocabulary using AI
+   * Generate collocation patterns for vocabulary using AI with caching
    */
   async generateCollocations(
     vocabulary: UserVocabularyItem,
-    count: number = 8
+    count: number = 8,
+    loopId?: string
   ): Promise<CollocationPattern[]> {
     try {
+      // Check cache first (loop-specific or standalone)
+      let cachedData = null
+      if (loopId) {
+        cachedData = await vocabularyDatabaseService.getContextualLearningData(loopId, vocabulary.id)
+      }
+      if (!cachedData) {
+        cachedData = await vocabularyDatabaseService.getStandaloneContextualData(vocabulary.text)
+      }
+      
+      if (cachedData?.collocations?.length > 0) {
+        console.log('Using cached collocations for vocabulary:', vocabulary.text)
+        return cachedData.collocations
+      }
+
       const aiService = await this.getAIService()
       const prompt = `Generate ${count} common collocation patterns for the ${vocabulary.itemType} "${vocabulary.text}".
 
@@ -127,22 +192,263 @@ Return JSON array with this structure:
 
 Focus on authentic, useful patterns that help with natural language use.`
 
-      const response = await aiService.chat([
-        { role: 'user', content: prompt }
-      ])
-      const collocations = JSON.parse(response.content)
-      
-      return collocations.map((collocation: any, index: number) => ({
+      const response = await aiService.chat([{ role: 'user', content: prompt }])
+      const cleanedContent = this.cleanJsonResponse(response.content)
+      const collocations = JSON.parse(cleanedContent)
+
+      const formattedCollocations = collocations.map((collocation: any, index: number) => ({
         id: `collocation_${vocabulary.id}_${index}`,
         pattern: collocation.pattern,
         examples: collocation.examples,
         frequency: collocation.frequency,
         type: collocation.type
       }))
+
+      // Cache the results
+      if (formattedCollocations.length > 0) {
+        // Get existing examples to preserve them
+        const existingExamples = cachedData?.examples || []
+        
+        if (loopId) {
+          await vocabularyDatabaseService.saveContextualLearningData(
+            loopId,
+            vocabulary.id,
+            existingExamples,
+            formattedCollocations
+          )
+        } else {
+          await vocabularyDatabaseService.saveStandaloneContextualData(
+            vocabulary.text,
+            vocabulary.id,
+            existingExamples,
+            formattedCollocations
+          )
+        }
+      }
+
+      return formattedCollocations
     } catch (error) {
       console.error('Failed to generate collocations:', error)
       return this.getFallbackCollocations(vocabulary, count)
     }
+  }
+
+  /**
+   * Generate both examples and collocations with smart caching
+   * This method optimizes API costs by checking cache and generating both together
+   */
+  async generateContextualLearning(
+    vocabulary: UserVocabularyItem,
+    loopId: string,
+    options: {
+      exampleCount?: number
+      collocationCount?: number
+      forceRegenerate?: boolean
+    } = {}
+  ): Promise<{
+    examples: UsageExample[]
+    collocations: CollocationPattern[]
+    fromCache: boolean
+  }> {
+    const { exampleCount = 5, collocationCount = 8, forceRegenerate = false } = options
+
+    try {
+      // Check cache first unless forced regeneration
+      if (!forceRegenerate) {
+        const cachedData = await vocabularyDatabaseService.getContextualLearningData(loopId, vocabulary.id)
+        if (cachedData?.examples?.length > 0 && cachedData?.collocations?.length > 0) {
+          console.log('Using complete cached contextual learning for vocabulary:', vocabulary.text)
+          return {
+            examples: cachedData.examples,
+            collocations: cachedData.collocations,
+            fromCache: true
+          }
+        }
+      }
+
+      // Generate both examples and collocations
+      const [examples, collocations] = await Promise.all([
+        this.generateUsageExamples(vocabulary, exampleCount), // Don't pass loopId to avoid double caching
+        this.generateCollocations(vocabulary, collocationCount) // Don't pass loopId to avoid double caching
+      ])
+
+      // Save both to cache
+      if (examples.length > 0 || collocations.length > 0) {
+        await vocabularyDatabaseService.saveContextualLearningData(
+          loopId,
+          vocabulary.id,
+          examples,
+          collocations
+        )
+      }
+
+      return {
+        examples,
+        collocations,
+        fromCache: false
+      }
+    } catch (error) {
+      console.error('Failed to generate contextual learning:', error)
+      return {
+        examples: this.getFallbackUsageExamples(vocabulary, exampleCount),
+        collocations: this.getFallbackCollocations(vocabulary, collocationCount),
+        fromCache: false
+      }
+    }
+  }
+
+  /**
+   * Get contextual learning data for SRS review
+   * Optimized for flashcard display during spaced repetition
+   */
+  async getContextualDataForSRS(
+    vocabulary: UserVocabularyItem,
+    loopId?: string,
+    options: {
+      generateIfMissing?: boolean
+      maxExamples?: number
+      maxCollocations?: number
+    } = {}
+  ): Promise<{
+    examples: UsageExample[]
+    collocations: CollocationPattern[]
+    hasEnhancedData: boolean
+    generated: boolean
+  }> {
+    const { generateIfMissing = true, maxExamples = 3, maxCollocations = 4 } = options
+    
+    try {
+      // First, try to get cached data (either loop-specific or standalone)
+      let cachedData = null
+      
+      if (loopId) {
+        cachedData = await vocabularyDatabaseService.getContextualLearningData(loopId, vocabulary.id)
+      }
+      
+      // If no loop-specific data, try standalone data
+      if (!cachedData) {
+        cachedData = await vocabularyDatabaseService.getStandaloneContextualData(vocabulary.text)
+      }
+      
+      if (cachedData && (cachedData.examples.length > 0 || cachedData.collocations.length > 0)) {
+        return {
+          examples: cachedData.examples,
+          collocations: cachedData.collocations,
+          hasEnhancedData: true,
+          generated: false
+        }
+      }
+
+      // No cached data - generate if requested
+      if (generateIfMissing) {
+        console.log('Generating contextual learning data for:', vocabulary.text)
+        
+        const examples: UsageExample[] = []
+        const collocations: CollocationPattern[] = []
+        
+        // Generate examples if requested
+        if (maxExamples > 0) {
+          try {
+            const generatedExamples = await this.generateUsageExamples(vocabulary, maxExamples)
+            examples.push(...generatedExamples)
+          } catch (error) {
+            console.error('Failed to generate examples:', error)
+          }
+        }
+        
+        // Generate collocations if requested
+        if (maxCollocations > 0) {
+          try {
+            const generatedCollocations = await this.generateCollocations(vocabulary, maxCollocations)
+            collocations.push(...generatedCollocations)
+          } catch (error) {
+            console.error('Failed to generate collocations:', error)
+          }
+        }
+        
+        // Save to cache (prefer loop-specific, fallback to standalone)
+        if (examples.length > 0 || collocations.length > 0) {
+          if (loopId) {
+            await vocabularyDatabaseService.saveContextualLearningData(loopId, vocabulary.id, examples, collocations)
+          } else {
+            await vocabularyDatabaseService.saveStandaloneContextualData(vocabulary.text, vocabulary.id, examples, collocations)
+          }
+        }
+        
+        return {
+          examples,
+          collocations,
+          hasEnhancedData: examples.length > 0 || collocations.length > 0,
+          generated: true
+        }
+      }
+
+      // No cached data and not generating - return basic data
+      return {
+        examples: vocabulary.example ? [{
+          id: `basic_${vocabulary.id}`,
+          sentence: vocabulary.example,
+          context: 'Basic example - Click Generate for enhanced examples',
+          difficulty: vocabulary.difficulty
+        }] : [],
+        collocations: [],
+        hasEnhancedData: false,
+        generated: false
+      }
+    } catch (error) {
+      console.error('Failed to get contextual data for SRS:', error)
+      return {
+        examples: [],
+        collocations: [],
+        hasEnhancedData: false,
+        generated: false
+      }
+    }
+  }
+
+  /**
+   * Pre-generate contextual learning for vocabulary items in bulk
+   * Useful for preparing SRS content in advance
+   */
+  async preGenerateForVocabularyList(
+    vocabularyItems: UserVocabularyItem[],
+    loopId: string,
+    onProgress?: (completed: number, total: number) => void
+  ): Promise<{
+    generated: number
+    cached: number
+    failed: number
+  }> {
+    const results = { generated: 0, cached: 0, failed: 0 }
+    
+    for (let i = 0; i < vocabularyItems.length; i++) {
+      const vocab = vocabularyItems[i]
+      
+      try {
+        const result = await this.generateContextualLearning(vocab, loopId, {
+          exampleCount: 3,
+          collocationCount: 4
+        })
+        
+        if (result.fromCache) {
+          results.cached++
+        } else {
+          results.generated++
+        }
+        
+        onProgress?.(i + 1, vocabularyItems.length)
+        
+        // Small delay to avoid rate limiting
+        if (!result.fromCache) {
+          await new Promise(resolve => setTimeout(resolve, 1000))
+        }
+      } catch (error) {
+        console.error('Failed to generate contextual learning for:', vocab.text, error)
+        results.failed++
+      }
+    }
+    
+    return results
   }
 
   /**
@@ -170,10 +476,10 @@ Focus on authentic, useful patterns that help with natural language use.`
       if (loopData.transcript) {
         // Find the sentence containing the vocabulary word
         const sentences = loopData.transcript.split(/[.!?]+/)
-        const targetSentence = sentences.find(s => 
+        const targetSentence = sentences.find(s =>
           s.toLowerCase().includes(vocabulary.text.toLowerCase())
         )
-        
+
         if (targetSentence) {
           sentence = targetSentence.trim()
           context = `From "${loopData.videoTitle}" at ${this.formatTime(loopData.startTime)}`
@@ -222,7 +528,7 @@ Focus on authentic, useful patterns that help with natural language use.`
           sentence: `The ${vocabulary.text} was crucial for our success.`
         },
         {
-          loopId: 'loop_002', 
+          loopId: 'loop_002',
           videoId: 'video_002',
           videoTitle: 'Academic Vocabulary in Context',
           timestamp: 67,
@@ -269,10 +575,9 @@ Return JSON with this structure:
 
 Focus on practical vocabulary progression that builds naturally.`
 
-      const response = await aiService.chat([
-        { role: 'user', content: prompt }
-      ])
-      return JSON.parse(response.content)
+      const response = await aiService.chat([{ role: 'user', content: prompt }])
+      const cleanedContent = this.cleanJsonResponse(response.content)
+      return JSON.parse(cleanedContent)
     } catch (error) {
       console.error('Failed to analyze learning path:', error)
       return {
@@ -286,7 +591,7 @@ Focus on practical vocabulary progression that builds naturally.`
   // Fallback methods for when AI is not available
   private getFallbackUsageExamples(vocabulary: UserVocabularyItem, count: number): UsageExample[] {
     const examples: UsageExample[] = []
-    
+
     for (let i = 0; i < count; i++) {
       examples.push({
         id: `fallback_usage_${vocabulary.id}_${i}`,
@@ -296,13 +601,16 @@ Focus on practical vocabulary progression that builds naturally.`
         domain: 'general'
       })
     }
-    
+
     return examples
   }
 
-  private getFallbackCollocations(vocabulary: UserVocabularyItem, count: number): CollocationPattern[] {
+  private getFallbackCollocations(
+    vocabulary: UserVocabularyItem,
+    count: number
+  ): CollocationPattern[] {
     const patterns: CollocationPattern[] = []
-    
+
     for (let i = 0; i < count; i++) {
       patterns.push({
         id: `fallback_collocation_${vocabulary.id}_${i}`,
@@ -315,7 +623,7 @@ Focus on practical vocabulary progression that builds naturally.`
         type: 'other'
       })
     }
-    
+
     return patterns
   }
 

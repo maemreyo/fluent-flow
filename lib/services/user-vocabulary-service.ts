@@ -401,6 +401,80 @@ export class UserVocabularyService {
       return null
     }
   }
+
+  // SRS Session persistence methods
+  async saveSRSSession(session: any): Promise<void> {
+    try {
+      const user = await getCurrentUser()
+      if (!user?.id) return
+
+      const { data, error } = await (supabase as any)
+        .from('user_srs_sessions')
+        .upsert({
+          user_id: user.id,
+          session_data: session,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (error) {
+        console.error('Failed to save SRS session to database:', error)
+      }
+    } catch (error) {
+      console.error('Failed to save SRS session:', error)
+    }
+  }
+
+  async loadSRSSession(): Promise<any | null> {
+    try {
+      const user = await getCurrentUser()
+      if (!user?.id) return null
+
+      const { data, error } = await (supabase as any)
+        .from('user_srs_sessions')
+        .select('session_data, updated_at')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error || !data) {
+        return null
+      }
+
+      // Check if session is still valid (within 24 hours)
+      const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+      const sessionAge = Date.now() - new Date(data.updated_at).getTime()
+      
+      if (sessionAge > maxAge) {
+        await this.clearSRSSession()
+        return null
+      }
+
+      return data.session_data
+    } catch (error) {
+      console.error('Failed to load SRS session from database:', error)
+      return null
+    }
+  }
+
+  async clearSRSSession(): Promise<void> {
+    try {
+      const user = await getCurrentUser()
+      if (!user?.id) return
+
+      const { error } = await (supabase as any)
+        .from('user_srs_sessions')
+        .delete()
+        .eq('user_id', user.id)
+
+      if (error) {
+        console.error('Failed to clear SRS session from database:', error)
+      }
+    } catch (error) {
+      console.error('Failed to clear SRS session:', error)
+    }
+  }
 }
 
 // Export singleton instance

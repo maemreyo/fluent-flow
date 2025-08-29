@@ -23,9 +23,9 @@ import { formatDate, formatTime } from './lib/utils/formatters'
 import './styles/sidepanel.css'
 
 function FluentFlowSidePanelContent() {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'loops' | 'conversations' | 'debug'>(
-    'dashboard'
-  )
+  const [activeTab, setActiveTab] = useState<
+    'dashboard' | 'loops' | 'conversations' | 'debug'
+  >('dashboard')
   const [applyingLoopId, setApplyingLoopId] = useState<string | null>(null)
   const [deletingAllLoops, setDeletingAllLoops] = useState(false)
 

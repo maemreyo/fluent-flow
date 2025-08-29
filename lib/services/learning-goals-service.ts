@@ -282,7 +282,7 @@ class LearningGoalsService {
   async getGoalSuggestions(): Promise<GoalSuggestion[]> {
     try {
       // For now, return default suggestions
-      // In the future, this could be enhanced with AI-powered suggestions
+      // In the future, this could be enhanced with suggestions
       const suggestions = this.getDefaultGoalSuggestions()
 
       if (suggestions.length === 0) {

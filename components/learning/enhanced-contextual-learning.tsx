@@ -7,7 +7,6 @@ import {
   ExternalLink,
   Lightbulb,
   Loader2,
-  PlayCircle,
   Search,
   Sparkles,
   Target,
@@ -106,10 +105,46 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
       item.definition.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleWordSelect = (item: UserVocabularyItem) => {
+  const handleWordSelect = async (item: UserVocabularyItem) => {
     setSelectedWord(item)
     setActiveTab('overview')
+
+    // Clear current content
     setAiContent({ examples: [], collocations: [], contexts: [] })
+
+    // Try to load cached contextual data
+    try {
+      const cachedData = await contextualLearningAIService.getContextualDataForSRS(
+        item,
+        undefined,
+        {
+          generateIfMissing: false, // Don't generate automatically, just load cached data
+          maxExamples: 6,
+          maxCollocations: 8
+        }
+      )
+
+      console.log('Cached data result:', {
+        hasEnhancedData: cachedData.hasEnhancedData,
+        exampleCount: cachedData.examples.length,
+        collocationCount: cachedData.collocations.length,
+        examples: cachedData.examples,
+        collocations: cachedData.collocations
+      })
+
+      if (cachedData.hasEnhancedData) {
+        setAiContent(prev => ({
+          ...prev,
+          examples: cachedData.examples,
+          collocations: cachedData.collocations
+        }))
+        console.log('Loaded cached contextual data for:', item.text)
+      } else {
+        console.log('No enhanced data available for:', item.text)
+      }
+    } catch (error) {
+      console.error('Failed to load cached contextual data:', error)
+    }
   }
 
   const generateContent = useCallback(
@@ -117,15 +152,16 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
       if (!selectedWord) return
       setGenerationState(prev => ({ ...prev, [type]: true }))
       try {
-        let result
         if (type === 'examples') {
-          result = await contextualLearningAIService.generateUsageExamples(selectedWord, 6)
+          // Use the contextual learning service which handles caching internally
+          const result = await contextualLearningAIService.generateUsageExamples(selectedWord, 6)
           setAiContent(prev => ({ ...prev, examples: result }))
         } else if (type === 'collocations') {
-          result = await contextualLearningAIService.generateCollocations(selectedWord, 8)
+          // Use the contextual learning service which handles caching internally
+          const result = await contextualLearningAIService.generateCollocations(selectedWord, 8)
           setAiContent(prev => ({ ...prev, collocations: result }))
         } else if (type === 'contexts') {
-          result = await contextualLearningAIService.findSimilarContexts(selectedWord, 5)
+          const result = await contextualLearningAIService.findSimilarContexts(selectedWord, 5)
           setAiContent(prev => ({ ...prev, contexts: result }))
         }
         setActiveTab(type)
@@ -299,13 +335,13 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                       onClick={() => generateContent('collocations')}
                       isLoading={generationState.collocations}
                     />
-                    <FeatureCard
+                    {/* <FeatureCard
                       icon={PlayCircle}
                       title="Find in Videos"
                       description="Discover this word in your saved video loops."
                       onClick={() => generateContent('contexts')}
                       isLoading={generationState.contexts}
-                    />
+                    /> */}
                     {selectedWord.sourceLoopId && (
                       <FeatureCard
                         icon={ExternalLink}
@@ -327,7 +363,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                       <ContentItem
                         key={ex.id}
                         text={ex.sentence}
-                        badges={[ex.context, ex.domain]}
+                        // badges={[ex.context, ex.domain]}
                         onSpeak={() => speakText(ex.sentence)}
                         onCopy={() => navigator.clipboard.writeText(ex.sentence)}
                       />
@@ -446,9 +482,9 @@ const GeneratedContentContainer = ({ title, onGenerate, isLoading, hasContent, c
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <Sparkles className="h-6 w-6 text-primary" />
           </div>
-          <h3 className="mb-2 text-lg font-semibold">{title}</h3>
+          {/* <h3 className="mb-2 text-lg font-semibold">{title}</h3> */}
           <p className="mx-auto mb-6 max-w-sm text-muted-foreground">
-            Unlock deeper understanding with AI-powered insights.
+            Unlock deeper understanding with insights.
           </p>
           <Button onClick={onGenerate} disabled={isLoading}>
             {isLoading ? (
@@ -465,7 +501,7 @@ const GeneratedContentContainer = ({ title, onGenerate, isLoading, hasContent, c
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-bold">{title}</h3>
+        {/* <h3 className="text-xl font-bold">{title}</h3>
         <Button onClick={onGenerate} disabled={isLoading} variant="outline" size="sm">
           {isLoading ? (
             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -473,7 +509,7 @@ const GeneratedContentContainer = ({ title, onGenerate, isLoading, hasContent, c
             <Sparkles className="mr-2 h-4 w-4" />
           )}
           Generate New
-        </Button>
+        </Button> */}
       </div>
       <div className="space-y-3">{children}</div>
     </div>

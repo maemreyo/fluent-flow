@@ -1,15 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import { Book, Target, Users } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Book, Target } from 'lucide-react'
+import { AudioRecognitionPractice } from './components/learning/audio-recognition-practice'
+import { ContextualUsagePractice } from './components/learning/contextual-usage-practice'
+import { EnhancedContextualLearning } from './components/learning/enhanced-contextual-learning'
+import EnhancedSRSFlashcard from './components/learning/enhanced-srs-flashcard'
+import { FlashcardPractice } from './components/learning/flashcard-practice'
+import { SocialGamification } from './components/learning/social-gamification'
+import { SpellingPractice } from './components/learning/spelling-practice'
+import { SRSDashboard } from './components/learning/srs-dashboard'
+import VocabularySpotlight from './components/learning/vocabulary-spotlight'
 import { UserDropdown } from './components/shared/UserDropdown'
 import { useAuthentication } from './lib/hooks/use-authentication'
-import { FlashcardPractice } from './components/learning/flashcard-practice'
-import { SRSFlashcardReview } from './components/learning/srs-flashcard-review'
-import { SRSDashboard } from './components/learning/srs-dashboard'
-import { EnhancedContextualLearning } from './components/learning/enhanced-contextual-learning'
-import { SocialGamification } from './components/learning/social-gamification'
-import { ContextualUsagePractice } from './components/learning/contextual-usage-practice'
-import { AudioRecognitionPractice } from './components/learning/audio-recognition-practice'
-import { SpellingPractice } from './components/learning/spelling-practice'
 import { userVocabularyService, type LearningStats } from './lib/services/user-vocabulary-service'
 import './styles/newtab.css'
 
@@ -20,8 +21,9 @@ function VocabularyLearningNewTab() {
   const [showContextualUsage, setShowContextualUsage] = useState(false)
   const [showAudioRecognition, setShowAudioRecognition] = useState(false)
   const [showSpellingPractice, setShowSpellingPractice] = useState(false)
+  const [showSpotlight, setShowSpotlight] = useState(true)
   const [stats, setStats] = useState<LearningStats | null>(null)
-  
+
   // Authentication
   const { user, checkingAuth, signOut } = useAuthentication()
 
@@ -41,36 +43,53 @@ function VocabularyLearningNewTab() {
       icon: <Target className="h-5 w-5" />,
       description: 'Smart learning schedule based on forgetting curve'
     },
-    {
-      id: 'practice' as const,
-      title: 'Active Practice',
-      icon: <Book className="h-5 w-5" />,
-      description: 'Flashcards, audio recognition, and spelling practice'
-    },
+    // {
+    //   id: 'practice' as const,
+    //   title: 'Active Practice',
+    //   icon: <Book className="h-5 w-5" />,
+    //   description: 'Flashcards, audio recognition, and spelling practice'
+    // },
     {
       id: 'contextual' as const,
       title: 'Contextual Learning',
       icon: <Book className="h-5 w-5" />,
       description: 'Learn vocabulary in real video context'
-    },
-    {
-      id: 'social' as const,
-      title: 'Social & Games',
-      icon: <Users className="h-5 w-5" />,
-      description: 'Share words, streaks, and achievements'
     }
+    // {
+    //   id: 'social' as const,
+    //   title: 'Social & Games',
+    //   icon: <Users className="h-5 w-5" />,
+    //   description: 'Share words, streaks, and achievements'
+    // }
   ]
+
+  // Show vocabulary spotlight on first load
+  if (showSpotlight) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
+        <div className="w-full max-w-4xl">
+          <VocabularySpotlight
+            onStartSRS={() => {
+              setShowSpotlight(false)
+              setShowSRSReview(true)
+            }}
+            onDismiss={() => setShowSpotlight(false)}
+          />
+        </div>
+      </div>
+    )
+  }
 
   if (showSRSReview) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowSRSReview(false)}
-                  className="flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 transition-colors hover:bg-indigo-700"
                 >
                   <Target className="h-6 w-6 text-white" />
                 </button>
@@ -83,7 +102,10 @@ function VocabularyLearningNewTab() {
             </div>
           </div>
         </div>
-        <SRSFlashcardReview onComplete={() => setShowSRSReview(false)} />
+        <EnhancedSRSFlashcard
+          onComplete={() => setShowSRSReview(false)}
+          onExit={() => setShowSRSReview(false)}
+        />
       </div>
     )
   }
@@ -92,12 +114,12 @@ function VocabularyLearningNewTab() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowFlashcards(false)}
-                  className="flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 transition-colors hover:bg-indigo-700"
                 >
                   <Book className="h-6 w-6 text-white" />
                 </button>
@@ -119,12 +141,12 @@ function VocabularyLearningNewTab() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowContextualUsage(false)}
-                  className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-red-600 transition-colors hover:bg-red-700"
                 >
                   <Book className="h-6 w-6 text-white" />
                 </button>
@@ -146,12 +168,12 @@ function VocabularyLearningNewTab() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowAudioRecognition(false)}
-                  className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-600 transition-colors hover:bg-green-700"
                 >
                   <Book className="h-6 w-6 text-white" />
                 </button>
@@ -173,12 +195,12 @@ function VocabularyLearningNewTab() {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <div className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-16">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div className="flex h-16 items-center justify-between">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setShowSpellingPractice(false)}
-                  className="flex items-center justify-center w-10 h-10 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                  className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-600 transition-colors hover:bg-purple-700"
                 >
                   <Book className="h-6 w-6 text-white" />
                 </button>
@@ -200,10 +222,10 @@ function VocabularyLearningNewTab() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
             <div className="flex items-center space-x-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-indigo-600 rounded-lg">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600">
                 <Book className="h-6 w-6 text-white" />
               </div>
               <div>
@@ -211,52 +233,52 @@ function VocabularyLearningNewTab() {
                 <p className="text-sm text-gray-500">Vocabulary Learning Center</p>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-6">
               {/* Quick Stats */}
-              <div className="hidden md:flex items-center space-x-6 text-sm">
-              <div className="text-center">
-                <div className="font-semibold text-gray-900">
-                  {stats ? stats.wordsLearned + stats.phrasesLearned : 0}
+              <div className="hidden items-center space-x-6 text-sm md:flex">
+                <div className="text-center">
+                  <div className="font-semibold text-gray-900">
+                    {stats ? stats.wordsLearned + stats.phrasesLearned : 0}
+                  </div>
+                  <div className="text-gray-500">Items Learned</div>
                 </div>
-                <div className="text-gray-500">Items Learned</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-gray-900">
-                  {stats?.currentStreakDays || 0}
+                <div className="text-center">
+                  <div className="font-semibold text-gray-900">{stats?.currentStreakDays || 0}</div>
+                  <div className="text-gray-500">Day Streak</div>
                 </div>
-                <div className="text-gray-500">Day Streak</div>
-              </div>
-              <div className="text-center">
-                <div className="font-semibold text-gray-900">
-                  {stats ? stats.totalWordsAdded + stats.totalPhrasesAdded : 0}
+                <div className="text-center">
+                  <div className="font-semibold text-gray-900">
+                    {stats ? stats.totalWordsAdded + stats.totalPhrasesAdded : 0}
+                  </div>
+                  <div className="text-gray-500">Total Saved</div>
                 </div>
-                <div className="text-gray-500">Total Saved</div>
               </div>
-            </div>
-            <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
         <div className="mb-8">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-8">
-              {tabs.map((tab) => (
+              {tabs.map(tab => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`group inline-flex items-center px-1 py-4 border-b-2 font-medium text-sm whitespace-nowrap ${
+                  className={`group inline-flex items-center whitespace-nowrap border-b-2 px-1 py-4 text-sm font-medium ${
                     activeTab === tab.id
                       ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700'
                   }`}
                 >
-                  <span className={`mr-2 ${activeTab === tab.id ? 'text-indigo-500' : 'text-gray-400'}`}>
+                  <span
+                    className={`mr-2 ${activeTab === tab.id ? 'text-indigo-500' : 'text-gray-400'}`}
+                  >
                     {tab.icon}
                   </span>
                   <span>{tab.title}</span>
@@ -267,77 +289,75 @@ function VocabularyLearningNewTab() {
         </div>
 
         {/* Tab Content */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8">
+        <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
           {activeTab === 'srs' && (
-            <SRSDashboard 
+            <SRSDashboard
               onStartReview={() => setShowSRSReview(true)}
               onViewAllCards={() => setActiveTab('contextual')}
             />
           )}
 
           {activeTab === 'practice' && (
-            <div className="text-center py-16">
-              <Book className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Active Practice Methods
-              </h3>
-              <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Interactive practice modes to reinforce vocabulary learning through different methods.
-                Practice with flashcards, audio recognition, and spelling exercises.
+            <div className="py-16 text-center">
+              <Book className="mx-auto mb-4 h-16 w-16 text-gray-400" />
+              <h3 className="mb-2 text-lg font-semibold text-gray-900">Active Practice Methods</h3>
+              <p className="mx-auto mb-8 max-w-2xl text-gray-600">
+                Interactive practice modes to reinforce vocabulary learning through different
+                methods. Practice with flashcards, audio recognition, and spelling exercises.
               </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto mb-8">
+              <div className="mx-auto mb-8 grid max-w-5xl grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <button
                   onClick={() => setShowFlashcards(true)}
-                  className="text-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors border-2 border-transparent hover:border-orange-200"
+                  className="rounded-lg border-2 border-transparent bg-orange-50 p-4 text-center transition-colors hover:border-orange-200 hover:bg-orange-100"
                 >
                   <div className="font-semibold text-orange-800">Flashcard Mode</div>
-                  <div className="text-xs text-orange-600 mt-1">Word → Definition recall</div>
+                  <div className="mt-1 text-xs text-orange-600">Word → Definition recall</div>
                 </button>
                 <button
                   onClick={() => setShowContextualUsage(true)}
-                  className="text-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border-2 border-transparent hover:border-red-200"
+                  className="rounded-lg border-2 border-transparent bg-red-50 p-4 text-center transition-colors hover:border-red-200 hover:bg-red-100"
                 >
                   <div className="font-semibold text-red-800">Contextual Usage</div>
-                  <div className="text-xs text-red-600 mt-1">Generate sentences</div>
+                  <div className="mt-1 text-xs text-red-600">Generate sentences</div>
                 </button>
                 <button
                   onClick={() => setShowAudioRecognition(true)}
-                  className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border-2 border-transparent hover:border-green-200"
+                  className="rounded-lg border-2 border-transparent bg-green-50 p-4 text-center transition-colors hover:border-green-200 hover:bg-green-100"
                 >
                   <div className="font-semibold text-green-800">Audio Recognition</div>
-                  <div className="text-xs text-green-600 mt-1">Listen → identify word</div>
+                  <div className="mt-1 text-xs text-green-600">Listen → identify word</div>
                 </button>
                 <button
                   onClick={() => setShowSpellingPractice(true)}
-                  className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border-2 border-transparent hover:border-purple-200"
+                  className="rounded-lg border-2 border-transparent bg-purple-50 p-4 text-center transition-colors hover:border-purple-200 hover:bg-purple-100"
                 >
                   <div className="font-semibold text-purple-800">Spelling Practice</div>
-                  <div className="text-xs text-purple-600 mt-1">Type from pronunciation</div>
+                  <div className="mt-1 text-xs text-purple-600">Type from pronunciation</div>
                 </button>
               </div>
               <div className="text-center">
                 <div className="flex flex-wrap justify-center gap-4">
                   <button
                     onClick={() => setShowFlashcards(true)}
-                    className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                    className="rounded-lg bg-orange-500 px-6 py-3 font-medium text-white transition-colors hover:bg-orange-600"
                   >
                     Start Flashcard Practice
                   </button>
                   <button
                     onClick={() => setShowContextualUsage(true)}
-                    className="bg-red-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                    className="rounded-lg bg-red-500 px-6 py-3 font-medium text-white transition-colors hover:bg-red-600"
                   >
                     Start Usage Practice
                   </button>
                   <button
                     onClick={() => setShowAudioRecognition(true)}
-                    className="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors"
+                    className="rounded-lg bg-green-500 px-6 py-3 font-medium text-white transition-colors hover:bg-green-600"
                   >
                     Start Audio Practice
                   </button>
                   <button
                     onClick={() => setShowSpellingPractice(true)}
-                    className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                    className="rounded-lg bg-purple-500 px-6 py-3 font-medium text-white transition-colors hover:bg-purple-600"
                   >
                     Start Spelling Practice
                   </button>
@@ -347,7 +367,7 @@ function VocabularyLearningNewTab() {
           )}
 
           {activeTab === 'contextual' && (
-            <EnhancedContextualLearning 
+            <EnhancedContextualLearning
               onNavigateToVideo={(loopId: string) => {
                 // TODO: Navigate to video with specific loop
                 console.log('Navigate to loop:', loopId)
@@ -356,20 +376,20 @@ function VocabularyLearningNewTab() {
             />
           )}
 
-          {activeTab === 'social' && (
-            <SocialGamification />
-          )}
+          {activeTab === 'social' && <SocialGamification />}
         </div>
 
         {/* Get Started Section */}
-        <div className="mt-8 bg-indigo-600 rounded-lg text-white p-8 text-center">
-          <h3 className="text-xl font-semibold mb-2">Ready to Start Learning?</h3>
-          <p className="text-indigo-100 mb-6">
-            Visit FluentFlow videos, analyze vocabulary, and star words to add them to your personal learning deck.
+        <div className="mt-8 rounded-lg bg-indigo-600 p-8 text-center text-white">
+          <h3 className="mb-2 text-xl font-semibold">Ready to Start Learning?</h3>
+          <p className="mb-6 text-indigo-100">
+            Visit FluentFlow videos, analyze vocabulary, and star words to add them to your personal
+            learning deck.
           </p>
-          <div className="flex flex-col sm:flex-row items-center justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col items-center justify-center space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
             <div className="text-sm text-indigo-200">
-              1. Watch videos with FluentFlow → 2. Analyze vocabulary → 3. Star words to save → 4. Practice here!
+              1. Watch videos with FluentFlow → 2. Analyze vocabulary → 3. Star words to save → 4.
+              Practice here!
             </div>
           </div>
         </div>

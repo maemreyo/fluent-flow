@@ -248,6 +248,45 @@ export type Database = {
           },
         ]
       }
+      contextual_learning_data: {
+        Row: {
+          collocations: Json
+          created_at: string
+          examples: Json
+          id: string
+          loop_id: string | null
+          metadata: Json
+          updated_at: string
+          user_id: string
+          vocabulary_id: string | null
+          vocabulary_text: string
+        }
+        Insert: {
+          collocations?: Json
+          created_at?: string
+          examples?: Json
+          id?: string
+          loop_id?: string | null
+          metadata?: Json
+          updated_at?: string
+          user_id: string
+          vocabulary_id?: string | null
+          vocabulary_text: string
+        }
+        Update: {
+          collocations?: Json
+          created_at?: string
+          examples?: Json
+          id?: string
+          loop_id?: string | null
+          metadata?: Json
+          updated_at?: string
+          user_id?: string
+          vocabulary_id?: string | null
+          vocabulary_text?: string
+        }
+        Relationships: []
+      }
       conversation_questions: {
         Row: {
           created_at: string | null
@@ -1072,6 +1111,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_srs_sessions: {
+        Row: {
+          created_at: string
+          id: string
+          session_data: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          session_data: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          session_data?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_subscriptions: {
         Row: {
           canceled_at: string | null
@@ -1395,6 +1458,18 @@ export type Database = {
       increment_user_stat: {
         Args: { p_field: string; p_increment: number; p_user_id: string }
         Returns: undefined
+      }
+      upsert_contextual_learning_data: {
+        Args: {
+          p_collocations: Json
+          p_examples: Json
+          p_loop_id: string
+          p_metadata: Json
+          p_user_id: string
+          p_vocabulary_id: string
+          p_vocabulary_text: string
+        }
+        Returns: string
       }
     }
     Enums: {

@@ -180,6 +180,145 @@ export class SRSService {
     }
   }
 
+  // Session persistence methods
+  private getSessionKey(): string {
+    return 'fluent-flow-srs-session'
+  }
+
+  saveSession(session: ReviewSession): void {
+    try {
+      // Save to localStorage for immediate persistence
+      const sessionData = {
+        ...session,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(this.getSessionKey(), JSON.stringify(sessionData))
+      
+      // Also save to database for cross-device sync (fire-and-forget)
+      this.saveToDatabase(session).catch(error => 
+        console.error('Failed to save session to database:', error)
+      )
+    } catch (error) {
+      console.error('Failed to save SRS session:', error)
+    }
+  }
+
+  async loadSession(): Promise<ReviewSession | null> {
+    try {
+      // Try localStorage first (faster)
+      const localSession = this.loadFromLocalStorage()
+      if (localSession) {
+        return localSession
+      }
+
+      // If no local session, try database
+      const dbSession = await this.loadFromDatabase()
+      if (dbSession) {
+        // Cache in localStorage for future loads
+        this.saveToLocalStorage(dbSession)
+        return dbSession
+      }
+
+      return null
+    } catch (error) {
+      console.error('Failed to load SRS session:', error)
+      return null
+    }
+  }
+
+  clearSession(): void {
+    try {
+      // Clear localStorage
+      localStorage.removeItem(this.getSessionKey())
+      
+      // Also clear from database (fire-and-forget)
+      this.clearFromDatabase().catch(error => 
+        console.error('Failed to clear session from database:', error)
+      )
+    } catch (error) {
+      console.error('Failed to clear SRS session:', error)
+    }
+  }
+
+  async resumeOrStartSession(maxCards = 20): Promise<ReviewSession> {
+    // Try to load existing session first
+    const savedSession = await this.loadSession()
+    if (savedSession && savedSession.cards.length > 0) {
+      // Validate that we haven't completed all cards
+      if (savedSession.currentIndex < savedSession.cards.length) {
+        return savedSession
+      }
+    }
+    
+    // Start new session if no valid saved session
+    return this.startReviewSession(maxCards)
+  }
+
+  // Helper methods for localStorage operations
+  private loadFromLocalStorage(): ReviewSession | null {
+    try {
+      const saved = localStorage.getItem(this.getSessionKey())
+      if (!saved) return null
+
+      const sessionData = JSON.parse(saved)
+      
+      // Check if session is still valid (within 24 hours)
+      const maxAge = 24 * 60 * 60 * 1000 // 24 hours
+      if (Date.now() - sessionData.timestamp > maxAge) {
+        localStorage.removeItem(this.getSessionKey())
+        return null
+      }
+
+      // Remove timestamp before returning
+      const { timestamp, ...session } = sessionData
+      return session as ReviewSession
+    } catch (error) {
+      console.error('Failed to load from localStorage:', error)
+      return null
+    }
+  }
+
+  private saveToLocalStorage(session: ReviewSession): void {
+    try {
+      const sessionData = {
+        ...session,
+        timestamp: Date.now()
+      }
+      localStorage.setItem(this.getSessionKey(), JSON.stringify(sessionData))
+    } catch (error) {
+      console.error('Failed to save to localStorage:', error)
+    }
+  }
+
+  // Helper methods for database operations
+  private async loadFromDatabase(): Promise<ReviewSession | null> {
+    try {
+      const { userVocabularyService } = await import('./user-vocabulary-service')
+      return await userVocabularyService.loadSRSSession()
+    } catch (error) {
+      console.error('Failed to load from database:', error)
+      return null
+    }
+  }
+
+  private async saveToDatabase(session: ReviewSession): Promise<void> {
+    try {
+      const { userVocabularyService } = await import('./user-vocabulary-service')
+      await userVocabularyService.saveSRSSession(session)
+    } catch (error) {
+      console.error('Failed to save to database:', error)
+    }
+  }
+
+  private async clearFromDatabase(): Promise<void> {
+    try {
+      const { userVocabularyService } = await import('./user-vocabulary-service')
+      await userVocabularyService.clearSRSSession()
+    } catch (error) {
+      console.error('Failed to clear from database:', error)
+    }
+  }
+
   /**
    * Get comprehensive SRS statistics
    */

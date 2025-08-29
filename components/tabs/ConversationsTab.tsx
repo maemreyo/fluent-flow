@@ -79,7 +79,7 @@ export function ConversationsTab({
                 AI Conversation Practice
               </CardTitle>
               <CardDescription>
-                Create loops with audio and generate AI-powered practice questions
+                Create loops with audio and generate practice questions
               </CardDescription>
             </div>
             <Button
@@ -209,8 +209,7 @@ export function ConversationsTab({
             <Target className="mb-4 h-12 w-12 text-muted-foreground" />
             <CardTitle className="mb-2 text-lg">Ready to Practice Conversations?</CardTitle>
             <CardDescription className="mb-6 max-w-md">
-              Configure your Gemini API key to unlock AI-powered conversation analysis and question
-              generation.
+              Configure your Gemini API key to unlock conversation analysis and question generation.
             </CardDescription>
 
             <div className="max-w-lg space-y-3 text-left text-sm text-muted-foreground">
