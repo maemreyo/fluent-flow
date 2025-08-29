@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   AlertCircle,
+  BookOpen,
   Brain,
   CheckCircle,
   Clock,
+  FileText,
   Loader2,
   Monitor,
   Play,
@@ -14,15 +16,22 @@ import {
 import { useGenerateQuestionsMutation, useQuestionsQuery } from '../lib/hooks/use-question-query'
 import { useTranscriptQuery } from '../lib/hooks/use-transcript-query'
 import type {
+  TranscriptSummary,
+  VocabularyAnalysisResult
+} from '../lib/services/vocabulary-analysis-service'
+import { createVocabularyAnalysisService } from '../lib/services/vocabulary-analysis-service'
+import type {
   ConversationQuestions,
   QuestionPracticeResult,
   SavedLoop
 } from '../lib/types/fluent-flow-types'
 import { ConversationQuestionsPanel } from './conversation-questions-panel'
 import { QuestionShareButton } from './question-share-button'
+import TranscriptSummaryComponent from './summary/transcript-summary'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import VocabularyList from './vocabulary/vocabulary-list'
 
 interface EnhancedLoopCardWithIntegrationProps {
   loop: SavedLoop
@@ -45,9 +54,17 @@ export function EnhancedLoopCardWithIntegration({
 }: EnhancedLoopCardWithIntegrationProps) {
   const [showTranscript, setShowTranscript] = useState(false)
   const [showQuestions, setShowQuestions] = useState(false)
+  const [showVocabulary, setShowVocabulary] = useState(false)
+  const [showSummary, setShowSummary] = useState(false)
   const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
   const [questionsCompleted, setQuestionsCompleted] = useState(false)
   const [lastScore, setLastScore] = useState<number | null>(null)
+  const [vocabularyAnalysis, setVocabularyAnalysis] = useState<VocabularyAnalysisResult | null>(
+    null
+  )
+  const [transcriptSummary, setTranscriptSummary] = useState<TranscriptSummary | null>(null)
+  const [vocabularyLoading, setVocabularyLoading] = useState(false)
+  const [summaryLoading, setSummaryLoading] = useState(false)
   const [isShowingOverlay, setIsShowingOverlay] = useState(false)
 
   // Use React Query for transcript data
@@ -107,6 +124,51 @@ export function EnhancedLoopCardWithIntegration({
       setLastScore(null)
     }, 10000)
   }
+
+  const handleAnalyzeVocabulary = async () => {
+    if (!transcriptData?.segments || transcriptData.segments.length === 0) {
+      console.warn('No transcript data available for vocabulary analysis')
+      return
+    }
+
+    setVocabularyLoading(true)
+    try {
+      const service = await createVocabularyAnalysisService()
+      const analysis = await service.analyzeVocabulary(transcriptData.segments)
+      setVocabularyAnalysis(analysis)
+      setShowVocabulary(true)
+    } catch (error) {
+      console.error('Failed to analyze vocabulary:', error)
+    } finally {
+      setVocabularyLoading(false)
+    }
+  }
+
+  const handleGenerateSummary = async () => {
+    if (!transcriptData?.segments || transcriptData.segments.length === 0) {
+      console.warn('No transcript data available for summary generation')
+      return
+    }
+
+    setSummaryLoading(true)
+    try {
+      const service = await createVocabularyAnalysisService()
+      const summary = await service.generateSummary(transcriptData.segments)
+      setTranscriptSummary(summary)
+      setShowSummary(true)
+    } catch (error) {
+      console.error('Failed to generate summary:', error)
+    } finally {
+      setSummaryLoading(false)
+    }
+  }
+
+  // Auto-generate summary when transcript loads (optional)
+  useEffect(() => {
+    if (transcriptData?.segments && !transcriptSummary && !summaryLoading) {
+      handleGenerateSummary()
+    }
+  }, [transcriptData, transcriptSummary, summaryLoading])
 
   const handleShowOverlay = async () => {
     let questionsToShow = cachedQuestions || activeQuestions
@@ -221,10 +283,11 @@ export function EnhancedLoopCardWithIntegration({
               <div className="space-y-2">
                 {transcriptData.segments.map((segment: any, index: number) => (
                   <div key={index} className="flex gap-3 text-sm">
-                    <span className="flex-shrink-0 font-mono text-xs text-blue-600 min-w-[45px]">
-                      {Math.floor(segment.start / 60)}:{(Math.round(segment.start) % 60).toString().padStart(2, '0')}
+                    <span className="min-w-[45px] flex-shrink-0 font-mono text-xs text-blue-600">
+                      {Math.floor(segment.start / 60)}:
+                      {(Math.round(segment.start) % 60).toString().padStart(2, '0')}
                     </span>
-                    <span className="text-gray-700 leading-relaxed">{segment.text}</span>
+                    <span className="leading-relaxed text-gray-700">{segment.text}</span>
                   </div>
                 ))}
               </div>
@@ -393,6 +456,108 @@ export function EnhancedLoopCardWithIntegration({
     )
   }
 
+  const renderSummarySection = () => {
+    return (
+      <div className="mt-4 rounded-lg bg-yellow-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {summaryLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {!summaryLoading && !transcriptSummary && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateSummary}
+                disabled={!transcriptData?.segments}
+              >
+                <FileText className="mr-1 h-4 w-4" />
+                Generate
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {summaryLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <span className="text-sm text-gray-600">Generating summary...</span>
+          </div>
+        )}
+
+        {transcriptSummary && (
+          <TranscriptSummaryComponent
+            summary={transcriptSummary}
+            isLoading={summaryLoading}
+            defaultExpanded={false}
+          />
+        )}
+
+        {!transcriptSummary && !summaryLoading && (
+          <div className="py-4 text-center">
+            <p className="mb-3 text-sm text-gray-600">No summary available.</p>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleGenerateSummary}
+              disabled={!transcriptData?.segments}
+            >
+              <FileText className="mr-1 h-4 w-4" />
+              Generate Summary
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  const renderVocabularySection = () => {
+    return (
+      <div className="mt-4 rounded-lg bg-green-50 p-3">
+        <div className="mb-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {vocabularyLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+            {!vocabularyLoading && !vocabularyAnalysis && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAnalyzeVocabulary}
+                disabled={!transcriptData?.segments}
+              >
+                <BookOpen className="mr-1 h-4 w-4" />
+                Analyze
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {vocabularyLoading && (
+          <div className="flex items-center justify-center py-4">
+            <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+            <span className="text-sm text-gray-600">Analyzing vocabulary...</span>
+          </div>
+        )}
+
+        {vocabularyAnalysis && (
+          <VocabularyList analysis={vocabularyAnalysis} isLoading={vocabularyLoading} />
+        )}
+
+        {!vocabularyAnalysis && !vocabularyLoading && (
+          <div className="py-4 text-center">
+            <p className="mb-3 text-sm text-gray-600">No vocabulary analysis available.</p>
+            <Button
+              variant="default"
+              size="sm"
+              onClick={handleAnalyzeVocabulary}
+              disabled={!transcriptData?.segments}
+            >
+              <BookOpen className="mr-1 h-4 w-4" />
+              Analyze Vocabulary
+            </Button>
+          </div>
+        )}
+      </div>
+    )
+  }
+
   // Show questions panel if active
   if (showQuestions && activeQuestions) {
     return (
@@ -444,6 +609,8 @@ export function EnhancedLoopCardWithIntegration({
 
         {/* Enhanced sections with React Query */}
         {showTranscript && renderTranscriptSection()}
+        {showSummary && renderSummarySection()}
+        {showVocabulary && renderVocabularySection()}
         {renderQuestionsSection()}
 
         {/* Action buttons */}
@@ -505,6 +672,26 @@ export function EnhancedLoopCardWithIntegration({
             <Download className="mr-1 h-4 w-4" />
             Export
           </Button> */}
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowSummary(!showSummary)}
+            title={showSummary ? 'Hide summary' : 'Show summary'}
+          >
+            <FileText className="mr-1 h-4 w-4" />
+            {/* Summary */}
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowVocabulary(!showVocabulary)}
+            title={showVocabulary ? 'Hide vocabulary' : 'Show vocabulary'}
+          >
+            <BookOpen className="mr-1 h-4 w-4" />
+            {/* Vocabulary */}
+          </Button>
 
           <Button
             variant="destructive"
