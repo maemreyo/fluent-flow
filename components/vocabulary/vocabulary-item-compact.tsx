@@ -42,6 +42,19 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
     }
   }
 
+  const getPartOfSpeechColor = (pos: string) => {
+    const lowerPos = pos.toLowerCase()
+    if (lowerPos.includes('noun')) return 'bg-blue-100 text-blue-800'
+    if (lowerPos.includes('verb')) return 'bg-green-100 text-green-800'
+    if (lowerPos.includes('adjective')) return 'bg-purple-100 text-purple-800'
+    if (lowerPos.includes('adverb')) return 'bg-orange-100 text-orange-800'
+    if (lowerPos.includes('preposition')) return 'bg-pink-100 text-pink-800'
+    if (lowerPos.includes('conjunction')) return 'bg-indigo-100 text-indigo-800'
+    if (lowerPos.includes('pronoun')) return 'bg-teal-100 text-teal-800'
+    if (lowerPos.includes('interjection')) return 'bg-red-100 text-red-800'
+    return 'bg-gray-100 text-gray-800'
+  }
+
   return (
     <div className="rounded-lg border border-gray-200 bg-white">
       {/* Compact header - always visible */}
@@ -59,32 +72,28 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
           <div className="min-w-0 flex-1">
             <div className="flex flex-row flex-wrap items-center gap-2">
               <span className="font-medium text-gray-900">{text}</span>
-              
+
               {/* Part of speech and pronunciation for words */}
               {isWord && word && (
                 <>
-                  <Badge variant="secondary" className="text-xs">{word.partOfSpeech}</Badge>
+                  <Badge
+                    variant="secondary"
+                    className={`text-xs ${getPartOfSpeechColor(word.partOfSpeech)}`}
+                  >
+                    {word.partOfSpeech}
+                  </Badge>
                   <span className="font-mono text-xs text-blue-600">{word.pronunciation}</span>
                 </>
               )}
-              
+
               {/* Type for phrases */}
               {!isWord && phrase && (
-                <Badge variant="outline" className="text-xs capitalize">{phrase.type}</Badge>
+                <Badge variant="outline" className="text-xs capitalize">
+                  {phrase.type}
+                </Badge>
               )}
-              
-              <div className="flex flex-shrink-0 items-center gap-2">
-                <button
-                  onClick={e => {
-                    e.stopPropagation()
-                    setShowVietnamese(!showVietnamese)
-                  }}
-                  className="rounded p-1 transition-colors hover:bg-gray-100"
-                  title={showVietnamese ? 'Show English definition' : 'Show Vietnamese definition'}
-                >
-                  <Globe className="h-3 w-3 text-gray-500" />
-                </button>
 
+              <div className="flex flex-shrink-0 items-center gap-2">
                 <button
                   onClick={e => {
                     e.stopPropagation()
@@ -95,13 +104,6 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
                 >
                   <Volume2 className="h-3 w-3 text-blue-600" />
                 </button>
-
-                <Badge 
-                  variant="outline"
-                  className={`text-xs ${getDifficultyColor(item.difficulty)}`}
-                >
-                  {item.difficulty}
-                </Badge>
               </div>
             </div>
           </div>
@@ -111,9 +113,27 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
       {/* Expanded details */}
       {isExpanded && (
         <div className="space-y-3 border-t border-gray-100 px-3 pb-3">
+          {/* Language toggle and difficulty level */}
+          <div className="mt-4 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowVietnamese(!showVietnamese)}
+                className="flex items-center gap-1 rounded px-2 py-1 text-xs transition-colors hover:bg-gray-100"
+                title={showVietnamese ? 'Show English definition' : 'Show Vietnamese definition'}
+              >
+                <Globe className="h-3 w-3 text-gray-500" />
+                {showVietnamese ? 'EN' : 'VI'}
+              </button>
+            </div>
+
+            <Badge variant="outline" className={`text-xs ${getDifficultyColor(item.difficulty)}`}>
+              {item.difficulty}
+            </Badge>
+          </div>
+
           {/* Definition */}
           <div>
-            <span className="text-xs font-medium text-purple-600">Definition:</span>
+            <span className="text-xs font-medium text-purple-600">Definition</span>
             <p className="mt-1 text-sm text-gray-700">
               {showVietnamese ? item.definitionVi || item.definition : item.definition}
             </p>
@@ -121,18 +141,18 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
 
           {/* Example */}
           <div>
-            <span className="text-xs font-medium text-blue-600">Example:</span>
+            <span className="text-xs font-medium text-blue-600">Example</span>
             <p className="mt-1 text-sm italic text-gray-600">"{item.example}"</p>
           </div>
 
-          {/* Word-specific details: Synonyms and Antonyms in 2-column layout */}
+          {/* Word-specific details: Synonyms and Antonyms in 2-column layout with separator */}
           {isWord && word && (word.synonyms.length > 0 || word.antonyms.length > 0) && (
-            <div className="grid grid-cols-2 gap-4">
+            <div className="relative grid grid-cols-2 gap-4">
               {/* Synonyms column */}
               <div>
                 {word.synonyms.length > 0 && (
                   <>
-                    <span className="text-xs font-medium text-green-600">Synonyms:</span>
+                    <span className="text-xs font-medium text-green-600">Synonyms</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {word.synonyms.map((synonym, index) => (
                         <span
@@ -147,11 +167,14 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
                 )}
               </div>
 
+              {/* Vertical separator */}
+              <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 transform bg-gray-200"></div>
+
               {/* Antonyms column */}
               <div>
                 {word.antonyms.length > 0 && (
                   <>
-                    <span className="text-xs font-medium text-red-600">Antonyms:</span>
+                    <span className="text-xs font-medium text-red-600">Antonyms</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {word.antonyms.map((antonym, index) => (
                         <span
