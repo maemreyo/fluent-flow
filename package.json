@@ -28,7 +28,7 @@
     "validate": "npm run typecheck && npm run lint && npm run test:ci",
     "prepare": "husky install || true",
     "release": "semantic-release",
-    "type:gen": "supabase gen types --project-id `fxawystovhtbuqhllswl` > lib/supabase/types.ts"
+    "type:gen": "npx supabase gen types --project-id 'fxawystovhtbuqhllswl' > lib/supabase/types.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.20.9",

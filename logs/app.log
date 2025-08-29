@@ -1,3 +1,0 @@
-1. Ok, now after evaluate @sidepanel.tsx , i found its very large with over 1000 lines. Need to separate to files, components to better mantainable
-2. Cần tính năng kiếm tiền, rà soát codebase xem đã có sẵn những gì, và chiến lược kiếm tiền ở đây là gì. Rồi planning để triển khai
-3. 

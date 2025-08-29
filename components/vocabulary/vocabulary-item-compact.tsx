@@ -1,32 +1,73 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { ChevronDown, ChevronRight, Globe, Volume2 } from 'lucide-react'
 import type {
   VocabularyPhrase,
   VocabularyWord
 } from '../../lib/services/vocabulary-analysis-service'
+import { userVocabularyService } from '../../lib/services/user-vocabulary-service'
 import { Badge } from '../ui/badge'
 
 interface VocabularyItemCompactProps {
   item: VocabularyWord | VocabularyPhrase
   type: 'word' | 'phrase'
   onPlayAudio?: (text: string) => void
+  sourceLoopId?: string
 }
 
 export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
   item,
   type,
-  onPlayAudio
+  onPlayAudio,
+  sourceLoopId
 }) => {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showVietnamese, setShowVietnamese] = useState(false)
+  const [isStarred, setIsStarred] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
 
   const isWord = type === 'word'
   const word = isWord ? (item as VocabularyWord) : null
   const phrase = !isWord ? (item as VocabularyPhrase) : null
   const text = isWord ? word!.word : phrase!.phrase
 
+  // Check if item is already starred when component mounts
+  useEffect(() => {
+    const checkStarStatus = async () => {
+      const starred = await userVocabularyService.isInPersonalDeck(text, type)
+      setIsStarred(starred)
+    }
+    checkStarStatus()
+  }, [text, type])
+
   const handlePlayAudio = () => {
     onPlayAudio?.(text)
+  }
+
+  const handleStarClick = async (e: React.MouseEvent) => {
+    e.stopPropagation()
+    setIsLoading(true)
+
+    try {
+      if (isStarred) {
+        // Remove from personal deck
+        const success = await userVocabularyService.removeFromPersonalDeck(text, type)
+        if (success) {
+          setIsStarred(false)
+          console.log('Removed from personal deck:', text)
+        }
+      } else {
+        // Add to personal deck
+        const result = await userVocabularyService.addToPersonalDeck(item, type, sourceLoopId)
+        if (result) {
+          setIsStarred(true)
+          console.log('Added to personal deck:', text)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to update star status:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const getDifficultyColor = (difficulty: string) => {
@@ -103,6 +144,30 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
                   title="Play pronunciation"
                 >
                   <Volume2 className="h-3 w-3 text-blue-600" />
+                </button>
+                
+                {/* Star button for saving to personal deck */}
+                <button
+                  onClick={handleStarClick}
+                  disabled={isLoading}
+                  className={`rounded p-1 transition-colors hover:bg-gray-100 ${
+                    isStarred ? 'text-yellow-500' : 'text-gray-400'
+                  } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  title={isStarred ? 'Remove from personal deck' : 'Save to personal deck'}
+                >
+                  {isLoading ? (
+                    <div className="h-3 w-3 animate-spin rounded-full border border-current border-t-transparent" />
+                  ) : (
+                    <svg 
+                      className="h-3 w-3" 
+                      fill={isStarred ? 'currentColor' : 'none'} 
+                      stroke="currentColor" 
+                      strokeWidth="2" 
+                      viewBox="0 0 24 24"
+                    >
+                      <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+                    </svg>
+                  )}
                 </button>
               </div>
             </div>

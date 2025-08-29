@@ -928,6 +928,54 @@ export type Database = {
         }
         Relationships: []
       }
+      user_learning_stats: {
+        Row: {
+          correct_reviews: number | null
+          created_at: string | null
+          current_streak_days: number | null
+          id: string
+          last_practice_date: string | null
+          longest_streak_days: number | null
+          phrases_learned: number | null
+          total_phrases_added: number | null
+          total_reviews: number | null
+          total_words_added: number | null
+          updated_at: string | null
+          user_id: string | null
+          words_learned: number | null
+        }
+        Insert: {
+          correct_reviews?: number | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          id?: string
+          last_practice_date?: string | null
+          longest_streak_days?: number | null
+          phrases_learned?: number | null
+          total_phrases_added?: number | null
+          total_reviews?: number | null
+          total_words_added?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          words_learned?: number | null
+        }
+        Update: {
+          correct_reviews?: number | null
+          created_at?: string | null
+          current_streak_days?: number | null
+          id?: string
+          last_practice_date?: string | null
+          longest_streak_days?: number | null
+          phrases_learned?: number | null
+          total_phrases_added?: number | null
+          total_reviews?: number | null
+          total_words_added?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+          words_learned?: number | null
+        }
+        Relationships: []
+      }
       user_licenses: {
         Row: {
           created_at: string | null
@@ -1126,6 +1174,146 @@ export type Database = {
         }
         Relationships: []
       }
+      user_vocabulary_deck: {
+        Row: {
+          antonyms: Json | null
+          created_at: string | null
+          definition: string
+          definition_vi: string | null
+          difficulty: string
+          ease_factor: number | null
+          example: string | null
+          frequency: number | null
+          id: string
+          interval_days: number | null
+          item_type: string
+          last_practiced_at: string | null
+          learning_status: string
+          next_review_date: string | null
+          part_of_speech: string | null
+          phrase_type: string | null
+          pronunciation: string | null
+          repetitions: number | null
+          source_loop_id: string | null
+          synonyms: Json | null
+          text: string
+          times_correct: number | null
+          times_incorrect: number | null
+          times_practiced: number | null
+          updated_at: string | null
+          user_id: string | null
+        }
+        Insert: {
+          antonyms?: Json | null
+          created_at?: string | null
+          definition: string
+          definition_vi?: string | null
+          difficulty: string
+          ease_factor?: number | null
+          example?: string | null
+          frequency?: number | null
+          id?: string
+          interval_days?: number | null
+          item_type: string
+          last_practiced_at?: string | null
+          learning_status?: string
+          next_review_date?: string | null
+          part_of_speech?: string | null
+          phrase_type?: string | null
+          pronunciation?: string | null
+          repetitions?: number | null
+          source_loop_id?: string | null
+          synonyms?: Json | null
+          text: string
+          times_correct?: number | null
+          times_incorrect?: number | null
+          times_practiced?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          antonyms?: Json | null
+          created_at?: string | null
+          definition?: string
+          definition_vi?: string | null
+          difficulty?: string
+          ease_factor?: number | null
+          example?: string | null
+          frequency?: number | null
+          id?: string
+          interval_days?: number | null
+          item_type?: string
+          last_practiced_at?: string | null
+          learning_status?: string
+          next_review_date?: string | null
+          part_of_speech?: string | null
+          phrase_type?: string | null
+          pronunciation?: string | null
+          repetitions?: number | null
+          source_loop_id?: string | null
+          synonyms?: Json | null
+          text?: string
+          times_correct?: number | null
+          times_incorrect?: number | null
+          times_practiced?: number | null
+          updated_at?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      user_vocabulary_reviews: {
+        Row: {
+          correct_answer: string | null
+          id: string
+          is_correct: boolean
+          new_ease_factor: number | null
+          new_interval_days: number | null
+          new_next_review_date: string | null
+          response_time_ms: number | null
+          review_type: string
+          reviewed_at: string | null
+          user_id: string | null
+          user_response: string | null
+          vocabulary_id: string | null
+        }
+        Insert: {
+          correct_answer?: string | null
+          id?: string
+          is_correct: boolean
+          new_ease_factor?: number | null
+          new_interval_days?: number | null
+          new_next_review_date?: string | null
+          response_time_ms?: number | null
+          review_type: string
+          reviewed_at?: string | null
+          user_id?: string | null
+          user_response?: string | null
+          vocabulary_id?: string | null
+        }
+        Update: {
+          correct_answer?: string | null
+          id?: string
+          is_correct?: boolean
+          new_ease_factor?: number | null
+          new_interval_days?: number | null
+          new_next_review_date?: string | null
+          response_time_ms?: number | null
+          review_type?: string
+          reviewed_at?: string | null
+          user_id?: string | null
+          user_response?: string | null
+          vocabulary_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_vocabulary_reviews_vocabulary_id_fkey"
+            columns: ["vocabulary_id"]
+            isOneToOne: false
+            referencedRelation: "user_vocabulary_deck"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vocabulary_analysis: {
         Row: {
           created_at: string | null
@@ -1203,6 +1391,10 @@ export type Database = {
           usage_amount?: number
         }
         Returns: Json
+      }
+      increment_user_stat: {
+        Args: { p_field: string; p_increment: number; p_user_id: string }
+        Returns: undefined
       }
     }
     Enums: {
