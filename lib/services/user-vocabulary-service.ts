@@ -56,7 +56,6 @@ export interface LearningStats {
   lastPracticeDate?: string
   totalReviews: number
   correctReviews: number
-  totalPracticeSessions: number
   createdAt: string
   updatedAt: string
 }
@@ -379,25 +378,71 @@ export class UserVocabularyService {
       const user = await getCurrentUser()
       if (!user) return null
 
-      // For now, return mock stats since tables don't exist yet
+      // Query user learning stats from database
+      const { data: stats, error } = await supabase
+        .from('user_learning_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (error || !stats) {
+        // If no stats exist, create default stats
+        const defaultStats = {
+          id: `stats_${user.id}`,
+          userId: user.id,
+          totalWordsAdded: 0,
+          totalPhrasesAdded: 0,
+          wordsLearned: 0,
+          phrasesLearned: 0,
+          currentStreakDays: 0,
+          longestStreakDays: 0,
+          lastPracticeDate: undefined,
+          totalReviews: 0,
+          correctReviews: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+
+        // Try to create initial stats record
+        const { error: createError } = await supabase
+          .from('user_learning_stats')
+          .insert({
+            user_id: user.id,
+            total_words_added: 0,
+            total_phrases_added: 0,
+            words_learned: 0,
+            phrases_learned: 0,
+            current_streak_days: 0,
+            longest_streak_days: 0,
+            total_reviews: 0,
+            correct_reviews: 0
+          })
+
+        if (createError) {
+          console.error('Error creating initial user stats:', createError)
+        }
+
+        return defaultStats
+      }
+
+      // Transform database format to LearningStats format
       return {
-        id: 'mock-id',
-        userId: user.id,
-        totalWordsAdded: 0,
-        totalPhrasesAdded: 0,
-        wordsLearned: 0,
-        phrasesLearned: 0,
-        currentStreakDays: 0,
-        longestStreakDays: 0,
-        lastPracticeDate: undefined,
-        totalReviews: 0,
-        correctReviews: 0,
-        totalPracticeSessions: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString()
+        id: stats.id,
+        userId: stats.user_id,
+        totalWordsAdded: stats.total_words_added || 0,
+        totalPhrasesAdded: stats.total_phrases_added || 0,
+        wordsLearned: stats.words_learned || 0,
+        phrasesLearned: stats.phrases_learned || 0,
+        currentStreakDays: stats.current_streak_days || 0,
+        longestStreakDays: stats.longest_streak_days || 0,
+        lastPracticeDate: stats.last_practice_date || undefined,
+        totalReviews: stats.total_reviews || 0,
+        correctReviews: stats.correct_reviews || 0,
+        createdAt: stats.created_at,
+        updatedAt: stats.updated_at
       }
     } catch (error) {
-      console.error('Failed to get user stats:', error)
+      console.error('Error fetching user learning stats:', error)
       return null
     }
   }

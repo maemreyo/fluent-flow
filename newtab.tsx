@@ -39,28 +39,16 @@ function VocabularyLearningNewTab() {
   const tabs = [
     {
       id: 'srs' as const,
-      title: 'Spaced Repetition',
+      title: 'Smart Review',
       icon: <Target className="h-5 w-5" />,
-      description: 'Smart learning schedule based on forgetting curve'
+      description: 'Review words at optimal intervals to boost long-term memory retention'
     },
-    // {
-    //   id: 'practice' as const,
-    //   title: 'Active Practice',
-    //   icon: <Book className="h-5 w-5" />,
-    //   description: 'Flashcards, audio recognition, and spelling practice'
-    // },
     {
       id: 'contextual' as const,
-      title: 'Contextual Learning',
+      title: 'Word Explorer',
       icon: <Book className="h-5 w-5" />,
-      description: 'Learn vocabulary in real video context'
+      description: 'Explore usage examples, collocations, and contexts for deeper understanding'
     }
-    // {
-    //   id: 'social' as const,
-    //   title: 'Social & Games',
-    //   icon: <Users className="h-5 w-5" />,
-    //   description: 'Share words, streaks, and achievements'
-    // }
   ]
 
   // Show vocabulary spotlight on first load
@@ -291,10 +279,19 @@ function VocabularyLearningNewTab() {
         {/* Tab Content */}
         <div className="rounded-lg border border-gray-200 bg-white p-8 shadow-sm">
           {activeTab === 'srs' && (
-            <SRSDashboard
-              onStartReview={() => setShowSRSReview(true)}
-              onViewAllCards={() => setActiveTab('contextual')}
-            />
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Smart Review System</h3>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Our smart algorithm shows you words just before you're about to forget them. 
+                  Review frequently at first, then less often as words move to long-term memory.
+                </p>
+              </div>
+              <SRSDashboard
+                onStartReview={() => setShowSRSReview(true)}
+                onViewAllCards={() => setActiveTab('contextual')}
+              />
+            </div>
           )}
 
           {activeTab === 'practice' && (
@@ -367,13 +364,22 @@ function VocabularyLearningNewTab() {
           )}
 
           {activeTab === 'contextual' && (
-            <EnhancedContextualLearning
-              onNavigateToVideo={(loopId: string) => {
-                // TODO: Navigate to video with specific loop
-                console.log('Navigate to loop:', loopId)
-                alert(`Navigate to video loop: ${loopId}`)
-              }}
-            />
+            <div className="space-y-6">
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">Word Explorer</h3>
+                <p className="text-gray-600 max-w-2xl mx-auto">
+                  Dive deep into your vocabulary. Generate usage examples, discover word collocations, 
+                  and understand how words are used in different contexts.
+                </p>
+              </div>
+              <EnhancedContextualLearning
+                onNavigateToVideo={(loopId: string) => {
+                  // TODO: Navigate to video with specific loop
+                  console.log('Navigate to loop:', loopId)
+                  alert(`Navigate to video loop: ${loopId}`)
+                }}
+              />
+            </div>
           )}
 
           {activeTab === 'social' && <SocialGamification />}

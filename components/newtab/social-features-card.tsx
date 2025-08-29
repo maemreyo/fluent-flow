@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import type { 
   FluentFlowUser, 
-  StudyGroup, 
   ChatMessage, 
   Leaderboard,
   SocialNotification
 } from '../../lib/utils/social-features'
+import type { StudyGroup } from '../../lib/services/social-service'
 import { socialService } from '../../lib/services/social-service'
 
 interface SocialFeaturesCardProps {
@@ -31,20 +31,19 @@ export function SocialFeaturesCard({ currentUser }: SocialFeaturesCardProps) {
   const loadSocialData = async () => {
     setIsLoading(true)
     try {
-      const [groups, board, notifs] = await Promise.all([
-        socialService.getUserStudyGroups(),
-        socialService.getLeaderboard('global', 'xp', 'weekly'),
-        socialService.getUserNotifications()
+      const [groups] = await Promise.all([
+        socialService.getStudyGroups()
       ])
       
       setStudyGroups(groups)
-      setLeaderboard(board)
-      setNotifications(notifs)
+      // Leaderboard and notifications features not implemented yet
+      setLeaderboard(null)
+      setNotifications([])
       
       if (groups.length > 0 && !selectedGroupId) {
         setSelectedGroupId(groups[0].id)
-        const groupMessages = await socialService.getGroupMessages(groups[0].id)
-        setMessages(groupMessages)
+        // Group messaging not implemented yet
+        setMessages([])
       }
     } catch (error) {
       console.error('Failed to load social data:', error)
@@ -55,8 +54,8 @@ export function SocialFeaturesCard({ currentUser }: SocialFeaturesCardProps) {
 
   const handleGroupSelect = async (groupId: string) => {
     setSelectedGroupId(groupId)
-    const groupMessages = await socialService.getGroupMessages(groupId)
-    setMessages(groupMessages)
+    // Group messaging not implemented yet
+    setMessages([])
   }
 
   const handleSendMessage = async () => {
@@ -73,11 +72,10 @@ export function SocialFeaturesCard({ currentUser }: SocialFeaturesCardProps) {
       timestamp: new Date()
     }
     
-    const success = await socialService.sendMessage(message)
-    if (success) {
-      setNewMessage('')
-      setMessages(prev => [...prev, message])
-    }
+    // Message sending not implemented yet
+    console.log('Would send message:', message)
+    setNewMessage('')
+    // Don't update messages since messaging isn't implemented
   }
 
   const formatTimeAgo = (date: Date) => {

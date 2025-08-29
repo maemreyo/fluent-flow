@@ -19,6 +19,8 @@ import {
   type LearningStats,
   type UserVocabularyItem
 } from '../../lib/services/user-vocabulary-service'
+import { socialService } from '../../lib/services/social-service'
+import { supabase } from '../../lib/supabase/client'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
@@ -136,94 +138,77 @@ export const SocialGamification: React.FC<SocialGamificationProps> = () => {
     const loadSocialData = async () => {
       setIsLoading(true)
       try {
-        const userStats = await userVocabularyService.getUserStats()
-        const vocabulary = await userVocabularyService.getUserVocabularyDeck({ limit: 5 })
-        setStats(userStats)
-        setRecentWords(vocabulary)
+        // Get real user stats from database
+        const userStats = await socialService.getUserStats()
+        
+        // Convert UserStats to LearningStats format
+        const { data: { user } } = await supabase.auth.getUser()
+        const learningStats: LearningStats = {
+          id: `stats_${user?.id || 'anonymous'}`,
+          userId: user?.id || 'anonymous',
+          totalWordsAdded: userStats.totalWordsAdded,
+          totalPhrasesAdded: userStats.totalPhrasesAdded,
+          wordsLearned: userStats.wordsLearned,
+          phrasesLearned: userStats.phrasesLearned,
+          currentStreakDays: userStats.currentStreakDays,
+          longestStreakDays: userStats.longestStreakDays,
+          lastPracticeDate: undefined, // Not available in UserStats
+          totalReviews: userStats.totalReviews,
+          correctReviews: userStats.correctReviews,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+        setStats(learningStats)
 
-        const mockAchievements: Achievement[] = [
-          {
-            id: 'first_star',
-            title: 'Vocabulary Pioneer',
-            description: 'Star your first vocabulary item.',
-            icon: Star,
-            unlocked: userStats.totalWordsAdded > 0,
-            rarity: 'common'
-          },
-          {
-            id: 'streak_flame',
-            title: 'Learning Flame',
-            description: 'Keep a 7-day practice streak.',
-            icon: Flame,
-            unlocked: userStats.currentStreakDays >= 7,
-            progress: Math.min(userStats.currentStreakDays, 7),
-            maxProgress: 7,
-            rarity: 'rare'
-          },
-          {
-            id: 'word_collector',
-            title: 'Word Collector',
-            description: 'Learn 25 vocabulary items.',
-            icon: Trophy,
-            unlocked: userStats.wordsLearned + userStats.phrasesLearned >= 25,
-            progress: userStats.wordsLearned + userStats.phrasesLearned,
-            maxProgress: 25,
-            rarity: 'epic'
-          },
-          {
-            id: 'social_sharer',
-            title: 'Knowledge Sharer',
-            description: 'Share 10 words with the community.',
-            icon: Share2,
-            unlocked: false,
-            progress: 3,
-            maxProgress: 10,
-            rarity: 'rare'
-          }
-        ]
-        setAchievements(mockAchievements)
+        // Generate achievements based on real stats
+        const dynamicAchievements = socialService.generateDynamicAchievements(userStats)
+        
+        // Also get any unlocked achievements from database
+        const unlockedAchievements = await socialService.getUserAchievements()
+        
+        // Combine dynamic and unlocked achievements, convert icons
+        const allAchievements = [...dynamicAchievements, ...unlockedAchievements].map(achievement => ({
+          ...achievement,
+          icon: achievement.id === 'first_star' ? Star : 
+                achievement.id === 'streak_flame' ? Flame :
+                achievement.id === 'word_collector' ? Trophy :
+                achievement.id === 'review_master' ? Trophy : 
+                Star // Default icon
+        }))
+        setAchievements(allAchievements)
 
-        const mockStudyGroups: StudyGroup[] = [
-          {
-            id: '1',
-            name: 'Business English Masters',
-            description: 'Focus on professional vocabulary and communication.',
-            memberCount: 24,
-            maxMembers: 30,
-            language: 'English',
-            level: 'intermediate',
-            isJoined: false,
-            isPrivate: false,
-            avatar: '💼'
-          },
-          {
-            id: '2',
-            name: 'Advanced Vocabulary Club',
-            description: 'Challenge yourself with sophisticated vocabulary.',
-            memberCount: 18,
-            maxMembers: 25,
-            language: 'English',
-            level: 'advanced',
-            isJoined: true,
-            isPrivate: false,
-            avatar: '📚'
-          },
-          {
-            id: '3',
-            name: 'IELTS Prep Group',
-            description: 'Academic vocabulary and exam strategies for IELTS.',
-            memberCount: 35,
-            maxMembers: 50,
-            language: 'English',
-            level: 'intermediate',
-            isJoined: false,
-            isPrivate: true,
-            avatar: '🎯'
-          }
-        ]
-        setStudyGroups(mockStudyGroups)
+        // Get real study groups from database
+        const realStudyGroups = await socialService.getStudyGroups()
+        setStudyGroups(realStudyGroups)
+        
+        // Get recent vocabulary words
+        const recentVocab = await userVocabularyService.getUserVocabularyDeck({ 
+          limit: 10
+        })
+        setRecentWords(recentVocab)
+        
       } catch (error) {
         console.error('Failed to load social data:', error)
+        
+        // Fallback to empty state
+        setStats({
+          id: 'fallback-id',
+          userId: 'fallback-user-id',
+          totalWordsAdded: 0,
+          totalPhrasesAdded: 0,
+          wordsLearned: 0,
+          phrasesLearned: 0,
+          currentStreakDays: 0,
+          longestStreakDays: 0,
+          lastPracticeDate: undefined,
+          totalReviews: 0,
+          correctReviews: 0,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        })
+        setAchievements([])
+        setStudyGroups([])
+        setRecentWords([])
       } finally {
         setIsLoading(false)
       }

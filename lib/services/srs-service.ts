@@ -1,5 +1,6 @@
 import { Card, Scheduler } from '@open-spaced-repetition/sm-2'
 import { userVocabularyService, type UserVocabularyItem } from './user-vocabulary-service'
+import { supabase } from '../supabase/client'
 
 export type SRSRating = 0 | 1 | 2 | 3 | 4 | 5
 
@@ -374,6 +375,56 @@ export class SRSService {
         totalReviews: 0,
         accuracyRate: 0
       }
+    }
+  }
+
+  async getActivityData(days: number = 14): Promise<Array<{ date: string; count: number }>> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
+
+      // Get review activity data for the last N days
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() - days + 1)
+      startDate.setHours(0, 0, 0, 0)
+
+      const { data: reviews, error } = await supabase
+        .from('user_vocabulary_reviews')
+        .select('reviewed_at')
+        .eq('user_id', user.id)
+        .gte('reviewed_at', startDate.toISOString())
+        .order('reviewed_at', { ascending: true })
+
+      if (error) {
+        console.error('Error fetching review activity:', error)
+        return []
+      }
+
+      // Group reviews by date and count them
+      const activityMap = new Map<string, number>()
+      
+      // Initialize all dates with 0 count
+      for (let i = 0; i < days; i++) {
+        const date = new Date()
+        date.setDate(date.getDate() - days + 1 + i)
+        const dateStr = date.toISOString().split('T')[0]
+        activityMap.set(dateStr, 0)
+      }
+
+      // Count reviews for each date
+      reviews?.forEach(review => {
+        const reviewDate = new Date(review.reviewed_at).toISOString().split('T')[0]
+        activityMap.set(reviewDate, (activityMap.get(reviewDate) || 0) + 1)
+      })
+
+      // Convert to array format
+      return Array.from(activityMap.entries()).map(([date, count]) => ({
+        date,
+        count
+      }))
+    } catch (error) {
+      console.error('Error getting activity data:', error)
+      return []
     }
   }
 

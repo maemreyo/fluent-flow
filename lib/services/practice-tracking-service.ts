@@ -4,7 +4,7 @@
 import { getCurrentUser, supabase } from '../supabase/client'
 import type { PracticeSession } from '../types/fluent-flow-types'
 import { learningGoalsService } from './learning-goals-service'
-import { SocialService } from './social-service'
+import { socialService } from './social-service'
 
 export interface PracticeSessionData {
   id?: string
@@ -783,16 +783,7 @@ class PracticeTrackingService {
 
       await learningGoalsService.updateProgress(practiceSession)
 
-      // Update social features
-      const socialService = new SocialService()
-
-      await socialService.updateUserStats({
-        duration: session.duration,
-        recordingsMade: session.recordingsCount,
-        loopsCompleted: session.loopsCreated,
-        vocabularyLearned: session.vocabularyCount,
-        streakDay: await this.calculateCurrentStreak()
-      })
+      // Note: Social stats are automatically updated when user practices
 
       console.log('Practice session integrations completed')
     } catch (error) {

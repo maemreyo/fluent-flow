@@ -4,7 +4,6 @@
 import { getCurrentUser, supabase } from '../supabase/client'
 import type { PracticeSession } from '../types/fluent-flow-types'
 import type { GoalSuggestion, LearningGoal } from '../utils/goals-analysis'
-import { SocialService } from './social-service'
 
 class LearningGoalsService {
   private cache = new Map<string, { goals: LearningGoal[]; timestamp: number }>()
@@ -224,23 +223,7 @@ class LearningGoalsService {
     }
 
     if (hasUpdates) {
-      // Update social service with achievements
-      try {
-        const socialService = new SocialService()
-
-        // Calculate current streak for social service
-        const currentStreak = await this.getCurrentStreakFromSupabase()
-
-        await socialService.updateUserStats({
-          duration: practiceSession.totalPracticeTime,
-          recordingsMade: practiceSession.recordings?.length || 0,
-          loopsCompleted: practiceSession.segments?.length || 0,
-          vocabularyLearned: practiceSession.vocabularyCount || 0,
-          streakDay: currentStreak
-        })
-      } catch (error) {
-        console.warn('Failed to update social stats:', error)
-      }
+      // Note: Social stats are automatically updated when user stats are modified in Supabase
     }
   }
 

@@ -46,6 +46,17 @@ export const VocabularySpotlight: React.FC<VocabularySpotlightProps> = ({
     return () => clearInterval(interval)
   }, [examples.length])
 
+  // Auto-redirect when all caught up (moved outside conditional to fix hooks order)
+  useEffect(() => {
+    if (!isLoading && !spotlightWord) {
+      const timer = setTimeout(() => {
+        onDismiss?.()
+      }, 3000)
+      
+      return () => clearTimeout(timer)
+    }
+  }, [isLoading, spotlightWord, onDismiss])
+
   const loadSpotlightData = async () => {
     setIsLoading(true)
     try {
@@ -129,6 +140,9 @@ export const VocabularySpotlight: React.FC<VocabularySpotlightProps> = ({
           <h2 className="text-2xl font-bold text-white mb-2">All Caught Up! 🎉</h2>
           <p className="text-white/90 text-lg mb-4">
             No vocabulary due for review. You're doing great!
+          </p>
+          <p className="text-white/70 text-sm mb-4">
+            Redirecting to dashboard in a few seconds...
           </p>
           <Button onClick={onDismiss} variant="secondary" className="bg-white/20 text-white border-white/30 hover:bg-white/30">
             Continue Learning

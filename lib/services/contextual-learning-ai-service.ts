@@ -1,5 +1,5 @@
 import { jsonrepair } from 'jsonrepair'
-import { getCurrentUser } from '../supabase/client'
+import { getCurrentUser, supabase } from '../supabase/client'
 import type { AIService } from './ai-service'
 import { createAIService } from './ai-service'
 import type { UserVocabularyItem } from './user-vocabulary-service'
@@ -511,39 +511,79 @@ Focus on authentic, useful patterns that help with natural language use.`
    * Find similar contexts where the word appears in other loops
    */
   async findSimilarContexts(
-    vocabulary: UserVocabularyItem,
+    vocabulary: UserVocabularyItem, 
     limit: number = 5
   ): Promise<LoopContext[]> {
     try {
-      // Mock data - in real implementation, this would query the database
-      // for other loops where this vocabulary word appears
-      const mockContexts: LoopContext[] = [
-        {
-          loopId: 'loop_001',
-          videoId: 'video_001',
-          videoTitle: 'Advanced English Conversation',
-          timestamp: 125,
-          duration: 15,
-          context: 'Business meeting discussion',
-          sentence: `The ${vocabulary.text} was crucial for our success.`
-        },
-        {
-          loopId: 'loop_002',
-          videoId: 'video_002',
-          videoTitle: 'Academic Vocabulary in Context',
-          timestamp: 67,
-          duration: 12,
-          context: 'Academic lecture segment',
-          sentence: `Understanding ${vocabulary.text} requires careful analysis.`
-        }
-      ]
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return []
 
-      // Filter based on vocabulary text (in real implementation)
-      return mockContexts.slice(0, limit)
+      // Query database for loop segments with transcripts containing this vocabulary word
+      const { data: segments, error } = await supabase
+        .from('loop_segments')
+        .select(`
+          id,
+          start_time,
+          end_time,
+          description,
+          session_id,
+          practice_sessions!inner (
+            id,
+            video_id,
+            video_title,
+            video_url,
+            user_id
+          ),
+          transcripts (
+            full_text
+          )
+        `)
+        .eq('practice_sessions.user_id', user.id)
+        .not('transcripts', 'is', null)
+        .limit(limit * 2) // Get more to filter by vocabulary
+
+      if (error) {
+        console.error('Error fetching similar contexts:', error)
+        return []
+      }
+
+      // Filter segments that contain the vocabulary word and transform to LoopContext format
+      const contextResults: LoopContext[] = []
+      
+      for (const segment of segments || []) {
+        const transcript = segment.transcripts?.full_text
+        if (transcript && transcript.toLowerCase().includes(vocabulary.text.toLowerCase())) {
+          contextResults.push({
+            loopId: segment.id,
+            videoId: segment.practice_sessions?.video_id || '',
+            videoTitle: segment.practice_sessions?.video_title || 'Untitled Video',
+            timestamp: segment.start_time || 0,
+            duration: (segment.end_time || 0) - (segment.start_time || 0),
+            context: segment.description || 'Practice segment',
+            sentence: this.extractSentenceWithWord(transcript, vocabulary.text)
+          })
+        }
+        
+        if (contextResults.length >= limit) break
+      }
+
+      return contextResults
     } catch (error) {
       console.error('Failed to find similar contexts:', error)
       return []
     }
+  }
+
+  private extractSentenceWithWord(transcript: string, word: string): string {
+    if (!transcript) return `Example usage of "${word}"`
+    
+    // Find sentence containing the word (case insensitive)
+    const sentences = transcript.split(/[.!?]+/)
+    const matchingSentence = sentences.find(sentence => 
+      sentence.toLowerCase().includes(word.toLowerCase())
+    )
+    
+    return matchingSentence?.trim() || `Example usage of "${word}"`
   }
 
   /**
