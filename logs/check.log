@@ -1,0 +1,40 @@
+{
+    "candidates": [
+        {
+            "content": {
+                "parts": [
+                    {
+                        "text": "```json\n[\n  {\n    \"sentence\": \"The company's aggressive pricing strategy acted as a significant inhibitor to smaller competitors entering the market.\",\n    \"context\": \"Discussing market dynamics and competitive barriers in a business setting.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"business\"\n  },\n  {\n    \"sentence\": \"Researchers are exploring novel enzyme inhibitors to combat the progression of neurodegenerative diseases.\",\n    \"context\": \"In a scientific or medical research context, referring to specific biological agents.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"academic\"\n  },\n  {\n    \"sentence\": \"His fear of public speaking became a major inhibitor to his career advancement, despite his technical expertise.\",\n    \"context\": \"Describing psychological barriers that hinder personal or professional growth.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"casual\"\n  },\n  {\n    \"sentence\": \"The new environmental regulations are intended to be inhibitors of industrial pollution, pushing for cleaner production methods.\",\n    \"context\": \"In a policy or legislative context, referring to measures designed to curb negative activities.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"technical\"\n  },\n  {\n    \"sentence\": \"The rapid spread of misinformation online poses a serious inhibitor to effective public health campaigns.\",\n    \"context\": \"Discussing societal challenges and their impact on collective efforts.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"social\"\n  },\n  {\n    \"sentence\": \"Understanding the inhibitors of plant growth is crucial for optimizing agricultural yields in arid regions.\",\n    \"context\": \"In an agricultural or environmental science context, referring to factors that limit biological processes.\",\n    \"difficulty\": \"advanced\",\n    \"domain\": \"academic\"\n  }\n]\n```"
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "index": 0
+        }
+    ],
+    "usageMetadata": {
+        "promptTokenCount": 196,
+        "candidatesTokenCount": 396,
+        "totalTokenCount": 592,
+        "promptTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 196
+            }
+        ]
+    },
+    "modelVersion": "gemini-2.5-flash-lite",
+    "responseId": "qZCxaKCiJ8jQz7IPy7a0kA0"
+}
+
+
+contextual-learning-ai-service.ts:94 Failed to generate usage examples: SyntaxError: Unexpected token '`', "```json
+[
+"... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at ContextualLearningAIService.generateUsageExamples (contextual-learning-ai-service.ts:85:28)
+    at async enhanced-contextual-learning.tsx:123:11
+
+﻿
+

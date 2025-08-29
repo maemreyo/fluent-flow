@@ -265,7 +265,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                 </CardHeader>
               </Card>
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-4">
+                <TabsList className="grid h-auto w-full grid-cols-2 sm:grid-cols-3">
                   <TabsTrigger value="overview" className="py-2">
                     <Target className="mr-2 h-4 w-4" />
                     Overview
@@ -278,10 +278,10 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                     <Brain className="mr-2 h-4 w-4" />
                     Collocations
                   </TabsTrigger>
-                  <TabsTrigger value="contexts" className="py-2">
+                  {/* <TabsTrigger value="contexts" className="py-2">
                     <PlayCircle className="mr-2 h-4 w-4" />
                     Contexts
-                  </TabsTrigger>
+                  </TabsTrigger> */}
                 </TabsList>
                 <TabsContent value="overview" className="mt-4">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -369,7 +369,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                     ))}
                   </GeneratedContentContainer>
                 </TabsContent>
-                <TabsContent value="contexts" className="mt-4">
+                {/* <TabsContent value="contexts" className="mt-4">
                   <GeneratedContentContainer
                     title="Video Contexts"
                     onGenerate={() => generateContent('contexts')}
@@ -398,7 +398,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                       </Card>
                     ))}
                   </GeneratedContentContainer>
-                </TabsContent>
+                </TabsContent> */}
               </Tabs>
             </div>
           ) : (

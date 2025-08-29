@@ -2,8 +2,8 @@
 // Supports OpenAI, Anthropic Claude, and other AI services
 
 import Anthropic from '@anthropic-ai/sdk'
-import OpenAI from 'openai'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import * as z from 'zod'
 import type { AICapability, AIResponse, ChatMessage } from '../types'
 import { ImprovedBaseService } from './improved-base-service'
@@ -14,7 +14,7 @@ const aiConfigSchema = z.object({
   apiKey: z.string().min(1),
   model: z.string().min(1),
   baseUrl: z.string().url().optional(),
-  maxTokens: z.number().min(1).max(4096).default(1000),
+  maxTokens: z.number().min(1).max(128000).default(1000),
   temperature: z.number().min(0).max(2).default(0.7),
   stream: z.boolean().default(false)
 })
@@ -187,30 +187,30 @@ export class AIService extends ImprovedBaseService {
     // Convert messages to Gemini format
     const systemMessage = messages.find(m => m.role === 'system')
     const conversationMessages = messages.filter(m => m.role !== 'system')
-    
+
     // Build prompt for Gemini (it uses a single prompt format)
     let prompt = ''
     if (systemMessage) {
       prompt += systemMessage.content + '\n\n'
     }
-    
+
     conversationMessages.forEach(msg => {
       const rolePrefix = msg.role === 'user' ? 'User: ' : 'Assistant: '
       prompt += rolePrefix + msg.content + '\n'
     })
 
     try {
-      const model = this.google.getGenerativeModel({ 
+      const model = this.google.getGenerativeModel({
         model: this.config.model || 'gemini-2.5-flash-lite',
         generationConfig: {
           maxOutputTokens: options.maxTokens,
-          temperature: options.temperature,
+          temperature: options.temperature
         }
       })
 
       const result = await model.generateContent(prompt)
       const response = result.response
-      
+
       return {
         content: response.text(),
         usage: {
@@ -374,7 +374,7 @@ export class AIService extends ImprovedBaseService {
   async analyzeVocabulary(transcriptText: string): Promise<any> {
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.vocabularyAnalysis
-    
+
     const messages = PromptManager.buildMessages(template, transcriptText)
     const config = PromptManager.getConfig(template)
 
@@ -406,9 +406,12 @@ export class AIService extends ImprovedBaseService {
           frequency: p.frequency || 1
         })),
         totalWords: parsedResponse.totalWords || transcriptText.split(/\s+/).length,
-        uniqueWords: parsedResponse.uniqueWords || new Set(transcriptText.toLowerCase().split(/\s+/)).size,
+        uniqueWords:
+          parsedResponse.uniqueWords || new Set(transcriptText.toLowerCase().split(/\s+/)).size,
         difficultyLevel: parsedResponse.difficultyLevel || 'intermediate',
-        suggestedFocusWords: Array.isArray(parsedResponse.suggestedFocusWords) ? parsedResponse.suggestedFocusWords : []
+        suggestedFocusWords: Array.isArray(parsedResponse.suggestedFocusWords)
+          ? parsedResponse.suggestedFocusWords
+          : []
       }
     } catch (error) {
       throw new Error(`Vocabulary analysis failed: ${error.message}`)
@@ -424,7 +427,7 @@ export class AIService extends ImprovedBaseService {
 
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.transcriptSummary
-    
+
     const messages = PromptManager.buildMessages(template, transcriptText)
     const config = PromptManager.getConfig(template)
 
@@ -450,7 +453,7 @@ export class AIService extends ImprovedBaseService {
   async generateConversationQuestions(loop: any, transcript: string): Promise<any> {
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.conversationQuestions
-    
+
     const messages = PromptManager.buildMessages(template, { loop, transcript })
     const config = PromptManager.getConfig(template)
 
@@ -477,7 +480,14 @@ export class AIService extends ImprovedBaseService {
             correctAnswer: q.correctAnswer || 'A',
             explanation: q.explanation || 'No explanation provided',
             difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
-            type: ['main_idea', 'specific_detail', 'vocabulary_in_context', 'inference', 'speaker_tone', 'language_function'].includes(q.type)
+            type: [
+              'main_idea',
+              'specific_detail',
+              'vocabulary_in_context',
+              'inference',
+              'speaker_tone',
+              'language_function'
+            ].includes(q.type)
               ? q.type
               : 'main_idea',
             timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
@@ -586,11 +596,12 @@ export class AIService extends ImprovedBaseService {
   getConfig(): z.infer<typeof aiConfigSchema> {
     return { ...this.config }
   }
-
 }
 
 // Service factory function to create AIService with configuration
-export const createAIService = async (provider: 'openai' | 'anthropic' | 'google' | 'custom' = 'google'): Promise<AIService> => {
+export const createAIService = async (
+  provider: 'openai' | 'anthropic' | 'google' | 'custom' = 'google'
+): Promise<AIService> => {
   let apiConfig = null
 
   try {
@@ -626,20 +637,22 @@ export const createAIService = async (provider: 'openai' | 'anthropic' | 'google
         provider: 'openai',
         apiKey: config.apiKey,
         model: config.model || 'gpt-4o-mini',
-        maxTokens: 2000,
+        maxTokens: 16000,
         temperature: 0.7
       })
 
     case 'anthropic':
       config = apiConfig?.anthropic
       if (!config?.apiKey) {
-        throw new Error('Anthropic API key not configured. Please configure your API key in settings.')
+        throw new Error(
+          'Anthropic API key not configured. Please configure your API key in settings.'
+        )
       }
       return new AIService({
         provider: 'anthropic',
         apiKey: config.apiKey,
         model: config.model || 'claude-3-sonnet-20240229',
-        maxTokens: 2000,
+        maxTokens: 16000,
         temperature: 0.7
       })
 
@@ -647,13 +660,15 @@ export const createAIService = async (provider: 'openai' | 'anthropic' | 'google
     default:
       config = apiConfig?.gemini
       if (!config?.apiKey) {
-        throw new Error('Google Gemini API key not configured. Please configure your API key in settings.')
+        throw new Error(
+          'Google Gemini API key not configured. Please configure your API key in settings.'
+        )
       }
       return new AIService({
         provider: 'google',
         apiKey: config.apiKey,
         model: config.model || 'gemini-2.5-flash-lite',
-        maxTokens: 2000,
+        maxTokens: 16000,
         temperature: 0.7
       })
   }
