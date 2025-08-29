@@ -112,7 +112,7 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
 
       {/* Expanded details */}
       {isExpanded && (
-        <div className="space-y-3 border-t border-gray-100 px-3 pb-3">
+        <div className="space-y-4 border-t border-gray-100 px-3 pb-3">
           {/* Language toggle and difficulty level */}
           <div className="mt-4 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
 
           {/* Definition */}
           <div>
-            <span className="text-xs font-medium text-purple-600">Definition</span>
+            <span className="text-xs font-semibold text-purple-600">Definition</span>
             <p className="mt-1 text-sm text-gray-700">
               {showVietnamese ? item.definitionVi || item.definition : item.definition}
             </p>
@@ -141,7 +141,7 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
 
           {/* Example */}
           <div>
-            <span className="text-xs font-medium text-blue-600">Example</span>
+            <span className="text-xs font-semibold text-blue-600">Example</span>
             <p className="mt-1 text-sm italic text-gray-600">"{item.example}"</p>
           </div>
 
@@ -149,10 +149,10 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
           {isWord && word && (word.synonyms.length > 0 || word.antonyms.length > 0) && (
             <div className="relative grid grid-cols-2 gap-4">
               {/* Synonyms column */}
-              <div>
+              <div className="flex flex-col items-start gap-2">
                 {word.synonyms.length > 0 && (
                   <>
-                    <span className="text-xs font-medium text-green-600">Synonyms</span>
+                    <span className="text-xs font-semibold text-green-600">Synonyms</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {word.synonyms.map((synonym, index) => (
                         <span
@@ -171,10 +171,10 @@ export const VocabularyItemCompact: React.FC<VocabularyItemCompactProps> = ({
               <div className="absolute bottom-0 left-1/2 top-0 w-px -translate-x-1/2 transform bg-gray-200"></div>
 
               {/* Antonyms column */}
-              <div>
+              <div className="flex flex-col items-end gap-2">
                 {word.antonyms.length > 0 && (
                   <>
-                    <span className="text-xs font-medium text-red-600">Antonyms</span>
+                    <span className="text-right text-xs font-semibold text-red-600">Antonyms</span>
                     <div className="mt-1 flex flex-wrap gap-1">
                       {word.antonyms.map((antonym, index) => (
                         <span
