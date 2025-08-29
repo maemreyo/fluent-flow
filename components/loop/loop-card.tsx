@@ -375,6 +375,7 @@ export function LoopCard({
             onGenerate={handleGenerateQuestions}
             onPractice={handleQuestionPractice}
             integrationService={integrationService}
+            loop={loop}
             defaultExpanded={false}
           />
         </div>

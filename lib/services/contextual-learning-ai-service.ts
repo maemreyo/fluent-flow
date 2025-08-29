@@ -1,5 +1,6 @@
 import { getCurrentUser } from '../supabase/client'
-import { AIService } from './ai-service'
+import { createAIService } from './ai-service'
+import type { AIService } from './ai-service'
 import type { UserVocabularyItem } from './user-vocabulary-service'
 
 export interface UsageExample {
@@ -31,23 +32,16 @@ export interface LoopContext {
 export class ContextualLearningAIService {
   private aiService: AIService | null = null
 
-  constructor() {
-    this.initializeAI()
-  }
+  constructor(private preferredProvider: 'openai' | 'anthropic' | 'google' = 'google') {}
 
-  private async initializeAI() {
-    try {
-      // Initialize with OpenAI (adjust provider as needed)
-      this.aiService = new AIService({
-        provider: 'openai',
-        apiKey: process.env.OPENAI_API_KEY || 'your-api-key-here',
-        model: 'gpt-4o-mini',
-        maxTokens: 2000,
-        temperature: 0.7
-      })
-    } catch (error) {
-      console.error('Failed to initialize AI service:', error)
+  /**
+   * Initialize the AI service (lazy loading)
+   */
+  private async getAIService(): Promise<AIService> {
+    if (!this.aiService) {
+      this.aiService = await createAIService(this.preferredProvider)
     }
+    return this.aiService
   }
 
   /**
@@ -57,11 +51,8 @@ export class ContextualLearningAIService {
     vocabulary: UserVocabularyItem,
     count: number = 5
   ): Promise<UsageExample[]> {
-    if (!this.aiService) {
-      return this.getFallbackUsageExamples(vocabulary, count)
-    }
-
     try {
+      const aiService = await this.getAIService()
       const prompt = `Generate ${count} diverse, natural usage examples for the ${vocabulary.itemType} "${vocabulary.text}".
 
 Definition: ${vocabulary.definition}
@@ -86,7 +77,7 @@ Return JSON array with this structure:
 
 Examples should be practical and help learners understand real-world usage.`
 
-      const response = await this.aiService.chat([
+      const response = await aiService.chat([
         { role: 'user', content: prompt }
       ])
       const examples = JSON.parse(response.content)
@@ -111,11 +102,8 @@ Examples should be practical and help learners understand real-world usage.`
     vocabulary: UserVocabularyItem,
     count: number = 8
   ): Promise<CollocationPattern[]> {
-    if (!this.aiService) {
-      return this.getFallbackCollocations(vocabulary, count)
-    }
-
     try {
+      const aiService = await this.getAIService()
       const prompt = `Generate ${count} common collocation patterns for the ${vocabulary.itemType} "${vocabulary.text}".
 
 Definition: ${vocabulary.definition}
@@ -139,7 +127,7 @@ Return JSON array with this structure:
 
 Focus on authentic, useful patterns that help with natural language use.`
 
-      const response = await this.aiService.chat([
+      const response = await aiService.chat([
         { role: 'user', content: prompt }
       ])
       const collocations = JSON.parse(response.content)
@@ -263,15 +251,8 @@ Focus on authentic, useful patterns that help with natural language use.`
     relatedWords: string[]
     nextSteps: string[]
   }> {
-    if (!this.aiService) {
-      return {
-        prerequisites: [],
-        relatedWords: ['similar', 'related', 'connected'],
-        nextSteps: ['advanced', 'complex', 'sophisticated']
-      }
-    }
-
     try {
+      const aiService = await this.getAIService()
       const prompt = `Analyze the learning path for "${vocabulary.text}" (${vocabulary.definition}) for a ${userLevel} learner.
 
 Suggest:
@@ -288,7 +269,7 @@ Return JSON with this structure:
 
 Focus on practical vocabulary progression that builds naturally.`
 
-      const response = await this.aiService.chat([
+      const response = await aiService.chat([
         { role: 'user', content: prompt }
       ])
       return JSON.parse(response.content)
@@ -345,5 +326,5 @@ Focus on practical vocabulary progression that builds naturally.`
   }
 }
 
-// Export singleton instance
-export const contextualLearningAIService = new ContextualLearningAIService()
+// Export singleton instance with Google Gemini as default
+export const contextualLearningAIService = new ContextualLearningAIService('google')

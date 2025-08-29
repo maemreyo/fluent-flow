@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getCurrentUser } from '../supabase/client'
+import { getCurrentUser, supabase } from '../supabase/client'
 
 /**
  * Custom hook for managing authentication state
@@ -23,9 +23,20 @@ export function useAuthentication() {
     checkAuthStatus()
   }, [])
 
+  const signOut = async () => {
+    try {
+      await supabase.auth.signOut()
+      setUser(null)
+      console.log('User signed out successfully')
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }
+
   return {
     user,
     checkingAuth,
-    checkAuthStatus
+    checkAuthStatus,
+    signOut
   }
 }

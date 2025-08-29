@@ -35,9 +35,9 @@ function FluentFlowSidePanelContent() {
   // Conversation loop integration state
   const [integrationService, setIntegrationService] =
     useState<ConversationLoopIntegrationService | null>(null)
-  const [activeQuestions, setActiveQuestions] = useState<ConversationQuestions | null>(null)
-  const [activeQuestionLoop, setActiveQuestionLoop] = useState<SavedLoop | null>(null)
-  const [geminiConfigured, setGeminiConfigured] = useState(false)
+  const [_activeQuestions, _setActiveQuestions] = useState<ConversationQuestions | null>(null)
+  const [_activeQuestionLoop, _setActiveQuestionLoop] = useState<SavedLoop | null>(null)
+  const [_geminiConfigured, setGeminiConfigured] = useState(false)
 
   // Enhanced practice tracking analytics state
   const [enhancedAnalytics, setEnhancedAnalytics] = useState<any>(null)
@@ -53,7 +53,7 @@ function FluentFlowSidePanelContent() {
   } = useFluentFlowStore()
 
   // Custom hooks for extracted functionality
-  const { user, checkingAuth } = useAuthentication()
+  const { user, checkingAuth, signOut } = useAuthentication()
   useVideoTracking()
 
   // Get computed statistics
@@ -268,7 +268,7 @@ function FluentFlowSidePanelContent() {
             <p className="text-sm text-muted-foreground">Learning via Youtube</p>
           </div>
           <div className="flex items-center gap-2">
-            <AuthStatus user={user} checkingAuth={checkingAuth} />
+            <AuthStatus user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
           </div>
         </div>
       </div>

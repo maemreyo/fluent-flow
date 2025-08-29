@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { UserAvatar } from '../../../components/UserAvatar'
 
 interface Question {
   id: string
@@ -341,8 +342,7 @@ export default function QuestionsPage() {
             <div className="mb-4 flex items-center justify-between">
               <div className="flex items-center gap-4 text-sm text-gray-600">
                 <div className="flex items-center gap-1">
-                  <span>👤</span>
-                  <span>Shared by {questionSet.metadata.sharedBy}</span>
+                  <UserAvatar email={questionSet.metadata.sharedBy} showName={true} size="sm" />
                 </div>
                 <div className="flex items-center gap-1">
                   <span>📅</span>

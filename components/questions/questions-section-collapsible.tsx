@@ -8,9 +8,10 @@ import {
   Loader2,
   Play
 } from 'lucide-react'
-import type { ConversationQuestion } from '../../lib/types/fluent-flow-types'
+import type { ConversationQuestion, SavedLoop } from '../../lib/types/fluent-flow-types'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
+import { QuestionShareButton } from '../question-share-button'
 
 interface QuestionsSectionCollapsibleProps {
   questions: ConversationQuestion[] | null
@@ -19,6 +20,8 @@ interface QuestionsSectionCollapsibleProps {
   onGenerate: () => void
   onPractice: () => void
   integrationService: any
+  loop: SavedLoop
+  backendUrl?: string
   defaultExpanded?: boolean
 }
 
@@ -29,6 +32,8 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
   onGenerate,
   onPractice,
   integrationService,
+  loop,
+  backendUrl = 'http://localhost:3838',
   defaultExpanded = true
 }) => {
   const [isExpanded, setIsExpanded] = React.useState(defaultExpanded)
@@ -165,6 +170,21 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                   <Brain className="h-4 w-4" />
                   Regenerate
                 </Button>
+                <QuestionShareButton
+                  questions={{
+                    loopId: loop.id,
+                    questions: questions,
+                    metadata: {
+                      totalQuestions: questions.length,
+                      analysisDate: new Date().toISOString(),
+                      generatedFromTranscript: true,
+                      canRegenerateQuestions: true
+                    }
+                  }}
+                  loop={loop}
+                  className="flex-shrink-0"
+                  backendUrl={backendUrl}
+                />
               </div>
 
               {/* Stats footer */}

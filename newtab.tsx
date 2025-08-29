@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Book, Target, Users } from 'lucide-react'
+import { UserDropdown } from './components/shared/UserDropdown'
+import { useAuthentication } from './lib/hooks/use-authentication'
 import { FlashcardPractice } from './components/learning/flashcard-practice'
 import { SRSFlashcardReview } from './components/learning/srs-flashcard-review'
 import { SRSDashboard } from './components/learning/srs-dashboard'
@@ -19,6 +21,9 @@ function VocabularyLearningNewTab() {
   const [showAudioRecognition, setShowAudioRecognition] = useState(false)
   const [showSpellingPractice, setShowSpellingPractice] = useState(false)
   const [stats, setStats] = useState<LearningStats | null>(null)
+  
+  // Authentication
+  const { user, checkingAuth, signOut } = useAuthentication()
 
   // Load user stats
   useEffect(() => {
@@ -74,6 +79,7 @@ function VocabularyLearningNewTab() {
                   <p className="text-sm text-gray-500">Smart spaced repetition practice</p>
                 </div>
               </div>
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
@@ -100,6 +106,7 @@ function VocabularyLearningNewTab() {
                   <p className="text-sm text-gray-500">Practice your vocabulary</p>
                 </div>
               </div>
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
@@ -126,6 +133,7 @@ function VocabularyLearningNewTab() {
                   <p className="text-sm text-gray-500">Create sentences with vocabulary</p>
                 </div>
               </div>
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
@@ -152,6 +160,7 @@ function VocabularyLearningNewTab() {
                   <p className="text-sm text-gray-500">Listen and identify words</p>
                 </div>
               </div>
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
@@ -178,6 +187,7 @@ function VocabularyLearningNewTab() {
                   <p className="text-sm text-gray-500">Type words from pronunciation</p>
                 </div>
               </div>
+              <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
@@ -202,8 +212,9 @@ function VocabularyLearningNewTab() {
               </div>
             </div>
             
-            {/* Quick Stats */}
-            <div className="hidden md:flex items-center space-x-6 text-sm">
+            <div className="flex items-center gap-6">
+              {/* Quick Stats */}
+              <div className="hidden md:flex items-center space-x-6 text-sm">
               <div className="text-center">
                 <div className="font-semibold text-gray-900">
                   {stats ? stats.wordsLearned + stats.phrasesLearned : 0}
@@ -222,6 +233,8 @@ function VocabularyLearningNewTab() {
                 </div>
                 <div className="text-gray-500">Total Saved</div>
               </div>
+            </div>
+            <UserDropdown user={user} checkingAuth={checkingAuth} onSignOut={signOut} />
             </div>
           </div>
         </div>
