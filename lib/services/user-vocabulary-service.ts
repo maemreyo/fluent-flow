@@ -56,6 +56,7 @@ export interface LearningStats {
   lastPracticeDate?: string
   totalReviews: number
   correctReviews: number
+  totalPracticeSessions: number
   createdAt: string
   updatedAt: string
 }
@@ -350,6 +351,7 @@ export class UserVocabularyService {
         lastPracticeDate: undefined,
         totalReviews: 0,
         correctReviews: 0,
+        totalPracticeSessions: 0,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       }

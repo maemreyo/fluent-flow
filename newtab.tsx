@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react'
 import { Book, Target, Users } from 'lucide-react'
 import { FlashcardPractice } from './components/learning/flashcard-practice'
+import { ContextualLearning } from './components/learning/contextual-learning'
+import { SocialGamification } from './components/learning/social-gamification'
 import { userVocabularyService, type LearningStats } from './lib/services/user-vocabulary-service'
 import './styles/newtab.css'
 
@@ -215,65 +217,17 @@ function VocabularyLearningNewTab() {
           )}
 
           {activeTab === 'contextual' && (
-            <div className="text-center py-16">
-              <Book className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Contextual Learning
-              </h3>
-              <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Learn vocabulary in the context of real video content. Associate words with specific video segments
-                and practice with authentic usage examples.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="font-semibold text-yellow-800">Save to Loop</div>
-                  <div className="text-xs text-yellow-600 mt-1">Link with video segments</div>
-                </div>
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <div className="font-semibold text-green-800">Usage Examples</div>
-                  <div className="text-xs text-green-600 mt-1">Real content examples</div>
-                </div>
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <div className="font-semibold text-blue-800">Collocation Practice</div>
-                  <div className="text-xs text-blue-600 mt-1">Word combinations</div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <div className="font-semibold text-purple-800">Similar Context</div>
-                  <div className="text-xs text-purple-600 mt-1">Find in other videos</div>
-                </div>
-              </div>
-            </div>
+            <ContextualLearning 
+              onNavigateToVideo={(loopId) => {
+                // TODO: Navigate to video with specific loop
+                console.log('Navigate to loop:', loopId)
+                alert(`Navigate to video loop: ${loopId}`)
+              }}
+            />
           )}
 
           {activeTab === 'social' && (
-            <div className="text-center py-16">
-              <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                Social & Gamification
-              </h3>
-              <p className="text-gray-600 mb-8 max-w-2xl mx-auto">
-                Share interesting words with others, maintain learning streaks, and unlock achievements 
-                for reaching learning milestones. Learn vocabulary with peers in study groups.
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                <div className="text-center p-4 bg-pink-50 rounded-lg">
-                  <div className="font-semibold text-pink-800">Share Word</div>
-                  <div className="text-xs text-pink-600 mt-1">Share with others</div>
-                </div>
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <div className="font-semibold text-orange-800">Word Streaks</div>
-                  <div className="text-xs text-orange-600 mt-1">Daily learning streaks</div>
-                </div>
-                <div className="text-center p-4 bg-yellow-50 rounded-lg">
-                  <div className="font-semibold text-yellow-800">Achievement Badges</div>
-                  <div className="text-xs text-yellow-600 mt-1">Unlock rewards</div>
-                </div>
-                <div className="text-center p-4 bg-indigo-50 rounded-lg">
-                  <div className="font-semibold text-indigo-800">Study Groups</div>
-                  <div className="text-xs text-indigo-600 mt-1">Learn with peers</div>
-                </div>
-              </div>
-            </div>
+            <SocialGamification />
           )}
         </div>
 
