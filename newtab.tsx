@@ -1,14 +1,20 @@
 import React, { useState, useEffect } from 'react'
 import { Book, Target, Users } from 'lucide-react'
 import { FlashcardPractice } from './components/learning/flashcard-practice'
-import { ContextualLearning } from './components/learning/contextual-learning'
+import { EnhancedContextualLearning } from './components/learning/enhanced-contextual-learning'
 import { SocialGamification } from './components/learning/social-gamification'
+import { ContextualUsagePractice } from './components/learning/contextual-usage-practice'
+import { AudioRecognitionPractice } from './components/learning/audio-recognition-practice'
+import { SpellingPractice } from './components/learning/spelling-practice'
 import { userVocabularyService, type LearningStats } from './lib/services/user-vocabulary-service'
 import './styles/newtab.css'
 
 function VocabularyLearningNewTab() {
   const [activeTab, setActiveTab] = useState<'srs' | 'practice' | 'contextual' | 'social'>('srs')
   const [showFlashcards, setShowFlashcards] = useState(false)
+  const [showContextualUsage, setShowContextualUsage] = useState(false)
+  const [showAudioRecognition, setShowAudioRecognition] = useState(false)
+  const [showSpellingPractice, setShowSpellingPractice] = useState(false)
   const [stats, setStats] = useState<LearningStats | null>(null)
 
   // Load user stats
@@ -50,7 +56,6 @@ function VocabularyLearningNewTab() {
   if (showFlashcards) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        {/* Header */}
         <div className="bg-white shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
@@ -69,8 +74,85 @@ function VocabularyLearningNewTab() {
             </div>
           </div>
         </div>
-
         <FlashcardPractice onComplete={() => setShowFlashcards(false)} />
+      </div>
+    )
+  }
+
+  if (showContextualUsage) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowContextualUsage(false)}
+                  className="flex items-center justify-center w-10 h-10 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  <Book className="h-6 w-6 text-white" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Contextual Usage Practice</h1>
+                  <p className="text-sm text-gray-500">Create sentences with vocabulary</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <ContextualUsagePractice onComplete={() => setShowContextualUsage(false)} />
+      </div>
+    )
+  }
+
+  if (showAudioRecognition) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowAudioRecognition(false)}
+                  className="flex items-center justify-center w-10 h-10 bg-green-600 rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  <Book className="h-6 w-6 text-white" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Audio Recognition Practice</h1>
+                  <p className="text-sm text-gray-500">Listen and identify words</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <AudioRecognitionPractice onComplete={() => setShowAudioRecognition(false)} />
+      </div>
+    )
+  }
+
+  if (showSpellingPractice) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <div className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center justify-between h-16">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setShowSpellingPractice(false)}
+                  className="flex items-center justify-center w-10 h-10 bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors"
+                >
+                  <Book className="h-6 w-6 text-white" />
+                </button>
+                <div>
+                  <h1 className="text-xl font-bold text-gray-900">Spelling Practice</h1>
+                  <p className="text-sm text-gray-500">Type words from pronunciation</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <SpellingPractice onComplete={() => setShowSpellingPractice(false)} />
       </div>
     )
   }
@@ -189,36 +271,62 @@ function VocabularyLearningNewTab() {
                   <div className="font-semibold text-orange-800">Flashcard Mode</div>
                   <div className="text-xs text-orange-600 mt-1">Word → Definition recall</div>
                 </button>
-                <div className="text-center p-4 bg-red-50 rounded-lg opacity-50">
+                <button
+                  onClick={() => setShowContextualUsage(true)}
+                  className="text-center p-4 bg-red-50 rounded-lg hover:bg-red-100 transition-colors border-2 border-transparent hover:border-red-200"
+                >
                   <div className="font-semibold text-red-800">Contextual Usage</div>
                   <div className="text-xs text-red-600 mt-1">Generate sentences</div>
-                  <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-                </div>
-                <div className="text-center p-4 bg-indigo-50 rounded-lg opacity-50">
-                  <div className="font-semibold text-indigo-800">Audio Recognition</div>
-                  <div className="text-xs text-indigo-600 mt-1">Listen → identify word</div>
-                  <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-                </div>
-                <div className="text-center p-4 bg-teal-50 rounded-lg opacity-50">
-                  <div className="font-semibold text-teal-800">Spelling Practice</div>
-                  <div className="text-xs text-teal-600 mt-1">Type from pronunciation</div>
-                  <div className="text-xs text-gray-500 mt-1">Coming Soon</div>
-                </div>
+                </button>
+                <button
+                  onClick={() => setShowAudioRecognition(true)}
+                  className="text-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors border-2 border-transparent hover:border-green-200"
+                >
+                  <div className="font-semibold text-green-800">Audio Recognition</div>
+                  <div className="text-xs text-green-600 mt-1">Listen → identify word</div>
+                </button>
+                <button
+                  onClick={() => setShowSpellingPractice(true)}
+                  className="text-center p-4 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors border-2 border-transparent hover:border-purple-200"
+                >
+                  <div className="font-semibold text-purple-800">Spelling Practice</div>
+                  <div className="text-xs text-purple-600 mt-1">Type from pronunciation</div>
+                </button>
               </div>
               <div className="text-center">
-                <button
-                  onClick={() => setShowFlashcards(true)}
-                  className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
-                >
-                  Start Flashcard Practice
-                </button>
+                <div className="flex flex-wrap justify-center gap-4">
+                  <button
+                    onClick={() => setShowFlashcards(true)}
+                    className="bg-orange-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-orange-600 transition-colors"
+                  >
+                    Start Flashcard Practice
+                  </button>
+                  <button
+                    onClick={() => setShowContextualUsage(true)}
+                    className="bg-red-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-red-600 transition-colors"
+                  >
+                    Start Usage Practice
+                  </button>
+                  <button
+                    onClick={() => setShowAudioRecognition(true)}
+                    className="bg-green-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-green-600 transition-colors"
+                  >
+                    Start Audio Practice
+                  </button>
+                  <button
+                    onClick={() => setShowSpellingPractice(true)}
+                    className="bg-purple-500 text-white px-6 py-3 rounded-lg font-medium hover:bg-purple-600 transition-colors"
+                  >
+                    Start Spelling Practice
+                  </button>
+                </div>
               </div>
             </div>
           )}
 
           {activeTab === 'contextual' && (
-            <ContextualLearning 
-              onNavigateToVideo={(loopId) => {
+            <EnhancedContextualLearning 
+              onNavigateToVideo={(loopId: string) => {
                 // TODO: Navigate to video with specific loop
                 console.log('Navigate to loop:', loopId)
                 alert(`Navigate to video loop: ${loopId}`)
