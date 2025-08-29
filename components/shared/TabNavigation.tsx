@@ -9,11 +9,11 @@ export function TabNavigation({ activeTab }: TabNavigationProps) {
   return (
     <TabsList className="m-4 grid w-full flex-shrink-0 grid-cols-2">
       <TabsTrigger value="dashboard" className="text-xs">
-        <BarChart3 className="h-4 w-4" />
+        <BarChart3 className="mr-1 h-4 w-4" />
         Dashboard
       </TabsTrigger>
       <TabsTrigger value="loops" className="text-xs">
-        <Repeat className="h-4 w-4" />
+        <Repeat className="mr-1 h-4 w-4" />
         Loops
       </TabsTrigger>
       {/* <TabsTrigger value="conversations" className="text-xs">

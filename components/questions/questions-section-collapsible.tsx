@@ -9,9 +9,9 @@ import {
   Play
 } from 'lucide-react'
 import type { ConversationQuestion, SavedLoop } from '../../lib/types/fluent-flow-types'
+import { QuestionShareButton } from '../question-share-button'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { QuestionShareButton } from '../question-share-button'
 
 interface QuestionsSectionCollapsibleProps {
   questions: ConversationQuestion[] | null
@@ -160,7 +160,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                   <Play className="h-4 w-4" />
                   Practice
                 </Button>
-                <Button
+                {/* <Button
                   variant="outline"
                   size="sm"
                   onClick={onGenerate}
@@ -169,7 +169,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                 >
                   <Brain className="h-4 w-4" />
                   Regenerate
-                </Button>
+                </Button> */}
                 <QuestionShareButton
                   questions={{
                     loopId: loop.id,
