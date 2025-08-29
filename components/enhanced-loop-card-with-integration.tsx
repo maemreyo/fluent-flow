@@ -271,7 +271,7 @@ export function EnhancedLoopCardWithIntegration({
               onClick={() => refetchTranscript()}
               className="mt-2"
             >
-              <RotateCcw className="mr-1 h-4 w-4" />
+              <RotateCcw className="h-4 w-4" />
               Retry
             </Button>
           </div>
@@ -349,7 +349,7 @@ export function EnhancedLoopCardWithIntegration({
                 onClick={handleGenerateQuestions}
                 disabled={generateQuestionsMutation.isPending}
               >
-                <Brain className="mr-1 h-4 w-4" />
+                <Brain className="h-4 w-4" />
                 Generate
               </Button>
             </div>
@@ -392,7 +392,7 @@ export function EnhancedLoopCardWithIntegration({
                 }}
                 title="Start interactive practice session with generated questions"
               >
-                <Play className="mr-1 h-4 w-4" />
+                <Play className="h-4 w-4" />
                 Practice
               </Button>
               {/* <Button
@@ -402,7 +402,7 @@ export function EnhancedLoopCardWithIntegration({
                 disabled={generateQuestionsMutation.isPending}
                 title="Generate new questions from the transcript"
               >
-                <RotateCcw className="mr-1 h-4 w-4" />
+                <RotateCcw className="h-4 w-4" />
                 Regenerate
               </Button> */}
               <QuestionShareButton
@@ -433,7 +433,7 @@ export function EnhancedLoopCardWithIntegration({
               onClick={handleGenerateQuestions}
               disabled={generateQuestionsMutation.isPending}
             >
-              <Brain className="mr-1 h-4 w-4" />
+              <Brain className="h-4 w-4" />
               Generate Questions
             </Button>
           </div>
@@ -447,7 +447,7 @@ export function EnhancedLoopCardWithIntegration({
               onClick={handleGenerateQuestions}
               disabled={generateQuestionsMutation.isPending || !integrationService}
             >
-              <Brain className="mr-1 h-4 w-4" />
+              <Brain className="h-4 w-4" />
               Generate Questions
             </Button>
           </div>
@@ -469,7 +469,7 @@ export function EnhancedLoopCardWithIntegration({
                 onClick={handleGenerateSummary}
                 disabled={!transcriptData?.segments}
               >
-                <FileText className="mr-1 h-4 w-4" />
+                <FileText className="h-4 w-4" />
                 Generate
               </Button>
             )}
@@ -500,7 +500,7 @@ export function EnhancedLoopCardWithIntegration({
               onClick={handleGenerateSummary}
               disabled={!transcriptData?.segments}
             >
-              <FileText className="mr-1 h-4 w-4" />
+              <FileText className="h-4 w-4" />
               Generate Summary
             </Button>
           </div>
@@ -522,7 +522,7 @@ export function EnhancedLoopCardWithIntegration({
                 onClick={handleAnalyzeVocabulary}
                 disabled={!transcriptData?.segments}
               >
-                <BookOpen className="mr-1 h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 Analyze
               </Button>
             )}
@@ -549,7 +549,7 @@ export function EnhancedLoopCardWithIntegration({
               onClick={handleAnalyzeVocabulary}
               disabled={!transcriptData?.segments}
             >
-              <BookOpen className="mr-1 h-4 w-4" />
+              <BookOpen className="h-4 w-4" />
               Analyze Vocabulary
             </Button>
           </div>
@@ -624,9 +624,9 @@ export function EnhancedLoopCardWithIntegration({
             title="Navigate to the video and apply this loop's time segment"
           >
             {isApplying ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="h-4 w-4" />
             )}
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
@@ -637,7 +637,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => setShowTranscript(!showTranscript)}
             title={showTranscript ? 'Hide transcript' : 'Show transcript'}
           >
-            <Target className="mr-1 h-4 w-4" />
+            <Target className="h-4 w-4" />
             {/* Transcript */}
           </Button>
 
@@ -656,9 +656,9 @@ export function EnhancedLoopCardWithIntegration({
             }
           >
             {isShowingOverlay ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Monitor className="mr-1 h-4 w-4" />
+              <Monitor className="h-4 w-4" />
             )}
             {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
           </Button>
@@ -669,7 +669,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => onExport?.(loop)}
             title="Export loop data as JSON file"
           >
-            <Download className="mr-1 h-4 w-4" />
+            <Download className="h-4 w-4" />
             Export
           </Button> */}
 
@@ -679,7 +679,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => setShowSummary(!showSummary)}
             title={showSummary ? 'Hide summary' : 'Show summary'}
           >
-            <FileText className="mr-1 h-4 w-4" />
+            <FileText className="h-4 w-4" />
             {/* Summary */}
           </Button>
 
@@ -689,7 +689,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => setShowVocabulary(!showVocabulary)}
             title={showVocabulary ? 'Hide vocabulary' : 'Show vocabulary'}
           >
-            <BookOpen className="mr-1 h-4 w-4" />
+            <BookOpen className="h-4 w-4" />
             {/* Vocabulary */}
           </Button>
 
@@ -699,7 +699,7 @@ export function EnhancedLoopCardWithIntegration({
             onClick={() => onDelete?.(loop.id)}
             title="Delete this loop permanently"
           >
-            <Trash2 className="mr-1 h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
             {/* Delete */}
           </Button>
         </div>

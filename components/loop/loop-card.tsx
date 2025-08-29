@@ -399,9 +399,9 @@ export function LoopCard({
             title="Navigate to the video and apply this loop's time segment"
           >
             {isApplying ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Play className="mr-1 h-4 w-4" />
+              <Play className="h-4 w-4" />
             )}
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
@@ -421,9 +421,9 @@ export function LoopCard({
             }
           >
             {isShowingOverlay ? (
-              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+              <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
-              <Monitor className="mr-1 h-4 w-4" />
+              <Monitor className="h-4 w-4" />
             )}
             {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
           </Button>
@@ -434,7 +434,7 @@ export function LoopCard({
             onClick={() => setShowTranscript(!showTranscript)}
             title={showTranscript ? 'Hide transcript' : 'Show transcript'}
           >
-            <Target className="mr-1 h-4 w-4" />
+            <Target className="h-4 w-4" />
           </Button>
 
           <Button
@@ -443,7 +443,7 @@ export function LoopCard({
             onClick={() => setShowSummary(!showSummary)}
             title={showSummary ? 'Hide summary' : 'Show summary'}
           >
-            <FileText className="mr-1 h-4 w-4" />
+            <FileText className="h-4 w-4" />
           </Button>
 
           <Button
@@ -452,7 +452,7 @@ export function LoopCard({
             onClick={() => setShowVocabulary(!showVocabulary)}
             title={showVocabulary ? 'Hide vocabulary' : 'Show vocabulary'}
           >
-            <BookOpen className="mr-1 h-4 w-4" />
+            <BookOpen className="h-4 w-4" />
           </Button> */}
 
           <Button
@@ -461,7 +461,7 @@ export function LoopCard({
             onClick={() => onDelete?.(loop.id)}
             title="Delete this loop permanently"
           >
-            <Trash2 className="mr-1 h-4 w-4" />
+            <Trash2 className="h-4 w-4" />
           </Button>
         </div>
 

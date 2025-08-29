@@ -93,7 +93,7 @@ export const VocabularySectionCollapsible: React.FC<VocabularySectionCollapsible
             <div className="py-6 text-center">
               <p className="mb-3 text-sm text-gray-600">No vocabulary analysis available.</p>
               <Button variant="default" size="sm" onClick={onAnalyze}>
-                <BookOpen className="mr-1 h-4 w-4" />
+                <BookOpen className="h-4 w-4" />
                 Analyze Vocabulary
               </Button>
             </div>

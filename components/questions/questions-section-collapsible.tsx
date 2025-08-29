@@ -104,7 +104,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                 onClick={onGenerate}
                 disabled={isLoading || !integrationService}
               >
-                <Brain className="mr-1 h-4 w-4" />
+                <Brain className="h-4 w-4" />
                 Generate Questions
               </Button>
             </div>
@@ -119,7 +119,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                 onClick={onGenerate}
                 disabled={isLoading || !integrationService}
               >
-                <Brain className="mr-1 h-4 w-4" />
+                <Brain className="h-4 w-4" />
                 Generate Questions
               </Button>
             </div>
@@ -152,7 +152,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                   onClick={onPractice}
                   title="Start interactive practice session with generated questions"
                 >
-                  <Play className="mr-1 h-4 w-4" />
+                  <Play className="h-4 w-4" />
                   Practice
                 </Button>
                 <Button
@@ -162,7 +162,7 @@ export const QuestionsSectionCollapsible: React.FC<QuestionsSectionCollapsiblePr
                   disabled={isLoading}
                   title="Generate new questions from the transcript"
                 >
-                  <Brain className="mr-1 h-4 w-4" />
+                  <Brain className="h-4 w-4" />
                   Regenerate
                 </Button>
               </div>

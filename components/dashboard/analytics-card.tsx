@@ -1,7 +1,6 @@
-import React from 'react'
-import { TrendingUp, TrendingDown, Calendar, Flame, Target } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
+import { Calendar, Flame, Target, TrendingDown, TrendingUp } from 'lucide-react'
 import { Badge } from '../ui/badge'
+import { Card, CardContent, CardHeader, CardTitle } from '../ui/card'
 
 interface AnalyticsData {
   weeklyTrend: Array<{
@@ -32,13 +31,7 @@ interface AnalyticsCardProps {
 }
 
 export function AnalyticsCard({ analytics, formatTime }: AnalyticsCardProps) {
-  const {
-    dailyAverages,
-    practiceStreak,
-    mostActiveDay,
-    improvementRate,
-    weeklyTrend
-  } = analytics
+  const { dailyAverages, practiceStreak, mostActiveDay, improvementRate, weeklyTrend } = analytics
 
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
   const mostActiveDayName = mostActiveDay !== null ? dayNames[mostActiveDay] : 'None'
@@ -81,16 +74,17 @@ export function AnalyticsCard({ analytics, formatTime }: AnalyticsCardProps) {
         <div className="rounded-lg border p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-sm font-medium">Weekly Progress</p>
-            <Badge variant={isImproving ? "default" : "secondary"} className="text-xs">
+            <Badge variant={isImproving ? 'default' : 'secondary'} className="text-xs">
               {isImproving ? (
-                <TrendingUp className="mr-1 h-3 w-3" />
+                <TrendingUp className="h-3 w-3" />
               ) : (
-                <TrendingDown className="mr-1 h-3 w-3" />
+                <TrendingDown className="h-3 w-3" />
               )}
-              {improvementRate >= 0 ? '+' : ''}{Math.round(improvementRate)}%
+              {improvementRate >= 0 ? '+' : ''}
+              {Math.round(improvementRate)}%
             </Badge>
           </div>
-          
+
           <div className="space-y-2 text-xs">
             <div className="flex justify-between">
               <span className="text-muted-foreground">This week avg:</span>
@@ -112,16 +106,12 @@ export function AnalyticsCard({ analytics, formatTime }: AnalyticsCardProps) {
                 const maxTime = Math.max(...weeklyTrend.map(d => d.practiceTime))
                 const height = maxTime > 0 ? Math.max((day.practiceTime / maxTime) * 40, 2) : 2
                 const isToday = index === weeklyTrend.length - 1
-                
+
                 return (
                   <div key={day.date.toDateString()} className="flex flex-col items-center gap-1">
                     <div
                       className={`w-6 rounded-sm ${
-                        day.sessions > 0 
-                          ? isToday 
-                            ? 'bg-blue-500' 
-                            : 'bg-blue-300'
-                          : 'bg-gray-200'
+                        day.sessions > 0 ? (isToday ? 'bg-blue-500' : 'bg-blue-300') : 'bg-gray-200'
                       }`}
                       style={{ height: `${height}px` }}
                       title={`${day.date.toLocaleDateString()}: ${formatTime(day.practiceTime)}, ${day.sessions} sessions`}
@@ -138,7 +128,7 @@ export function AnalyticsCard({ analytics, formatTime }: AnalyticsCardProps) {
 
         {/* Goals Section */}
         <div className="rounded-lg border p-3">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <Target className="h-4 w-4 text-green-500" />
             <p className="text-sm font-medium">Daily Goal</p>
           </div>

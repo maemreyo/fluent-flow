@@ -136,7 +136,7 @@ export default function FluentFlowPopup() {
                 <div className="flex items-center justify-between text-xs text-muted-foreground">
                   <span>{videoInfo.channel}</span>
                   <Badge variant="secondary" className="text-xs">
-                    <Clock className="mr-1 h-3 w-3" />
+                    <Clock className="h-3 w-3" />
                     {formatTime(videoInfo.duration)}
                   </Badge>
                 </div>
