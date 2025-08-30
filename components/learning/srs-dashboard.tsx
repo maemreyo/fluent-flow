@@ -5,11 +5,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui
 import { srsService, type SRSStats } from '../../lib/services/srs-service'
 
 // Import the new components
-import { DailyReviewSection } from '../srs/daily-review-section'
-import { ReviewStatsGrid } from '../srs/review-stats-grid'
 import { LearningStreak } from '../srs/learning-streak'
-import { CompactActivityHeatmap } from '../srs/compact-activity-heatmap'
+import { GitHubStyleHeatmap } from '../srs/github-style-heatmap'
 import { LearningOverview } from '../srs/learning-overview'
+import { TodaysReviews } from '../srs/todays-reviews'
 
 interface SRSDashboardProps {
   onStartReview?: () => void
@@ -38,7 +37,7 @@ export const SRSDashboard: React.FC<SRSDashboardProps> = ({
     try {
       const [srsStats, activityData] = await Promise.all([
         srsService.getStats(),
-        srsService.getActivityData(14)
+        srsService.getActivityData(100) // Changed from 14 to 100 days
       ])
       
       setStats(srsStats)
@@ -79,29 +78,23 @@ export const SRSDashboard: React.FC<SRSDashboardProps> = ({
   }
 
   return (
-    <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6">
-      {/* Header */}
-      <header>
-        <h1 className="text-3xl font-bold">Learning Dashboard</h1>
-        <p className="text-muted-foreground">
-          Track your progress with spaced repetition learning
-        </p>
-      </header>
+    <div className="space-y-8">
+      {/* Today's Reviews - Enhanced with preview */}
+      <TodaysReviews
+        dueCount={stats?.dueToday || 0}
+        newCount={stats?.newCards || 0}
+        onStartReview={onStartReview}
+        onViewAllCards={onViewAllCards}
+      />
 
-      {/* Daily Review Section */}
-      <DailyReviewSection stats={stats} onStartReview={onStartReview} />
-
-      {/* Stats Grid */}
-      <ReviewStatsGrid stats={stats} />
+      {/* Learning Stats Overview */}
+      <LearningOverview stats={stats} />
 
       {/* Learning Streak */}
       <LearningStreak stats={stats} />
 
-      {/* Compact Review Activity */}
-      <CompactActivityHeatmap activityData={activityData} isLoading={isLoading} />
-
-      {/* Learning Overview */}
-      <LearningOverview stats={stats} onViewAllCards={onViewAllCards} />
+      {/* GitHub-style Activity Heatmap - Now shows 100 days */}
+      <GitHubStyleHeatmap activityData={activityData} isLoading={isLoading} showExtended={true} />
     </div>
   )
 }

@@ -240,7 +240,7 @@ export const SpacedRepetitionTab: React.FC<SpacedRepetitionTabProps> = ({ curren
                 Start Review Session
               </CardTitle>
               <CardDescription>
-                Review vocabulary with AI-generated examples and collocations
+                Review vocabulary with rich examples and word combinations
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -317,7 +317,7 @@ export const SpacedRepetitionTab: React.FC<SpacedRepetitionTabProps> = ({ curren
                   • <strong>Be honest:</strong> Rate your recall accurately for optimal scheduling
                 </p>
                 <p>
-                  • <strong>Use examples:</strong> Study the AI-generated examples to understand
+                  • <strong>Use examples:</strong> Study the provided examples to understand
                   context
                 </p>
                 <p>
