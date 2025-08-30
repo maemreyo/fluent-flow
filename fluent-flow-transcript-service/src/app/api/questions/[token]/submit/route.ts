@@ -16,11 +16,17 @@ function checkAnswers(questions: any[], responses: any[]) {
     const question = questions[index]
     const isCorrect = response.answer === question.correctAnswer
     
+    // Convert option letter back to full text for display
+    const userOptionIndex = response.answer.charCodeAt(0) - 65 // A->0, B->1, etc.
+    const correctOptionIndex = question.correctAnswer.charCodeAt(0) - 65
+    const userAnswerText = question.options[userOptionIndex] || response.answer
+    const correctAnswerText = question.options[correctOptionIndex] || question.correctAnswer
+    
     return {
       questionId: question.id || `q_${index}`,
       question: question.question,
-      userAnswer: response.answer,
-      correctAnswer: question.correctAnswer,
+      userAnswer: userAnswerText,
+      correctAnswer: correctAnswerText,
       isCorrect,
       explanation: question.explanation || 'No explanation available.',
       points: isCorrect ? 1 : 0

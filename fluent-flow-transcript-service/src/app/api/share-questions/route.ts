@@ -13,7 +13,7 @@ export async function OPTIONS() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { questions, loop, options = {} } = body
+    const { questions, loop, vocabulary, transcript, options = {} } = body
 
     if (!questions || !loop) {
       return corsResponse({ error: 'Questions and loop data are required' }, 400)
@@ -33,6 +33,8 @@ export async function POST(request: NextRequest) {
       startTime: loop.startTime,
       endTime: loop.endTime,
       questions: questions.questions,
+      vocabulary: vocabulary || [], // Vocabulary from sidepanel analysis
+      transcript: transcript || null, // Transcript text
       metadata: {
         totalQuestions: questions.questions.length,
         createdAt: new Date().toISOString(),

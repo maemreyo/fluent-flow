@@ -43,7 +43,8 @@ export class ConversationAnalysisService {
    */
   async generateQuestionsFromTranscript(
     loop: SavedLoop,
-    transcript: string
+    transcript: string,
+    preset?: { easy: number; medium: number; hard: number }
   ): Promise<ConversationQuestions> {
     // Validate inputs
     if (!transcript || transcript.trim().length === 0) {
@@ -52,22 +53,27 @@ export class ConversationAnalysisService {
 
     try {
       const aiService = await this.getAIService()
-      const result = await aiService.generateConversationQuestions(loop, transcript)
+      const result = await aiService.generateConversationQuestions(loop, transcript, preset)
 
-      // Ensure we have exactly 15 questions
+      // Use the preset or default to 15 total questions
+      const actualPreset = preset || { easy: 4, medium: 7, hard: 4 }
+      const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
+
+      // Ensure we have the correct number of questions
       const questions = result.questions || []
-      while (questions.length < 15) {
-        const fallbackQuestions = this.generateFallbackQuestions(loop, transcript)
-        questions.push(...fallbackQuestions.questions.slice(questions.length, 15))
+      if (questions.length < totalQuestions) {
+        console.warn(`Only generated ${questions.length} questions, expected ${totalQuestions}. Using fallback.`)
+        const fallbackQuestions = this.generateFallbackQuestions(loop, transcript, actualPreset)
+        questions.push(...fallbackQuestions.questions.slice(questions.length, totalQuestions))
       }
 
       const duration = loop.endTime - loop.startTime
 
       return {
         loopId: loop.id,
-        questions: questions.slice(0, 15),
+        questions: questions.slice(0, totalQuestions),
         metadata: {
-          totalQuestions: 15,
+          totalQuestions: totalQuestions,
           analysisDate: new Date().toISOString(),
           generatedFromTranscript: true,
           transcriptLength: transcript.length,
@@ -75,7 +81,9 @@ export class ConversationAnalysisService {
           transcriptLanguage: 'en',
           canRegenerateQuestions: true,
           videoAnalysis: true,
-          videoSegmentDuration: duration
+          videoSegmentDuration: duration,
+          preset: actualPreset,
+          actualDistribution: result.actualDistribution
         }
       }
     } catch (error) {
@@ -83,7 +91,7 @@ export class ConversationAnalysisService {
       console.log('Falling back to template questions')
 
       // Fall back to template questions if AI fails
-      const fallback = this.generateFallbackQuestions(loop, transcript)
+      const fallback = this.generateFallbackQuestions(loop, transcript, preset)
       return fallback
     }
   }
@@ -137,15 +145,23 @@ export class ConversationAnalysisService {
   /**
    * Generate fallback questions when AI analysis is not available
    */
-  private generateFallbackQuestions(loop: SavedLoop, transcript?: string): ConversationQuestions {
-    const baseQuestions: Omit<ConversationQuestion, 'id'>[] = [
+  private generateFallbackQuestions(
+    loop: SavedLoop, 
+    transcript?: string, 
+    preset?: { easy: number; medium: number; hard: number }
+  ): ConversationQuestions {
+    // Default preset for backward compatibility
+    const actualPreset = preset || { easy: 4, medium: 7, hard: 4 }
+    const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
+
+    const easyQuestions: Omit<ConversationQuestion, 'id'>[] = [
       {
         question: 'What is the main topic discussed in this video segment?',
         options: [
           'Current events and news',
-          'Educational content',
+          'Educational content', 
           'Entertainment and lifestyle',
-          'Technical or professional topics'
+          'Technical topics'
         ],
         correctAnswer: 'B',
         explanation: 'This appears to be educational content based on the video context.',
@@ -153,25 +169,12 @@ export class ConversationAnalysisService {
         type: 'main_idea'
       },
       {
-        question: 'What key vocabulary words can you identify from this segment?',
-        options: [
-          'Basic everyday words only',
-          'Some specialized terminology',
-          'Advanced academic vocabulary',
-          'Technical jargon exclusively'
-        ],
-        correctAnswer: 'B',
-        explanation: 'Most educational content contains a mix of common and specialized terms.',
-        difficulty: 'medium',
-        type: 'vocabulary_in_context'
-      },
-      {
         question: "What is the speaker's main purpose in this segment?",
         options: [
           'To entertain the audience',
           'To inform or educate viewers',
-          'To sell a product or service',
-          'To express personal opinions only'
+          'To sell a product or service', 
+          'To express personal opinions'
         ],
         correctAnswer: 'B',
         explanation: 'Educational videos typically aim to inform and teach viewers.',
@@ -179,40 +182,80 @@ export class ConversationAnalysisService {
         type: 'inference'
       },
       {
-        question: 'How would you describe the complexity of the language used?',
+        question: 'Which language learning skill does this segment focus on most?',
         options: [
-          'Very simple, basic level',
-          'Intermediate with some challenges',
-          'Advanced and complex throughout',
-          'Mixed levels depending on topic'
+          'Reading skills',
+          'Writing skills',
+          'Listening skills',
+          'Speaking skills'
+        ],
+        correctAnswer: 'C',
+        explanation: 'Video content primarily helps develop listening skills.',
+        difficulty: 'easy',
+        type: 'main_idea'
+      },
+      {
+        question: 'What listening skills are being practiced in this segment?',
+        options: [
+          'Understanding main ideas only',
+          'Finding specific details',
+          'Following connections',
+          'All of these skills'
         ],
         correctAnswer: 'D',
-        explanation:
-          'Most educational content adapts language complexity based on the concepts being explained.',
+        explanation: 'Good listening involves multiple skills working together.',
+        difficulty: 'easy',
+        type: 'specific_detail'
+      }
+    ]
+
+    const mediumQuestions: Omit<ConversationQuestion, 'id'>[] = [
+      {
+        question: 'What type of vocabulary can you identify from this segment?',
+        options: [
+          'Only basic everyday words',
+          'Some specialized terms',
+          'Advanced academic vocabulary',
+          'Technical jargon only'
+        ],
+        correctAnswer: 'B',
+        explanation: 'Most educational content uses a mix of common and specialized terms.',
+        difficulty: 'medium',
+        type: 'vocabulary_in_context'
+      },
+      {
+        question: 'How would you describe the language complexity?',
+        options: [
+          'Very simple, basic level',
+          'Medium with some challenges',
+          'Advanced and complex',
+          'Mixed levels by topic'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational content adapts language complexity based on concepts being explained.',
         difficulty: 'medium',
         type: 'language_function'
       },
       {
         question: 'What details support the main ideas presented?',
         options: [
-          'Personal anecdotes only',
-          'Statistical data and facts',
-          'Examples and explanations',
+          'Personal stories only',
+          'Facts and data',
+          'Examples and explanations', 
           'All of the above'
         ],
         correctAnswer: 'D',
-        explanation:
-          'Effective educational content typically uses multiple types of supporting details.',
+        explanation: 'Good educational content uses multiple types of supporting details.',
         difficulty: 'medium',
         type: 'specific_detail'
       },
       {
-        question: 'What can you infer about the target audience of this video?',
+        question: 'Who is the likely target audience for this video?',
         options: [
-          'Complete beginners in the subject',
-          'Intermediate learners seeking improvement',
-          'Advanced professionals in the field',
-          'General audience with mixed backgrounds'
+          'Complete beginners',
+          'Intermediate learners',
+          'Advanced professionals',
+          'General mixed audience'
         ],
         correctAnswer: 'D',
         explanation: 'Educational videos typically target a general audience with varied backgrounds.',
@@ -220,141 +263,145 @@ export class ConversationAnalysisService {
         type: 'inference'
       },
       {
-        question: 'Which aspect of language learning does this segment emphasize most?',
+        question: 'How is the information organized in this segment?',
         options: [
-          'Reading comprehension skills',
-          'Writing and composition',
-          'Listening and comprehension',
-          'Speaking and pronunciation'
-        ],
-        correctAnswer: 'C',
-        explanation: 'Video content primarily focuses on listening and comprehension skills.',
-        difficulty: 'easy',
-        type: 'main_idea'
-      },
-      {
-        question: 'What tone does the speaker adopt throughout this segment?',
-        options: [
-          'Formal and academic',
-          'Casual and conversational',
-          'Serious and authoritative',
-          'Varies depending on content'
-        ],
-        correctAnswer: 'D',
-        explanation: 'Educational speakers often adapt their tone based on the content being discussed.',
-        difficulty: 'hard',
-        type: 'speaker_tone'
-      },
-      {
-        question: 'What organizational pattern is used to present the information?',
-        options: [
-          'Chronological order',
-          'Problem-solution format',
+          'In time order',
+          'Problem and solution',
           'Compare and contrast',
           'Sequential steps or topics'
         ],
         correctAnswer: 'D',
-        explanation: 'Educational content typically follows a sequential or topical organization.',
+        explanation: 'Educational content typically follows a clear, step-by-step organization.',
         difficulty: 'medium',
         type: 'language_function'
       },
       {
-        question: 'Which learning strategy would be most effective for this type of content?',
+        question: 'What learning strategy works best for this content?',
         options: [
-          'Memorization and repetition',
-          'Active listening with note-taking',
-          'Translation to native language',
-          'Focus only on individual words'
+          'Just memorizing',
+          'Active listening with notes',
+          'Translation only',
+          'Focus on single words'
         ],
         correctAnswer: 'B',
-        explanation: 'Active listening with note-taking is most effective for educational video content.',
+        explanation: 'Active listening with note-taking works best for educational video content.',
         difficulty: 'medium',
         type: 'inference'
       },
       {
-        question: 'What makes this segment challenging for English learners?',
+        question: 'How does the speaker connect with the audience?',
         options: [
-          'Complex grammatical structures only',
-          'Fast speaking pace throughout',
-          'Technical vocabulary and concepts',
-          'Combination of various factors'
+          'Through questions only',
+          'Using examples',
+          'With formal language',
+          'Multiple connection methods'
         ],
         correctAnswer: 'D',
-        explanation: 'Educational content challenges learners through multiple linguistic and conceptual factors.',
-        difficulty: 'hard',
-        type: 'vocabulary_in_context'
-      },
-      {
-        question: 'How does the speaker engage with the audience?',
-        options: [
-          'Through direct questions only',
-          'Using examples and illustrations',
-          'With formal academic language',
-          'Multiple engagement strategies'
-        ],
-        correctAnswer: 'D',
-        explanation: 'Effective educators use various strategies to engage their audience.',
-        difficulty: 'medium',
-        type: 'language_function'
-      },
-      {
-        question: 'What cultural knowledge might enhance understanding of this content?',
-        options: [
-          'No cultural knowledge needed',
-          'Basic understanding of context',
-          'Deep cultural familiarity required',
-          'Varies with specific topics discussed'
-        ],
-        correctAnswer: 'D',
-        explanation: 'Cultural knowledge requirements vary depending on the specific content being discussed.',
-        difficulty: 'hard',
-        type: 'inference'
-      },
-      {
-        question: 'What listening skills are being developed through this segment?',
-        options: [
-          'Understanding main ideas only',
-          'Identifying specific details',
-          'Following logical connections',
-          'All of the above'
-        ],
-        correctAnswer: 'D',
-        explanation: 'Comprehensive listening involves multiple sub-skills working together.',
-        difficulty: 'easy',
-        type: 'specific_detail'
-      },
-      {
-        question: 'How can learners best prepare for similar content?',
-        options: [
-          'Focus on grammar rules only',
-          'Build relevant vocabulary first',
-          'Practice listening to similar materials',
-          'Combine multiple preparation strategies'
-        ],
-        correctAnswer: 'D',
-        explanation: 'Effective preparation involves multiple complementary strategies.',
+        explanation: 'Good educators use various strategies to connect with their audience.',
         difficulty: 'medium',
         type: 'language_function'
       }
     ]
 
-    // Generate 15 questions with unique IDs, cycling through base questions if needed
-    const questions: ConversationQuestion[] = Array.from({ length: 15 }, (_, index) => {
-      const baseQuestion = baseQuestions[index % baseQuestions.length]
-      return {
-        ...baseQuestion,
-        id: `q_${loop.id}_${index + 1}`,
-        timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
+    const hardQuestions: Omit<ConversationQuestion, 'id'>[] = [
+      {
+        question: 'What tone does the speaker use throughout this segment?',
+        options: [
+          'Formal and academic',
+          'Casual and friendly',
+          'Serious and authoritative',
+          'Varies with content'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational speakers often change their tone based on the content being discussed.',
+        difficulty: 'hard',
+        type: 'speaker_tone'
+      },
+      {
+        question: 'What makes this segment challenging for English learners?',
+        options: [
+          'Complex grammar only',
+          'Fast speaking pace',
+          'Technical vocabulary',
+          'Combination of factors'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Educational content challenges learners through multiple language and concept factors.',
+        difficulty: 'hard',
+        type: 'vocabulary_in_context'
+      },
+      {
+        question: 'What cultural knowledge might help understand this content?',
+        options: [
+          'No cultural knowledge needed',
+          'Basic understanding helpful',
+          'Deep cultural knowledge required',
+          'Depends on specific topics'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Cultural knowledge needs vary depending on the specific content being discussed.',
+        difficulty: 'hard',
+        type: 'inference'
+      },
+      {
+        question: 'How can learners best prepare for similar content?',
+        options: [
+          'Study grammar rules only',
+          'Build vocabulary first',
+          'Practice with similar materials',
+          'Use multiple preparation methods'
+        ],
+        correctAnswer: 'D',
+        explanation: 'Effective preparation involves combining multiple complementary strategies.',
+        difficulty: 'hard',
+        type: 'language_function'
       }
-    })
+    ]
+
+    // Select questions based on preset distribution
+    const selectedQuestions: ConversationQuestion[] = []
+    let questionId = 1
+
+    // Add easy questions
+    for (let i = 0; i < actualPreset.easy; i++) {
+      const baseQuestion = easyQuestions[i % easyQuestions.length]
+      selectedQuestions.push({
+        ...baseQuestion,
+        id: `q_${loop.id}_${questionId}`,
+        timestamp: loop.startTime + (questionId - 1) * (loop.endTime - loop.startTime) / totalQuestions
+      })
+      questionId++
+    }
+
+    // Add medium questions
+    for (let i = 0; i < actualPreset.medium; i++) {
+      const baseQuestion = mediumQuestions[i % mediumQuestions.length]
+      selectedQuestions.push({
+        ...baseQuestion,
+        id: `q_${loop.id}_${questionId}`,
+        timestamp: loop.startTime + (questionId - 1) * (loop.endTime - loop.startTime) / totalQuestions
+      })
+      questionId++
+    }
+
+    // Add hard questions
+    for (let i = 0; i < actualPreset.hard; i++) {
+      const baseQuestion = hardQuestions[i % hardQuestions.length]
+      selectedQuestions.push({
+        ...baseQuestion,
+        id: `q_${loop.id}_${questionId}`,
+        timestamp: loop.startTime + (questionId - 1) * (loop.endTime - loop.startTime) / totalQuestions
+      })
+      questionId++
+    }
 
     const duration = loop.endTime - loop.startTime
 
     return {
       loopId: loop.id,
-      questions,
+      questions: selectedQuestions,
       metadata: {
-        totalQuestions: 15,
+        totalQuestions: totalQuestions,
         analysisDate: new Date().toISOString(),
         generatedFromTranscript: !!transcript,
         transcriptLength: transcript?.length,
@@ -362,7 +409,13 @@ export class ConversationAnalysisService {
         transcriptLanguage: transcript ? 'en' : undefined,
         canRegenerateQuestions: true,
         videoAnalysis: true,
-        videoSegmentDuration: duration
+        videoSegmentDuration: duration,
+        preset: actualPreset,
+        actualDistribution: {
+          easy: actualPreset.easy,
+          medium: actualPreset.medium, 
+          hard: actualPreset.hard
+        }
       }
     }
   }

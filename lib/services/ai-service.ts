@@ -450,11 +450,20 @@ export class AIService extends ImprovedBaseService {
   /**
    * Generate conversation questions from transcript text
    */
-  async generateConversationQuestions(loop: any, transcript: string): Promise<any> {
+  async generateConversationQuestions(
+    loop: any, 
+    transcript: string, 
+    preset?: { easy: number; medium: number; hard: number }
+  ): Promise<any> {
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.conversationQuestions
 
-    const messages = PromptManager.buildMessages(template, { loop, transcript })
+    // Default distribution for backward compatibility
+    const defaultPreset = { easy: 4, medium: 7, hard: 4 }
+    const actualPreset = preset || defaultPreset
+    const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
+
+    const messages = PromptManager.buildMessages(template, { loop, transcript, preset: actualPreset })
     const config = PromptManager.getConfig(template)
 
     try {
@@ -466,8 +475,22 @@ export class AIService extends ImprovedBaseService {
         throw new Error('AI response missing questions array')
       }
 
+      // Validate we have the correct number of questions
+      const questions = parsedResponse.questions
+      if (questions.length !== totalQuestions) {
+        console.warn(`Expected ${totalQuestions} questions but got ${questions.length}. Adjusting...`)
+      }
+
+      // Validate difficulty distribution
+      const easyCount = questions.filter(q => q.difficulty === 'easy').length
+      const mediumCount = questions.filter(q => q.difficulty === 'medium').length
+      const hardCount = questions.filter(q => q.difficulty === 'hard').length
+
+      console.log(`Question distribution - Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}`)
+      console.log(`Expected distribution - Easy: ${actualPreset.easy}, Medium: ${actualPreset.medium}, Hard: ${actualPreset.hard}`)
+
       return {
-        questions: parsedResponse.questions.slice(0, 15).map((q: any, index: number) => {
+        questions: questions.slice(0, totalQuestions).map((q: any, index: number) => {
           // Validate question structure
           if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
             throw new Error(`Invalid question structure at index ${index}`)
@@ -490,9 +513,11 @@ export class AIService extends ImprovedBaseService {
             ].includes(q.type)
               ? q.type
               : 'main_idea',
-            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / 15
+            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / totalQuestions
           }
-        })
+        }),
+        preset: actualPreset,
+        actualDistribution: { easy: easyCount, medium: mediumCount, hard: hardCount }
       }
     } catch (error) {
       throw new Error(`Conversation questions generation failed: ${error.message}`)
