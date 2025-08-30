@@ -1,17 +1,11 @@
 import { useState } from 'react'
-import {
-  AlertTriangle,
-  Loader2,
-  RefreshCw,
-  Repeat,
-  Search
-} from 'lucide-react'
+import { AlertTriangle, Loader2, RefreshCw, Repeat, Search } from 'lucide-react'
+import type { ConversationLoopIntegrationService } from '../../lib/services/conversation-loop-integration-service'
+import type { SavedLoop } from '../../lib/types/fluent-flow-types'
 import { LoopCard } from '../loop/loop-card'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Input } from '../ui/input'
-import type { SavedLoop } from '../../lib/types/fluent-flow-types'
-import type { ConversationLoopIntegrationService } from '../../lib/services/conversation-loop-integration-service'
 
 interface LoopsTabProps {
   savedLoops: SavedLoop[]
@@ -52,25 +46,25 @@ export function LoopsTab({
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader className="pb-3">
+        <CardHeader className="p-3">
           <div className="flex items-center gap-3">
             <CardDescription className="flex-shrink-0">
               {filteredLoops.length} of {savedLoops.length} loops
             </CardDescription>
-            
+
             {savedLoops.length > 0 && (
-              <div className="relative flex-1 min-w-0">
+              <div className="relative min-w-0 flex-1">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
                 <Input
                   placeholder="Search loops..."
                   value={loopFilter}
                   onChange={e => setLoopFilter(e.target.value)}
-                  className="pl-10 h-8"
+                  className="h-8 pl-10"
                 />
               </div>
             )}
-            
-            <div className="flex gap-1 flex-shrink-0">
+
+            <div className="flex flex-shrink-0 gap-1">
               <Button
                 variant="outline"
                 size="sm"
