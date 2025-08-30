@@ -54,5 +54,17 @@ export const queryKeys = {
     all: ['loops'] as const,
     bySession: (sessionId: string) => ['loops', 'session', sessionId] as const,
     byId: (loopId: string) => ['loops', 'id', loopId] as const,
+  },
+  vocabulary: {
+    all: ['vocabulary'] as const,
+    deck: (limit?: number) => ['vocabulary', 'deck', limit] as const,
+    byId: (id: string) => ['vocabulary', 'id', id] as const,
+  },
+  contextualLearning: {
+    all: ['contextual-learning'] as const,
+    contextualData: (wordId: string, wordText: string) => ['contextual-learning', 'contextual-data', wordId, wordText] as const,
+    examples: (wordId: string, wordText: string) => ['contextual-learning', 'examples', wordId, wordText] as const,
+    collocations: (wordId: string, wordText: string) => ['contextual-learning', 'collocations', wordId, wordText] as const,
+    contexts: (wordId: string, wordText: string) => ['contextual-learning', 'contexts', wordId, wordText] as const,
   }
 } as const

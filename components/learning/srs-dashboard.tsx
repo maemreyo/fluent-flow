@@ -4,10 +4,8 @@ import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { srsService, type SRSStats } from '../../lib/services/srs-service'
 
-// Import the new components
-import { LearningStreak } from '../srs/learning-streak'
-import { GitHubStyleHeatmap } from '../srs/github-style-heatmap'
-import { LearningOverview } from '../srs/learning-overview'
+// Import the new comprehensive component
+import { ComprehensiveLearningStats } from '../srs/comprehensive-learning-stats'
 import { TodaysReviews } from '../srs/todays-reviews'
 
 interface SRSDashboardProps {
@@ -37,7 +35,7 @@ export const SRSDashboard: React.FC<SRSDashboardProps> = ({
     try {
       const [srsStats, activityData] = await Promise.all([
         srsService.getStats(),
-        srsService.getActivityData(100) // Changed from 14 to 100 days
+        srsService.getActivityData(365) // Changed to 365 days (1 year)
       ])
       
       setStats(srsStats)
@@ -87,14 +85,13 @@ export const SRSDashboard: React.FC<SRSDashboardProps> = ({
         onViewAllCards={onViewAllCards}
       />
 
-      {/* Learning Stats Overview */}
-      <LearningOverview stats={stats} />
-
-      {/* Learning Streak */}
-      <LearningStreak stats={stats} />
-
-      {/* GitHub-style Activity Heatmap - Now shows 100 days */}
-      <GitHubStyleHeatmap activityData={activityData} isLoading={isLoading} showExtended={true} />
+      {/* Comprehensive Learning Stats - Combined component replaces separate components */}
+      <ComprehensiveLearningStats
+        stats={stats}
+        activityData={activityData}
+        isLoading={isLoading}
+        onViewAllCards={onViewAllCards}
+      />
     </div>
   )
 }

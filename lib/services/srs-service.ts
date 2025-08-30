@@ -245,14 +245,46 @@ export class SRSService {
     // Try to load existing session first
     const savedSession = await this.loadSession()
     if (savedSession && savedSession.cards.length > 0) {
-      // Validate that we haven't completed all cards
+      // Check if we haven't completed all cards in the current session
       if (savedSession.currentIndex < savedSession.cards.length) {
+        console.log('Resuming existing session at card', savedSession.currentIndex + 1, 'of', savedSession.cards.length)
         return savedSession
+      } else {
+        // Session is complete, clear it
+        console.log('Previous session completed, clearing and starting new session')
+        this.clearSession()
       }
     }
     
-    // Start new session if no valid saved session
-    return this.startReviewSession(maxCards)
+    // Check if there are cards available for a new session
+    const dueCards = await this.getDueCards(Math.floor(maxCards * 0.8))
+    const newCards = await this.getNewCards(Math.floor(maxCards * 0.2))
+    const availableCards = [...dueCards, ...newCards]
+    
+    console.log('Available cards for new session:', {
+      dueCards: dueCards.length,
+      newCards: newCards.length,
+      total: availableCards.length
+    })
+    
+    // Start new session if there are cards available
+    if (availableCards.length > 0) {
+      return this.startReviewSession(maxCards)
+    }
+    
+    // If no cards available, return an empty session (this should be handled by the UI)
+    return {
+      cards: [],
+      currentIndex: 0,
+      sessionStats: {
+        reviewed: 0,
+        correct: 0,
+        again: 0,
+        hard: 0,
+        good: 0,
+        easy: 0
+      }
+    }
   }
 
   // Helper methods for localStorage operations
@@ -326,13 +358,12 @@ export class SRSService {
   async getStats(): Promise<SRSStats> {
     try {
       const allItems = await userVocabularyService.getUserVocabularyDeck({ limit: 1000 })
-
-      const now = new Date()
-      const today = now.toISOString().split('T')[0]
-
+      
+      // Use the same logic as getItemsDueForReview for consistency
+      const now = new Date().toISOString()
+      
       const dueToday = allItems.filter(item => {
-        const reviewDate = new Date(item.nextReviewDate).toISOString().split('T')[0]
-        return reviewDate <= today && ['learning', 'review'].includes(item.learningStatus)
+        return item.nextReviewDate <= now && ['learning', 'review'].includes(item.learningStatus)
       }).length
 
       const statusCounts = {

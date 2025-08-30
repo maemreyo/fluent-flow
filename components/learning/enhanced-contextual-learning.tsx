@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import {
   BookOpen,
   Brain,
@@ -10,15 +11,23 @@ import {
   Volume2
 } from 'lucide-react'
 import {
-  contextualLearningAIService,
   type CollocationPattern,
-  type LoopContext,
   type UsageExample
 } from '../../lib/services/contextual-learning-ai-service'
 import {
-  userVocabularyService,
   type UserVocabularyItem
 } from '../../lib/services/user-vocabulary-service'
+import { useVocabularyDeck } from '../../lib/hooks/use-vocabulary-queries'
+import {
+  useContextualData,
+  useGenerateExamples,
+  useGenerateCollocations,
+  useGenerateContexts,
+  useExamples,
+  useCollocations,
+  useContexts
+} from '../../lib/hooks/use-contextual-learning-queries'
+import { queryKeys } from '../../lib/services/query-client'
 import { cn } from '../../lib/utils'
 
 interface EnhancedContextualLearningProps {
@@ -26,40 +35,31 @@ interface EnhancedContextualLearningProps {
 }
 
 export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProps> = () => {
-  const [vocabularyItems, setVocabularyItems] = useState<UserVocabularyItem[]>([])
   const [selectedWord, setSelectedWord] = useState<UserVocabularyItem | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('examples') // Changed default to 'examples'
+  
+  // React Query client
+  const queryClient = useQueryClient()
 
-  const [aiContent, setAiContent] = useState<{
-    examples: UsageExample[]
-    collocations: CollocationPattern[]
-    contexts: LoopContext[]
-  }>({ examples: [], collocations: [], contexts: [] })
-  const [generationState, setGenerationState] = useState({
-    examples: false,
-    collocations: false,
-    contexts: false
-  })
+  // React Query hooks
+  const { data: vocabularyItems = [], isLoading } = useVocabularyDeck(100)
+  const { data: contextualData } = useContextualData(selectedWord)
+  const { data: examples = [] } = useExamples(selectedWord)
+  const { data: collocations = [] } = useCollocations(selectedWord)
+  const { data: contexts = [] } = useContexts(selectedWord)
+  
+  // Mutation hooks for generating content
+  const generateExamplesMutation = useGenerateExamples()
+  const generateCollocationsMutation = useGenerateCollocations()
+  const generateContextsMutation = useGenerateContexts()
 
+  // Auto-select first word when vocabulary loads
   useEffect(() => {
-    const loadVocabulary = async () => {
-      setIsLoading(true)
-      try {
-        const items = await userVocabularyService.getUserVocabularyDeck({ limit: 100 })
-        setVocabularyItems(items)
-        if (items.length > 0) {
-          handleWordSelect(items[0])
-        }
-      } catch (error) {
-        console.error('Failed to load vocabulary:', error)
-      } finally {
-        setIsLoading(false)
-      }
+    if (vocabularyItems.length > 0 && !selectedWord) {
+      handleWordSelect(vocabularyItems[0])
     }
-    loadVocabulary()
-  }, [])
+  }, [vocabularyItems, selectedWord])
 
   const filteredVocabulary = vocabularyItems.filter(
     item =>
@@ -67,78 +67,55 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
       item.definition.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleWordSelect = async (item: UserVocabularyItem) => {
-    setSelectedWord(item)
-    setActiveTab('examples') // Always start with examples tab
-
-    // Clear current content
-    setAiContent({ examples: [], collocations: [], contexts: [] })
-
-    // Try to load cached contextual data and show examples immediately
-    try {
-      const cachedData = await contextualLearningAIService.getContextualDataForSRS(
-        item,
-        undefined,
-        {
-          generateIfMissing: false, // Don't generate automatically, just load cached data
-          maxExamples: 6,
-          maxCollocations: 8
+  const generateContent = useCallback(
+    (type: 'examples' | 'collocations' | 'contexts') => {
+      if (!selectedWord) return
+      
+      if (type === 'examples') {
+        generateExamplesMutation.mutate({ vocabularyItem: selectedWord, maxExamples: 6 })
+      } else if (type === 'collocations') {
+        generateCollocationsMutation.mutate({ vocabularyItem: selectedWord, maxCollocations: 8 })
+      } else if (type === 'contexts') {
+        generateContextsMutation.mutate({ vocabularyItem: selectedWord, maxContexts: 5 })
+      }
+      setActiveTab(type)
+    },
+    [selectedWord, generateExamplesMutation, generateCollocationsMutation, generateContextsMutation]
+  )
+  
+  // Handle contextual data loading and populate cache
+  useEffect(() => {
+    if (contextualData && selectedWord && queryClient) {
+      if (contextualData.hasEnhancedData) {
+        // Set examples data
+        if (contextualData.examples.length > 0) {
+          queryClient.setQueryData(
+            queryKeys.contextualLearning.examples(selectedWord.id, selectedWord.text),
+            contextualData.examples
+          )
         }
-      )
-
-      console.log('Cached data result:', {
-        hasEnhancedData: cachedData.hasEnhancedData,
-        exampleCount: cachedData.examples.length,
-        collocationCount: cachedData.collocations.length,
-        examples: cachedData.examples,
-        collocations: cachedData.collocations
-      })
-
-      if (cachedData.hasEnhancedData) {
-        setAiContent(prev => ({
-          ...prev,
-          examples: cachedData.examples,
-          collocations: cachedData.collocations
-        }))
-        console.log('Loaded cached contextual data for:', item.text)
+        
+        // Set collocations data
+        if (contextualData.collocations.length > 0) {
+          queryClient.setQueryData(
+            queryKeys.contextualLearning.collocations(selectedWord.id, selectedWord.text),
+            contextualData.collocations
+          )
+        }
+        console.log('Loaded cached contextual data from database for:', selectedWord.text)
       } else {
-        // If no cached data, automatically generate examples
-        console.log('No enhanced data available for:', item.text, '- generating examples')
+        console.log('No enhanced data available for:', selectedWord.text, '- generating examples')
         generateContent('examples')
       }
-    } catch (error) {
-      console.error('Failed to load cached contextual data:', error)
-      // On error, also generate examples
-      generateContent('examples')
     }
-  }
+  }, [contextualData, selectedWord, queryClient, generateContent])
 
-  const generateContent = useCallback(
-    async (type: 'examples' | 'collocations' | 'contexts') => {
-      if (!selectedWord) return
-      setGenerationState(prev => ({ ...prev, [type]: true }))
-      try {
-        if (type === 'examples') {
-          // Use the contextual learning service which handles caching internally
-          const result = await contextualLearningAIService.generateUsageExamples(selectedWord, 6)
-          setAiContent(prev => ({ ...prev, examples: result }))
-        } else if (type === 'collocations') {
-          // Use the contextual learning service which handles caching internally
-          const result = await contextualLearningAIService.generateCollocations(selectedWord, 8)
-          setAiContent(prev => ({ ...prev, collocations: result }))
-        } else if (type === 'contexts') {
-          const result = await contextualLearningAIService.findSimilarContexts(selectedWord, 5)
-          setAiContent(prev => ({ ...prev, contexts: result }))
-        }
-        setActiveTab(type)
-      } catch (error) {
-        console.error(`Failed to generate ${type}:`, error)
-      } finally {
-        setGenerationState(prev => ({ ...prev, [type]: false }))
-      }
-    },
-    [selectedWord]
-  )
+  const handleWordSelect = (item: UserVocabularyItem) => {
+    setSelectedWord(item)
+    setActiveTab('examples') // Always start with examples tab
+    
+    console.log('Selected word:', item.text)
+  }
 
   const speakText = useCallback((text: string) => {
     if ('speechSynthesis' in window) {
@@ -316,10 +293,10 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                     <GeneratedContentContainer
                       title="Usage Examples"
                       onGenerate={() => generateContent('examples')}
-                      isLoading={generationState.examples}
-                      hasContent={aiContent.examples.length > 0}
+                      isLoading={generateExamplesMutation.isPending}
+                      hasContent={examples.length > 0}
                     >
-                      {aiContent.examples.map(ex => (
+                      {examples.map((ex: UsageExample) => (
                         <ContentItem
                           key={ex.id}
                           text={ex.sentence}
@@ -333,10 +310,10 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                     <GeneratedContentContainer
                       title="Word Combinations"
                       onGenerate={() => generateContent('collocations')}
-                      isLoading={generationState.collocations}
-                      hasContent={aiContent.collocations.length > 0}
+                      isLoading={generateCollocationsMutation.isPending}
+                      hasContent={collocations.length > 0}
                     >
-                      {aiContent.collocations.map(col => (
+                      {collocations.map((col: CollocationPattern) => (
                         <div key={col.id} className="rounded-2xl bg-gradient-to-r from-white/50 to-white/30 backdrop-blur-sm border border-white/40 p-6 shadow-lg">
                           <div className="mb-4 flex items-center justify-between">
                             <h4 className="font-bold text-violet-700 text-lg">{col.pattern}</h4>
@@ -350,13 +327,12 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                             </div>
                           </div>
                           <div className="space-y-3">
-                            {col.examples.map((ex, i) => (
+                            {col.examples.map((ex: string, i: number) => (
                               <ContentItem
                                 key={i}
                                 text={`"${ex}"`}
                                 onSpeak={() => speakText(ex)}
                                 onCopy={() => navigator.clipboard.writeText(ex)}
-                                isExample
                               />
                             ))}
                           </div>
@@ -430,7 +406,6 @@ const ContentItem: React.FC<{
   text: string
   onSpeak: () => void
   onCopy: () => void
-  isExample?: boolean
 }> = ({ text, onSpeak, onCopy }) => (
   <div className="rounded-2xl bg-gradient-to-r from-white/40 to-white/20 backdrop-blur-sm border border-white/30 p-4 shadow-md">
     <div className="flex items-center justify-between">
