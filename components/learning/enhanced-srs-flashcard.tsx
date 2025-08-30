@@ -12,15 +12,13 @@ import {
   BookOpen,
   MessageSquare,
   Lightbulb,
-  X
+  X,
+  Loader2
 } from 'lucide-react'
 import { cn } from '../../lib/utils'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
 import { Progress } from '../ui/progress'
-import { Separator } from '../ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../ui/tabs'
 import { srsService, type SRSRating, type ReviewSession } from '../../lib/services/srs-service'
 import { contextualLearningAIService, type UsageExample, type CollocationPattern } from '../../lib/services/contextual-learning-ai-service'
 import type { UserVocabularyItem } from '../../lib/services/user-vocabulary-service'
@@ -33,12 +31,12 @@ interface EnhancedSRSFlashcardProps {
 }
 
 const RATING_CONFIG = {
-  0: { label: 'Again', description: 'Complete blackout', color: 'bg-red-500 hover:bg-red-600 text-white', icon: XCircle },
-  1: { label: 'Again', description: 'Incorrect response', color: 'bg-red-500 hover:bg-red-600 text-white', icon: XCircle },
-  2: { label: 'Again', description: 'Incorrect but close', color: 'bg-red-500 hover:bg-red-600 text-white', icon: XCircle },
-  3: { label: 'Hard', description: 'Correct but difficult', color: 'bg-orange-500 hover:bg-orange-600 text-white', icon: AlertCircle },
-  4: { label: 'Good', description: 'Correct with effort', color: 'bg-green-500 hover:bg-green-600 text-white', icon: CheckCircle },
-  5: { label: 'Easy', description: 'Perfect recall', color: 'bg-blue-500 hover:bg-blue-600 text-white', icon: Target }
+  0: { label: 'Again', description: 'Complete blackout', color: 'from-red-500 to-red-600', icon: XCircle },
+  1: { label: 'Again', description: 'Incorrect response', color: 'from-red-500 to-red-600', icon: XCircle },
+  2: { label: 'Again', description: 'Incorrect but close', color: 'from-red-500 to-red-600', icon: XCircle },
+  3: { label: 'Hard', description: 'Correct but difficult', color: 'from-orange-500 to-orange-600', icon: AlertCircle },
+  4: { label: 'Good', description: 'Correct with effort', color: 'from-green-500 to-green-600', icon: CheckCircle },
+  5: { label: 'Easy', description: 'Perfect recall', color: 'from-blue-500 to-blue-600', icon: Target }
 }
 
 export const EnhancedSRSFlashcard: React.FC<EnhancedSRSFlashcardProps> = ({
@@ -99,14 +97,10 @@ export const EnhancedSRSFlashcard: React.FC<EnhancedSRSFlashcardProps> = ({
       if (result.generated) {
         console.log('Generated fresh contextual data for:', card.text)
       } else if (result.hasEnhancedData) {
-        console.log('Loaded cached contextual data for:', card.text)
-      } else {
-        console.log('Using basic data for:', card.text)
+        console.log('Using cached contextual data for:', card.text)
       }
     } catch (error) {
-      console.error('Failed to load contextual learning:', error)
-      setExamples([])
-      setCollocations([])
+      console.error('Failed to load contextual learning data:', error)
     } finally {
       setLoadingContextual(false)
     }
@@ -117,82 +111,43 @@ export const EnhancedSRSFlashcard: React.FC<EnhancedSRSFlashcardProps> = ({
   }
 
   const handleRating = async (rating: SRSRating) => {
-    if (!currentCard || !session || isProcessing) return
-
+    if (isProcessing || !session || !currentCard) return
+    
     setIsProcessing(true)
     setSelectedRating(rating)
-
+    
     try {
-      // Process the review with SRS algorithm
-      await srsService.processReview(currentCard.id, rating)
+      // Process the current card
+      const updatedSession = await srsService.processCard(session.id, currentCard.id, rating)
       
       // Update session stats
-      const updatedStats = { ...session.sessionStats }
-      updatedStats.reviewed += 1
+      onSessionStats?.(updatedSession.sessionStats)
       
-      if (rating === 0 || rating === 1 || rating === 2) {
-        updatedStats.again += 1
-      } else if (rating === 3) {
-        updatedStats.hard += 1
-      } else if (rating === 4) {
-        updatedStats.good += 1
-      } else if (rating === 5) {
-        updatedStats.easy += 1
+      // Move to next card or complete session
+      if (updatedSession.currentIndex < updatedSession.cards.length) {
+        const nextCard = updatedSession.cards[updatedSession.currentIndex]
+        setCurrentCard(nextCard)
+        setSession(updatedSession)
+        setIsFlipped(false)
+        setSelectedRating(null)
+        await loadContextualLearning(nextCard)
+      } else {
+        // Session completed
+        console.log('SRS Review session completed!')
+        await srsService.completeSession(session.id)
+        onComplete?.()
       }
-      
-      if (rating >= 3) {
-        updatedStats.correct += 1
-      }
-
-      const updatedSession = {
-        ...session,
-        currentIndex: session.currentIndex + 1,
-        sessionStats: updatedStats
-      }
-      
-      setSession(updatedSession)
-      onSessionStats?.(updatedStats)
-
-      // Save session state for persistence
-      srsService.saveSession(updatedSession)
-
-      // Short delay to show the rating
-      setTimeout(() => {
-        handleNextCard(updatedSession)
-      }, 1000)
-
     } catch (error) {
-      console.error('Failed to process rating:', error)
+      console.error('Failed to process SRS rating:', error)
+    } finally {
+      setIsProcessing(false)
     }
   }
 
-  const handleNextCard = async (updatedSession: ReviewSession) => {
-    if (updatedSession.currentIndex >= updatedSession.cards.length) {
-      // Session complete - clear saved session
-      srsService.clearSession()
-      onComplete?.()
-      return
-    }
-
-    const nextCard = updatedSession.cards[updatedSession.currentIndex]
-    setCurrentCard(nextCard)
+  const handleReset = async () => {
+    await initializeSession()
     setIsFlipped(false)
     setSelectedRating(null)
-    setIsProcessing(false)
-    
-    // Load contextual learning for next card
-    await loadContextualLearning(nextCard)
-  }
-
-  const handleReset = () => {
-    // Clear saved session when resetting
-    srsService.clearSession()
-    initializeSession()
-    setIsFlipped(false)
-    setSelectedRating(null)
-    setIsProcessing(false)
-    setExamples([])
-    setCollocations([])
   }
 
   const handlePlayAudio = (text: string) => {
@@ -210,32 +165,41 @@ export const EnhancedSRSFlashcard: React.FC<EnhancedSRSFlashcardProps> = ({
 
   if (isLoading) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <Brain className="h-8 w-8 animate-pulse mx-auto mb-4 text-blue-500" />
-            <p className="text-muted-foreground">Starting your SRS review session...</p>
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-white/20 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-center py-16">
+            <div className="space-y-4 text-center">
+              <Loader2 className="mx-auto h-12 w-12 animate-spin text-violet-500" />
+              <p className="text-gray-600 text-lg">Starting your SRS review session...</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
   if (!session || !currentCard) {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardContent className="flex items-center justify-center py-12">
-          <div className="text-center">
-            <CheckCircle className="h-8 w-8 mx-auto mb-4 text-green-500" />
-            <p className="text-lg font-medium mb-2">Great work!</p>
-            <p className="text-muted-foreground">No cards due for review right now.</p>
-            <Button onClick={initializeSession} className="mt-4">
-              <RotateCcw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
+      <div className="w-full max-w-4xl mx-auto p-4">
+        <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-white/20 shadow-2xl overflow-hidden">
+          <div className="flex items-center justify-center py-16">
+            <div className="space-y-4 text-center">
+              <CheckCircle className="mx-auto h-16 w-16 text-emerald-500" />
+              <h2 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-blue-600 bg-clip-text text-transparent">
+                Great work! 🎉
+              </h2>
+              <p className="text-gray-600 text-lg">No cards due for review right now.</p>
+              <Button
+                onClick={initializeSession}
+                className="bg-gradient-to-r from-violet-500 to-emerald-500 text-white px-6 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     )
   }
 
@@ -243,234 +207,185 @@ export const EnhancedSRSFlashcard: React.FC<EnhancedSRSFlashcardProps> = ({
   const { sessionStats } = session
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
-      {/* Progress Header */}
-      <Card>
-        <CardContent className="pt-6">
+    <div className="w-full max-w-4xl mx-auto space-y-6 p-4 min-h-screen bg-gradient-to-br from-violet-50 via-sky-50 to-emerald-50">
+      {/* Progress Header - Modern Glass Design */}
+      <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-white/20 shadow-2xl overflow-hidden">
+        <div className="p-6 bg-gradient-to-r from-violet-500/10 via-blue-500/10 to-emerald-500/10">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-sm font-medium">
-                Card {session.currentIndex + 1} of {session.cards.length}
-              </p>
-              <p className="text-xs text-muted-foreground">
+              <h2 className="text-xl font-bold bg-gradient-to-r from-violet-600 to-emerald-600 bg-clip-text text-transparent">
+                SRS Review Session
+              </h2>
+              <p className="text-gray-600 text-sm">
+                Card {session.currentIndex + 1} of {session.cards.length} • 
                 {sessionStats.correct}/{sessionStats.reviewed} correct
               </p>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={handleReset}>
-                <RotateCcw className="h-4 w-4 mr-2" />
-                Reset
-              </Button>
-              <Button variant="ghost" size="sm" onClick={onExit}>
-                <X className="h-4 w-4 mr-2" />
-                Exit
-              </Button>
+              <button
+                onClick={handleReset}
+                className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all duration-300"
+              >
+                <RotateCcw className="h-4 w-4 text-violet-600" />
+              </button>
+              <button
+                onClick={onExit}
+                className="h-10 w-10 rounded-xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all duration-300"
+              >
+                <X className="h-4 w-4 text-gray-600" />
+              </button>
             </div>
           </div>
-          <Progress value={progressPercentage} className="h-2" />
-        </CardContent>
-      </Card>
+          <div className="relative">
+            <Progress value={progressPercentage} className="h-3 bg-white/30 rounded-full overflow-hidden" />
+            <div className="absolute inset-0 bg-gradient-to-r from-violet-500/20 to-emerald-500/20 rounded-full" 
+                 style={{ width: `${progressPercentage}%` }} />
+          </div>
+        </div>
+      </div>
 
-      {/* Main Flashcard */}
-      <Card className="min-h-[400px]">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-2xl font-bold">{currentCard.text}</CardTitle>
-              <CardDescription className="flex items-center gap-2 mt-2">
+      {/* Main Flashcard - Modern Glass Design */}
+      <div className="rounded-3xl bg-white/70 backdrop-blur-sm border border-white/20 shadow-2xl overflow-hidden min-h-[500px]">
+        <div className="p-8 bg-gradient-to-r from-violet-500/5 via-blue-500/5 to-emerald-500/5">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-violet-600 to-emerald-600 bg-clip-text text-transparent mb-3">
+                {currentCard.text}
+              </h1>
+              <div className="flex items-center gap-3">
                 {currentCard.partOfSpeech && (
-                  <Badge variant="outline">{currentCard.partOfSpeech}</Badge>
+                  <span className="px-3 py-1 rounded-xl bg-violet-100/70 text-violet-700 text-sm font-medium backdrop-blur-sm border border-violet-200/50">
+                    {currentCard.partOfSpeech}
+                  </span>
                 )}
-                <Badge variant="secondary">{currentCard.difficulty}</Badge>
-                <Badge variant="outline">{currentCard.learningStatus}</Badge>
-              </CardDescription>
+                <span className={cn(
+                  'px-3 py-1 rounded-xl text-sm font-medium backdrop-blur-sm border',
+                  currentCard.difficulty === 'beginner' && "bg-green-100/70 text-green-700 border-green-200/50",
+                  currentCard.difficulty === 'intermediate' && "bg-blue-100/70 text-blue-700 border-blue-200/50",
+                  currentCard.difficulty === 'advanced' && "bg-purple-100/70 text-purple-700 border-purple-200/50"
+                )}>
+                  {currentCard.difficulty}
+                </span>
+                <span className="px-3 py-1 rounded-xl bg-emerald-100/70 text-emerald-700 text-sm font-medium backdrop-blur-sm border border-emerald-200/50">
+                  {currentCard.learningStatus}
+                </span>
+              </div>
             </div>
             {isSpeechSupported && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
+              <button
                 onClick={() => handlePlayAudio(currentCard.text)}
+                className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all duration-300"
               >
-                <Volume2 className="h-4 w-4" />
-              </Button>
+                <Volume2 className="h-5 w-5 text-violet-600" />
+              </button>
             )}
           </div>
-        </CardHeader>
 
-        <CardContent>
           {!isFlipped ? (
-            /* Front of card */
-            <div className="text-center py-8">
-              <div className="mb-6">
-                <h3 className="text-lg font-medium mb-2">Do you remember this word?</h3>
-                <p className="text-muted-foreground">Try to recall the meaning and usage</p>
+            // Front of card
+            <div className="space-y-6">
+              <div className="text-center py-12">
+                <Brain className="mx-auto h-16 w-16 text-violet-500 mb-4" />
+                <p className="text-gray-600 text-lg mb-8">Think about the definition and example usage</p>
+                <Button
+                  onClick={handleFlipCard}
+                  className="bg-gradient-to-r from-violet-500 to-blue-500 text-white px-8 py-3 rounded-2xl font-semibold shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Eye className="h-5 w-5 mr-2" />
+                  Show Answer
+                </Button>
               </div>
-              
-              <Button onClick={handleFlipCard} size="lg" className="mt-4">
-                <Eye className="h-4 w-4 mr-2" />
-                Show Answer
-              </Button>
             </div>
           ) : (
-            /* Back of card with contextual learning */
+            // Back of card
             <div className="space-y-6">
               {/* Definition */}
-              <div>
-                <h3 className="font-medium text-lg mb-2">Definition</h3>
-                <p className="text-gray-700">{currentCard.definition}</p>
+              <div className="rounded-2xl bg-white/50 backdrop-blur-sm border border-white/30 p-6">
+                <h3 className="font-semibold text-violet-700 text-lg mb-3 flex items-center gap-2">
+                  <BookOpen className="h-5 w-5" />
+                  Definition
+                </h3>
+                <p className="text-gray-700 text-lg leading-relaxed">{currentCard.definition}</p>
                 {currentCard.example && (
-                  <div className="mt-2 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-sm italic">{currentCard.example}</p>
+                  <div className="mt-4 p-4 rounded-xl bg-violet-50/50 border border-violet-200/30">
+                    <p className="italic text-violet-700">"{currentCard.example}"</p>
                   </div>
                 )}
               </div>
 
-              {/* Enhanced content with tabs */}
-              <Tabs defaultValue="examples" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="examples" className="flex items-center gap-2">
-                    <MessageSquare className="h-4 w-4" />
-                    Examples {examples.length > 0 && `(${examples.length})`}
-                  </TabsTrigger>
-                  <TabsTrigger value="collocations" className="flex items-center gap-2">
-                    <Lightbulb className="h-4 w-4" />
-                    Collocations {collocations.length > 0 && `(${collocations.length})`}
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="examples" className="mt-4">
-                  {loadingContextual ? (
-                    <div className="flex items-center justify-center py-6">
-                      <Brain className="h-5 w-5 animate-pulse mr-2" />
-                      <span className="text-sm text-muted-foreground">Loading examples...</span>
-                    </div>
-                  ) : examples.length > 0 ? (
+              {/* Examples and Collocations */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Examples */}
+                {examples.length > 0 && (
+                  <div className="rounded-2xl bg-white/50 backdrop-blur-sm border border-white/30 p-6">
+                    <h3 className="font-semibold text-blue-700 text-lg mb-3 flex items-center gap-2">
+                      <Lightbulb className="h-5 w-5" />
+                      Usage Examples
+                    </h3>
                     <div className="space-y-3">
-                      {examples.slice(0, 3).map((example) => (
-                        <div key={example.id} className="p-3 bg-blue-50 rounded-lg border-l-4 border-blue-500">
-                          <p className="text-sm font-medium text-gray-800">{example.sentence}</p>
-                          <div className="flex items-center gap-2 mt-2">
-                            <Badge variant="outline" className="text-xs">{example.context}</Badge>
-                            {example.domain && (
-                              <Badge variant="secondary" className="text-xs">{example.domain}</Badge>
-                            )}
-                          </div>
+                      {examples.slice(0, 3).map((example, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-blue-50/50 border border-blue-200/30">
+                          <p className="text-blue-700 text-sm">{example.sentence}</p>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <BookOpen className="h-6 w-6 mx-auto mb-2" />
-                      <p className="text-sm">No cached examples available</p>
-                    </div>
-                  )}
-                </TabsContent>
+                  </div>
+                )}
 
-                <TabsContent value="collocations" className="mt-4">
-                  {loadingContextual ? (
-                    <div className="flex items-center justify-center py-6">
-                      <Brain className="h-5 w-5 animate-pulse mr-2" />
-                      <span className="text-sm text-muted-foreground">Loading collocations...</span>
-                    </div>
-                  ) : collocations.length > 0 ? (
+                {/* Collocations */}
+                {collocations.length > 0 && (
+                  <div className="rounded-2xl bg-white/50 backdrop-blur-sm border border-white/30 p-6">
+                    <h3 className="font-semibold text-emerald-700 text-lg mb-3 flex items-center gap-2">
+                      <MessageSquare className="h-5 w-5" />
+                      Word combinations
+                    </h3>
                     <div className="space-y-3">
-                      {collocations.slice(0, 4).map((collocation) => (
-                        <div key={collocation.id} className="p-3 bg-green-50 rounded-lg">
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-sm font-medium">{collocation.pattern}</h4>
-                            <div className="flex gap-1">
-                              <Badge 
-                                variant={collocation.frequency === 'common' ? 'default' : 'secondary'} 
-                                className="text-xs"
-                              >
-                                {collocation.frequency}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">{collocation.type}</Badge>
-                            </div>
-                          </div>
-                          <div className="space-y-1">
-                            {collocation.examples.slice(0, 2).map((example, idx) => (
-                              <p key={idx} className="text-xs text-gray-600 italic">• {example}</p>
-                            ))}
-                          </div>
+                      {collocations.slice(0, 3).map((collocation, idx) => (
+                        <div key={idx} className="p-3 rounded-xl bg-emerald-50/50 border border-emerald-200/30">
+                          <p className="text-emerald-700 text-sm font-medium">{collocation.pattern}</p>
+                          <p className="text-emerald-600 text-xs mt-1">{collocation.frequency}</p>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <div className="text-center py-6 text-muted-foreground">
-                      <Lightbulb className="h-6 w-6 mx-auto mb-2" />
-                      <p className="text-sm">No cached collocations available</p>
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-
-              <Separator />
+                  </div>
+                )}
+              </div>
 
               {/* Rating Buttons */}
-              <div className="space-y-3">
-                <h3 className="font-medium">How well did you know this word?</h3>
-                <div className="grid grid-cols-2 gap-2">
-                  {Object.entries(RATING_CONFIG).map(([rating, config]) => {
-                    const isSelected = selectedRating === parseInt(rating)
-                    const Icon = config.icon
-                    
-                    return (
-                      <Button
-                        key={rating}
-                        onClick={() => handleRating(parseInt(rating) as SRSRating)}
-                        disabled={isProcessing}
-                        className={cn(
-                          'flex flex-col items-center justify-center h-16 transition-all',
-                          isSelected ? config.color : 'border-2 hover:border-gray-400',
-                          isProcessing && !isSelected && 'opacity-50'
-                        )}
-                        variant={isSelected ? "default" : "outline"}
-                      >
-                        <Icon className="h-4 w-4 mb-1" />
-                        <span className="text-xs font-medium">{config.label}</span>
-                        <span className="text-xs opacity-75">{config.description}</span>
-                      </Button>
-                    )
-                  })}
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-6 border-t border-white/20">
+                {Object.entries(RATING_CONFIG).map(([rating, config]) => {
+                  const Icon = config.icon
+                  return (
+                    <button
+                      key={rating}
+                      onClick={() => handleRating(Number(rating) as SRSRating)}
+                      disabled={isProcessing}
+                      className={cn(
+                        "p-4 rounded-2xl font-semibold text-white shadow-lg hover:shadow-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex flex-col items-center gap-2",
+                        `bg-gradient-to-r ${config.color}`,
+                        selectedRating === Number(rating) && "scale-105 ring-2 ring-white/50"
+                      )}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-sm">{config.label}</span>
+                      <span className="text-xs opacity-90">{config.description}</span>
+                    </button>
+                  )
+                })}
               </div>
-
-              {selectedRating !== null && (
-                <div className="text-center text-sm text-muted-foreground">
-                  <ArrowRight className="h-4 w-4 inline mr-1" />
-                  Moving to next card...
-                </div>
-              )}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Session Stats */}
-      {sessionStats.reviewed > 0 && (
-        <Card>
-          <CardContent className="pt-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-lg font-bold text-green-600">{sessionStats.correct}</p>
-                <p className="text-xs text-muted-foreground">Correct</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-red-600">{sessionStats.again}</p>
-                <p className="text-xs text-muted-foreground">Again</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-orange-600">{sessionStats.hard}</p>
-                <p className="text-xs text-muted-foreground">Hard</p>
-              </div>
-              <div>
-                <p className="text-lg font-bold text-blue-600">{sessionStats.easy}</p>
-                <p className="text-xs text-muted-foreground">Easy</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Loading indicator for contextual data */}
+      {loadingContextual && (
+        <div className="fixed bottom-4 right-4 rounded-2xl bg-white/90 backdrop-blur-sm border border-white/20 p-4 shadow-lg">
+          <div className="flex items-center gap-3">
+            <Loader2 className="h-4 w-4 animate-spin text-violet-500" />
+            <span className="text-sm text-gray-600">Loading examples...</span>
+          </div>
+        </div>
       )}
     </div>
   )

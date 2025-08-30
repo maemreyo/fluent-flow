@@ -1,32 +1,20 @@
-import { useState, useEffect } from 'react'
-import { getCurrentUser, supabase } from '../supabase/client'
+import { useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../supabase/client'
+import { useAuthenticationQuery, invalidateAuth } from './use-authentication-query'
 
 /**
- * Custom hook for managing authentication state
+ * Enhanced authentication hook using React Query
+ * Replaces manual state management with proper caching
  */
 export function useAuthentication() {
-  const [user, setUser] = useState<any>(null)
-  const [checkingAuth, setCheckingAuth] = useState(true)
-
-  const checkAuthStatus = async () => {
-    try {
-      const currentUser = await getCurrentUser()
-      setUser(currentUser)
-    } catch (error) {
-      console.error('Error checking auth status:', error)
-    } finally {
-      setCheckingAuth(false)
-    }
-  }
-
-  useEffect(() => {
-    checkAuthStatus()
-  }, [])
+  const queryClient = useQueryClient()
+  const { data: user, isLoading: checkingAuth, refetch: checkAuthStatus } = useAuthenticationQuery()
 
   const signOut = async () => {
     try {
       await supabase.auth.signOut()
-      setUser(null)
+      // Invalidate auth cache instead of manually setting state
+      await invalidateAuth(queryClient)
       console.log('User signed out successfully')
     } catch (error) {
       console.error('Error signing out:', error)

@@ -11,6 +11,7 @@ import { ModernHeader } from './components/newtab/modern-header'
 import { ModernTabContent } from './components/newtab/modern-tab-content'
 import { ModernTabNavigation } from './components/newtab/modern-tab-navigation'
 import { UserDropdown } from './components/shared/UserDropdown'
+import { QueryProvider } from './components/providers/query-provider'
 import { useAuthentication } from './lib/hooks/use-authentication'
 import { userVocabularyService, type LearningStats } from './lib/services/user-vocabulary-service'
 import './styles/newtab.css'
@@ -215,4 +216,13 @@ function VocabularyLearningNewTab() {
   )
 }
 
-export default VocabularyLearningNewTab
+// Wrapped version with React Query provider for optimized API calls
+function VocabularyLearningNewTabWithQuery() {
+  return (
+    <QueryProvider>
+      <VocabularyLearningNewTab />
+    </QueryProvider>
+  )
+}
+
+export default VocabularyLearningNewTabWithQuery

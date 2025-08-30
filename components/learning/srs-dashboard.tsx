@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { Brain } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import { srsService, type SRSStats } from '../../lib/services/srs-service'
+import { useSRSDashboardData } from '../../lib/hooks/use-srs-queries'
 
 // Import the new comprehensive component
 import { ComprehensiveLearningStats } from '../srs/comprehensive-learning-stats'
@@ -13,39 +13,12 @@ interface SRSDashboardProps {
   onViewAllCards?: () => void
 }
 
-interface HeatmapData {
-  date: string
-  count: number
-}
-
 export const SRSDashboard: React.FC<SRSDashboardProps> = ({
   onStartReview,
   onViewAllCards
 }) => {
-  const [stats, setStats] = useState<SRSStats | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [activityData, setActivityData] = useState<HeatmapData[]>([])
-
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
-
-  const loadDashboardData = async () => {
-    setIsLoading(true)
-    try {
-      const [srsStats, activityData] = await Promise.all([
-        srsService.getStats(),
-        srsService.getActivityData(365) // Changed to 365 days (1 year)
-      ])
-      
-      setStats(srsStats)
-      setActivityData(activityData)
-    } catch (error) {
-      console.error('Failed to load SRS dashboard data:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  // Use the optimized React Query hook that fetches all data in parallel
+  const { stats, activityData = [], isLoading, isError, refetch } = useSRSDashboardData()
 
   if (isLoading) {
     return (
@@ -58,19 +31,31 @@ export const SRSDashboard: React.FC<SRSDashboardProps> = ({
     )
   }
 
-  if (!stats) {
+  if (isError) {
     return (
-      <Card className="mx-auto max-w-2xl text-center">
-        <CardHeader>
-          <Brain className="mx-auto h-16 w-16 text-muted-foreground" />
-          <CardTitle>Unable to Load Dashboard</CardTitle>
+      <Card className="rounded-2xl bg-white/60 backdrop-blur-sm border border-red-200/50 shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle className="text-red-600">Error Loading Dashboard</CardTitle>
           <CardDescription>
             There was an error loading your learning statistics.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={loadDashboardData}>Try Again</Button>
+          <Button onClick={refetch}>Try Again</Button>
         </CardContent>
+      </Card>
+    )
+  }
+
+  if (!stats) {
+    return (
+      <Card className="rounded-2xl bg-white/60 backdrop-blur-sm border border-gray-200/50 shadow-lg">
+        <CardHeader className="text-center">
+          <CardTitle>No Data Available</CardTitle>
+          <CardDescription>
+            No learning statistics found.
+          </CardDescription>
+        </CardHeader>
       </Card>
     )
   }

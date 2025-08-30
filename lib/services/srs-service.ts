@@ -18,6 +18,7 @@ export interface SRSStats {
 }
 
 export interface ReviewSession {
+  id: string
   cards: UserVocabularyItem[]
   currentIndex: number
   sessionStats: {
@@ -91,6 +92,9 @@ export class SRSService {
         return null
       }
 
+      // Track the previous learning status to detect when item becomes mature
+      const previousStatus = currentItem.learningStatus
+
       // Convert to SM2 format and process
       const sm2Card = this.toSM2Card(currentItem)
       const result = Scheduler.reviewCard(sm2Card, rating)
@@ -114,6 +118,17 @@ export class SRSService {
         return null
       }
 
+      // Log the review activity for streak calculation and analytics
+      await this.logReviewActivity(itemId, rating, rating >= 3)
+
+      // Update learning stats
+      await userVocabularyService.updateReviewStats(rating >= 3)
+
+      // Check if item became mature and update stats accordingly
+      if (previousStatus !== 'mature' && finalUpdates.learningStatus === 'mature') {
+        await userVocabularyService.incrementItemsLearned(currentItem.itemType)
+      }
+
       // Return updated item
       const updatedItem: UserVocabularyItem = {
         ...currentItem,
@@ -133,6 +148,37 @@ export class SRSService {
     } catch (error) {
       console.error('Failed to process review:', error)
       return null
+    }
+  }
+
+  /**
+   * Log review activity for streak calculation and analytics
+   */
+  private async logReviewActivity(vocabularyId: string, rating: SRSRating, isCorrect: boolean): Promise<void> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const reviewData = {
+        user_id: user.id,
+        vocabulary_id: vocabularyId,
+        review_type: 'flashcard' as const,
+        is_correct: isCorrect,
+        reviewed_at: new Date().toISOString(),
+        new_ease_factor: null, // Could be populated if needed
+        new_interval_days: null, // Could be populated if needed
+        new_next_review_date: null // Could be populated if needed
+      }
+
+      const { error } = await supabase
+        .from('user_vocabulary_reviews')
+        .insert(reviewData)
+
+      if (error) {
+        console.error('Failed to log review activity:', error)
+      }
+    } catch (error) {
+      console.error('Error logging review activity:', error)
     }
   }
 
@@ -168,6 +214,7 @@ export class SRSService {
     const shuffledCards = allCards.sort(() => Math.random() - 0.5)
 
     return {
+      id: `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       cards: shuffledCards,
       currentIndex: 0,
       sessionStats: {
@@ -269,11 +316,15 @@ export class SRSService {
     
     // Start new session if there are cards available
     if (availableCards.length > 0) {
-      return this.startReviewSession(maxCards)
+      const newSession = await this.startReviewSession(maxCards)
+      // Immediately save the new session so it's available for processCard
+      this.saveSession(newSession)
+      return newSession
     }
     
     // If no cards available, return an empty session (this should be handled by the UI)
-    return {
+    const emptySession = {
+      id: `empty_session_${Date.now()}`,
       cards: [],
       currentIndex: 0,
       sessionStats: {
@@ -285,6 +336,10 @@ export class SRSService {
         easy: 0
       }
     }
+    
+    // Save even empty sessions for consistency
+    this.saveSession(emptySession)
+    return emptySession
   }
 
   // Helper methods for localStorage operations
@@ -304,6 +359,12 @@ export class SRSService {
 
       // Remove timestamp before returning
       const { timestamp, ...session } = sessionData
+      
+      // Ensure session has an ID (for backward compatibility)
+      if (!session.id) {
+        session.id = `legacy_session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
+      
       return session as ReviewSession
     } catch (error) {
       console.error('Failed to load from localStorage:', error)
@@ -327,7 +388,14 @@ export class SRSService {
   private async loadFromDatabase(): Promise<ReviewSession | null> {
     try {
       const { userVocabularyService } = await import('./user-vocabulary-service')
-      return await userVocabularyService.loadSRSSession()
+      const session = await userVocabularyService.loadSRSSession()
+      
+      // Ensure session has an ID (for backward compatibility)
+      if (session && !session.id) {
+        session.id = `db_session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+      }
+      
+      return session
     } catch (error) {
       console.error('Failed to load from database:', error)
       return null
@@ -355,6 +423,9 @@ export class SRSService {
   /**
    * Get comprehensive SRS statistics
    */
+  /**
+   * Get comprehensive SRS statistics
+   */
   async getStats(): Promise<SRSStats> {
     try {
       const allItems = await userVocabularyService.getUserVocabularyDeck({ limit: 1000 })
@@ -377,8 +448,8 @@ export class SRSService {
       const correctReviews = allItems.reduce((sum, item) => sum + item.timesCorrect, 0)
       const accuracyRate = totalReviews > 0 ? (correctReviews / totalReviews) * 100 : 0
 
-      // Calculate streak (simplified - should be based on practice history)
-      const streak = this.calculateStreak(allItems)
+      // Calculate streak using the new comprehensive method
+      const streak = await this.calculateStreak(allItems)
 
       return {
         totalCards: allItems.length,
@@ -460,11 +531,119 @@ export class SRSService {
   }
 
   /**
-   * Calculate learning streak (simplified implementation)
+   * Calculate learning streak based on daily review activity
    */
-  private calculateStreak(items: UserVocabularyItem[]): { current: number; longest: number } {
-    // This is a simplified implementation
-    // In a real system, you'd track daily practice sessions
+  /**
+   * Calculate learning streak based on daily review activity
+   * A day is considered "complete" if the user has reviewed at least 5 cards with 60% accuracy
+   */
+  private async calculateStreak(items: UserVocabularyItem[]): Promise<{ current: number; longest: number }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return { current: 0, longest: 0 }
+
+      // Get review activity for the last 365 days to calculate streaks
+      const oneYearAgo = new Date()
+      oneYearAgo.setDate(oneYearAgo.getDate() - 365)
+
+      const { data: reviews, error } = await supabase
+        .from('user_vocabulary_reviews')
+        .select('reviewed_at, is_correct')
+        .eq('user_id', user.id)
+        .gte('reviewed_at', oneYearAgo.toISOString())
+        .order('reviewed_at', { ascending: true })
+
+      if (error || !reviews) {
+        console.error('Failed to fetch review data for streak calculation:', error)
+        // Fallback to simple calculation based on lastPracticedAt
+        return this.calculateSimpleStreak(items)
+      }
+
+      // Group reviews by date
+      const dailyStats = new Map<string, { total: number; correct: number }>()
+      
+      reviews.forEach(review => {
+        const date = new Date(review.reviewed_at).toISOString().split('T')[0]
+        if (!dailyStats.has(date)) {
+          dailyStats.set(date, { total: 0, correct: 0 })
+        }
+        const stats = dailyStats.get(date)!
+        stats.total++
+        if (review.is_correct) stats.correct++
+      })
+
+      // Determine which days meet the "complete" criteria
+      // A day is complete if: min 5 reviews AND 60% accuracy
+      const completeDays = new Set<string>()
+      for (const [date, stats] of dailyStats.entries()) {
+        if (stats.total >= 5 && (stats.correct / stats.total) >= 0.6) {
+          completeDays.add(date)
+        }
+      }
+
+      // Calculate current streak (consecutive days from today backwards)
+      let currentStreak = 0
+      const today = new Date()
+      
+      for (let i = 0; i < 365; i++) {
+        const checkDate = new Date(today)
+        checkDate.setDate(checkDate.getDate() - i)
+        const dateStr = checkDate.toISOString().split('T')[0]
+        
+        if (completeDays.has(dateStr)) {
+          currentStreak++
+        } else {
+          // Allow 1 day break if it's today or yesterday (user might not have studied yet today)
+          if (i <= 1) {
+            continue
+          } else {
+            break
+          }
+        }
+      }
+
+      // Calculate longest streak
+      let longestStreak = 0
+      let tempStreak = 0
+      
+      // Sort dates to check chronologically
+      const sortedDates = Array.from(completeDays).sort()
+      let prevDate: Date | null = null
+      
+      for (const dateStr of sortedDates) {
+        const currentDate = new Date(dateStr)
+        
+        if (prevDate) {
+          const daysDiff = Math.floor((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24))
+          
+          if (daysDiff === 1) {
+            // Consecutive day
+            tempStreak++
+          } else {
+            // Streak broken
+            longestStreak = Math.max(longestStreak, tempStreak)
+            tempStreak = 1
+          }
+        } else {
+          tempStreak = 1
+        }
+        
+        prevDate = currentDate
+      }
+      
+      longestStreak = Math.max(longestStreak, tempStreak)
+
+      return { current: currentStreak, longest: longestStreak }
+    } catch (error) {
+      console.error('Error calculating streak:', error)
+      return this.calculateSimpleStreak(items)
+    }
+  }
+
+  /**
+   * Fallback streak calculation based on lastPracticedAt
+   */
+  private calculateSimpleStreak(items: UserVocabularyItem[]): { current: number; longest: number } {
     const recentPractice = items.filter(item => {
       if (!item.lastPracticedAt) return false
       const practiceDate = new Date(item.lastPracticedAt)
@@ -474,7 +653,7 @@ export class SRSService {
 
     return {
       current: recentPractice.length > 0 ? 1 : 0,
-      longest: 1 // Would need proper streak tracking
+      longest: 1
     }
   }
 
@@ -494,6 +673,113 @@ export class SRSService {
       intervalDays: 1,
       nextReviewDate: tomorrow.toISOString(),
       repetitions: 0
+    }
+  }
+
+
+  /**
+   * Process a card rating in the current session
+   */
+  /**
+   * Process a card rating in the current session
+   */
+  async processCard(sessionId: string, cardId: string, rating: SRSRating): Promise<ReviewSession> {
+    try {
+      // Load current session
+      let currentSession = await this.loadSession()
+      
+      // If no session found or session ID doesn't match, this might be a new session
+      // that hasn't been saved yet, so we'll trust the sessionId parameter
+      if (!currentSession || currentSession.id !== sessionId) {
+        console.warn('Session ID mismatch or no stored session. Attempting to find session by ID.')
+        
+        // For now, we'll throw an error but with more specific information
+        if (!currentSession) {
+          throw new Error('No active session found. Please start a new review session.')
+        } else {
+          console.warn('Session ID mismatch:', {
+            expected: sessionId,
+            found: currentSession.id,
+            hasStoredSession: !!currentSession
+          })
+          // Let's try to continue with the stored session if it has cards
+          if (currentSession.cards.length > 0) {
+            console.log('Using stored session instead of expected session ID')
+          } else {
+            throw new Error('Session ID mismatch and stored session has no cards')
+          }
+        }
+      }
+
+      // Find the current card
+      const currentCard = currentSession.cards[currentSession.currentIndex]
+      if (!currentCard || currentCard.id !== cardId) {
+        console.error('Card ID mismatch:', {
+          expectedCardId: cardId,
+          currentCardId: currentCard?.id,
+          currentIndex: currentSession.currentIndex,
+          totalCards: currentSession.cards.length
+        })
+        throw new Error('Invalid card ID')
+      }
+
+      // Process the review using existing method
+      await this.processReview(cardId, rating)
+
+      // Update session stats
+      const updatedStats = { ...currentSession.sessionStats }
+      updatedStats.reviewed++
+      
+      if (rating === 1) {
+        updatedStats.again++
+      } else if (rating === 2) {
+        updatedStats.hard++
+      } else if (rating === 3) {
+        updatedStats.good++
+        updatedStats.correct++
+      } else if (rating === 4) {
+        updatedStats.easy++
+        updatedStats.correct++
+      }
+
+      // Create updated session
+      const updatedSession: ReviewSession = {
+        ...currentSession,
+        currentIndex: currentSession.currentIndex + 1,
+        sessionStats: updatedStats
+      }
+
+      // Save updated session
+      this.saveSession(updatedSession)
+
+      return updatedSession
+    } catch (error) {
+      console.error('Failed to process card:', error)
+      throw error
+    }
+  }
+
+  /**
+   * Complete the current SRS session
+   */
+  async completeSession(sessionId: string): Promise<void> {
+    try {
+      const currentSession = await this.loadSession()
+      if (!currentSession || currentSession.id !== sessionId) {
+        throw new Error('Invalid session ID')
+      }
+
+      // Clear the session
+      this.clearSession()
+
+      console.log('SRS session completed:', {
+        sessionId,
+        reviewed: currentSession.sessionStats.reviewed,
+        correct: currentSession.sessionStats.correct
+      })
+    } catch (error) {
+      console.error('Failed to complete session:', error)
+      throw error
     }
   }
 }

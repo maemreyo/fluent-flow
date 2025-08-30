@@ -141,6 +141,10 @@ export class UserVocabularyService {
       }
 
       console.log(`Added ${type} to personal deck:`, text)
+      
+      // Update learning stats - increment items added
+      await this.incrementItemsAdded(type)
+
       return { id: data.id }
     } catch (error) {
       console.error('Failed to add to personal deck:', error)
@@ -447,6 +451,124 @@ export class UserVocabularyService {
     }
   }
 
+  /**
+   * Update user learning statistics
+   */
+  async updateUserStats(updates: {
+    totalWordsAdded?: number
+    totalPhrasesAdded?: number
+    wordsLearned?: number
+    phrasesLearned?: number
+    currentStreakDays?: number
+    longestStreakDays?: number
+    lastPracticeDate?: string
+    totalReviews?: number
+    correctReviews?: number
+  }): Promise<boolean> {
+    try {
+      const user = await getCurrentUser()
+      if (!user) return false
+
+      const dbUpdates: any = {}
+      const now = new Date().toISOString()
+
+      // Map updates to database column names
+      if (updates.totalWordsAdded !== undefined) dbUpdates.total_words_added = updates.totalWordsAdded
+      if (updates.totalPhrasesAdded !== undefined) dbUpdates.total_phrases_added = updates.totalPhrasesAdded
+      if (updates.wordsLearned !== undefined) dbUpdates.words_learned = updates.wordsLearned
+      if (updates.phrasesLearned !== undefined) dbUpdates.phrases_learned = updates.phrasesLearned
+      if (updates.currentStreakDays !== undefined) dbUpdates.current_streak_days = updates.currentStreakDays
+      if (updates.longestStreakDays !== undefined) dbUpdates.longest_streak_days = updates.longestStreakDays
+      if (updates.lastPracticeDate !== undefined) dbUpdates.last_practice_date = updates.lastPracticeDate
+      if (updates.totalReviews !== undefined) dbUpdates.total_reviews = updates.totalReviews
+      if (updates.correctReviews !== undefined) dbUpdates.correct_reviews = updates.correctReviews
+      
+      dbUpdates.updated_at = now
+
+      // Use upsert to handle case where stats don't exist yet
+      const { error } = await supabase
+        .from('user_learning_stats')
+        .upsert({
+          user_id: user.id,
+          ...dbUpdates
+        }, {
+          onConflict: 'user_id'
+        })
+
+      if (error) {
+        console.error('Error updating user learning stats:', error)
+        return false
+      }
+
+      return true
+    } catch (error) {
+      console.error('Failed to update user learning stats:', error)
+      return false
+    }
+  }
+
+  /**
+   * Increment stats when a new vocabulary item is added
+   */
+  async incrementItemsAdded(type: 'word' | 'phrase'): Promise<void> {
+    try {
+      const currentStats = await this.getUserStats()
+      if (!currentStats) return
+
+      const updates = type === 'word' 
+        ? { totalWordsAdded: currentStats.totalWordsAdded + 1 }
+        : { totalPhrasesAdded: currentStats.totalPhrasesAdded + 1 }
+
+      await this.updateUserStats(updates)
+    } catch (error) {
+      console.error('Failed to increment items added:', error)
+    }
+  }
+
+  /**
+   * Increment stats when an item reaches mature status
+   */
+  async incrementItemsLearned(type: 'word' | 'phrase'): Promise<void> {
+    try {
+      const currentStats = await this.getUserStats()
+      if (!currentStats) return
+
+      const updates = type === 'word' 
+        ? { wordsLearned: currentStats.wordsLearned + 1 }
+        : { phrasesLearned: currentStats.phrasesLearned + 1 }
+
+      await this.updateUserStats(updates)
+    } catch (error) {
+      console.error('Failed to increment items learned:', error)
+    }
+  }
+
+  /**
+   * Update review statistics and streaks
+   */
+  async updateReviewStats(isCorrect: boolean): Promise<void> {
+    try {
+      const currentStats = await this.getUserStats()
+      if (!currentStats) return
+
+      // Calculate streak using SRS service
+      const { srsService } = await import('./srs-service')
+      const srsStats = await srsService.getStats()
+
+      const updates = {
+        totalReviews: currentStats.totalReviews + 1,
+        correctReviews: currentStats.correctReviews + (isCorrect ? 1 : 0),
+        currentStreakDays: srsStats.currentStreak,
+        longestStreakDays: Math.max(currentStats.longestStreakDays, srsStats.longestStreak),
+        lastPracticeDate: new Date().toISOString()
+      }
+
+      await this.updateUserStats(updates)
+    } catch (error) {
+      console.error('Failed to update review stats:', error)
+    }
+  }
+
   // SRS Session persistence methods
   async saveSRSSession(session: any): Promise<void> {
     try {
@@ -481,9 +603,15 @@ export class UserVocabularyService {
         .from('user_srs_sessions')
         .select('session_data, updated_at')
         .eq('user_id', user.id)
-        .single()
+        .maybeSingle() // Use maybeSingle() instead of single() to handle zero rows
 
-      if (error || !data) {
+      if (error) {
+        console.error('Error loading SRS session:', error)
+        return null
+      }
+
+      // If no session found, return null
+      if (!data) {
         return null
       }
 
