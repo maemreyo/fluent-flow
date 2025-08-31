@@ -1,4 +1,0 @@
-1. Khi chọn các preset cũng nên pop lên 1 lần chứ nhỉ. Ngoài ra, thì user đang không biết họ đang login hay chưa. có cần có avatar trên header của page quiz không
-2. Không cần hiển thị toàn bộ số lượng các available question đâu -> đó là nội dung của hệ thống, user chỉ cần biết số lượng của các presets là đủ rồi
-3. Hiện tại, tôi có tính năng fluent-flow-transcript-service/src/lib/hooks/use-word-selection.ts click to save các words vào word explorer, nhưng nó chỉ ở màn quiz. tôi cần triển khai nó trên toàn bộ các pages ở quiz project
-4. Cải thiện UI của page `Ready to Practice?` `fluent-flow-transcript-service/src/components/questions/QuestionSetInfo.tsx` ngay sau khi chọn các preset, hiện tại nó chưa phù hợp với phong cách design của trang preset selection

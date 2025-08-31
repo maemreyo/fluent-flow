@@ -1,9 +1,12 @@
 'use client'
 
+import { useEffect } from 'react'
+import { useWordSelection } from '../../../../lib/hooks/use-word-selection'
 import { PresetSelector, QuestionPreset } from '../../../../components/questions/PresetSelector'
 import { Question } from '../../../../components/questions/QuestionCard'
 import { QuestionSet } from '../../../../components/questions/QuestionSetInfo'
 import { VideoHeader } from './VideoHeader'
+import { UserAvatar } from './UserAvatar'
 import { Smile, Sparkles, Trophy, Target, Clock } from 'lucide-react'
 
 interface PresetSelectionViewProps {
@@ -17,6 +20,10 @@ interface PresetSelectionViewProps {
     medium: number
     hard: number
   }
+  user?: any
+  isAuthenticated?: boolean
+  authLoading?: boolean
+  onSignOut?: () => void
 }
 
 const QUESTION_PRESETS: QuestionPreset[] = [
@@ -68,14 +75,30 @@ export function PresetSelectionView({
   favoriteLoading,
   onFavoriteToggle,
   onPresetSelect,
-  getAvailableQuestionCounts
+  getAvailableQuestionCounts,
+  user,
+  isAuthenticated = false,
+  authLoading = false,
+  onSignOut
 }: PresetSelectionViewProps) {
+  const { enableSelection, disableSelection } = useWordSelection()
+
+  // Enable word selection on mount
+  useEffect(() => {
+    if (questionSet) {
+      enableSelection('preset-selection', 'quiz', questionSet.id)
+    }
+    return () => {
+      disableSelection('preset-selection')
+    }
+  }, [questionSet?.id, enableSelection, disableSelection])
+
   if (!questionSet) {
     return null
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div id="preset-selection" className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       {/* Animated background elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
@@ -84,6 +107,16 @@ export function PresetSelectionView({
       </div>
       
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* Standalone User Avatar */}
+        <div className="flex justify-end mb-6">
+          <UserAvatar 
+            user={user}
+            isAuthenticated={isAuthenticated}
+            authLoading={authLoading}
+            onSignOut={onSignOut}
+          />
+        </div>
+        
         <VideoHeader
           questionSet={questionSet}
           isFavorited={isFavorited}
@@ -112,7 +145,6 @@ export function PresetSelectionView({
           <PresetSelector
             presets={QUESTION_PRESETS}
             onPresetSelect={onPresetSelect}
-            availableCounts={getAvailableQuestionCounts(questionSet.questions)}
           />
         </div>
       </div>

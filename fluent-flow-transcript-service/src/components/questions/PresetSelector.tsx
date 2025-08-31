@@ -1,4 +1,4 @@
-import { Frown, LucideIcon, Meh, Smile, XCircle, Star, Clock, Sparkles } from 'lucide-react'
+import { Frown, LucideIcon, Meh, Smile, Star, Clock, Sparkles } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Card, CardContent } from '../ui/card'
 
@@ -20,35 +20,15 @@ interface QuestionPreset {
 interface PresetSelectorProps {
   presets: QuestionPreset[]
   onPresetSelect: (preset: QuestionPreset) => void
-  availableCounts: {
-    easy: number
-    medium: number
-    hard: number
-  }
 }
 
-export function PresetSelector({ presets, onPresetSelect, availableCounts }: PresetSelectorProps) {
-  const isPresetAvailable = (preset: QuestionPreset): boolean => {
-    return (
-      availableCounts.easy >= preset.distribution.easy &&
-      availableCounts.medium >= preset.distribution.medium &&
-      availableCounts.hard >= preset.distribution.hard
-    )
-  }
+export function PresetSelector({ presets, onPresetSelect }: PresetSelectorProps) {
 
   const getTotalQuestions = (preset: QuestionPreset): number => {
     return preset.distribution.easy + preset.distribution.medium + preset.distribution.hard
   }
 
-  const getColorClasses = (color: string, available: boolean) => {
-    if (!available) return {
-      bg: 'bg-gray-100',
-      border: 'border-gray-200',
-      text: 'text-gray-500',
-      icon: 'bg-gray-200 text-gray-500',
-      badge: 'bg-gray-200 text-gray-600'
-    }
-
+  const getColorClasses = (color: string) => {
     const colors = {
       emerald: {
         bg: 'bg-white/80 backdrop-blur-sm',
@@ -87,28 +67,21 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
     <div className="mx-auto max-w-6xl">
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
         {presets.map((preset, index) => {
-          const available = isPresetAvailable(preset)
           const totalQuestions = getTotalQuestions(preset)
           const Icon = preset.icon
-          const colorClasses = getColorClasses(preset.color || 'blue', available)
+          const colorClasses = getColorClasses(preset.color || 'blue')
 
           return (
             <div
               key={preset.name}
-              className={`group relative transform transition-all duration-500 hover:scale-105 ${available ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              className="group relative transform transition-all duration-500 hover:scale-105 cursor-pointer"
               style={{ animationDelay: `${index * 100}ms` }}
-              onClick={() => available && onPresetSelect(preset)}
+              onClick={() => onPresetSelect(preset)}
             >
               {/* Glow effect on hover */}
-              <div className={`absolute -inset-0.5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
-                available ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 blur-sm' : ''
-              }`}></div>
+              <div className="absolute -inset-0.5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 blur-sm"></div>
               
-              <Card className={`relative rounded-3xl border-2 transition-all duration-300 ${colorClasses.bg} ${colorClasses.border} ${
-                available 
-                  ? 'shadow-xl hover:shadow-2xl transform hover:-translate-y-1' 
-                  : 'opacity-60 shadow-sm'
-              }`}>
+              <Card className={`relative rounded-3xl border-2 transition-all duration-300 ${colorClasses.bg} ${colorClasses.border} shadow-xl hover:shadow-2xl transform hover:-translate-y-1`}>
                 <CardContent className="p-8">
                   {/* Badge */}
                   {preset.badge && (
@@ -196,48 +169,18 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
                     </div>
 
                     {/* Call to action */}
-                    {available ? (
-                      <div className="mt-6 pt-4 border-t border-gray-200">
-                        <div className={`inline-flex items-center gap-2 text-sm font-medium ${colorClasses.text} group-hover:animate-pulse`}>
-                          <Sparkles className="h-4 w-4" />
-                          Click to start!
-                        </div>
+                    <div className="mt-6 pt-4 border-t border-gray-200">
+                      <div className={`inline-flex items-center gap-2 text-sm font-medium ${colorClasses.text} group-hover:animate-pulse`}>
+                        <Sparkles className="h-4 w-4" />
+                        Click to start!
                       </div>
-                    ) : (
-                      <div className="mt-6 pt-4 border-t border-gray-200">
-                        <div className="flex items-center text-xs text-red-600 bg-red-50 p-3 rounded-lg">
-                          <XCircle className="mr-2 h-4 w-4" />
-                          Not enough questions available for this preset
-                        </div>
-                      </div>
-                    )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
           )
         })}
-      </div>
-
-      {/* Stats summary */}
-      <div className="mt-16 text-center">
-        <div className="inline-flex items-center gap-4 px-6 py-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
-          <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
-            <Smile className="h-4 w-4" />
-            <span className="font-bold">{availableCounts.easy}</span> Easy
-          </div>
-          <div className="w-px h-4 bg-gray-300"></div>
-          <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
-            <Meh className="h-4 w-4" />
-            <span className="font-bold">{availableCounts.medium}</span> Medium  
-          </div>
-          <div className="w-px h-4 bg-gray-300"></div>
-          <div className="flex items-center gap-2 text-sm font-medium text-red-600">
-            <Frown className="h-4 w-4" />
-            <span className="font-bold">{availableCounts.hard}</span> Hard
-          </div>
-        </div>
-        <p className="text-sm text-gray-500 mt-3">Available questions in this topic</p>
       </div>
     </div>
   )

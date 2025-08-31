@@ -1,3 +1,7 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useWordSelection } from '../../lib/hooks/use-word-selection'
 import { Question } from './QuestionCard'
 
 interface GridViewProps {
@@ -7,6 +11,7 @@ interface GridViewProps {
 }
 
 export function GridView({ questions, onClose, videoTitle }: GridViewProps) {
+  const { enableSelection, disableSelection } = useWordSelection()
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
       case 'easy':
@@ -33,6 +38,14 @@ export function GridView({ questions, onClose, videoTitle }: GridViewProps) {
     }
   }
 
+  // Enable word selection on mount
+  useEffect(() => {
+    enableSelection('questions-grid', 'quiz', `grid-${questions.length}`)
+    return () => {
+      disableSelection('questions-grid')
+    }
+  }, [enableSelection, disableSelection, questions.length])
+
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto bg-black bg-opacity-50">
       <div className="min-h-screen py-8">
@@ -57,7 +70,7 @@ export function GridView({ questions, onClose, videoTitle }: GridViewProps) {
           </div>
 
           {/* Questions Grid */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div id="questions-grid" className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {questions.map((question, index) => (
               <div
                 key={question.id}

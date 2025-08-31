@@ -73,11 +73,18 @@ export function useQuiz() {
 
   const handlePresetSelect = useCallback((preset: QuestionPreset) => {
     if (!questionSet) return
+    
+    // Show auth prompt if user is not authenticated
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true)
+      return
+    }
+    
     setSelectedPreset(preset)
     const groups = createPresetGroups(preset, questionSet.questions)
     setDifficultyGroups(groups)
     setAppState('question-info')
-  }, [questionSet, createPresetGroups])
+  }, [questionSet, createPresetGroups, isAuthenticated])
 
   const handleQuestionInfoStart = () => {
     setAppState('quiz-active')

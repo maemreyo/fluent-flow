@@ -1,3 +1,20 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useWordSelection } from '../../lib/hooks/use-word-selection'
+import { 
+  Trophy, 
+  CheckCircle2, 
+  XCircle, 
+  BarChart3, 
+  RotateCcw, 
+  Play, 
+  TrendingUp,
+  Award,
+  Target,
+  AlertTriangle
+} from 'lucide-react'
+
 interface EvaluationResult {
   questionId: string
   question: string
@@ -25,6 +42,7 @@ interface ResultsSummaryProps {
 }
 
 export function ResultsSummary({ results, onRestart, videoTitle, videoUrl }: ResultsSummaryProps) {
+  const { enableSelection, disableSelection } = useWordSelection()
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'from-green-500 to-emerald-600'
     if (score >= 60) return 'from-yellow-500 to-orange-500'
@@ -45,12 +63,6 @@ export function ResultsSummary({ results, onRestart, videoTitle, videoUrl }: Res
     return '💪 Keep practicing! Review the explanations to learn more!'
   }
 
-  const getPerformanceEmoji = (score: number) => {
-    if (score >= 90) return '🏆'
-    if (score >= 80) return '🥉'
-    if (score >= 70) return '🎯'
-    return '📈'
-  }
 
   // Add safety checks for results data
   if (!results || typeof results.score !== 'number' || typeof results.totalQuestions !== 'number') {
@@ -74,61 +86,134 @@ export function ResultsSummary({ results, onRestart, videoTitle, videoUrl }: Res
   // Ensure results.results exists and is an array
   const questionResults = Array.isArray(results.results) ? results.results : []
 
+  // Enable word selection on mount
+  useEffect(() => {
+    enableSelection('results-summary', 'quiz', results.sessionId)
+    return () => {
+      disableSelection('results-summary')
+    }
+  }, [results.sessionId, enableSelection, disableSelection])
+
+  const getPerformanceIcon = (score: number) => {
+    if (score >= 90) return Trophy
+    if (score >= 80) return Award
+    if (score >= 70) return Target
+    return TrendingUp
+  }
+
+  const PerformanceIcon = getPerformanceIcon(results.score)
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-6">
-      <div className="mx-auto max-w-4xl">
-        {/* Animated Header */}
+    <div id="results-summary" className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-10 right-10 w-72 h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-gradient-to-r from-pink-400/20 to-orange-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-6xl p-6">
+        {/* Enhanced Header */}
         <div className="mb-12 text-center">
-          <div className="mb-6 inline-block animate-bounce text-8xl">
-            {getPerformanceEmoji(results.score)}
+          <div className="mb-8 inline-flex items-center justify-center">
+            <div className="p-6 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 shadow-2xl animate-pulse">
+              <PerformanceIcon className="w-16 h-16 text-indigo-600" />
+            </div>
           </div>
-          <h1 className="mb-4 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 bg-clip-text text-5xl font-bold text-transparent">
+          
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-6">
             Quiz Complete!
           </h1>
+          
           {videoTitle && (
-            <div className="mx-auto max-w-2xl rounded-3xl border border-blue-200 bg-white/80 p-4 backdrop-blur-sm">
-              <p className="text-lg text-gray-700">
-                📺 <span className="font-semibold">{videoTitle}</span>
-              </p>
+            <div className="mx-auto max-w-3xl">
+              <div className="relative">
+                {/* Background blur effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-purple-50/50 to-blue-50/50 rounded-3xl blur-3xl -z-10"></div>
+                
+                <div className="relative rounded-3xl border-2 border-white/20 shadow-xl bg-white/80 backdrop-blur-sm p-6">
+                  <div className="flex items-center justify-center gap-3">
+                    <Play className="w-6 h-6 text-indigo-600" />
+                    <p className="text-xl font-semibold text-gray-800">{videoTitle}</p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>
 
         {/* Enhanced Score Summary */}
-        <div className="mb-8 transform rounded-3xl border-2 border-white bg-white/90 p-10 shadow-2xl shadow-blue-500/20 backdrop-blur-sm transition-all hover:scale-[1.02] hover:shadow-3xl">
-          <div className="text-center">
-            {/* Animated Score Display */}
-            <div className="relative mb-6">
-              <div className={`mx-auto mb-4 flex h-48 w-48 items-center justify-center rounded-full bg-gradient-to-br ${getScoreColor(results.score)} shadow-2xl`}>
-                <div className="flex h-40 w-40 items-center justify-center rounded-full bg-white">
-                  <div className={`text-6xl font-black ${getScoreTextColor(results.score)}`}>
-                    {results.score}%
+        <div className="mb-12">
+          <div className="relative">
+            {/* Background blur effect */}
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 via-purple-50/50 to-blue-50/50 rounded-3xl blur-3xl -z-10"></div>
+            
+            <div className="relative rounded-3xl border-2 border-white/20 shadow-2xl bg-white/80 backdrop-blur-sm p-10">
+              <div className="text-center">
+                {/* Score Circle */}
+                <div className="relative mb-8">
+                  <div className={`mx-auto mb-6 flex h-56 w-56 items-center justify-center rounded-full bg-gradient-to-br ${getScoreColor(results.score)} shadow-2xl`}>
+                    <div className="flex h-48 w-48 items-center justify-center rounded-full bg-white shadow-inner">
+                      <div className="text-center">
+                        <div className={`text-5xl font-black ${getScoreTextColor(results.score)} mb-2`}>
+                          {results.score}%
+                        </div>
+                        <div className="text-sm font-medium text-gray-600">Final Score</div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="mb-6 text-2xl font-semibold text-gray-700">
-              🎯 {results.correctAnswers} out of {results.totalQuestions} questions correct
-            </div>
-
-            <div className="mb-8 text-xl font-medium text-gray-600">{getScoreMessage(results.score)}</div>
-
-            {/* Interactive Performance Breakdown */}
-            <div className="mx-auto grid max-w-2xl grid-cols-3 gap-6">
-              <div className="transform rounded-2xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
-                <div className="text-4xl font-black text-green-600">{results.correctAnswers}</div>
-                <div className="mt-2 text-sm font-semibold text-green-700">✓ Correct</div>
-              </div>
-              <div className="transform rounded-2xl border border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
-                <div className="text-4xl font-black text-red-600">
-                  {results.totalQuestions - results.correctAnswers}
+                {/* Performance Message */}
+                <div className="mb-8">
+                  <div className="flex items-center justify-center gap-3 mb-4">
+                    <Target className="w-6 h-6 text-indigo-600" />
+                    <span className="text-2xl font-bold text-gray-800">
+                      {results.correctAnswers} out of {results.totalQuestions} questions correct
+                    </span>
+                  </div>
+                  <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                    {getScoreMessage(results.score)}
+                  </p>
                 </div>
-                <div className="mt-2 text-sm font-semibold text-red-700">✗ Incorrect</div>
-              </div>
-              <div className="transform rounded-2xl border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 shadow-lg transition-all hover:scale-105 hover:shadow-xl">
-                <div className="text-4xl font-black text-blue-600">{results.totalQuestions}</div>
-                <div className="mt-2 text-sm font-semibold text-blue-700">📊 Total</div>
+
+                {/* Enhanced Performance Breakdown */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
+                  <div className="group transform rounded-3xl border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-8 shadow-lg transition-all hover:scale-105 hover:shadow-2xl">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <CheckCircle2 className="w-8 h-8 text-green-600" />
+                      <div className="text-4xl font-black text-green-600">{results.correctAnswers}</div>
+                    </div>
+                    <div className="text-base font-bold text-green-700">Correct Answers</div>
+                    <div className="text-sm text-green-600 mt-2">
+                      {Math.round((results.correctAnswers / results.totalQuestions) * 100)}% accuracy
+                    </div>
+                  </div>
+                  
+                  <div className="group transform rounded-3xl border-2 border-red-200 bg-gradient-to-br from-red-50 to-rose-50 p-8 shadow-lg transition-all hover:scale-105 hover:shadow-2xl">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <XCircle className="w-8 h-8 text-red-600" />
+                      <div className="text-4xl font-black text-red-600">
+                        {results.totalQuestions - results.correctAnswers}
+                      </div>
+                    </div>
+                    <div className="text-base font-bold text-red-700">Incorrect Answers</div>
+                    <div className="text-sm text-red-600 mt-2">
+                      Areas for improvement
+                    </div>
+                  </div>
+                  
+                  <div className="group transform rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50 p-8 shadow-lg transition-all hover:scale-105 hover:shadow-2xl">
+                    <div className="flex items-center justify-center gap-3 mb-3">
+                      <BarChart3 className="w-8 h-8 text-blue-600" />
+                      <div className="text-4xl font-black text-blue-600">{results.totalQuestions}</div>
+                    </div>
+                    <div className="text-base font-bold text-blue-700">Total Questions</div>
+                    <div className="text-sm text-blue-600 mt-2">
+                      Complete assessment
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

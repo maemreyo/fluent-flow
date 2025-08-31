@@ -42,7 +42,10 @@ export default function QuestionsPage() {
     authLoading,
     showGridView,
     openGridView,
-    closeGridView
+    closeGridView,
+    user,
+    isAuthenticated,
+    signOut
   } = useQuiz()
 
   if (appState === 'loading' || (authLoading && !questionSet)) {
@@ -60,8 +63,8 @@ export default function QuestionsPage() {
         <AuthPrompt
           onClose={handleCloseAuthPrompt}
           onAuthSuccess={handleAuthSuccess}
-          title="Save Your Progress & Favorites!"
-          subtitle="Sign in to track your learning journey and save your favorite quizzes"
+          title="Unlock Premium Learning Experience!"
+          subtitle="Sign in to access personalized quizzes, track progress, and save favorites"
         />
       )}
       
@@ -76,6 +79,10 @@ export default function QuestionsPage() {
                 onFavoriteToggle={handleFavoriteToggle}
                 onPresetSelect={handlePresetSelect}
                 getAvailableQuestionCounts={getAvailableQuestionCounts}
+                user={user}
+                isAuthenticated={isAuthenticated}
+                authLoading={authLoading}
+                onSignOut={signOut}
               />
             )
 
@@ -115,6 +122,10 @@ export default function QuestionsPage() {
                 openGridView={openGridView}
                 closeGridView={closeGridView}
                 difficultyGroups={difficultyGroups}
+                user={user}
+                isAuthenticated={isAuthenticated}
+                authLoading={authLoading}
+                onSignOut={signOut}
               />
             )
 
