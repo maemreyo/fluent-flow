@@ -1,5 +1,6 @@
-import { Card, CardContent } from '../ui/card'
+import { Frown, LucideIcon, Meh, Smile, XCircle } from 'lucide-react'
 import { Badge } from '../ui/badge'
+import { Card, CardContent } from '../ui/card'
 
 interface QuestionPreset {
   name: string
@@ -9,6 +10,7 @@ interface QuestionPreset {
     medium: number
     hard: number
   }
+  icon: LucideIcon
 }
 
 interface PresetSelectorProps {
@@ -35,99 +37,99 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-8">
-      <div className="mb-12 text-center">
-        <div className="mb-4 inline-block rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-6 py-2 text-sm font-medium text-white">
-          ✨ FluentFlow Quiz
-        </div>
-        <h1 className="mb-6 bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-4xl font-bold text-transparent">
-          Choose Your Learning Level
+    <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
+      <div className="mb-10 text-center">
+        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
+          Choose Your Quiz
         </h1>
-        <p className="mx-auto mb-4 max-w-2xl text-xl text-gray-600">
-          Select a difficulty preset that matches your current English level
+        <p className="mx-auto mt-3 max-w-2xl text-lg text-gray-600 sm:mt-4">
+          Select a preset that matches your learning goals.
         </p>
-        {/* <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 max-w-md mx-auto">
-          <p className="text-sm text-blue-700 font-medium">
-            📊 Available: {availableCounts.easy} Easy • {availableCounts.medium} Medium • {availableCounts.hard} Hard
-          </p>
-        </div> */}
       </div>
 
-      <div className="grid gap-8 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {presets.map(preset => {
           const available = isPresetAvailable(preset)
           const totalQuestions = getTotalQuestions(preset)
+          const Icon = preset.icon
 
           return (
             <Card
               key={preset.name}
-              className={`relative transform cursor-pointer transition-all duration-300 hover:scale-105 ${
+              className={`flex flex-col rounded-2xl border-2 transition-all duration-300 ${
                 available
-                  ? 'border-2 border-blue-100 hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-500/10'
-                  : 'cursor-not-allowed border-2 border-gray-200 opacity-60 hover:scale-100'
-              } ${available ? 'hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50' : ''}`}
+                  ? 'cursor-pointer border-gray-200 bg-white shadow-sm hover:border-blue-500 hover:shadow-lg'
+                  : 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-70'
+              }`}
               onClick={() => available && onPresetSelect(preset)}
             >
-              <CardContent className="p-8">
-              <div className="mb-4 flex items-start justify-between">
-                <h3 className="text-2xl font-bold text-gray-900">{preset.name}</h3>
-                <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 text-sm font-bold shadow-lg">
-                  {totalQuestions} questions
-                </Badge>
-              </div>
-
-              <p className="mb-6 leading-relaxed text-gray-600">{preset.description}</p>
-
-              <div className="space-y-3">
-                <div className="flex items-center justify-between rounded-xl bg-green-50 p-3 text-sm">
-                  <span className="flex items-center font-medium text-green-700">
-                    <span className="mr-3 h-4 w-4 rounded-full bg-gradient-to-r from-green-400 to-green-500 shadow-sm"></span>
-                    Easy Questions
-                  </span>
-                  <span className="rounded-full bg-green-100 px-3 py-1 font-bold text-green-800">
-                    {preset.distribution.easy}
-                  </span>
+              <CardContent className="flex flex-1 flex-col p-6">
+                <div className="flex-1">
+                  <div className="flex items-start justify-between">
+                    <div
+                      className={`rounded-full p-2 ${available ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'}`}
+                    >
+                      <Icon className="h-7 w-7" />
+                    </div>
+                    <Badge
+                      className={`${available ? 'bg-blue-50 text-blue-700' : 'bg-gray-200 text-gray-600'} px-3 py-1 text-sm font-semibold`}
+                    >
+                      {totalQuestions} Qs
+                    </Badge>
+                  </div>
+                  <h3 className="mt-4 text-xl font-bold text-gray-900">{preset.name}</h3>
+                  <p className="mt-2 text-sm text-gray-600">{preset.description}</p>
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl bg-amber-50 p-3 text-sm">
-                  <span className="flex items-center font-medium text-amber-700">
-                    <span className="mr-3 h-4 w-4 rounded-full bg-gradient-to-r from-yellow-400 to-amber-500 shadow-sm"></span>
-                    Medium Questions
-                  </span>
-                  <span className="rounded-full bg-amber-100 px-3 py-1 font-bold text-amber-800">
-                    {preset.distribution.medium}
-                  </span>
+                <div className="mt-6 space-y-3 border-t border-gray-200 pt-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center font-medium text-green-600">
+                      <Smile className="mr-2 h-5 w-5" />
+                      Easy
+                    </span>
+                    <span className="font-bold text-gray-800">{preset.distribution.easy}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center font-medium text-amber-600">
+                      <Meh className="mr-2 h-5 w-5" />
+                      Medium
+                    </span>
+                    <span className="font-bold text-gray-800">{preset.distribution.medium}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="flex items-center font-medium text-red-600">
+                      <Frown className="mr-2 h-5 w-5" />
+                      Hard
+                    </span>
+                    <span className="font-bold text-gray-800">{preset.distribution.hard}</span>
+                  </div>
                 </div>
 
-                <div className="flex items-center justify-between rounded-xl bg-red-50 p-3 text-sm">
-                  <span className="flex items-center font-medium text-red-700">
-                    <span className="mr-3 h-4 w-4 rounded-full bg-gradient-to-r from-red-400 to-red-500 shadow-sm"></span>
-                    Hard Questions
-                  </span>
-                  <span className="rounded-full bg-red-100 px-3 py-1 font-bold text-red-800">
-                    {preset.distribution.hard}
-                  </span>
-                </div>
-              </div>
-
-              {!available && (
-                <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-600">
-                  ❌ Not enough questions available for this preset
-                </div>
-              )}
+                {!available && (
+                  <div className="mt-4 flex items-center text-xs text-red-600">
+                    <XCircle className="mr-1.5 h-4 w-4" />
+                    Not enough questions available.
+                  </div>
+                )}
               </CardContent>
             </Card>
           )
         })}
       </div>
 
-      <div className="mt-12 text-center">
-        <div className="mx-auto max-w-2xl rounded-2xl border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-          <p className="font-medium text-blue-700">
-            💡 Don&apos;t worry! You can always try different presets with different question sets
-          </p>
+      {/* <div className="mt-12 text-center">
+        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white p-5">
+          <div className="flex items-center justify-center">
+            <CheckCircle2 className="mr-3 h-6 w-6 text-green-500" />
+            <p className="font-medium text-gray-700">
+              Available Questions: 
+              <span className="font-bold text-green-600"> {availableCounts.easy} Easy</span> • 
+              <span className="font-bold text-amber-600"> {availableCounts.medium} Medium</span> • 
+              <span className="font-bold text-red-600"> {availableCounts.hard} Hard</span>
+            </p>
+          </div>
         </div>
-      </div>
+      </div> */}
     </div>
   )
 }
