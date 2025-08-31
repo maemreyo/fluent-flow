@@ -2,8 +2,11 @@
 
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
+import { Star } from 'lucide-react'
+import { useQuizAuth } from '../../../lib/hooks/use-quiz-auth'
+import { AuthDialog } from '../../../components/auth/AuthDialog'
+import { UserStatusCard } from '../../../components/auth/UserStatusCard'
 // Import new components
-import { GridView } from '../../../components/questions/GridView'
 import { PresetSelector, QuestionPreset } from '../../../components/questions/PresetSelector'
 import { DifficultyGroup } from '../../../components/questions/ProgressIndicator'
 import {
@@ -13,7 +16,9 @@ import {
 } from '../../../components/questions/QuestionCard'
 import { QuestionSet, QuestionSetInfo } from '../../../components/questions/QuestionSetInfo'
 import { ResultsSummary } from '../../../components/questions/ResultsSummary'
-import { UserAvatar } from '../../../components/UserAvatar'
+import { VocabularyPanel } from '../../../components/questions/VocabularyPanel'
+import { TranscriptPanel } from '../../../components/questions/TranscriptPanel'
+import { quizFavoritesService } from '../../../lib/services/quiz-favorites-service'
 
 // Define presets
 const QUESTION_PRESETS: QuestionPreset[] = [
@@ -60,7 +65,19 @@ export default function QuestionsPage() {
   const [responses, setResponses] = useState<QuestionResponse[]>([])
   const [results, setResults] = useState<any>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [showGridView, setShowGridView] = useState(false)
+  const [showVocabulary, setShowVocabulary] = useState(false)
+  const [showTranscript, setShowTranscript] = useState(false)
+
+  // Favorites state
+  const [isFavorited, setIsFavorited] = useState(false)
+  const [favoriteLoading, setFavoriteLoading] = useState(false)
+
+  // Authentication state for shared sessions
+  const [authToken, setAuthToken] = useState<string | undefined>()
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth(authToken)
+  
+  // Auth dialog state
+  const [showAuthDialog, setShowAuthDialog] = useState(false)
 
   // Helper functions
   const getAvailableQuestionCounts = (questions: Question[]) => {
@@ -102,203 +119,349 @@ export default function QuestionsPage() {
     return result
   }
 
-  // Load questions
-  useEffect(() => {
-    async function loadQuestions() {
-      try {
-        const response = await fetch(`/api/questions/${token}`)
-        if (!response.ok) {
-          throw new Error('Failed to load questions')
-        }
-
-        const data = await response.json()
-        setQuestionSet(data)
-        setAppState('preset-selection')
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load questions')
-        setAppState('preset-selection') // Show error state but allow preset selection
-      } finally {
-        setLoading(false)
-      }
+  const getCurrentQuestion = () => {
+    if (!difficultyGroups.length || currentSetIndex >= difficultyGroups.length) {
+      return null
     }
 
-    if (token) {
-      loadQuestions()
+    const currentGroup = difficultyGroups[currentSetIndex]
+    if (!currentGroup || currentQuestionIndex >= currentGroup.questions.length) {
+      return null
     }
-  }, [token])
 
-  // Event handlers
+    // Calculate the absolute index for this question
+    let startIndex = 0
+    for (let i = 0; i < currentSetIndex; i++) {
+      startIndex += difficultyGroups[i].questions.length
+    }
+    const absoluteIndex = startIndex + currentQuestionIndex
+
+    return {
+      question: currentGroup.questions[currentQuestionIndex],
+      questionIndex: absoluteIndex,
+      groupData: currentGroup
+    }
+  }
+
   const handlePresetSelect = (preset: QuestionPreset) => {
     if (!questionSet) return
 
-    const presetGroups = createPresetGroups(preset, questionSet.questions)
     setSelectedPreset(preset)
-    setDifficultyGroups(presetGroups)
-    setAppState('quiz-active')
-    setCurrentSetIndex(0)
-    setCurrentQuestionIndex(0)
-    setResponses([])
+    const groups = createPresetGroups(preset, questionSet.questions)
+    setDifficultyGroups(groups)
+    setAppState('question-info')
   }
 
   const handleQuestionInfoStart = () => {
     setAppState('quiz-active')
   }
 
-  const handleAnswerSelect = (questionIndex: number, answer: string) => {
-    const newResponses = [...responses]
-    const existingIndex = newResponses.findIndex(r => r.questionIndex === questionIndex)
-
-    if (existingIndex !== -1) {
-      newResponses[existingIndex] = { questionIndex, answer }
-    } else {
-      newResponses.push({ questionIndex, answer })
-    }
-
-    setResponses(newResponses)
-  }
-
-  const moveToNextQuestion = () => {
-    const currentGroup = difficultyGroups[currentSetIndex]
-    if (currentQuestionIndex < currentGroup.questions.length - 1) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1)
-    } else {
-      // Move to next set or complete
-      if (currentSetIndex < difficultyGroups.length - 1) {
-        setCurrentSetIndex(currentSetIndex + 1)
-        setCurrentQuestionIndex(0)
-      }
-    }
-  }
 
   const submitCurrentSet = async () => {
-    const currentGroup = difficultyGroups[currentSetIndex]
-
-    // Calculate the absolute question indices for the current set
-    let startIndex = 0
-    for (let i = 0; i < currentSetIndex; i++) {
-      startIndex += difficultyGroups[i].questions.length
-    }
-    const endIndex = startIndex + currentGroup.questions.length - 1
-
-    // Get responses for the current set only
-    const setResponses = responses.filter(
-      r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
-    )
-
-    console.log(
-      `Submitting set ${currentSetIndex}: questions ${startIndex}-${endIndex}, ${setResponses.length} responses`
-    )
+    if (!difficultyGroups.length || !questionSet) return
 
     setSubmitting(true)
+    setError(null)
+
     try {
+      const currentGroup = difficultyGroups[currentSetIndex]
+      
+      // Calculate absolute indices for current set
+      let startIndex = 0
+      for (let i = 0; i < currentSetIndex; i++) {
+        startIndex += difficultyGroups[i].questions.length
+      }
+      const endIndex = startIndex + currentGroup.questions.length - 1
+      
+      // Get only responses for current set (using absolute indices)
+      const setResponses = responses.filter(
+        r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
+      )
+      
+      console.log(
+        `Submitting set ${currentSetIndex}: questions ${startIndex}-${endIndex}, ${setResponses.length} responses`
+      )
+
+      // Prepare data for submission - match API expectations
+      const submissionData = {
+        responses: setResponses,
+        questions: currentGroup.questions, // Current set questions
+        setIndex: currentSetIndex,
+        difficulty: currentGroup.difficulty,
+        // Include user data for authenticated users
+        userData: isAuthenticated ? {
+          userId: user?.id,
+          email: user?.email
+        } : undefined
+      }
+
+      // Fix: Use correct API endpoint with token parameter
       const response = await fetch(`/api/questions/${token}/submit-set`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          responses: setResponses,
-          questions: currentGroup.questions,
-          setIndex: currentSetIndex,
-          difficulty: currentGroup.difficulty
-        })
+        body: JSON.stringify(submissionData)
       })
 
       if (!response.ok) {
-        throw new Error('Failed to submit answers')
+        const errorData = await response.text()
+        throw new Error(`Failed to submit: ${response.status} ${errorData}`)
       }
 
       const result = await response.json()
+      console.log('Set submission result:', result)
 
-      // Update the completed group with score
-      const updatedGroups = [...difficultyGroups]
-      updatedGroups[currentSetIndex] = {
-        ...updatedGroups[currentSetIndex],
-        completed: true,
-        score: result.score
-      }
-      setDifficultyGroups(updatedGroups)
-
-      // Check if all sets are complete
-      const allComplete = updatedGroups.every(group => group.completed)
-      if (allComplete) {
-        setResults(result)
-        setAppState('quiz-results')
-      } else {
+      // Move to next set or show final results
+      if (currentSetIndex < difficultyGroups.length - 1) {
         // Move to next set
         setCurrentSetIndex(currentSetIndex + 1)
         setCurrentQuestionIndex(0)
+      } else {
+        // Last set completed - calculate final results
+        console.log('Quiz completed - calculating final results...')
+        
+        // Calculate total score across all sets and collect all results
+        let totalQuestions = 0
+        let totalCorrect = 0
+        let allResults: any[] = []
+        let startIndex = 0
+
+        for (let i = 0; i < difficultyGroups.length; i++) {
+          const setQuestions = difficultyGroups[i].questions.length
+          const endIndex = startIndex + setQuestions - 1
+          
+          const setResponses = responses.filter(
+            r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
+          )
+          
+          totalQuestions += setQuestions
+          
+          // Create results for each question in this set
+          const setResults = setResponses.map((response, responseIndex) => {
+            const question = difficultyGroups[i].questions.find(
+              (_, idx) => startIndex + idx === response.questionIndex
+            )
+            const isCorrect = question && question.correctAnswer === response.answer
+            
+            if (isCorrect) totalCorrect++
+            
+            // Convert option letter back to full text for display
+            const userOptionIndex = response.answer.charCodeAt(0) - 65 // A->0, B->1, etc.
+            const correctOptionIndex = question?.correctAnswer.charCodeAt(0) - 65
+            const userAnswerText = question?.options[userOptionIndex] || response.answer
+            const correctAnswerText = question?.options[correctOptionIndex] || question?.correctAnswer
+            
+            return {
+              questionId: question?.id || `q_${response.questionIndex}`,
+              question: question?.question || 'Unknown question',
+              userAnswer: userAnswerText,
+              correctAnswer: correctAnswerText,
+              isCorrect: !!isCorrect,
+              explanation: question?.explanation || 'No explanation available.',
+              points: isCorrect ? 1 : 0
+            }
+          })
+          
+          allResults.push(...setResults)
+          startIndex += setQuestions
+        }
+
+        const finalScore = Math.round((totalCorrect / totalQuestions) * 100)
+        
+        // Fix: Create results object with proper structure matching ResultsSummaryProps
+        setResults({
+          sessionId: `final_${Date.now()}`,
+          score: finalScore,
+          totalQuestions,
+          correctAnswers: totalCorrect,
+          results: allResults, // This is the nested results array that was missing
+          submittedAt: new Date().toISOString(),
+          setIndex: difficultyGroups.length - 1,
+          difficulty: 'mixed',
+          userData: isAuthenticated ? {
+            userId: user?.id,
+            email: user?.email
+          } : undefined
+        })
+        
+        setAppState('quiz-results')
       }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to submit answers')
+
+    } catch (error) {
+      console.error('Error submitting set:', error)
+      setError(error instanceof Error ? error.message : 'Unknown error occurred')
     } finally {
       setSubmitting(false)
     }
   }
 
-  const handleRestart = () => {
-    setSelectedPreset(null)
-    setDifficultyGroups([])
-    setCurrentSetIndex(0)
-    setCurrentQuestionIndex(0)
-    setResponses([])
-    setResults(null)
-    setAppState('preset-selection')
+  const handleAnswerSelect = (questionIndex: number, answer: string) => {
+    const newResponse: QuestionResponse = {
+      questionIndex,
+      answer
+    }
+    setResponses(prev => [
+      ...prev.filter(r => r.questionIndex !== questionIndex),
+      newResponse
+    ])
   }
 
-  // Get current question data
-  const getCurrentQuestion = (): { question: Question; questionIndex: number } | null => {
-    if (difficultyGroups.length === 0 || currentSetIndex >= difficultyGroups.length) {
-      return null
-    }
-
-    const currentGroup = difficultyGroups[currentSetIndex]
-    if (currentQuestionIndex >= currentGroup.questions.length) {
-      return null
-    }
-
-    // Calculate absolute question index across all groups
-    let absoluteIndex = 0
-    for (let i = 0; i < currentSetIndex; i++) {
-      absoluteIndex += difficultyGroups[i].questions.length
-    }
-    absoluteIndex += currentQuestionIndex
-
-    return {
-      question: currentGroup.questions[currentQuestionIndex],
-      questionIndex: absoluteIndex
+  const moveToNextQuestion = () => {
+    if (currentQuestionIndex < (difficultyGroups[currentSetIndex]?.questions.length || 0) - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
     }
   }
 
-  const isLastQuestionInSet = (): boolean => {
-    if (difficultyGroups.length === 0 || currentSetIndex >= difficultyGroups.length) {
-      return false
-    }
+  const isLastQuestionInSet = () => {
     const currentGroup = difficultyGroups[currentSetIndex]
-    return currentQuestionIndex === currentGroup.questions.length - 1
+    return currentQuestionIndex === (currentGroup?.questions.length || 0) - 1
   }
 
-  const allQuestionsInSetAnswered = (): boolean => {
-    if (difficultyGroups.length === 0 || currentSetIndex >= difficultyGroups.length) {
-      return false
-    }
-
+  const allQuestionsInSetAnswered = () => {
     const currentGroup = difficultyGroups[currentSetIndex]
+    if (!currentGroup) return false
 
-    // Calculate absolute question indices for current set
+    // Calculate absolute indices for current set
     let startIndex = 0
     for (let i = 0; i < currentSetIndex; i++) {
       startIndex += difficultyGroups[i].questions.length
     }
 
-    // Check if all questions in current set are answered
+    // Check that all questions in current set are answered
     for (let i = 0; i < currentGroup.questions.length; i++) {
       const absoluteIndex = startIndex + i
-      if (!responses.find(r => r.questionIndex === absoluteIndex)) {
+      const hasResponse = responses.some(r => r.questionIndex === absoluteIndex)
+      if (!hasResponse) {
         return false
       }
     }
 
     return true
   }
+
+  const handleRestart = () => {
+    setAppState('preset-selection')
+    setSelectedPreset(null)
+    setDifficultyGroups([])
+    setCurrentSetIndex(0)
+    setCurrentQuestionIndex(0)
+    setResponses([])
+    setResults(null)
+    setError(null)
+  }
+  // Authentication handlers
+  const handleSignInClick = () => {
+    setShowAuthDialog(true)
+  }
+
+  const handleAuthSuccess = (user: any) => {
+    console.log('Quiz Auth: User authenticated successfully:', user.email)
+    setShowAuthDialog(false)
+    // Refresh favorite status after authentication
+    if (questionSet && token) {
+      quizFavoritesService.isFavorited(token).then(setIsFavorited).catch(console.error)
+    }
+  }
+
+  const handleSignOut = async () => {
+    try {
+      await signOut()
+      setIsFavorited(false) // Reset favorite status
+    } catch (error) {
+      console.error('Sign out failed:', error)
+    }
+  }
+
+  // Check if quiz is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!questionSet || !token) return
+      try {
+        const favorited = await quizFavoritesService.isFavorited(token)
+        setIsFavorited(favorited)
+      } catch (error) {
+        console.error('Failed to check favorite status:', error)
+      }
+    }
+    
+    checkFavoriteStatus()
+  }, [questionSet, token])
+
+  // Handle favorite toggle
+  const handleFavoriteToggle = async () => {
+    if (!questionSet || !token) return
+
+    setFavoriteLoading(true)
+    try {
+      if (isFavorited) {
+        const success = await quizFavoritesService.removeFromFavorites(token)
+        if (success) {
+          setIsFavorited(false)
+        }
+      } else {
+        const success = await quizFavoritesService.addToFavorites({
+          sessionId: token,
+          questionSetTitle: questionSet.title || 'Quiz Session',
+          videoTitle: questionSet.videoTitle || 'Unknown Video',
+          videoUrl: questionSet.videoUrl,
+          difficulty: selectedPreset?.name || 'Mixed',
+          totalQuestions: questionSet.questions.length,
+          userScore: results?.score
+        })
+        if (success) {
+          setIsFavorited(true)
+        }
+      }
+    } catch (error) {
+      console.error('Failed to toggle favorite:', error)
+    } finally {
+      setFavoriteLoading(false)
+    }
+  }
+
+  // Load question set with authentication support
+  useEffect(() => {
+    const fetchQuestionSet = async () => {
+      try {
+        const response = await fetch(`/api/questions/${token}`)
+        if (!response.ok) {
+          throw new Error('Failed to load questions')
+        }
+        
+        const data = await response.json()
+        console.log('Loaded question set:', data)
+        
+        // Check if there's auth data in the shared session
+        if (data.authData?.accessToken) {
+          console.log('Quiz Auth: Found auth token in shared session')
+          setAuthToken(data.authData.accessToken)
+        }
+        
+        setQuestionSet(data)
+        setAppState('preset-selection')
+      } catch (err) {
+        console.error('Error loading questions:', err)
+        setError(err instanceof Error ? err.message : 'Unknown error occurred')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    if (token) {
+      fetchQuestionSet()
+    }
+  }, [token])
+
+  // Show auth status in development
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log('Quiz Auth State:', {
+        isAuthenticated,
+        userId: user?.id,
+        email: user?.email,
+        authLoading
+      })
+    }
+  }, [isAuthenticated, user, authLoading])
 
   // Render states
   if (loading) {
@@ -307,6 +470,9 @@ export default function QuestionsPage() {
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <p className="mt-4 text-gray-600">Loading questions...</p>
+          {authLoading && (
+            <p className="mt-2 text-sm text-gray-500">Checking authentication...</p>
+          )}
         </div>
       </div>
     )
@@ -344,133 +510,140 @@ export default function QuestionsPage() {
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-          <div className="absolute right-4 top-4">
-            <UserAvatar email="user@example.com" size="sm" />
+          {/* Authentication Status Card */}
+          <div className="absolute right-4 top-4 w-80">
+            <UserStatusCard
+              user={user}
+              isAuthenticated={isAuthenticated}
+              onSignInClick={handleSignInClick}
+              onSignOut={handleSignOut}
+              showBenefits={true}
+            />
           </div>
 
           {/* Video Information Header */}
           <div className="border-b border-gray-200 bg-white shadow-lg">
             <div className="mx-auto max-w-5xl p-6">
-              <div className="flex items-center space-x-6">
-                <div className="rounded-2xl bg-gradient-to-r from-red-500 to-red-600 p-3 text-white">
-                  <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
-                    <path
-                      fillRule="evenodd"
-                      d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h2 className="mb-2 text-2xl font-bold text-gray-900">
-                    {questionSet.videoTitle}
-                  </h2>
-                  <div className="flex items-center space-x-6 text-sm text-gray-600">
-                    <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      {questionSet.startTime !== undefined &&
-                        questionSet.endTime !== undefined &&
-                        `${Math.floor(questionSet.startTime / 60)}:${Math.round(
-                          questionSet.startTime % 60
-                        )
-                          .toString()
-                          .padStart(2, '0')} - ${Math.floor(questionSet.endTime / 60)}:${Math.round(
-                          questionSet.endTime % 60
-                        )
-                          .toString()
-                          .padStart(2, '0')}`}
-                    </span>
-                    <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      {questionSet.questions.length} Questions
-                    </span>
-                    <span className="flex items-center">
-                      <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                          fillRule="evenodd"
-                          d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
-                          clipRule="evenodd"
-                        />
-                      </svg>
-                      Created by {questionSet.metadata.sharedBy}
-                    </span>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-6">
+                  <div className="rounded-2xl bg-gradient-to-r from-red-500 to-red-600 p-3 text-white">
+                    <svg className="h-8 w-8" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
                   </div>
-
-                  {/* Expiration Warning */}
-                  {questionSet.expirationInfo && (
-                    <div className="mt-4 rounded-2xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50 p-4">
-                      <div className="flex items-center gap-3 text-amber-800">
-                        <span className="text-2xl">⏰</span>
-                        <div>
-                          <p className="text-sm font-bold">
-                            Link expires in {Math.round(questionSet.expirationInfo.hoursRemaining)}h{' '}
-                            {Math.round(questionSet.expirationInfo.minutesRemaining)}m
-                          </p>
-                          <p className="text-xs text-amber-600">
-                            Complete soon to avoid losing access!
-                          </p>
-                        </div>
-                      </div>
+                  <div className="flex-1">
+                    <h2 className="mb-2 text-2xl font-bold text-gray-900">
+                      {questionSet.videoTitle}
+                    </h2>
+                    <div className="flex items-center space-x-6 text-sm text-gray-600">
+                      <span className="flex items-center">
+                        <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.414-1.414L11 9.586V6z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        {questionSet.startTime !== undefined &&
+                          questionSet.endTime !== undefined &&
+                          `${Math.floor(questionSet.startTime / 60)}:${Math.round(
+                            questionSet.startTime % 60
+                          )
+                            .toString()
+                            .padStart(2, '0')} - ${Math.floor(questionSet.endTime / 60)}:${Math.round(
+                            questionSet.endTime % 60
+                          )
+                            .toString()
+                            .padStart(2, '0')}`}
+                      </span>
+                      <span className="flex items-center">
+                        <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {questionSet.questions.length} Questions
+                      </span>
+                      <span className="flex items-center">
+                        <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path
+                            fillRule="evenodd"
+                            d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        Mixed Difficulty
+                      </span>
                     </div>
-                  )}
+                  </div>
                 </div>
+                
+                {/* Favorite Star Button */}
+                <button
+                  onClick={handleFavoriteToggle}
+                  disabled={favoriteLoading}
+                  className={`flex items-center gap-2 rounded-full px-4 py-2 transition-all duration-200 ${
+                    isFavorited
+                      ? 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                      : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-yellow-500'
+                  } ${favoriteLoading ? 'cursor-wait opacity-50' : 'hover:scale-105'}`}
+                  title={isFavorited ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Star
+                    className={`h-5 w-5 transition-all ${
+                      isFavorited ? 'fill-current text-yellow-500' : ''
+                    }`}
+                  />
+                  <span className="text-sm font-medium">
+                    {favoriteLoading ? 'Saving...' : isFavorited ? 'Starred' : 'Star'}
+                  </span>
+                </button>
               </div>
             </div>
           </div>
 
-          <div className="relative">
+          <div className="mx-auto max-w-6xl p-8">
             <PresetSelector
               presets={QUESTION_PRESETS}
               onPresetSelect={handlePresetSelect}
               availableCounts={getAvailableQuestionCounts(questionSet.questions)}
             />
-
-            {/* Grid View Button */}
-            <div className="fixed bottom-6 right-6">
-              <button
-                onClick={() => setShowGridView(true)}
-                className="transform rounded-full bg-gradient-to-r from-purple-500 to-pink-600 p-4 text-white shadow-2xl transition-all duration-200 hover:scale-110 hover:from-purple-600 hover:to-pink-700"
-                title="View all questions in grid"
-              >
-                <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-                  />
-                </svg>
-              </button>
-            </div>
-
-            {/* Grid View Modal */}
-            {showGridView && (
-              <GridView
-                questions={questionSet.questions}
-                onClose={() => setShowGridView(false)}
-                videoTitle={questionSet.videoTitle}
-              />
-            )}
           </div>
+
+          {/* Auth Dialog */}
+          <AuthDialog
+            isOpen={showAuthDialog}
+            onClose={() => setShowAuthDialog(false)}
+            onAuthSuccess={handleAuthSuccess}
+          />
         </div>
       )
 
     case 'question-info':
-      if (!questionSet) return null
+      if (!questionSet || !selectedPreset) {
+        return (
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-600">Loading...</p>
+            </div>
+          </div>
+        )
+      }
 
       return (
-        <div className="min-h-screen bg-gray-50">
-          <div className="absolute right-4 top-4">
-            <UserAvatar email="user@example.com" size="sm" />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+          <div className="absolute right-4 top-4 w-80">
+            <UserStatusCard
+              user={user}
+              isAuthenticated={isAuthenticated}
+              onSignInClick={handleSignInClick}
+              onSignOut={handleSignOut}
+              showBenefits={false}
+            />
           </div>
+
           <QuestionSetInfo
             questionSet={questionSet}
             onStart={handleQuestionInfoStart}
@@ -499,18 +672,82 @@ export default function QuestionsPage() {
 
       return (
         <div className="min-h-screen bg-gray-50">
-          <div className="absolute right-4 top-4">
-            <UserAvatar email="user@example.com" size="sm" />
+          <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
+            <div className="flex items-center gap-4">
+              {/* Compact auth status */}
+              <div className="flex items-center gap-2">
+                {isAuthenticated ? (
+                  <div className="flex items-center gap-2 text-sm">
+                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                    <span className="text-green-700 font-medium">{user?.email}</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleSignInClick}
+                    className="flex items-center gap-2 text-sm px-3 py-1.5 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs">?</span>
+                    </div>
+                    <span className="text-blue-700 font-medium">Sign In for Benefits</span>
+                  </button>
+                )}</div>
+              
+              {/* Star button in quiz header */}
+              <button
+                onClick={handleFavoriteToggle}
+                disabled={favoriteLoading}
+                className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs transition-all duration-200 ${
+                  isFavorited
+                    ? 'bg-yellow-100 text-yellow-600'
+                    : 'bg-gray-100 text-gray-500 hover:bg-gray-200 hover:text-yellow-500'
+                } ${favoriteLoading ? 'cursor-wait opacity-50' : 'hover:scale-105'}`}
+                title={isFavorited ? 'Starred' : 'Star this quiz'}
+              >
+                <Star
+                  className={`h-3.5 w-3.5 transition-all ${
+                    isFavorited ? 'fill-current text-yellow-500' : ''
+                  }`}
+                />
+                <span className="font-medium">
+                  {favoriteLoading ? 'Saving...' : isFavorited ? 'Starred' : 'Star'}
+                </span>
+              </button>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              {/* Vocabulary and Transcript toggle buttons */}
+              {questionSet?.vocabulary && (
+                <button
+                  onClick={() => setShowVocabulary(!showVocabulary)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    showVocabulary
+                      ? 'bg-blue-100 text-blue-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  📚 Vocabulary
+                </button>
+              )}
+              
+              {questionSet?.transcript && (
+                <button
+                  onClick={() => setShowTranscript(!showTranscript)}
+                  className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                    showTranscript
+                      ? 'bg-green-100 text-green-600'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  📄 Transcript
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="mx-auto max-w-4xl p-6">
-            {/* <ProgressIndicator
-              difficultyGroups={difficultyGroups}
-              currentSetIndex={currentSetIndex}
-              currentQuestionIndex={currentQuestionIndex}
-              totalQuestionsInCurrentSet={difficultyGroups[currentSetIndex]?.questions.length || 0}
-            /> */}
-
             <QuestionCard
               question={currentData.question}
               questionIndex={currentData.questionIndex}
@@ -519,6 +756,7 @@ export default function QuestionsPage() {
               totalSets={difficultyGroups.length}
               responses={responses}
               onAnswerSelect={handleAnswerSelect}
+              enableWordSelection={true}
             />
 
             {error && (
@@ -558,17 +796,67 @@ export default function QuestionsPage() {
               </div>
             </div>
           </div>
+
+          {/* Vocabulary and Transcript Panels */}
+          {questionSet?.vocabulary && (
+            <VocabularyPanel
+              vocabulary={questionSet.vocabulary}
+              isOpen={showVocabulary}
+              onToggle={() => setShowVocabulary(!showVocabulary)}
+              enableWordSelection={true}
+            />
+          )}
+          
+          {questionSet?.transcript && (
+            <TranscriptPanel
+              transcript={questionSet.transcript}
+              videoTitle={questionSet.videoTitle}
+              startTime={questionSet.startTime}
+              endTime={questionSet.endTime}
+              isOpen={showTranscript}
+              onToggle={() => setShowTranscript(!showTranscript)}
+              enableWordSelection={true}
+            />
+          )}
+
+          {/* Auth Dialog */}
+          <AuthDialog
+            isOpen={showAuthDialog}
+            onClose={() => setShowAuthDialog(false)}
+            onAuthSuccess={handleAuthSuccess}
+          />
         </div>
       )
 
     case 'quiz-results':
-      if (!results || !questionSet) return null
+      if (!results || !questionSet) {
+        return (
+          <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+              <p className="text-gray-600">No results available</p>
+              <button
+                onClick={handleRestart}
+                className="mt-4 rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+              >
+                Start Over
+              </button>
+            </div>
+          </div>
+        )
+      }
 
       return (
-        <div className="min-h-screen bg-gray-50">
-          <div className="absolute right-4 top-4">
-            <UserAvatar email="user@example.com" size="sm" />
+        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+          <div className="absolute right-4 top-4 w-80">
+            <UserStatusCard
+              user={user}
+              isAuthenticated={isAuthenticated}
+              onSignInClick={handleSignInClick}
+              onSignOut={handleSignOut}
+              showBenefits={false}
+            />
           </div>
+
           <ResultsSummary
             results={results}
             onRestart={handleRestart}

@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { useWordSelection } from '../../lib/hooks/use-word-selection'
 
 interface TranscriptPanelProps {
   transcript: string
@@ -7,6 +8,7 @@ interface TranscriptPanelProps {
   endTime?: number
   isOpen: boolean
   onToggle: () => void
+  enableWordSelection?: boolean
 }
 
 export function TranscriptPanel({ 
@@ -15,11 +17,25 @@ export function TranscriptPanel({
   startTime, 
   endTime, 
   isOpen, 
-  onToggle 
+  onToggle,
+  enableWordSelection = true
 }: TranscriptPanelProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const panelRef = useRef<HTMLDivElement>(null)
+  const { enableSelection, disableSelection } = useWordSelection()
   
   if (!transcript) return null
+
+  // Enable word selection when panel is open
+  useEffect(() => {
+    if (enableWordSelection && isOpen && panelRef.current) {
+      enableSelection('transcript-panel', 'transcript', 'transcript-panel')
+    }
+
+    return () => {
+      disableSelection('transcript-panel')
+    }
+  }, [enableWordSelection, isOpen, enableSelection, disableSelection])
 
   const formatTime = (timeInSeconds: number): string => {
     const minutes = Math.floor(timeInSeconds / 60)
@@ -126,7 +142,18 @@ export function TranscriptPanel({
         {/* Transcript Content */}
         <div className="h-full overflow-y-auto pb-24">
           <div className="p-4">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
+            {enableWordSelection && (
+              <div className="mb-4 text-xs text-green-600 bg-green-50 p-2 rounded-lg">
+                💡 Select any word to add to your personal vocabulary
+              </div>
+            )}
+            <div 
+              id="transcript-panel" 
+              ref={panelRef}
+              className={`rounded-2xl border border-gray-200 bg-white p-6 shadow-sm ${
+                enableWordSelection ? 'select-text cursor-text' : ''
+              }`}
+            >
               <div className="prose prose-sm max-w-none">
                 <p className="leading-relaxed text-gray-800 whitespace-pre-wrap">
                   {highlightText(transcript, searchTerm)}

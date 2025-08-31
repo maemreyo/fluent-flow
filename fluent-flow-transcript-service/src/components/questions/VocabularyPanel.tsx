@@ -1,16 +1,31 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { VocabularyItem } from './QuestionSetInfo'
+import { useWordSelection } from '../../lib/hooks/use-word-selection'
 
 interface VocabularyPanelProps {
   vocabulary: VocabularyItem[]
   isOpen: boolean
   onToggle: () => void
+  enableWordSelection?: boolean
 }
 
-export function VocabularyPanel({ vocabulary, isOpen, onToggle }: VocabularyPanelProps) {
+export function VocabularyPanel({ vocabulary, isOpen, onToggle, enableWordSelection = true }: VocabularyPanelProps) {
   const [searchTerm, setSearchTerm] = useState('')
+  const panelRef = useRef<HTMLDivElement>(null)
+  const { enableSelection, disableSelection } = useWordSelection()
   
   if (!vocabulary || vocabulary.length === 0) return null
+
+  // Enable word selection when panel is open
+  useEffect(() => {
+    if (enableWordSelection && isOpen && panelRef.current) {
+      enableSelection('vocabulary-panel', 'vocabulary', 'vocabulary-panel')
+    }
+
+    return () => {
+      disableSelection('vocabulary-panel')
+    }
+  }, [enableWordSelection, isOpen, enableSelection, disableSelection])
 
   const filteredVocabulary = vocabulary.filter(item =>
     item.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -101,8 +116,17 @@ export function VocabularyPanel({ vocabulary, isOpen, onToggle }: VocabularyPane
         </div>
 
         {/* Vocabulary List */}
-        <div className="h-full overflow-y-auto pb-24">
+        <div 
+          id="vocabulary-panel" 
+          ref={panelRef}
+          className={`h-full overflow-y-auto pb-24 ${enableWordSelection ? 'select-text' : ''}`}
+        >
           <div className="space-y-4 p-4">
+            {enableWordSelection && (
+              <div className="mb-4 text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
+                💡 Select any word to add to your personal vocabulary
+              </div>
+            )}
             {filteredVocabulary.length === 0 ? (
               <div className="py-8 text-center text-gray-500">
                 {searchTerm ? 'No vocabulary found matching your search.' : 'No vocabulary available.'}
@@ -111,7 +135,9 @@ export function VocabularyPanel({ vocabulary, isOpen, onToggle }: VocabularyPane
               filteredVocabulary.map((item, index) => (
                 <div
                   key={index}
-                  className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow"
+                  className={`rounded-2xl border border-gray-200 bg-white p-4 shadow-sm hover:shadow-md transition-shadow ${
+                    enableWordSelection ? 'cursor-text' : ''
+                  }`}
                 >
                   {/* Word Header */}
                   <div className="mb-3 flex items-start justify-between">

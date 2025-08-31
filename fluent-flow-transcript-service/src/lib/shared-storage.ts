@@ -111,6 +111,60 @@ export const sharedQuestions = {
     }
   }
 }
+// Enhanced sharing with authentication state
+interface SharedSessionData extends StoredQuestionSet {
+  authData?: {
+    accessToken: string
+    refreshToken?: string
+    userId: string
+    email?: string
+  }
+}
+
+export const sharedSessions = {
+  setWithAuth(token: string, data: any, authData?: any, expirationHours = DEFAULT_EXPIRATION_HOURS) {
+    const storage = globalThis.__sharedSessions ?? new Map<string, SharedSessionData>()
+    const expiresAt = Date.now() + (expirationHours * 60 * 60 * 1000)
+    
+    storage.set(token, {
+      data,
+      expiresAt,
+      authData
+    })
+    
+    if (process.env.NODE_ENV === 'development') {
+      globalThis.__sharedSessions = storage
+    }
+    
+    return { expiresAt, expiresIn: expirationHours * 60 * 60 * 1000 }
+  },
+
+  getWithAuth(token: string): { data: any; authData?: any } | null {
+    const storage = globalThis.__sharedSessions ?? new Map<string, SharedSessionData>()
+    const stored = storage.get(token)
+    
+    if (!stored) return null
+    
+    // Check if expired
+    if (Date.now() > stored.expiresAt) {
+      storage.delete(token)
+      return null
+    }
+    
+    return {
+      data: stored.data,
+      authData: stored.authData
+    }
+  }
+}
+
+declare global {
+  var __sharedSessions: Map<string, SharedSessionData> | undefined
+}
+
+if (process.env.NODE_ENV === 'development') {
+  globalThis.__sharedSessions = globalThis.__sharedSessions ?? new Map<string, SharedSessionData>()
+}
 
 if (process.env.NODE_ENV === 'development') {
   globalThis.__sharedQuestions = globalThis.__sharedQuestions ?? new Map<string, StoredQuestionSet>()

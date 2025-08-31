@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sharedQuestions } from '../../../../lib/shared-storage'
+import { sharedQuestions, sharedSessions } from '../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../lib/cors'
 
 export async function OPTIONS() {
@@ -27,7 +27,19 @@ export async function GET(
     console.log(`Available tokens:`, sharedQuestions.keys())
     console.log(`Storage size:`, sharedQuestions.size())
     
-    const questionSet = sharedQuestions.get(token)
+    // First try to get from enhanced shared sessions (with auth data)
+    const sharedSessionData = sharedSessions.getWithAuth(token)
+    let questionSet = null
+    let authData = null
+    
+    if (sharedSessionData) {
+      console.log(`Found enhanced session data for token: ${token}`)
+      questionSet = sharedSessionData.data
+      authData = sharedSessionData.authData
+    } else {
+      // Fallback to regular shared questions for backward compatibility
+      questionSet = sharedQuestions.get(token)
+    }
 
     if (!questionSet) {
       console.log(`Token ${token} not found in storage or expired`)
@@ -41,10 +53,12 @@ export async function GET(
     const expirationInfo = sharedQuestions.getExpirationInfo(token)
     
     console.log(`Found question set for token: ${token}`)
+    console.log(`Auth data available: ${!!authData}`)
     console.log(`Expires in: ${expirationInfo?.hoursRemaining}h ${expirationInfo?.minutesRemaining}m`)
 
     return corsResponse({
       ...questionSet,
+      authData, // Include authentication data if available
       expirationInfo
     })
 

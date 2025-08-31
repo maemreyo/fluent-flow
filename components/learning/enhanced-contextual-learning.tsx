@@ -8,7 +8,8 @@ import {
   Loader2,
   Search,
   Sparkles,
-  Volume2
+  Volume2,
+  Star
 } from 'lucide-react'
 import {
   type CollocationPattern,
@@ -29,6 +30,7 @@ import {
 } from '../../lib/hooks/use-contextual-learning-queries'
 import { queryKeys } from '../../lib/services/query-client'
 import { cn } from '../../lib/utils'
+import { wordExplorerBridgeService } from '../../lib/services/word-explorer-bridge-service'
 
 interface EnhancedContextualLearningProps {
   onNavigateToVideo?: (loopId: string) => void
@@ -38,6 +40,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
   const [selectedWord, setSelectedWord] = useState<UserVocabularyItem | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('examples') // Changed default to 'examples'
+  const [recentlyAddedWords, setRecentlyAddedWords] = useState<{ word: string; addedAt: Date }[]>([])
   
   // React Query client
   const queryClient = useQueryClient()
@@ -60,6 +63,24 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
       handleWordSelect(vocabularyItems[0])
     }
   }, [vocabularyItems, selectedWord])
+
+  // Load recently added words from quiz pages
+  useEffect(() => {
+    const loadRecentlyAddedWords = async () => {
+      try {
+        const recentWords = await wordExplorerBridgeService.getRecentlyAddedWords()
+        setRecentlyAddedWords(recentWords)
+      } catch (error) {
+        console.error('Failed to load recently added words:', error)
+      }
+    }
+
+    loadRecentlyAddedWords()
+    
+    // Refresh every 30 seconds to catch new words
+    const interval = setInterval(loadRecentlyAddedWords, 30000)
+    return () => clearInterval(interval)
+  }, [])
 
   const filteredVocabulary = vocabularyItems.filter(
     item =>
@@ -165,35 +186,72 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
             <div className="p-4">
               {filteredVocabulary.length > 0 ? (
                 <div className="max-h-[70vh] space-y-2 overflow-y-auto pr-2">
-                  {filteredVocabulary.map(item => (
-                    <div
-                      key={item.id}
-                      onClick={() => handleWordSelect(item)}
-                      className={cn(
-                        "cursor-pointer rounded-2xl p-4 transition-all duration-300 border",
-                        selectedWord?.id === item.id 
-                          ? "bg-gradient-to-r from-violet-100 via-blue-100 to-emerald-100 border-violet-200 shadow-md scale-105" 
-                          : "bg-white/50 hover:bg-white/80 border-transparent hover:border-white/40 hover:shadow-lg"
-                      )}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-semibold text-gray-900">{item.text}</p>
-                        <p className="truncate text-sm text-gray-600 mt-1">{item.definition}</p>
+                  {filteredVocabulary.map(item => {
+                    const isRecentlyAdded = recentlyAddedWords.some(
+                      recent => recent.word.toLowerCase() === item.text.toLowerCase()
+                    )
+                    
+                    const handleWordClick = async () => {
+                      if (isRecentlyAdded) {
+                        // Mark as seen when clicked
+                        await wordExplorerBridgeService.markWordAsSeen(item.text)
+                        setRecentlyAddedWords(prev => 
+                          prev.filter(w => w.word.toLowerCase() !== item.text.toLowerCase())
+                        )
+                      }
+                      handleWordSelect(item)
+                    }
+                    
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={handleWordClick}
+                        className={cn(
+                          "cursor-pointer rounded-2xl p-4 transition-all duration-300 border relative",
+                          selectedWord?.id === item.id 
+                            ? "bg-gradient-to-r from-violet-100 via-blue-100 to-emerald-100 border-violet-200 shadow-md scale-105" 
+                            : isRecentlyAdded
+                            ? "bg-gradient-to-r from-yellow-50 via-orange-50 to-red-50 border-yellow-300 shadow-lg animate-pulse"
+                            : "bg-white/50 hover:bg-white/80 border-transparent hover:border-white/40 hover:shadow-lg"
+                        )}
+                      >
+                        {/* New Word Badge */}
+                        {isRecentlyAdded && (
+                          <div className="absolute -top-2 -right-2 bg-gradient-to-r from-yellow-400 to-orange-500 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg flex items-center gap-1">
+                            <Star className="h-3 w-3" />
+                            New!
+                          </div>
+                        )}
+                        
+                        <div className="min-w-0 flex-1">
+                          <p className={cn(
+                            "truncate font-semibold",
+                            isRecentlyAdded ? "text-orange-900" : "text-gray-900"
+                          )}>
+                            {item.text}
+                          </p>
+                          <p className={cn(
+                            "truncate text-sm mt-1",
+                            isRecentlyAdded ? "text-orange-700" : "text-gray-600"
+                          )}>
+                            {item.definition}
+                          </p>
+                        </div>
+                        <div className="mt-2 flex justify-end">
+                          <span
+                            className={cn(
+                              'text-xs px-2 py-1 rounded-lg font-medium',
+                              item.difficulty === 'beginner' && "bg-green-100 text-green-700",
+                              item.difficulty === 'intermediate' && "bg-blue-100 text-blue-700", 
+                              item.difficulty === 'advanced' && "bg-purple-100 text-purple-700"
+                            )}
+                          >
+                            {item.difficulty}
+                          </span>
+                        </div>
                       </div>
-                      <div className="mt-2 flex justify-end">
-                        <span
-                          className={cn(
-                            'text-xs px-2 py-1 rounded-lg font-medium',
-                            item.difficulty === 'beginner' && "bg-green-100 text-green-700",
-                            item.difficulty === 'intermediate' && "bg-blue-100 text-blue-700", 
-                            item.difficulty === 'advanced' && "bg-purple-100 text-purple-700"
-                          )}
-                        >
-                          {item.difficulty}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="py-12 text-center">

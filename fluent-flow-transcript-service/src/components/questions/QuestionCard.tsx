@@ -1,3 +1,6 @@
+import { useEffect, useRef } from 'react'
+import { useWordSelection } from '../../lib/hooks/use-word-selection'
+
 interface Question {
   id: string
   question: string
@@ -23,6 +26,7 @@ interface QuestionCardProps {
   onAnswerSelect: (questionIndex: number, answer: string) => void
   showResults?: boolean
   evaluationResult?: any
+  enableWordSelection?: boolean
 }
 
 export function QuestionCard({
@@ -34,9 +38,38 @@ export function QuestionCard({
   responses,
   onAnswerSelect,
   showResults = false,
-  evaluationResult
+  evaluationResult,
+  enableWordSelection = true
 }: QuestionCardProps) {
   const selectedAnswer = responses.find(r => r.questionIndex === questionIndex)?.answer
+  const questionRef = useRef<HTMLDivElement>(null)
+  const optionsRef = useRef<HTMLDivElement>(null)
+  const { enableSelection, disableSelection } = useWordSelection()
+
+  // Enable word selection on mount
+  useEffect(() => {
+    if (enableWordSelection && questionRef.current) {
+      enableSelection(
+        `question-text-${questionIndex}`,
+        'quiz',
+        `${questionIndex}-question`
+      )
+    }
+    
+    if (enableWordSelection && optionsRef.current) {
+      enableSelection(
+        `question-options-${questionIndex}`,
+        'quiz',
+        `${questionIndex}-options`
+      )
+    }
+
+    return () => {
+      // Cleanup on unmount
+      disableSelection(`question-text-${questionIndex}`)
+      disableSelection(`question-options-${questionIndex}`)
+    }
+  }, [enableWordSelection, questionIndex, enableSelection, disableSelection])
 
   // getDifficultyColor removed as difficulty is now hidden from users
 
@@ -85,12 +118,27 @@ export function QuestionCard({
       </div>
 
       {/* Question Text */}
-      <div className="mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-gray-50 to-blue-50 p-6">
+      <div 
+        id={`question-text-${questionIndex}`}
+        ref={questionRef}
+        className={`mb-8 rounded-2xl border border-blue-100 bg-gradient-to-r from-gray-50 to-blue-50 p-6 ${
+          enableWordSelection ? 'select-text cursor-text' : ''
+        }`}
+      >
         <h3 className="text-xl font-semibold leading-relaxed text-gray-900">{question.question}</h3>
+        {enableWordSelection && (
+          <div className="mt-2 text-xs text-gray-500 opacity-70">
+            💡 Select words to add to your vocabulary
+          </div>
+        )}
       </div>
 
       {/* Answer Options */}
-      <div className="mb-8 space-y-4">
+      <div 
+        id={`question-options-${questionIndex}`}
+        ref={optionsRef}
+        className="mb-8 space-y-4"
+      >
         {question.options.map((option, index) => {
           const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
           const isSelected = selectedAnswer === optionLetter
@@ -98,8 +146,18 @@ export function QuestionCard({
           return (
             <button
               key={index}
-              className={`${getOptionClasses(optionLetter, isSelected)} hover:scale-102 transition-all duration-200`}
-              onClick={() => !showResults && onAnswerSelect(questionIndex, optionLetter)}
+              className={`${getOptionClasses(optionLetter, isSelected)} hover:scale-102 transition-all duration-200 ${
+                enableWordSelection ? 'select-text' : ''
+              }`}
+              onClick={() => {
+                // Only handle answer selection if not selecting text
+                const selection = window.getSelection()
+                const hasSelection = selection && !selection.isCollapsed
+                
+                if (!hasSelection && !showResults) {
+                  onAnswerSelect(questionIndex, optionLetter)
+                }
+              }}
               disabled={showResults}
             >
               <div className="flex items-start space-x-4">
