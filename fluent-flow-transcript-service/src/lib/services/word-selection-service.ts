@@ -192,14 +192,17 @@ export class WordSelectionService {
   }
 
   /**
-   * Extract clean word from selected text
+   * Extract clean word/phrase from selected text
    */
   extractCleanWord(selectedText: string): string {
-    return selectedText
+    const cleaned = selectedText
       .trim()
       .replace(/[^\w\s-']/g, '') // Remove punctuation except hyphens and apostrophes
       .toLowerCase()
-      .split(/\s+/)[0] // Take first word if multiple selected
+    
+    // Support multi-word selection up to 5 words
+    const words = cleaned.split(/\s+/).filter(word => word.length > 0)
+    return words.slice(0, 5).join(' ')
   }
 
   /**

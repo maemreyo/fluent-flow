@@ -1,3 +1,4 @@
+// @ts-nocheck
 'use client'
 
 import { useEffect, useState } from 'react'
@@ -436,7 +437,7 @@ export default function QuestionsPage() {
                         className={`w-full rounded-lg border-2 p-3 text-left text-sm transition-all duration-200 ${
                           responses.find(r => r.questionIndex === index)?.answer === option
                             ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
-                            : 'hover:bg-blue-50 border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:shadow-sm'
+                            : 'border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm'
                         }`}
                       >
                         <div className="flex items-start gap-2">
@@ -488,7 +489,7 @@ export default function QuestionsPage() {
                     className={`w-full rounded-xl border-2 p-5 text-left transition-all duration-200 ${
                       getCurrentResponse() === option
                         ? 'border-blue-500 bg-blue-50 text-blue-900 shadow-md'
-                        : 'hover:bg-blue-50 border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:shadow-sm'
+                        : 'border-gray-300 bg-white text-gray-800 hover:border-blue-300 hover:bg-blue-50 hover:shadow-sm'
                     }`}
                   >
                     <div className="flex items-start gap-3">

@@ -98,11 +98,21 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-4xl">
-        <div className="mb-8 text-center">
-          <h1 className="text-3xl font-bold text-gray-900">FluentFlow Transcript Service</h1>
-          <p className="mt-2 text-lg text-gray-600">
-            YouTube Transcript Extraction API using YouTube.js
-          </p>
+        {/* Header with User Avatar */}
+        <div className="mb-8 flex items-center justify-between">
+          <div className="text-center flex-1">
+            <h1 className="text-3xl font-bold text-gray-900">FluentFlow Transcript Service</h1>
+            <p className="mt-2 text-lg text-gray-600">
+              YouTube Transcript Extraction API using YouTube.js
+            </p>
+          </div>
+          
+          {/* Placeholder for UserAvatar - will be integrated with authentication */}
+          <div className="flex items-center space-x-4">
+            <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+              <span className="text-xs text-gray-600">U</span>
+            </div>
+          </div>
         </div>
 
         <div className="mb-6 rounded-lg bg-white p-6 shadow">

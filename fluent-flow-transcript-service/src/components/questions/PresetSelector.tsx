@@ -1,3 +1,6 @@
+import { Card, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
+
 interface QuestionPreset {
   name: string
   description: string
@@ -56,20 +59,21 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
           const totalQuestions = getTotalQuestions(preset)
 
           return (
-            <div
+            <Card
               key={preset.name}
-              className={`relative transform cursor-pointer rounded-3xl bg-white p-8 transition-all duration-300 hover:scale-105 ${
+              className={`relative transform cursor-pointer transition-all duration-300 hover:scale-105 ${
                 available
                   ? 'border-2 border-blue-100 hover:border-blue-300 hover:shadow-2xl hover:shadow-blue-500/10'
                   : 'cursor-not-allowed border-2 border-gray-200 opacity-60 hover:scale-100'
               } ${available ? 'hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50' : ''}`}
               onClick={() => available && onPresetSelect(preset)}
             >
+              <CardContent className="p-8">
               <div className="mb-4 flex items-start justify-between">
                 <h3 className="text-2xl font-bold text-gray-900">{preset.name}</h3>
-                <div className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-bold text-white shadow-lg">
+                <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 text-sm font-bold shadow-lg">
                   {totalQuestions} questions
-                </div>
+                </Badge>
               </div>
 
               <p className="mb-6 leading-relaxed text-gray-600">{preset.description}</p>
@@ -111,7 +115,8 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
                   ❌ Not enough questions available for this preset
                 </div>
               )}
-            </div>
+              </CardContent>
+            </Card>
           )
         })}
       </div>

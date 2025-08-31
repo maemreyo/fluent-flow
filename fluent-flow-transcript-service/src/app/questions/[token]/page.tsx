@@ -1,11 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
 import { Star } from 'lucide-react'
-import { useQuizAuth } from '../../../lib/hooks/use-quiz-auth'
-import { AuthDialog } from '../../../components/auth/AuthDialog'
-import { UserStatusCard } from '../../../components/auth/UserStatusCard'
+import { useParams } from 'next/navigation'
 // Import new components
 import { PresetSelector, QuestionPreset } from '../../../components/questions/PresetSelector'
 import { DifficultyGroup } from '../../../components/questions/ProgressIndicator'
@@ -16,8 +13,9 @@ import {
 } from '../../../components/questions/QuestionCard'
 import { QuestionSet, QuestionSetInfo } from '../../../components/questions/QuestionSetInfo'
 import { ResultsSummary } from '../../../components/questions/ResultsSummary'
-import { VocabularyPanel } from '../../../components/questions/VocabularyPanel'
 import { TranscriptPanel } from '../../../components/questions/TranscriptPanel'
+import { VocabularyPanel } from '../../../components/questions/VocabularyPanel'
+import { useQuizAuth } from '../../../lib/hooks/use-quiz-auth'
 import { quizFavoritesService } from '../../../lib/services/quiz-favorites-service'
 
 // Define presets
@@ -75,9 +73,6 @@ export default function QuestionsPage() {
   // Authentication state for shared sessions
   const [authToken, setAuthToken] = useState<string | undefined>()
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth(authToken)
-  
-  // Auth dialog state
-  const [showAuthDialog, setShowAuthDialog] = useState(false)
 
   // Helper functions
   const getAvailableQuestionCounts = (questions: Question[]) => {
@@ -156,7 +151,6 @@ export default function QuestionsPage() {
     setAppState('quiz-active')
   }
 
-
   const submitCurrentSet = async () => {
     if (!difficultyGroups.length || !questionSet) return
 
@@ -165,19 +159,19 @@ export default function QuestionsPage() {
 
     try {
       const currentGroup = difficultyGroups[currentSetIndex]
-      
+
       // Calculate absolute indices for current set
       let startIndex = 0
       for (let i = 0; i < currentSetIndex; i++) {
         startIndex += difficultyGroups[i].questions.length
       }
       const endIndex = startIndex + currentGroup.questions.length - 1
-      
+
       // Get only responses for current set (using absolute indices)
       const setResponses = responses.filter(
         r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
       )
-      
+
       console.log(
         `Submitting set ${currentSetIndex}: questions ${startIndex}-${endIndex}, ${setResponses.length} responses`
       )
@@ -189,10 +183,12 @@ export default function QuestionsPage() {
         setIndex: currentSetIndex,
         difficulty: currentGroup.difficulty,
         // Include user data for authenticated users
-        userData: isAuthenticated ? {
-          userId: user?.id,
-          email: user?.email
-        } : undefined
+        userData: isAuthenticated
+          ? {
+              userId: user?.id,
+              email: user?.email
+            }
+          : undefined
       }
 
       // Fix: Use correct API endpoint with token parameter
@@ -218,38 +214,39 @@ export default function QuestionsPage() {
       } else {
         // Last set completed - calculate final results
         console.log('Quiz completed - calculating final results...')
-        
+
         // Calculate total score across all sets and collect all results
         let totalQuestions = 0
         let totalCorrect = 0
-        let allResults: any[] = []
+        const allResults: any[] = []
         let startIndex = 0
 
         for (let i = 0; i < difficultyGroups.length; i++) {
           const setQuestions = difficultyGroups[i].questions.length
           const endIndex = startIndex + setQuestions - 1
-          
+
           const setResponses = responses.filter(
             r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
           )
-          
+
           totalQuestions += setQuestions
-          
+
           // Create results for each question in this set
           const setResults = setResponses.map((response, responseIndex) => {
             const question = difficultyGroups[i].questions.find(
               (_, idx) => startIndex + idx === response.questionIndex
             )
             const isCorrect = question && question.correctAnswer === response.answer
-            
+
             if (isCorrect) totalCorrect++
-            
+
             // Convert option letter back to full text for display
             const userOptionIndex = response.answer.charCodeAt(0) - 65 // A->0, B->1, etc.
             const correctOptionIndex = question?.correctAnswer.charCodeAt(0) - 65
             const userAnswerText = question?.options[userOptionIndex] || response.answer
-            const correctAnswerText = question?.options[correctOptionIndex] || question?.correctAnswer
-            
+            const correctAnswerText =
+              question?.options[correctOptionIndex] || question?.correctAnswer
+
             return {
               questionId: question?.id || `q_${response.questionIndex}`,
               question: question?.question || 'Unknown question',
@@ -260,13 +257,13 @@ export default function QuestionsPage() {
               points: isCorrect ? 1 : 0
             }
           })
-          
+
           allResults.push(...setResults)
           startIndex += setQuestions
         }
 
         const finalScore = Math.round((totalCorrect / totalQuestions) * 100)
-        
+
         // Fix: Create results object with proper structure matching ResultsSummaryProps
         setResults({
           sessionId: `final_${Date.now()}`,
@@ -277,15 +274,16 @@ export default function QuestionsPage() {
           submittedAt: new Date().toISOString(),
           setIndex: difficultyGroups.length - 1,
           difficulty: 'mixed',
-          userData: isAuthenticated ? {
-            userId: user?.id,
-            email: user?.email
-          } : undefined
+          userData: isAuthenticated
+            ? {
+                userId: user?.id,
+                email: user?.email
+              }
+            : undefined
         })
-        
+
         setAppState('quiz-results')
       }
-
     } catch (error) {
       console.error('Error submitting set:', error)
       setError(error instanceof Error ? error.message : 'Unknown error occurred')
@@ -299,10 +297,7 @@ export default function QuestionsPage() {
       questionIndex,
       answer
     }
-    setResponses(prev => [
-      ...prev.filter(r => r.questionIndex !== questionIndex),
-      newResponse
-    ])
+    setResponses(prev => [...prev.filter(r => r.questionIndex !== questionIndex), newResponse])
   }
 
   const moveToNextQuestion = () => {
@@ -348,14 +343,9 @@ export default function QuestionsPage() {
     setResults(null)
     setError(null)
   }
-  // Authentication handlers
-  const handleSignInClick = () => {
-    setShowAuthDialog(true)
-  }
 
   const handleAuthSuccess = (user: any) => {
     console.log('Quiz Auth: User authenticated successfully:', user.email)
-    setShowAuthDialog(false)
     // Refresh favorite status after authentication
     if (questionSet && token) {
       quizFavoritesService.isFavorited(token).then(setIsFavorited).catch(console.error)
@@ -382,7 +372,7 @@ export default function QuestionsPage() {
         console.error('Failed to check favorite status:', error)
       }
     }
-    
+
     checkFavoriteStatus()
   }, [questionSet, token])
 
@@ -426,16 +416,16 @@ export default function QuestionsPage() {
         if (!response.ok) {
           throw new Error('Failed to load questions')
         }
-        
+
         const data = await response.json()
         console.log('Loaded question set:', data)
-        
+
         // Check if there's auth data in the shared session
         if (data.authData?.accessToken) {
           console.log('Quiz Auth: Found auth token in shared session')
           setAuthToken(data.authData.accessToken)
         }
-        
+
         setQuestionSet(data)
         setAppState('preset-selection')
       } catch (err) {
@@ -470,9 +460,7 @@ export default function QuestionsPage() {
         <div className="text-center">
           <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-blue-600"></div>
           <p className="mt-4 text-gray-600">Loading questions...</p>
-          {authLoading && (
-            <p className="mt-2 text-sm text-gray-500">Checking authentication...</p>
-          )}
+          {authLoading && <p className="mt-2 text-sm text-gray-500">Checking authentication...</p>}
         </div>
       </div>
     )
@@ -511,15 +499,15 @@ export default function QuestionsPage() {
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
           {/* Authentication Status Card */}
-          <div className="absolute right-4 top-4 w-80">
-            <UserStatusCard
+          {/* <div className="fixed right-4 top-4 w-80 z-50">
+            <AuthHeader
               user={user}
               isAuthenticated={isAuthenticated}
-              onSignInClick={handleSignInClick}
+              onAuthSuccess={handleAuthSuccess}
               onSignOut={handleSignOut}
               showBenefits={true}
             />
-          </div>
+          </div> */}
 
           {/* Video Information Header */}
           <div className="border-b border-gray-200 bg-white shadow-lg">
@@ -554,7 +542,10 @@ export default function QuestionsPage() {
                             questionSet.startTime % 60
                           )
                             .toString()
-                            .padStart(2, '0')} - ${Math.floor(questionSet.endTime / 60)}:${Math.round(
+                            .padStart(
+                              2,
+                              '0'
+                            )} - ${Math.floor(questionSet.endTime / 60)}:${Math.round(
                             questionSet.endTime % 60
                           )
                             .toString()
@@ -579,7 +570,7 @@ export default function QuestionsPage() {
                     </div>
                   </div>
                 </div>
-                
+
                 {/* Favorite Star Button */}
                 <button
                   onClick={handleFavoriteToggle}
@@ -611,13 +602,6 @@ export default function QuestionsPage() {
               availableCounts={getAvailableQuestionCounts(questionSet.questions)}
             />
           </div>
-
-          {/* Auth Dialog */}
-          <AuthDialog
-            isOpen={showAuthDialog}
-            onClose={() => setShowAuthDialog(false)}
-            onAuthSuccess={handleAuthSuccess}
-          />
         </div>
       )
 
@@ -634,15 +618,15 @@ export default function QuestionsPage() {
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-          <div className="absolute right-4 top-4 w-80">
-            <UserStatusCard
+          {/* <div className="fixed right-4 top-4 z-50 w-80">
+            <AuthHeader
               user={user}
               isAuthenticated={isAuthenticated}
-              onSignInClick={handleSignInClick}
+              onAuthSuccess={handleAuthSuccess}
               onSignOut={handleSignOut}
               showBenefits={false}
             />
-          </div>
+          </div> */}
 
           <QuestionSetInfo
             questionSet={questionSet}
@@ -672,29 +656,30 @@ export default function QuestionsPage() {
 
       return (
         <div className="min-h-screen bg-gray-50">
-          <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
+          <div className="flex items-center justify-between border-b bg-white p-4 shadow-sm">
             <div className="flex items-center gap-4">
-              {/* Compact auth status */}
+              {/* Compact auth status - now with proper z-index handling */}
               <div className="flex items-center gap-2">
                 {isAuthenticated ? (
                   <div className="flex items-center gap-2 text-sm">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">✓</span>
+                    <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500">
+                      <span className="text-xs text-white">✓</span>
                     </div>
-                    <span className="text-green-700 font-medium">{user?.email}</span>
+                    <span className="font-medium text-green-700">{user?.email}</span>
                   </div>
                 ) : (
-                  <button
-                    onClick={handleSignInClick}
-                    className="flex items-center gap-2 text-sm px-3 py-1.5 bg-blue-100 hover:bg-blue-200 rounded-full transition-colors"
-                  >
-                    <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs">?</span>
-                    </div>
-                    <span className="text-blue-700 font-medium">Sign In for Benefits</span>
-                  </button>
-                )}</div>
-              
+                  <div className="inline-block">
+                    {/* <AuthHeader
+                      user={user}
+                      isAuthenticated={isAuthenticated}
+                      onAuthSuccess={handleAuthSuccess}
+                      onSignOut={handleSignOut}
+                      showBenefits={false}
+                    /> */}
+                  </div>
+                )}
+              </div>
+
               {/* Star button in quiz header */}
               <button
                 onClick={handleFavoriteToggle}
@@ -716,7 +701,7 @@ export default function QuestionsPage() {
                 </span>
               </button>
             </div>
-            
+
             <div className="flex items-center gap-4">
               {/* Vocabulary and Transcript toggle buttons */}
               {questionSet?.vocabulary && (
@@ -731,7 +716,7 @@ export default function QuestionsPage() {
                   📚 Vocabulary
                 </button>
               )}
-              
+
               {questionSet?.transcript && (
                 <button
                   onClick={() => setShowTranscript(!showTranscript)}
@@ -806,7 +791,7 @@ export default function QuestionsPage() {
               enableWordSelection={true}
             />
           )}
-          
+
           {questionSet?.transcript && (
             <TranscriptPanel
               transcript={questionSet.transcript}
@@ -818,13 +803,6 @@ export default function QuestionsPage() {
               enableWordSelection={true}
             />
           )}
-
-          {/* Auth Dialog */}
-          <AuthDialog
-            isOpen={showAuthDialog}
-            onClose={() => setShowAuthDialog(false)}
-            onAuthSuccess={handleAuthSuccess}
-          />
         </div>
       )
 
@@ -847,15 +825,15 @@ export default function QuestionsPage() {
 
       return (
         <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-          <div className="absolute right-4 top-4 w-80">
-            <UserStatusCard
+          {/* <div className="fixed right-4 top-4 z-50 w-80">
+            <AuthHeader
               user={user}
               isAuthenticated={isAuthenticated}
-              onSignInClick={handleSignInClick}
+              onAuthSuccess={handleAuthSuccess}
               onSignOut={handleSignOut}
               showBenefits={false}
             />
-          </div>
+          </div> */}
 
           <ResultsSummary
             results={results}

@@ -110,14 +110,20 @@ export class QuizFavoritesService {
           .select('id')
           .eq('user_id', user.id)
           .eq('session_id', sessionId)
-          .single()
+          .maybeSingle()
         
-        return !error && !!data
+        if (error) {
+          console.error('Error checking favorite status:', error)
+          return false
+        }
+        
+        return !!data
       } else {
         const favorites = await this.getFavorites()
         return favorites.some(f => f.sessionId === sessionId)
       }
     } catch (error) {
+      console.error('Failed to check if quiz is favorited:', error)
       return false
     }
   }

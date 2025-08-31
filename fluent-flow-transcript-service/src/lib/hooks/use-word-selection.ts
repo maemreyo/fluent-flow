@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { wordSelectionService, type WordSelectionData, type SelectedWord } from '../services/word-selection-service'
 
 // Import bridge service if available (for newtab integration)
-let wordExplorerBridgeService: any = null
+const wordExplorerBridgeService: any = null
 // Note: Bridge service is only available in the main Chrome extension context
 // For now, we disable bridge integration in transcript service
 
@@ -64,6 +64,27 @@ export function useWordSelection(): UseWordSelectionReturn {
       
       if (success) {
         await refreshWords()
+        
+        // Also add to user vocabulary deck for better integration
+        try {
+          const { userService } = await import('../services/user-service')
+          const { getCurrentUser } = await import('../supabase/client')
+          
+          const currentUser = await getCurrentUser()
+          if (currentUser) {
+            await userService.addVocabularyItem(currentUser.id, {
+              text: cleanWord,
+              item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
+              definition: `From ${data.sourceType}: ${data.context.slice(0, 100)}...`,
+              difficulty: 'intermediate',
+              source_loop_id: data.sourceId,
+              learning_status: 'new'
+            })
+          }
+        } catch (bridgeError) {
+          console.warn('Failed to add to vocabulary deck:', bridgeError)
+          // Don't fail the whole operation if bridge fails
+        }
         
         // Also add to Word Explorer if bridge service is available
         if (wordExplorerBridgeService) {
@@ -202,47 +223,172 @@ export function useWordSelection(): UseWordSelectionReturn {
       existingTooltip.remove()
     }
 
-    // Create tooltip
+    // Create tooltip with improved design
     const tooltip = document.createElement('div')
     tooltip.className = 'word-selection-tooltip'
     tooltip.style.cssText = `
       position: fixed;
-      top: ${rect.top - 50}px;
-      left: ${rect.left + rect.width / 2 - 75}px;
-      background: #1f2937;
+      top: ${rect.top - 60}px;
+      left: ${rect.left + rect.width / 2}px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
       color: white;
-      padding: 8px 12px;
-      border-radius: 8px;
-      font-size: 12px;
+      padding: 12px 16px;
+      border-radius: 12px;
+      font-size: 13px;
       z-index: 10000;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
       pointer-events: auto;
       cursor: pointer;
-      transform: translateX(-50%);
-      transition: opacity 0.2s;
+      transform: translateX(-50%) translateY(-10px) scale(0.9);
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      opacity: 0;
+      animation: tooltip-appear 0.3s ease-out forwards;
+      border: 1px solid rgba(255,255,255,0.2);
+      backdrop-filter: blur(10px);
     `
+    
+    // Add CSS animation keyframes
+    if (!document.querySelector('#word-selection-styles')) {
+      const style = document.createElement('style')
+      style.id = 'word-selection-styles'
+      style.textContent = `
+        @keyframes tooltip-appear {
+          0% {
+            opacity: 0;
+            transform: translateX(-50%) translateY(-10px) scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0) scale(1);
+          }
+        }
+        @keyframes tooltip-success {
+          0% {
+            background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+            transform: translateX(-50%) translateY(0) scale(1);
+          }
+          50% {
+            background: linear-gradient(135deg, #10b981, #059669);
+            transform: translateX(-50%) translateY(-5px) scale(1.05);
+          }
+          100% {
+            background: linear-gradient(135deg, #10b981, #059669);
+            transform: translateX(-50%) translateY(0) scale(1);
+          }
+        }
+      `
+      document.head.appendChild(style)
+    }
     
     tooltip.innerHTML = `
       <div style="text-align: center;">
-        <div style="font-weight: 500; margin-bottom: 4px;">Add "${word}" to vocabulary?</div>
-        <div style="font-size: 10px; opacity: 0.8;">Click to confirm</div>
+        <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+          <span style="font-size: 16px;">📚</span>
+          <span>Add "${word.length > 20 ? word.slice(0, 20) + '...' : word}"</span>
+        </div>
+        <div style="font-size: 11px; opacity: 0.9;">Click to add to vocabulary</div>
       </div>
     `
 
-    tooltip.addEventListener('click', () => {
-      onConfirm()
-      tooltip.remove()
+    let isProcessing = false
+
+    tooltip.addEventListener('click', async () => {
+      if (isProcessing) return
+      isProcessing = true
+      
+      // Show loading state
+      tooltip.innerHTML = `
+        <div style="text-align: center;">
+          <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+            <div style="width: 12px; height: 12px; border: 2px solid rgba(255,255,255,0.3); border-top: 2px solid white; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+            <span>Adding...</span>
+          </div>
+        </div>
+      `
+      
+      // Add spin animation
+      const spinStyle = document.createElement('style')
+      spinStyle.textContent = `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `
+      document.head.appendChild(spinStyle)
+      
+      try {
+        await onConfirm()
+        
+        // Show success state
+        tooltip.style.animation = 'tooltip-success 0.6s ease-out forwards'
+        tooltip.innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span style="font-size: 16px;">✅</span>
+              <span>Added successfully!</span>
+            </div>
+          </div>
+        `
+        
+        // Remove after success animation
+        setTimeout(() => {
+          if (tooltip.parentNode) {
+            tooltip.style.opacity = '0'
+            tooltip.style.transform = 'translateX(-50%) translateY(-10px) scale(0.9)'
+            setTimeout(() => tooltip.remove(), 300)
+          }
+        }, 1500)
+      } catch (error) {
+        // Show error state
+        tooltip.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'
+        tooltip.innerHTML = `
+          <div style="text-align: center;">
+            <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+              <span style="font-size: 16px;">❌</span>
+              <span>Failed to add</span>
+            </div>
+          </div>
+        `
+        
+        setTimeout(() => {
+          if (tooltip.parentNode) {
+            tooltip.style.opacity = '0'
+            setTimeout(() => tooltip.remove(), 200)
+          }
+        }, 2000)
+      }
+      
+      spinStyle.remove()
+    })
+
+    // Hover effects
+    tooltip.addEventListener('mouseenter', () => {
+      if (!isProcessing) {
+        tooltip.style.transform = 'translateX(-50%) translateY(-2px) scale(1.02)'
+        tooltip.style.boxShadow = '0 12px 40px rgba(0,0,0,0.25)'
+      }
+    })
+    
+    tooltip.addEventListener('mouseleave', () => {
+      if (!isProcessing) {
+        tooltip.style.transform = 'translateX(-50%) translateY(0) scale(1)'
+        tooltip.style.boxShadow = '0 8px 32px rgba(0,0,0,0.2)'
+      }
     })
 
     document.body.appendChild(tooltip)
 
-    // Auto-remove after 3 seconds
-    setTimeout(() => {
-      if (tooltip.parentNode) {
+    // Auto-remove after 5 seconds if not interacted
+    const autoRemoveTimeout = setTimeout(() => {
+      if (tooltip.parentNode && !isProcessing) {
         tooltip.style.opacity = '0'
-        setTimeout(() => tooltip.remove(), 200)
+        tooltip.style.transform = 'translateX(-50%) translateY(-10px) scale(0.9)'
+        setTimeout(() => tooltip.remove(), 300)
       }
-    }, 3000)
+    }, 5000)
+    
+    // Clear timeout if user interacts
+    tooltip.addEventListener('click', () => clearTimeout(autoRemoveTimeout))
   }, [])
 
   const enableSelection = useCallback((

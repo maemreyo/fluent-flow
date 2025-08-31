@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { useWordSelection } from '../../lib/hooks/use-word-selection'
+import { Card, CardContent } from '../ui/card'
+import { Badge } from '../ui/badge'
 
 interface Question {
   id: string
@@ -106,16 +108,17 @@ export function QuestionCard({
   }
 
   return (
-    <div className="rounded-3xl border-2 border-blue-100 bg-white p-8 shadow-xl shadow-blue-500/5">
-      {/* Question Header */}
-      <div className="mb-6 flex items-start justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="rounded-full bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-2 text-sm font-bold text-white">
-            Set {currentSetIndex + 1} of {totalSets} • Question {questionIndex + 1} of{' '}
-            {totalQuestions}
+    <Card className="border-2 border-blue-100 shadow-xl shadow-blue-500/5">
+      <CardContent className="p-8">
+        {/* Question Header */}
+        <div className="mb-6 flex items-start justify-between">
+          <div className="flex items-center space-x-3">
+            <Badge className="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 text-sm font-bold">
+              Set {currentSetIndex + 1} of {totalSets} • Question {questionIndex + 1} of{' '}
+              {totalQuestions}
+            </Badge>
           </div>
         </div>
-      </div>
 
       {/* Question Text */}
       <div 
@@ -213,7 +216,8 @@ export function QuestionCard({
           )}
         </div>
       )}
-    </div>
+      </CardContent>
+    </Card>
   )
 }
 

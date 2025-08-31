@@ -1,84 +1,96 @@
+'use client'
+
+import { User, LogOut, Settings, Crown } from 'lucide-react'
+import { Avatar, AvatarFallback } from './ui/avatar'
+import { Button } from './ui/button'
+import { Badge } from './ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu'
+
 interface UserAvatarProps {
-  email: string
-  displayName?: string
-  size?: 'sm' | 'md' | 'lg'
-  showName?: boolean
+  user?: any
+  isAuthenticated: boolean
+  onSignOut?: () => void
 }
 
-export function UserAvatar({ email, displayName, size = 'sm', showName = false }: UserAvatarProps) {
-  const getAvatarInitials = (email: string): string => {
-    if (!email) return '?'
-    
-    const parts = email.split('@')[0].split('.')
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase()
-    }
-    
-    const username = parts[0]
-    if (username.length >= 2) {
-      return (username[0] + username[1]).toUpperCase()
-    }
-    
-    return username[0]?.toUpperCase() || '?'
+export const UserAvatar = ({ user, isAuthenticated, onSignOut }: UserAvatarProps) => {
+  if (!isAuthenticated || !user) {
+    return (
+      <Avatar className="w-8 h-8 cursor-pointer">
+        <AvatarFallback className="bg-muted">
+          <User className="h-4 w-4 text-muted-foreground" />
+        </AvatarFallback>
+      </Avatar>
+    )
   }
 
-  const getAvatarBackgroundColor = (email: string): string => {
-    const colors = [
-      '#ef4444', // red-500
-      '#f97316', // orange-500
-      '#eab308', // yellow-500
-      '#22c55e', // green-500
-      '#06b6d4', // cyan-500
-      '#3b82f6', // blue-500
-      '#8b5cf6', // violet-500
-      '#ec4899', // pink-500
-    ]
-    
-    if (!email) return colors[0]
-    
-    const hash = email.split('').reduce((a, b) => {
-      a = (a << 5) - a + b.charCodeAt(0)
-      return a & a
-    }, 0)
-    
-    return colors[Math.abs(hash) % colors.length]
-  }
-
-  const getUserDisplayName = (email: string): string => {
-    if (displayName) return displayName
-    
-    if (email) {
-      const username = email.split('@')[0]
-      return username.replace(/[._-]/g, ' ')
-        .split(' ')
-        .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ')
-    }
-    
-    return 'User'
-  }
-
-  const initials = getAvatarInitials(email)
-  const backgroundColor = getAvatarBackgroundColor(email)
-  const name = getUserDisplayName(email)
-
-  const sizeClasses = {
-    sm: 'h-6 w-6 text-xs',
-    md: 'h-8 w-8 text-sm',
-    lg: 'h-10 w-10 text-base'
-  }
+  const userInitials = user.email 
+    ? user.email.substring(0, 2).toUpperCase() 
+    : 'U'
 
   return (
-    <div className="flex items-center gap-2">
-      <div
-        className={`flex items-center justify-center rounded-full font-medium text-white ${sizeClasses[size]}`}
-        style={{ backgroundColor }}
-      >
-        {initials}
-      </div>
-      {showName && (
-        <span className="text-sm font-medium text-gray-700">{name}</span>
-      )}
-    </div>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-auto p-1 rounded-full">
+          <Avatar className="w-8 h-8">
+            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium">
+              {userInitials}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      
+      <DropdownMenuContent align="end" className="w-64">
+        {/* User Info Header */}
+        <div className="px-3 py-2">
+          <div className="flex items-center space-x-3">
+            <Avatar className="w-12 h-12">
+              <AvatarFallback className="bg-gradient-to-r from-blue-500 to-purple-600 text-white">
+                <User className="h-6 w-6" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-sm truncate">
+                {user.user_metadata?.full_name || 'User'}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user.email}
+              </p>
+              <div className="flex items-center gap-1 mt-1">
+                <Crown className="h-3 w-3 text-yellow-500" />
+                <Badge variant="secondary" className="text-xs px-1 py-0">
+                  Premium
+                </Badge>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <DropdownMenuSeparator />
+
+        {/* Menu Items */}
+        <DropdownMenuItem className="cursor-pointer">
+          <Settings className="mr-2 h-4 w-4" />
+          Settings
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
+        {onSignOut && (
+          <DropdownMenuItem 
+            onClick={onSignOut}
+            className="cursor-pointer text-red-600 focus:text-red-600"
+          >
+            <LogOut className="mr-2 h-4 w-4" />
+            Sign out
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }

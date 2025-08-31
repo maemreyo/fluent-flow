@@ -1,11 +1,15 @@
 'use client'
 
 import { User, LogIn, Star, TrendingUp, BookOpen, Crown } from 'lucide-react'
+import { Button } from '../ui/button'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
+import { Badge } from '../ui/badge'
+import { Avatar, AvatarFallback } from '../ui/avatar'
 
 interface UserStatusCardProps {
   user: any
   isAuthenticated: boolean
-  onSignInClick: () => void
+  onSignInClick?: () => void
   onSignOut?: () => void
   showBenefits?: boolean
 }
@@ -19,93 +23,122 @@ export const UserStatusCard = ({
 }: UserStatusCardProps) => {
   if (isAuthenticated && user) {
     return (
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-            <User className="h-5 w-5 text-white" />
+      <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+        <CardContent className="p-4">
+          <div className="flex items-center space-x-3">
+            <Avatar className="w-10 h-10">
+              <AvatarFallback className="bg-gradient-to-r from-green-500 to-emerald-600 text-white">
+                <User className="h-5 w-5" />
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium">Signed in</h3>
+              <p className="text-sm text-muted-foreground truncate">{user.email}</p>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Crown className="h-4 w-4 text-yellow-500" />
+              <Badge variant="default" className="bg-green-100 text-green-700 hover:bg-green-200">
+                Premium Active
+              </Badge>
+            </div>
           </div>
-          <div className="flex-1">
-            <h3 className="font-medium text-gray-900">Welcome back!</h3>
-            <p className="text-sm text-gray-600">{user.email}</p>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Crown className="h-5 w-5 text-yellow-500" />
-            <span className="text-sm font-medium text-green-700">Premium Features Active</span>
-          </div>
-        </div>
-        
-        {onSignOut && (
-          <button
-            onClick={onSignOut}
-            className="mt-3 text-sm text-gray-500 hover:text-gray-700 transition-colors"
-          >
-            Sign out
-          </button>
-        )}
-      </div>
+          
+          {onSignOut && (
+            <div className="mt-3 pt-3 border-t">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onSignOut}
+                className="h-auto p-0 text-muted-foreground hover:text-foreground"
+              >
+                Sign out
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
     )
   }
 
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-purple-50 border border-blue-200 rounded-lg p-6">
-      <div className="text-center">
-        <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mb-4">
+    <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-blue-200">
+      <CardHeader className="text-center pb-4">
+        <div className="mx-auto w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mb-4">
           <LogIn className="h-6 w-6 text-white" />
         </div>
         
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">
+        <CardTitle className="text-lg">
           Sign In for Premium Experience
-        </h3>
+        </CardTitle>
         
-        <p className="text-gray-600 text-sm mb-6">
+        <CardDescription>
           Unlock powerful features and sync your progress across devices
-        </p>
+        </CardDescription>
+      </CardHeader>
 
+      <CardContent className="space-y-6">
         {showBenefits && (
-          <div className="grid grid-cols-1 gap-4 mb-6">
-            <div className="flex items-center space-x-3 text-left">
+          <div className="grid gap-3">
+            <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
                 <Star className="h-4 w-4 text-yellow-600" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900 text-sm">Save Favorites</h4>
-                <p className="text-gray-600 text-xs">Access starred quizzes from your Extension</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-sm">Save Favorites</h4>
+                  <Badge variant="outline" className="text-xs">Star</Badge>
+                </div>
+                <p className="text-muted-foreground text-xs">Access starred quizzes from your Extension</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 text-left">
+            <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <TrendingUp className="h-4 w-4 text-green-600" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900 text-sm">Track Progress</h4>
-                <p className="text-gray-600 text-xs">Monitor your learning journey over time</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-sm">Track Progress</h4>
+                  <Badge variant="outline" className="text-xs">Analytics</Badge>
+                </div>
+                <p className="text-muted-foreground text-xs">Monitor your learning journey over time</p>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 text-left">
+            <div className="flex items-center space-x-3">
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <BookOpen className="h-4 w-4 text-blue-600" />
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900 text-sm">Personal Vocabulary</h4>
-                <p className="text-gray-600 text-xs">Build vocabulary across all sessions</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <h4 className="font-medium text-sm">Personal Vocabulary</h4>
+                  <Badge variant="outline" className="text-xs">Learning</Badge>
+                </div>
+                <p className="text-muted-foreground text-xs">Build vocabulary across all sessions</p>
               </div>
             </div>
           </div>
         )}
 
-        <button
-          onClick={onSignInClick}
-          className="w-full py-3 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02]"
-        >
-          Sign In / Sign Up
-        </button>
+        {onSignInClick && (
+          <Button
+            onClick={onSignInClick}
+            className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+          >
+            Sign In / Sign Up
+          </Button>
+        )}
+        
+        {!onSignInClick && (
+          <div className="text-center text-sm text-muted-foreground">
+            Authentication dialog not available
+          </div>
+        )}
 
-        <p className="text-gray-500 text-xs mt-3">
+        <p className="text-muted-foreground text-xs text-center">
           Free account • No credit card required
         </p>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }
