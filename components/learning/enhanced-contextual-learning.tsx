@@ -104,32 +104,36 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
     [selectedWord, generateExamplesMutation, generateCollocationsMutation, generateContextsMutation]
   )
   
-  // Handle contextual data loading and populate cache
+  // Handle contextual data loading and populate cache - FIXED to prevent infinite loop
   useEffect(() => {
-    if (contextualData && selectedWord && queryClient) {
-      if (contextualData.hasEnhancedData) {
-        // Set examples data
-        if (contextualData.examples.length > 0) {
-          queryClient.setQueryData(
-            queryKeys.contextualLearning.examples(selectedWord.id, selectedWord.text),
-            contextualData.examples
-          )
-        }
-        
-        // Set collocations data
-        if (contextualData.collocations.length > 0) {
-          queryClient.setQueryData(
-            queryKeys.contextualLearning.collocations(selectedWord.id, selectedWord.text),
-            contextualData.collocations
-          )
-        }
-        console.log('Loaded cached contextual data from database for:', selectedWord.text)
-      } else {
-        console.log('No enhanced data available for:', selectedWord.text, '- generating examples')
-        generateContent('examples')
+    if (!contextualData || !selectedWord || !queryClient) return
+    
+    if (contextualData.hasEnhancedData) {
+      // Set examples data
+      if (contextualData.examples.length > 0) {
+        queryClient.setQueryData(
+          queryKeys.contextualLearning.examples(selectedWord.id, selectedWord.text),
+          contextualData.examples
+        )
+      }
+      
+      // Set collocations data
+      if (contextualData.collocations.length > 0) {
+        queryClient.setQueryData(
+          queryKeys.contextualLearning.collocations(selectedWord.id, selectedWord.text),
+          contextualData.collocations
+        )
+      }
+      console.log('Loaded cached contextual data from database for:', selectedWord.text)
+    } else {
+      console.log('No enhanced data available for:', selectedWord.text, '- generating examples')
+      // Call generateContent directly instead of using it in dependency
+      if (selectedWord) {
+        generateExamplesMutation.mutate({ vocabularyItem: selectedWord, maxExamples: 6 })
+        setActiveTab('examples')
       }
     }
-  }, [contextualData, selectedWord, queryClient, generateContent])
+  }, [contextualData, selectedWord, queryClient]) // Removed generateContent from dependencies
 
   const handleWordSelect = (item: UserVocabularyItem) => {
     setSelectedWord(item)

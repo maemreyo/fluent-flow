@@ -142,6 +142,85 @@ export class WordExplorerBridgeService {
   }
 
   /**
+   * Get user vocabulary data with proper authentication for word explorer
+   * This solves the RLS authentication issue
+   */
+  async getAuthenticatedVocabularyData(): Promise<{
+    success: boolean
+    data: any[]
+    error?: string
+  }> {
+    try {
+      console.log('Getting authenticated vocabulary data for word explorer...')
+      
+      // Import user service dynamically
+      const { userService } = await import('../../fluent-flow-transcript-service/src/lib/services/user-service')
+      
+      const result = await userService.getVocabularyForWordExplorer()
+      
+      console.log('Word explorer vocabulary result:', result.success ? `${result.data.length} items` : result.error)
+      
+      return result
+    } catch (error) {
+      console.error('Failed to get authenticated vocabulary data:', error)
+      return {
+        success: false,
+        data: [],
+        error: error instanceof Error ? error.message : 'Failed to get vocabulary data'
+      }
+    }
+  }
+
+  /**
+   * Alternative method that word explorer can use instead of direct API calls
+   * This bypasses the RLS issue by using authenticated Supabase client
+   */
+  async getVocabularyForExplorer(limit: number = 100): Promise<any[]> {
+    try {
+      const result = await this.getAuthenticatedVocabularyData()
+      
+      if (!result.success) {
+        console.warn('Failed to get vocabulary data:', result.error)
+        return []
+      }
+      
+      // Transform the data to match what word explorer expects
+      return result.data.slice(0, limit).map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        text: item.text,
+        item_type: item.item_type,
+        definition: item.definition,
+        definition_vi: item.definition_vi,
+        example: item.example,
+        difficulty: item.difficulty,
+        part_of_speech: item.part_of_speech,
+        pronunciation: item.pronunciation,
+        synonyms: item.synonyms || [],
+        antonyms: item.antonyms || [],
+        phrase_type: item.phrase_type,
+        source_loop_id: item.source_loop_id,
+        frequency: item.frequency || 1,
+        learning_status: item.learning_status,
+        ease_factor: item.ease_factor,
+        interval_days: item.interval_days,
+        next_review_date: item.next_review_date,
+        repetitions: item.repetitions || 0,
+        times_practiced: item.times_practiced || 0,
+        times_correct: item.times_correct || 0,
+        times_incorrect: item.times_incorrect || 0,
+        last_practiced_at: item.last_practiced_at,
+        created_at: item.created_at,
+        updated_at: item.updated_at,
+        is_starred: item.is_starred || false
+      }))
+    } catch (error) {
+      console.error('Failed to get vocabulary for explorer:', error)
+      return []
+    }
+  }
+
+  /**
    * Store bridge data for communication between quiz and newtab
    */
   private async storeBridgeData(data: {

@@ -214,11 +214,49 @@ export class WordSelectionService {
     
     if (selectedIndex === -1) return selectedText
     
-    // Get 30 characters before and after
-    const start = Math.max(0, selectedIndex - 30)
-    const end = Math.min(fullText.length, selectedIndex + selectedText.length + 30)
+    // Get more context - 100 characters before and after instead of 30
+    const start = Math.max(0, selectedIndex - 100)
+    const end = Math.min(fullText.length, selectedIndex + selectedText.length + 100)
     
-    return fullText.slice(start, end).trim()
+    let context = fullText.slice(start, end).trim()
+    
+    // Clean up quiz answer options (A, B, C, D) and other quiz artifacts
+    context = this.cleanQuizContext(context)
+    
+    return context
+  }
+
+  /**
+   * Clean quiz context by removing answer options and other quiz artifacts
+   */
+  private cleanQuizContext(context: string): string {
+    // Remove multiple choice answers (A), (B), (C), (D)
+    context = context.replace(/\s*\([A-D]\)[^()]*(?=\s*\([A-D]\)|$)/g, '')
+    
+    // Remove standalone A, B, C, D options
+    context = context.replace(/\s*[A-D][\.\)]\s*[^A-Z]*?(?=\s*[A-D][\.\)]|$)/g, '')
+    
+    // Remove quiz instruction patterns
+    context = context.replace(/(?:Choose|Select|Pick)\s+(?:the\s+)?(?:correct|best|right)\s+(?:answer|option|choice)[^.]*?\./gi, '')
+    
+    // Remove "Question:" or "Q:" prefixes
+    context = context.replace(/^(?:Question|Q):\s*/gi, '')
+    
+    // Remove answer indicators like "Answer:", "Correct answer:", etc.
+    context = context.replace(/(?:Answer|Correct\s+answer|Solution):\s*/gi, '')
+    
+    // Remove excessive whitespace and clean up
+    context = context.replace(/\s+/g, ' ')
+    context = context.replace(/^\s*[.,;]\s*/, '') // Remove leading punctuation
+    context = context.replace(/\s*[.,;]\s*$/, '') // Remove trailing punctuation
+    
+    // If context is too short after cleaning, try to get more from original
+    if (context.length < 20) {
+      // Return original context if cleaning made it too short
+      return context
+    }
+    
+    return context.trim()
   }
 }
 

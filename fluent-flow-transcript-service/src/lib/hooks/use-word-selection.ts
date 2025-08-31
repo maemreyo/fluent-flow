@@ -55,6 +55,8 @@ export function useWordSelection(): UseWordSelectionReturn {
     setState(prev => ({ ...prev, isLoading: true }))
     try {
       const cleanWord = wordSelectionService.extractCleanWord(data.word)
+      console.log('Adding word to selection:', cleanWord, 'from', data.sourceType)
+      
       const success = await wordSelectionService.addSelectedWord({
         word: cleanWord,
         context: data.context,
@@ -62,26 +64,42 @@ export function useWordSelection(): UseWordSelectionReturn {
         sourceId: data.sourceId
       })
       
+      console.log('Word selection service result:', success)
+      
       if (success) {
         await refreshWords()
         
         // Also add to user vocabulary deck for better integration
         try {
+          console.log('Attempting to add to vocabulary deck...')
           const { userService } = await import('../services/user-service')
           const { getCurrentUser } = await import('../supabase/client')
           
           const currentUser = await getCurrentUser()
+          console.log('Current user:', currentUser?.id)
+          
           if (currentUser) {
-            await userService.addVocabularyToDeck(currentUser.id, {
+            const vocabularyData = {
               text: cleanWord,
+              definition: `From ${data.sourceType}: ${data.context}`,
               item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
-              definition: `From ${data.sourceType}: ${data.context.slice(0, 100)}...`,
               difficulty: 'intermediate',
               learning_status: 'new'
-            })
+            }
+            
+            console.log('Adding to vocabulary deck with data:', vocabularyData)
+            const result = await userService.addVocabularyToDeck(currentUser.id, vocabularyData)
+            
+            if (result) {
+              console.log('Successfully added word to vocabulary deck:', result)
+            } else {
+              console.warn('Failed to add word to vocabulary deck - no result returned')
+            }
+          } else {
+            console.warn('No current user found for vocabulary deck')
           }
         } catch (bridgeError) {
-          console.warn('Failed to add to vocabulary deck:', bridgeError)
+          console.error('Error adding to vocabulary deck:', bridgeError)
           // Don't fail the whole operation if bridge fails
         }
         
@@ -98,11 +116,14 @@ export function useWordSelection(): UseWordSelectionReturn {
             // Don't fail the whole operation if bridge fails
           }
         }
+      } else {
+        console.warn('Failed to add word to selection service')
       }
       
       setState(prev => ({ ...prev, isLoading: false }))
       return success
     } catch (error) {
+      console.error('Error in addSelectedWord:', error)
       setState(prev => ({
         ...prev,
         isLoading: false,

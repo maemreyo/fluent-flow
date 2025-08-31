@@ -301,6 +301,46 @@ export class UserService {
       reviewsToday: reviewsToday || 0
     }
   }
+
+  // Get vocabulary data for word explorer (authenticated)
+  async getVocabularyForWordExplorer(): Promise<{
+    success: boolean
+    data: UserVocabularyDeck[]
+    error?: string
+  }> {
+    try {
+      const { getCurrentUser } = await import('../supabase/client')
+      const currentUser = await getCurrentUser()
+      
+      if (!currentUser) {
+        return {
+          success: false,
+          data: [],
+          error: 'User not authenticated'
+        }
+      }
+
+      console.log('Getting vocabulary for word explorer, user:', currentUser.id)
+      
+      const vocabularyData = await this.getUserVocabulary(currentUser.id, {
+        limit: 100
+      })
+      
+      console.log('Retrieved vocabulary data for word explorer:', vocabularyData.length, 'items')
+      
+      return {
+        success: true,
+        data: vocabularyData
+      }
+    } catch (error) {
+      console.error('Error getting vocabulary for word explorer:', error)
+      return {
+        success: false,
+        data: [],
+        error: error instanceof Error ? error.message : 'Failed to get vocabulary data'
+      }
+    }
+  }
 }
 
 export const userService = new UserService()

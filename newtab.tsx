@@ -14,6 +14,7 @@ import { UserDropdown } from './components/shared/UserDropdown'
 import { QueryProvider } from './components/providers/query-provider'
 import { useAuthentication } from './lib/hooks/use-authentication'
 import { userVocabularyService, type LearningStats } from './lib/services/user-vocabulary-service'
+import { vocabularyApiBridge } from './lib/services/vocabulary-api-bridge'
 import './styles/newtab.css'
 
 function VocabularyLearningNewTab() {
@@ -37,6 +38,25 @@ function VocabularyLearningNewTab() {
     }
     loadStats()
   }, [])
+
+  // Initialize vocabulary API bridge for word explorer
+  useEffect(() => {
+    const initializeApiBridge = async () => {
+      if (user) {
+        console.log('Initializing vocabulary API bridge for word explorer...')
+        const testResult = await vocabularyApiBridge.testConnection()
+        console.log('Vocabulary API bridge test:', testResult)
+        
+        // Test getting vocabulary data
+        if (testResult.success) {
+          const vocabularyData = await vocabularyApiBridge.getUserVocabulary({ limit: 5 })
+          console.log('Sample vocabulary data for word explorer:', vocabularyData.length, 'items')
+        }
+      }
+    }
+    
+    initializeApiBridge()
+  }, [user])
 
   // Show vocabulary spotlight on first load
   if (showSpotlight) {
