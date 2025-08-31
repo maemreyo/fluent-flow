@@ -346,6 +346,8 @@ export interface ConversationQuestions {
     // Video analysis specific fields
     videoAnalysis?: boolean
     videoSegmentDuration?: number
+    preset?: { easy: number; medium: number; hard: number }
+    actualDistribution?: { easy: number; medium: number; hard: number }
   }
 }
 

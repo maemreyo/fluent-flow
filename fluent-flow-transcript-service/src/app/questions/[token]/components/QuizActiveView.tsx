@@ -1,7 +1,7 @@
 'use client'
 
-import { GridView } from '../../../../components/questions/GridView';
 import { Star } from 'lucide-react'
+import { GridView } from '../../../../components/questions/GridView'
 import { QuestionCard, QuestionResponse } from '../../../../components/questions/QuestionCard'
 import { QuestionSet } from '../../../../components/questions/QuestionSetInfo'
 import { TranscriptPanel } from '../../../../components/questions/TranscriptPanel'
@@ -114,13 +114,9 @@ export function QuizActiveView({
               📄 Transcript
             </Button>
           )}
-          <Button
-            onClick={openGridView}
-            variant="outline"
-            size="sm"
-            >
-            Grid View
-            </Button>
+          <Button onClick={openGridView} variant="outline" size="sm">
+            Preview all questions
+          </Button>
         </div>
       </div>
 

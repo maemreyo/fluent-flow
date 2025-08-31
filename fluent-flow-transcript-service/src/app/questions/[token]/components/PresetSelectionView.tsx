@@ -11,31 +11,35 @@ interface PresetSelectionViewProps {
   favoriteLoading: boolean
   onFavoriteToggle: () => void
   onPresetSelect: (preset: QuestionPreset) => void
-  getAvailableQuestionCounts: (questions: Question[]) => { easy: number; medium: number; hard: number }
+  getAvailableQuestionCounts: (questions: Question[]) => {
+    easy: number
+    medium: number
+    hard: number
+  }
 }
 
 const QUESTION_PRESETS: QuestionPreset[] = [
-    {
-      name: 'Entry Level',
-      description: 'Perfect for beginners - mostly easy questions with some challenge',
-      distribution: { easy: 4, medium: 3, hard: 2 }
-    },
-    {
-      name: 'Intermediate',
-      description: 'Balanced difficulty - equal mix of all levels',
-      distribution: { easy: 3, medium: 3, hard: 3 }
-    },
-    {
-      name: 'Advanced',
-      description: 'For confident learners - emphasis on harder questions',
-      distribution: { easy: 2, medium: 3, hard: 4 }
-    },
-    {
-      name: 'Quick Practice',
-      description: 'Short session with mixed difficulty',
-      distribution: { easy: 2, medium: 2, hard: 1 }
-    }
-  ]
+  {
+    name: 'Entry Level',
+    description: 'Perfect for beginners - mostly easy questions with some challenge',
+    distribution: { easy: 4, medium: 3, hard: 2 }
+  },
+  {
+    name: 'Intermediate',
+    description: 'Balanced difficulty - equal mix of all levels',
+    distribution: { easy: 3, medium: 3, hard: 3 }
+  },
+  {
+    name: 'Advanced',
+    description: 'For confident learners - emphasis on harder questions',
+    distribution: { easy: 2, medium: 3, hard: 4 }
+  },
+  {
+    name: 'Quick Practice',
+    description: 'Short session with mixed difficulty',
+    distribution: { easy: 2, medium: 2, hard: 1 }
+  }
+]
 
 export function PresetSelectionView({
   questionSet,
