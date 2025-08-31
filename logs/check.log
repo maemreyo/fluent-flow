@@ -1,0 +1,21 @@
+Tôi đã thêm toàn bộ các components rồi:
+```
+npx shadcn@latest add --all                                                                                                                                                         ─╯
+Need to install the following packages:
+shadcn@3.0.0
+Ok to proceed? (y) 
+
+✔ You need to create a components.json file to add components. Proceed? … yes
+✔ Which color would you like to use as the base color? › Slate
+✔ Writing components.json.
+✔ Checking registry.
+✔ Updating CSS variables in src/app/globals.css
+✔ Installing dependencies.
+✔ The file button.tsx already exists. Would you like to overwrite? … yes
+✔ The file dialog.tsx already exists. Would you like to overwrite? … yes
+✔ The file input.tsx already exists. Would you like to overwrite? … yes
+✔ The file label.tsx already exists. Would you like to overwrite? … yes
+✔ Created 43 files:
+```
+Bạn có thể check components/ui/ dir
+Bắt đầu improve toàn bộ UI
