@@ -12,6 +12,7 @@ interface TranscriptResult {
   fullText: string
   videoId: string
   language?: string
+  videoInfo?: any
 }
 
 interface TranscriptError {
@@ -92,7 +93,7 @@ class YouTubeTranscriptService {
     try {
       console.log(`Extracting transcript for ${cleanVideoId} (${startTime}s-${endTime}s)`)
 
-      const fullTranscript = await this.fetchFullTranscript(cleanVideoId, language)
+      const { segments: fullTranscript, info } = await this.fetchFullTranscript(cleanVideoId, language)
       const segmentTranscript = this.extractTimeSegment(fullTranscript, startTime, endTime)
 
       if (segmentTranscript.segments.length === 0) {
@@ -109,7 +110,12 @@ class YouTubeTranscriptService {
       return {
         ...segmentTranscript,
         videoId: cleanVideoId,
-        language: language || 'auto'
+        language: language || 'auto',
+        videoInfo: {
+          title: info.basic_info.title,
+          thumbnail: info.basic_info.thumbnail[0].url,
+          channel: info.basic_info.channel.title,
+        }
       }
     } catch (error) {
       console.error(`Transcript extraction failed for ${cleanVideoId}:`, error)
@@ -214,7 +220,7 @@ class YouTubeTranscriptService {
   private async fetchFullTranscript(
     videoId: string,
     language?: string
-  ): Promise<TranscriptSegment[]> {
+  ): Promise<{ segments: TranscriptSegment[], info: any }> {
     try {
       const yt = await this.getInnertube()
       console.log(`Getting video info for ${videoId}`, yt)
@@ -247,7 +253,7 @@ class YouTubeTranscriptService {
       console.log(`✅ Found ${segments.length} transcript segments`)
       console.log(`Language: ${transcriptInfo.selectedLanguage}`)
 
-      return segments
+      const transcriptSegments = segments
         .map((segment: YouTubeSegment | TranscriptSectionHeader) => {
           if ('snippet' in segment) {
             return {
@@ -268,6 +274,8 @@ class YouTubeTranscriptService {
           (segment): segment is TranscriptSegment =>
             segment !== null && segment.text.trim().length > 0
         )
+      
+      return { segments: transcriptSegments, info };
     } catch (error) {
       if ((error as TranscriptError).code) {
         throw error

@@ -11,6 +11,11 @@ interface QuestionSet {
   title: string
   videoTitle: string
   videoUrl: string
+  videoInfo?: {
+    title: string;
+    thumbnail: string;
+    channel: string;
+  };
   startTime?: number
   endTime?: number
   questions: any[]

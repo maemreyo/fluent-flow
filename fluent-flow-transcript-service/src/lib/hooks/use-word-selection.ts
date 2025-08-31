@@ -72,12 +72,11 @@ export function useWordSelection(): UseWordSelectionReturn {
           
           const currentUser = await getCurrentUser()
           if (currentUser) {
-            await userService.addVocabularyItem(currentUser.id, {
+            await userService.addVocabularyToDeck(currentUser.id, {
               text: cleanWord,
               item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
               definition: `From ${data.sourceType}: ${data.context.slice(0, 100)}...`,
               difficulty: 'intermediate',
-              source_loop_id: data.sourceId,
               learning_status: 'new'
             })
           }

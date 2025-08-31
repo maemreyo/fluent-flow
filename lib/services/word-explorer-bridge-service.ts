@@ -1,5 +1,8 @@
+import {
+  wordSelectionService,
+  type SelectedWord
+} from '../../fluent-flow-transcript-service/src/lib/services/word-selection-service'
 import { userVocabularyService, type UserVocabularyItem } from './user-vocabulary-service'
-import { wordSelectionService, type SelectedWord } from '../../fluent-flow-transcript-service/src/lib/services/word-selection-service'
 
 /**
  * Service to bridge selected words from quiz pages to Word Explorer in newtab
@@ -12,24 +15,25 @@ export class WordExplorerBridgeService {
    */
   async addWordToExplorer(selectedWord: SelectedWord): Promise<boolean> {
     try {
-      // Convert selected word to UserVocabularyItem format
-      const vocabularyItem: Omit<UserVocabularyItem, 'id' | 'createdAt' | 'timesStudied' | 'masteryLevel' | 'lastStudied'> = {
+      const vocabularyWord = {
         word: selectedWord.word,
         definition: selectedWord.definition || `Word selected from ${selectedWord.sourceType}`,
-        examples: selectedWord.examples || [selectedWord.context],
+        example: selectedWord.context,
         difficulty: this.inferDifficulty(selectedWord.word),
         collocations: selectedWord.collocations || [],
-        source: `quiz-${selectedWord.sourceType}`,
-        sourceMetadata: {
-          sourceType: selectedWord.sourceType,
-          sourceId: selectedWord.sourceId,
-          context: selectedWord.context,
-          selectedAt: selectedWord.selectedAt.toISOString()
-        }
+        frequency: 1,
+        partOfSpeech: '',
+        pronunciation: '',
+        synonyms: [],
+        antonyms: []
       }
 
       // Add to user vocabulary deck
-      await userVocabularyService.addVocabularyItem(vocabularyItem)
+      await userVocabularyService.addToPersonalDeck(
+        vocabularyWord,
+        'word',
+        selectedWord.sourceId
+      )
 
       // Store bridge data for immediate access in newtab
       await this.storeBridgeData({
@@ -52,7 +56,7 @@ export class WordExplorerBridgeService {
   async getRecentlyAddedWords(): Promise<{ word: string; addedAt: Date }[]> {
     try {
       if (typeof window === 'undefined') return []
-      
+
       const stored = localStorage.getItem(this.BRIDGE_STORAGE_KEY)
       if (!stored) return []
 
@@ -94,10 +98,8 @@ export class WordExplorerBridgeService {
         shouldHighlight: boolean
       }>
 
-      const updated = bridgeData.map(item => 
-        item.word.toLowerCase() === word.toLowerCase() 
-          ? { ...item, shouldHighlight: false }
-          : item
+      const updated = bridgeData.map(item =>
+        item.word.toLowerCase() === word.toLowerCase() ? { ...item, shouldHighlight: false } : item
       )
 
       localStorage.setItem(this.BRIDGE_STORAGE_KEY, JSON.stringify(updated))
@@ -175,7 +177,7 @@ export class WordExplorerBridgeService {
   private inferDifficulty(word: string): 'beginner' | 'intermediate' | 'advanced' {
     const length = word.length
     const hasComplexPattern = /[^a-zA-Z\s]/.test(word) || word.includes('-')
-    
+
     if (length <= 4) return 'beginner'
     if (length <= 8 && !hasComplexPattern) return 'intermediate'
     return 'advanced'
