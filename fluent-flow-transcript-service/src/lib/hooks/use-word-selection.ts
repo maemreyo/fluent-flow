@@ -69,29 +69,48 @@ export function useWordSelection(): UseWordSelectionReturn {
       if (success) {
         await refreshWords()
         
-        // Also add to user vocabulary deck for better integration
+        // Also add to user vocabulary deck for better integration with AI enhancement
         try {
-          console.log('Attempting to add to vocabulary deck...')
+          console.log('Attempting to add to vocabulary deck with AI enhancement...')
           const { userService } = await import('../services/user-service')
           const { getCurrentUser } = await import('../supabase/client')
+          const { vocabularyEnhancementService } = await import('../services/vocabulary-enhancement-service')
           
           const currentUser = await getCurrentUser()
           console.log('Current user:', currentUser?.id)
           
           if (currentUser) {
+            // Get AI enhancement data
+            console.log('Enhancing vocabulary with AI...')
+            const enhancedData = await vocabularyEnhancementService.enhanceVocabularyWithRetry(
+              cleanWord,
+              data.context,
+              'intermediate'
+            )
+            
+            console.log('AI enhancement result:', enhancedData)
+            
             const vocabularyData = {
               text: cleanWord,
-              definition: `From ${data.sourceType}: ${data.context}`,
-              item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
+              definition: enhancedData.definition_en || `A word/phrase selected from ${data.sourceType}`, // Use AI-generated English definition
+              definition_vi: enhancedData.definition_vi,
+              example: enhancedData.example,
+              context: data.context, // Store the original cleaned context
               difficulty: 'intermediate',
-              learning_status: 'new'
+              item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
+              learning_status: 'new',
+              // Additional enhanced fields
+              part_of_speech: enhancedData.part_of_speech,
+              pronunciation: enhancedData.pronunciation,
+              synonyms: enhancedData.synonyms,
+              antonyms: enhancedData.antonyms
             }
             
-            console.log('Adding to vocabulary deck with data:', vocabularyData)
+            console.log('Adding enhanced vocabulary data to deck:', vocabularyData)
             const result = await userService.addVocabularyToDeck(currentUser.id, vocabularyData)
             
             if (result) {
-              console.log('Successfully added word to vocabulary deck:', result)
+              console.log('Successfully added enhanced word to vocabulary deck:', result)
             } else {
               console.warn('Failed to add word to vocabulary deck - no result returned')
             }

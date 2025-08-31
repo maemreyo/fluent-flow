@@ -14,6 +14,7 @@ export interface VocabularyItem {
   definition: string
   definition_vi?: string
   example?: string
+  context?: string
   difficulty: string
   part_of_speech?: string
   pronunciation?: string
@@ -78,7 +79,7 @@ export class VocabularyApiBridge {
       console.log('VocabularyApiBridge: Retrieved', vocabularyData.length, 'vocabulary items')
 
       // Transform to match expected format
-      const transformedData: VocabularyItem[] = vocabularyData.map(item => ({
+      const transformedData: VocabularyItem[] = vocabularyData.map((item: any) => ({
         id: item.id,
         user_id: item.user_id,
         text: item.text,
@@ -86,6 +87,7 @@ export class VocabularyApiBridge {
         definition: item.definition,
         definition_vi: item.definition_vi,
         example: item.example,
+        context: item.context,
         difficulty: item.difficulty,
         part_of_speech: item.part_of_speech,
         pronunciation: item.pronunciation,
@@ -95,9 +97,9 @@ export class VocabularyApiBridge {
         source_loop_id: item.source_loop_id,
         frequency: item.frequency || 1,
         learning_status: item.learning_status,
-        ease_factor: item.ease_factor,
-        interval_days: item.interval_days,
-        next_review_date: item.next_review_date,
+        ease_factor: item.ease_factor || 2.5,
+        interval_days: item.interval_days || 1,
+        next_review_date: item.next_review_date || new Date().toISOString(),
         repetitions: item.repetitions || 0,
         times_practiced: item.times_practiced || 0,
         times_correct: item.times_correct || 0,
@@ -162,6 +164,56 @@ export class VocabularyApiBridge {
         success: false,
         message: `Connection failed: ${error instanceof Error ? error.message : 'Unknown error'}`
       }
+    }
+  }
+
+  /**
+   * Delete a vocabulary item from the user's deck
+   */
+  async deleteVocabularyItem(vocabularyId: string): Promise<boolean> {
+    try {
+      console.log('VocabularyApiBridge: Deleting vocabulary item:', vocabularyId)
+      
+      const currentUser = await getCurrentUser()
+      if (!currentUser) {
+        console.warn('VocabularyApiBridge: No authenticated user found for deletion')
+        return false
+      }
+
+      const result = await userService.deleteVocabularyFromDeck(vocabularyId)
+      
+      console.log('VocabularyApiBridge: Delete result:', result)
+      return result
+    } catch (error) {
+      console.error('VocabularyApiBridge: Failed to delete vocabulary item:', error)
+      return false
+    }
+  }
+
+  /**
+   * Delete multiple vocabulary items from the user's deck
+   */
+  async deleteMultipleVocabularyItems(vocabularyIds: string[]): Promise<{ success: number; failed: number; total: number }> {
+    const results = { success: 0, failed: 0, total: vocabularyIds.length }
+    
+    try {
+      console.log('VocabularyApiBridge: Bulk deleting vocabulary items:', vocabularyIds.length)
+      
+      for (const id of vocabularyIds) {
+        const deleted = await this.deleteVocabularyItem(id)
+        if (deleted) {
+          results.success++
+        } else {
+          results.failed++
+        }
+      }
+      
+      console.log('VocabularyApiBridge: Bulk delete results:', results)
+      return results
+    } catch (error) {
+      console.error('VocabularyApiBridge: Failed bulk delete:', error)
+      results.failed = results.total
+      return results
     }
   }
 }

@@ -9,7 +9,8 @@ import {
   Search,
   Sparkles,
   Volume2,
-  Star
+  Star,
+  Trash2
 } from 'lucide-react'
 import {
   type CollocationPattern,
@@ -31,6 +32,7 @@ import {
 import { queryKeys } from '../../lib/services/query-client'
 import { cn } from '../../lib/utils'
 import { wordExplorerBridgeService } from '../../lib/services/word-explorer-bridge-service'
+import { userVocabularyService } from '../../lib/services/user-vocabulary-service'
 
 interface EnhancedContextualLearningProps {
   onNavigateToVideo?: (loopId: string) => void
@@ -41,12 +43,13 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
   const [searchTerm, setSearchTerm] = useState('')
   const [activeTab, setActiveTab] = useState('examples') // Changed default to 'examples'
   const [recentlyAddedWords, setRecentlyAddedWords] = useState<{ word: string; addedAt: Date }[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // React Query client
   const queryClient = useQueryClient()
 
   // React Query hooks
-  const { data: vocabularyItems = [], isLoading } = useVocabularyDeck(100)
+  const { data: vocabularyItems = [], isLoading, refetch: refetchVocabulary } = useVocabularyDeck(100)
   const { data: contextualData } = useContextualData(selectedWord)
   const { data: examples = [] } = useExamples(selectedWord)
   const { data: collocations = [] } = useCollocations(selectedWord)
@@ -140,6 +143,37 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
     setActiveTab('examples') // Always start with examples tab
     
     console.log('Selected word:', item.text)
+  }
+
+  const handleDeleteWord = async () => {
+    if (!selectedWord) return
+    
+    setIsDeleting(true)
+    try {
+      const success = await userVocabularyService.deleteVocabularyItem(selectedWord.id)
+      if (success) {
+        // Refresh the vocabulary list
+        await refetchVocabulary()
+        
+        // Select the next available word or clear selection
+        const remainingWords = vocabularyItems.filter(item => item.id !== selectedWord.id)
+        if (remainingWords.length > 0) {
+          setSelectedWord(remainingWords[0])
+        } else {
+          setSelectedWord(null)
+        }
+        
+        // Log success (no alert popup)
+        console.log(`Successfully deleted "${selectedWord.text}" from vocabulary`)
+      } else {
+        alert('Failed to delete word. Please try again.')
+      }
+    } catch (error) {
+      console.error('Failed to delete word:', error)
+      alert('An error occurred while deleting the word. Please try again.')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const speakText = useCallback((text: string) => {
@@ -288,6 +322,7 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                       <button
                         onClick={() => speakText(selectedWord.text)}
                         className="h-12 w-12 rounded-2xl bg-white/20 backdrop-blur-sm border border-white/30 flex items-center justify-center hover:bg-white/30 transition-all duration-300"
+                        title="Speak word"
                       >
                         <Volume2 className="h-5 w-5 text-violet-600" />
                       </button>
@@ -306,6 +341,18 @@ export const EnhancedContextualLearning: React.FC<EnhancedContextualLearningProp
                       >
                         {selectedWord.difficulty}
                       </span>
+                      <button
+                        onClick={handleDeleteWord}
+                        disabled={isDeleting}
+                        className="h-12 w-12 rounded-2xl bg-red-50/70 backdrop-blur-sm border border-red-200/50 flex items-center justify-center hover:bg-red-100/70 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        title="Delete from vocabulary"
+                      >
+                        {isDeleting ? (
+                          <Loader2 className="h-5 w-5 animate-spin text-red-600" />
+                        ) : (
+                          <Trash2 className="h-5 w-5 text-red-600" />
+                        )}
+                      </button>
                     </div>
                   </div>
                   <p className="mt-4 text-xl text-gray-700 leading-relaxed">

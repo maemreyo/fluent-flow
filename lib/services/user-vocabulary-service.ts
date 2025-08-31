@@ -180,6 +180,38 @@ export class UserVocabularyService {
   }
 
   /**
+   * Delete a vocabulary item by ID from user's personal deck
+   */
+  async deleteVocabularyItem(vocabularyId: string): Promise<boolean> {
+    try {
+      const user = await getCurrentUser()
+      if (!user) {
+        console.warn('No user authenticated, cannot delete vocabulary item')
+        return false
+      }
+
+      console.log('Deleting vocabulary item:', vocabularyId, 'for user:', user.id)
+
+      const { error } = await (supabase as any)
+        .from('user_vocabulary_deck')
+        .delete()
+        .eq('id', vocabularyId)
+        .eq('user_id', user.id) // Ensure user can only delete their own words
+
+      if (error) {
+        console.error('Database error deleting vocabulary item:', error)
+        return false
+      }
+
+      console.log('Successfully deleted vocabulary item:', vocabularyId)
+      return true
+    } catch (error) {
+      console.error('Failed to delete vocabulary item:', error)
+      return false
+    }
+  }
+
+  /**
    * Check if a vocabulary item is in user's personal deck
    */
   async isInPersonalDeck(text: string, type: 'word' | 'phrase'): Promise<boolean> {
