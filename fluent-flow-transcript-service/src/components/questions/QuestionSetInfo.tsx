@@ -12,10 +12,10 @@ interface QuestionSet {
   videoTitle: string
   videoUrl: string
   videoInfo?: {
-    title: string;
-    thumbnail: string;
-    channel: string;
-  };
+    title: string
+    thumbnail: string
+    channel: string
+  }
   startTime?: number
   endTime?: number
   questions: any[]
@@ -91,72 +91,6 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
 
         {/* Question Set Details */}
         <div className="p-6">
-          <div className="mb-6 grid gap-6 md:grid-cols-2">
-            {/* Left Column */}
-            {/* <div>
-              <h3 className="mb-4 text-lg font-medium">Question Set Details</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                  <span className="text-gray-600">Total Questions:</span>
-                  <span className="font-medium">{questionSet.metadata.totalQuestions}</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                  <span className="text-gray-600">Difficulty Level:</span>
-                  <span className="font-medium capitalize">{questionSet.metadata.difficulty}</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                  <span className="text-gray-600">Created By:</span>
-                  <span className="font-medium">{questionSet.metadata.sharedBy}</span>
-                </div>
-
-                <div className="flex items-center justify-between border-b border-gray-100 py-2">
-                  <span className="text-gray-600">Created:</span>
-                  <span className="font-medium">
-                    {new Date(questionSet.metadata.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </div>
-            </div> */}
-
-            {/* Right Column */}
-            {/* <div>
-              <h3 className="text-lg font-medium mb-4">Question Breakdown</h3>
-              {availableCounts ? (
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between py-2">
-                    <span className="flex items-center space-x-2">
-                      <span className="w-3 h-3 bg-green-400 rounded-full"></span>
-                      <span className="text-gray-600">Easy Questions</span>
-                    </span>
-                    <span className="font-medium">{availableCounts.easy}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-2">
-                    <span className="flex items-center space-x-2">
-                      <span className="w-3 h-3 bg-yellow-400 rounded-full"></span>
-                      <span className="text-gray-600">Medium Questions</span>
-                    </span>
-                    <span className="font-medium">{availableCounts.medium}</span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between py-2">
-                    <span className="flex items-center space-x-2">
-                      <span className="w-3 h-3 bg-red-400 rounded-full"></span>
-                      <span className="text-gray-600">Hard Questions</span>
-                    </span>
-                    <span className="font-medium">{availableCounts.hard}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-gray-50 rounded-lg p-4 text-center text-gray-600">
-                  Question breakdown will be shown after loading
-                </div>
-              )}
-            </div> */}
-          </div>
-
           {/* Topics */}
           {questionSet.metadata.topics && questionSet.metadata.topics.length > 0 && (
             <div className="mb-6">

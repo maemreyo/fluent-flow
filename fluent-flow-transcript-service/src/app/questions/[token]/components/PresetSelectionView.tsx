@@ -4,7 +4,7 @@ import { PresetSelector, QuestionPreset } from '../../../../components/questions
 import { Question } from '../../../../components/questions/QuestionCard'
 import { QuestionSet } from '../../../../components/questions/QuestionSetInfo'
 import { VideoHeader } from './VideoHeader'
-import { Smile, Meh, Frown, BrainCircuit, Zap } from 'lucide-react'
+import { Smile, Sparkles, Trophy, Target, Clock } from 'lucide-react'
 
 interface PresetSelectionViewProps {
   questionSet: QuestionSet | null
@@ -22,27 +22,43 @@ interface PresetSelectionViewProps {
 const QUESTION_PRESETS: QuestionPreset[] = [
   {
     name: 'Entry Level',
-    description: 'Perfect for beginners - mostly easy questions with some challenge.',
+    description: 'Perfect starting point! Gentle introduction with confidence-building questions.',
     distribution: { easy: 4, medium: 3, hard: 2 },
-    icon: Smile
+    icon: Smile,
+    color: 'emerald',
+    estimatedTime: '8-12 min',
+    difficulty: 'Beginner',
+    badge: '🌱 Great Start'
   },
   {
     name: 'Intermediate',
-    description: 'A balanced mix of question difficulties for steady improvement.',
+    description: 'Balanced challenge for steady growth. Mix of all difficulty levels.',
     distribution: { easy: 3, medium: 3, hard: 3 },
-    icon: Meh
+    icon: Target,
+    color: 'blue',
+    estimatedTime: '12-18 min',
+    difficulty: 'Intermediate',
+    badge: '🎯 Balanced'
   },
   {
     name: 'Advanced',
-    description: 'Challenge yourself with a focus on harder questions.',
+    description: 'Push your limits! Focused on challenging questions for mastery.',
     distribution: { easy: 2, medium: 3, hard: 4 },
-    icon: Frown
+    icon: Trophy,
+    color: 'purple',
+    estimatedTime: '15-25 min',
+    difficulty: 'Advanced',
+    badge: '🏆 Expert'
   },
   {
     name: 'Quick Practice',
-    description: 'A short, mixed-difficulty session to keep your skills sharp.',
+    description: 'Short but sweet! Quick session to maintain your momentum.',
     distribution: { easy: 2, medium: 2, hard: 1 },
-    icon: Zap
+    icon: Clock,
+    color: 'orange',
+    estimatedTime: '5-8 min',
+    difficulty: 'Mixed',
+    badge: '⚡ Quick'
   }
 ]
 
@@ -59,15 +75,40 @@ export function PresetSelectionView({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* Animated background elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-10 left-10 w-72 h-72 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
+        <div className="absolute top-10 right-10 w-72 h-72 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
+        <div className="absolute -bottom-8 left-20 w-72 h-72 bg-gradient-to-r from-pink-400/20 to-orange-400/20 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+      </div>
+      
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <VideoHeader
           questionSet={questionSet}
           isFavorited={isFavorited}
           favoriteLoading={favoriteLoading}
           onFavoriteToggle={onFavoriteToggle}
         />
-        <div className="mt-10">
+        
+        {/* Enhanced title section */}
+        <div className="mt-16 text-center">
+          <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/70 backdrop-blur-sm rounded-full border border-white/20 shadow-lg mb-6">
+            <Sparkles className="w-5 h-5 text-indigo-600 animate-pulse" />
+            <span className="text-sm font-medium text-indigo-700">Choose Your Learning Path</span>
+          </div>
+          
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent mb-4">
+            Ready for the Challenge?
+          </h1>
+          
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
+            Pick your perfect quiz style and let&apos;s test your knowledge! 
+            <span className="font-semibold text-indigo-600"> Each preset is crafted for different learning goals.</span>
+          </p>
+        </div>
+
+        <div className="mt-16">
           <PresetSelector
             presets={QUESTION_PRESETS}
             onPresetSelect={onPresetSelect}

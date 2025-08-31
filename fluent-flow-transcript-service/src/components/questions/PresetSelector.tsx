@@ -1,4 +1,4 @@
-import { Frown, LucideIcon, Meh, Smile, XCircle } from 'lucide-react'
+import { Frown, LucideIcon, Meh, Smile, XCircle, Star, Clock, Sparkles } from 'lucide-react'
 import { Badge } from '../ui/badge'
 import { Card, CardContent } from '../ui/card'
 
@@ -11,6 +11,10 @@ interface QuestionPreset {
     hard: number
   }
   icon: LucideIcon
+  color?: string
+  estimatedTime?: string
+  difficulty?: string
+  badge?: string
 }
 
 interface PresetSelectorProps {
@@ -36,100 +40,205 @@ export function PresetSelector({ presets, onPresetSelect, availableCounts }: Pre
     return preset.distribution.easy + preset.distribution.medium + preset.distribution.hard
   }
 
-  return (
-    <div className="mx-auto max-w-5xl p-4 sm:p-6 lg:p-8">
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl">
-          Choose Your Quiz
-        </h1>
-        <p className="mx-auto mt-3 max-w-2xl text-lg text-gray-600 sm:mt-4">
-          Select a preset that matches your learning goals.
-        </p>
-      </div>
+  const getColorClasses = (color: string, available: boolean) => {
+    if (!available) return {
+      bg: 'bg-gray-100',
+      border: 'border-gray-200',
+      text: 'text-gray-500',
+      icon: 'bg-gray-200 text-gray-500',
+      badge: 'bg-gray-200 text-gray-600'
+    }
 
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {presets.map(preset => {
+    const colors = {
+      emerald: {
+        bg: 'bg-white/80 backdrop-blur-sm',
+        border: 'border-emerald-200 hover:border-emerald-400',
+        text: 'text-emerald-600',
+        icon: 'bg-emerald-100 text-emerald-600',
+        badge: 'bg-emerald-50 text-emerald-700'
+      },
+      blue: {
+        bg: 'bg-white/80 backdrop-blur-sm', 
+        border: 'border-blue-200 hover:border-blue-400',
+        text: 'text-blue-600',
+        icon: 'bg-blue-100 text-blue-600',
+        badge: 'bg-blue-50 text-blue-700'
+      },
+      purple: {
+        bg: 'bg-white/80 backdrop-blur-sm',
+        border: 'border-purple-200 hover:border-purple-400', 
+        text: 'text-purple-600',
+        icon: 'bg-purple-100 text-purple-600',
+        badge: 'bg-purple-50 text-purple-700'
+      },
+      orange: {
+        bg: 'bg-white/80 backdrop-blur-sm',
+        border: 'border-orange-200 hover:border-orange-400',
+        text: 'text-orange-600', 
+        icon: 'bg-orange-100 text-orange-600',
+        badge: 'bg-orange-50 text-orange-700'
+      }
+    }
+    
+    return colors[color as keyof typeof colors] || colors.blue
+  }
+
+  return (
+    <div className="mx-auto max-w-6xl">
+      <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+        {presets.map((preset, index) => {
           const available = isPresetAvailable(preset)
           const totalQuestions = getTotalQuestions(preset)
           const Icon = preset.icon
+          const colorClasses = getColorClasses(preset.color || 'blue', available)
 
           return (
-            <Card
+            <div
               key={preset.name}
-              className={`flex flex-col rounded-2xl border-2 transition-all duration-300 ${
-                available
-                  ? 'cursor-pointer border-gray-200 bg-white shadow-sm hover:border-blue-500 hover:shadow-lg'
-                  : 'cursor-not-allowed border-gray-100 bg-gray-50 opacity-70'
-              }`}
+              className={`group relative transform transition-all duration-500 hover:scale-105 ${available ? 'cursor-pointer' : 'cursor-not-allowed'}`}
+              style={{ animationDelay: `${index * 100}ms` }}
               onClick={() => available && onPresetSelect(preset)}
             >
-              <CardContent className="flex flex-1 flex-col p-6">
-                <div className="flex-1">
-                  <div className="flex items-start justify-between">
-                    <div
-                      className={`rounded-full p-2 ${available ? 'bg-blue-100 text-blue-600' : 'bg-gray-200 text-gray-500'}`}
-                    >
-                      <Icon className="h-7 w-7" />
+              {/* Glow effect on hover */}
+              <div className={`absolute -inset-0.5 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${
+                available ? 'bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 blur-sm' : ''
+              }`}></div>
+              
+              <Card className={`relative rounded-3xl border-2 transition-all duration-300 ${colorClasses.bg} ${colorClasses.border} ${
+                available 
+                  ? 'shadow-xl hover:shadow-2xl transform hover:-translate-y-1' 
+                  : 'opacity-60 shadow-sm'
+              }`}>
+                <CardContent className="p-8">
+                  {/* Badge */}
+                  {preset.badge && (
+                    <div className="absolute -top-3 -right-3 animate-bounce">
+                      <div className={`px-3 py-1 rounded-full text-xs font-bold ${colorClasses.badge} shadow-lg border border-white/50`}>
+                        {preset.badge}
+                      </div>
                     </div>
-                    <Badge
-                      className={`${available ? 'bg-blue-50 text-blue-700' : 'bg-gray-200 text-gray-600'} px-3 py-1 text-sm font-semibold`}
-                    >
-                      {totalQuestions} Qs
-                    </Badge>
-                  </div>
-                  <h3 className="mt-4 text-xl font-bold text-gray-900">{preset.name}</h3>
-                  <p className="mt-2 text-sm text-gray-600">{preset.description}</p>
-                </div>
+                  )}
 
-                <div className="mt-6 space-y-3 border-t border-gray-200 pt-4">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center font-medium text-green-600">
-                      <Smile className="mr-2 h-5 w-5" />
-                      Easy
-                    </span>
-                    <span className="font-bold text-gray-800">{preset.distribution.easy}</span>
+                  {/* Header */}
+                  <div className="flex items-start justify-between mb-6">
+                    <div className={`p-4 rounded-2xl ${colorClasses.icon} shadow-inner`}>
+                      <Icon className="h-8 w-8" />
+                    </div>
+                    <div className="text-right">
+                      <Badge className={`${colorClasses.badge} px-3 py-1.5 text-sm font-bold shadow-sm`}>
+                        {totalQuestions} Questions
+                      </Badge>
+                      {preset.estimatedTime && (
+                        <div className="flex items-center gap-1 mt-2 text-xs text-gray-500">
+                          <Clock className="h-3 w-3" />
+                          {preset.estimatedTime}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center font-medium text-amber-600">
-                      <Meh className="mr-2 h-5 w-5" />
-                      Medium
-                    </span>
-                    <span className="font-bold text-gray-800">{preset.distribution.medium}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center font-medium text-red-600">
-                      <Frown className="mr-2 h-5 w-5" />
-                      Hard
-                    </span>
-                    <span className="font-bold text-gray-800">{preset.distribution.hard}</span>
-                  </div>
-                </div>
 
-                {!available && (
-                  <div className="mt-4 flex items-center text-xs text-red-600">
-                    <XCircle className="mr-1.5 h-4 w-4" />
-                    Not enough questions available.
+                  {/* Content */}
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-2xl font-bold text-gray-900 mb-2">{preset.name}</h3>
+                      {preset.difficulty && (
+                        <div className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 rounded-lg text-xs font-medium text-gray-700 mb-3">
+                          <Star className="h-3 w-3" />
+                          {preset.difficulty}
+                        </div>
+                      )}
+                      <p className="text-sm text-gray-600 leading-relaxed">{preset.description}</p>
+                    </div>
+
+                    {/* Progress bars for difficulty distribution */}
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-sm font-medium text-emerald-600">
+                          <Smile className="mr-2 h-4 w-4" />
+                          Easy
+                        </span>
+                        <span className="font-bold text-gray-800">{preset.distribution.easy}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-emerald-500 h-2 rounded-full transition-all duration-700 delay-300"
+                          style={{ width: `${(preset.distribution.easy / totalQuestions) * 100}%` }}
+                        ></div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-sm font-medium text-amber-600">
+                          <Meh className="mr-2 h-4 w-4" />
+                          Medium
+                        </span>
+                        <span className="font-bold text-gray-800">{preset.distribution.medium}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-amber-500 h-2 rounded-full transition-all duration-700 delay-500"
+                          style={{ width: `${(preset.distribution.medium / totalQuestions) * 100}%` }}
+                        ></div>
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <span className="flex items-center text-sm font-medium text-red-600">
+                          <Frown className="mr-2 h-4 w-4" />
+                          Hard
+                        </span>
+                        <span className="font-bold text-gray-800">{preset.distribution.hard}</span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div 
+                          className="bg-red-500 h-2 rounded-full transition-all duration-700 delay-700"
+                          style={{ width: `${(preset.distribution.hard / totalQuestions) * 100}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    {/* Call to action */}
+                    {available ? (
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <div className={`inline-flex items-center gap-2 text-sm font-medium ${colorClasses.text} group-hover:animate-pulse`}>
+                          <Sparkles className="h-4 w-4" />
+                          Click to start!
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="mt-6 pt-4 border-t border-gray-200">
+                        <div className="flex items-center text-xs text-red-600 bg-red-50 p-3 rounded-lg">
+                          <XCircle className="mr-2 h-4 w-4" />
+                          Not enough questions available for this preset
+                        </div>
+                      </div>
+                    )}
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </div>
           )
         })}
       </div>
 
-      {/* <div className="mt-12 text-center">
-        <div className="mx-auto max-w-3xl rounded-2xl border border-gray-200 bg-white p-5">
-          <div className="flex items-center justify-center">
-            <CheckCircle2 className="mr-3 h-6 w-6 text-green-500" />
-            <p className="font-medium text-gray-700">
-              Available Questions: 
-              <span className="font-bold text-green-600"> {availableCounts.easy} Easy</span> • 
-              <span className="font-bold text-amber-600"> {availableCounts.medium} Medium</span> • 
-              <span className="font-bold text-red-600"> {availableCounts.hard} Hard</span>
-            </p>
+      {/* Stats summary */}
+      <div className="mt-16 text-center">
+        <div className="inline-flex items-center gap-4 px-6 py-4 bg-white/70 backdrop-blur-sm rounded-2xl border border-white/20 shadow-lg">
+          <div className="flex items-center gap-2 text-sm font-medium text-emerald-600">
+            <Smile className="h-4 w-4" />
+            <span className="font-bold">{availableCounts.easy}</span> Easy
+          </div>
+          <div className="w-px h-4 bg-gray-300"></div>
+          <div className="flex items-center gap-2 text-sm font-medium text-amber-600">
+            <Meh className="h-4 w-4" />
+            <span className="font-bold">{availableCounts.medium}</span> Medium  
+          </div>
+          <div className="w-px h-4 bg-gray-300"></div>
+          <div className="flex items-center gap-2 text-sm font-medium text-red-600">
+            <Frown className="h-4 w-4" />
+            <span className="font-bold">{availableCounts.hard}</span> Hard
           </div>
         </div>
-      </div> */}
+        <p className="text-sm text-gray-500 mt-3">Available questions in this topic</p>
+      </div>
     </div>
   )
 }

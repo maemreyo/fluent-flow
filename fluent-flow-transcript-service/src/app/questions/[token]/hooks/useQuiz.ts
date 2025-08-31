@@ -33,6 +33,7 @@ export function useQuiz() {
 
   const [isFavorited, setIsFavorited] = useState(false)
   const [favoriteLoading, setFavoriteLoading] = useState(false)
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
   const [authToken, setAuthToken] = useState<string | undefined>()
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth(authToken)
@@ -232,6 +233,13 @@ export function useQuiz() {
 
   const handleFavoriteToggle = async () => {
     if (!questionSet || !token) return
+    
+    // Show auth prompt if user is not authenticated
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true)
+      return
+    }
+    
     setFavoriteLoading(true)
     try {
       if (isFavorited) {
@@ -307,6 +315,16 @@ export function useQuiz() {
     }
   }
 
+  const handleAuthSuccess = (authUser: any) => {
+    console.log('User authenticated successfully:', authUser.email)
+    setShowAuthPrompt(false)
+    // The auth state will be updated automatically through the auth state change listener
+  }
+
+  const handleCloseAuthPrompt = () => {
+    setShowAuthPrompt(false)
+  }
+
   return {
     token,
     questionSet,
@@ -323,6 +341,7 @@ export function useQuiz() {
     showTranscript,
     isFavorited,
     favoriteLoading,
+    showAuthPrompt,
     user,
     isAuthenticated,
     authLoading,
@@ -336,6 +355,8 @@ export function useQuiz() {
     allQuestionsInSetAnswered,
     handleRestart,
     handleFavoriteToggle,
+    handleAuthSuccess,
+    handleCloseAuthPrompt,
     signOut,
     setShowVocabulary,
     setShowTranscript,
