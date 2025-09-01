@@ -124,6 +124,30 @@ export class UserService {
   ): Promise<UserVocabularyDeck | null> {
     if (!supabase) return null
 
+    const itemType = vocabularyData.item_type || 'word'
+
+    // First check if the vocabulary already exists for this user
+    const { data: existingVocab, error: checkError } = await supabase
+      .from('user_vocabulary_deck')
+      .select('*')
+      .eq('user_id', userId)
+      .eq('text', vocabularyData.text)
+      .eq('item_type', itemType)
+      .single()
+
+    if (checkError && checkError.code !== 'PGRST116') {
+      // PGRST116 is "not found" error, which is expected when item doesn't exist
+      console.error('Error checking existing vocabulary:', checkError)
+      return null
+    }
+
+    // If vocabulary already exists, return the existing record
+    if (existingVocab) {
+      console.log('Vocabulary already exists in deck:', vocabularyData.text)
+      return existingVocab
+    }
+
+    // Insert new vocabulary item
     const { data, error } = await supabase
       .from('user_vocabulary_deck')
       .insert({
@@ -134,7 +158,7 @@ export class UserService {
         example: vocabularyData.example,
         context: vocabularyData.context,
         difficulty: vocabularyData.difficulty || 'medium',
-        item_type: vocabularyData.item_type || 'word',
+        item_type: itemType,
         learning_status: vocabularyData.learning_status || 'new',
         part_of_speech: vocabularyData.part_of_speech,
         pronunciation: vocabularyData.pronunciation,

@@ -126,7 +126,7 @@ Respond ONLY with valid JSON in this exact format:
    */
   private async callGeminiAPI(prompt: string): Promise<string | null> {
     try {
-      const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M'
+      const API_KEY = process.env.NEXT_PUBLIC_GEMINI_API_KEY || 'AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M'
       const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent'
       
       const response = await fetch(`${API_URL}?key=${API_KEY}`, {

@@ -29,14 +29,17 @@ export class WordSelectionService {
   /**
    * Add a selected word to the collection
    */
-  async addSelectedWord(data: Omit<SelectedWord, 'id' | 'selectedAt'>): Promise<boolean> {
+  async addSelectedWord(
+    data: Omit<SelectedWord, 'id' | 'selectedAt'>,
+    userId?: string | null
+  ): Promise<boolean> {
     try {
-      const user = await getCurrentUser()
-      
-      if (user && supabase) {
+      const currentUserId = userId ?? (await getCurrentUser())?.id
+
+      if (currentUserId && supabase) {
         // Save to Supabase for authenticated users
         const { error } = await supabase.from('selected_words').insert({
-          user_id: user.id,
+          user_id: currentUserId,
           word: data.word,
           context: data.context,
           source_type: data.sourceType,
@@ -78,15 +81,15 @@ export class WordSelectionService {
   /**
    * Get all selected words
    */
-  async getSelectedWords(): Promise<SelectedWord[]> {
+  async getSelectedWords(userId?: string | null): Promise<SelectedWord[]> {
     try {
-      const user = await getCurrentUser()
-      
-      if (user && supabase) {
+      const currentUserId = userId ?? (await getCurrentUser())?.id
+
+      if (currentUserId && supabase) {
         const { data, error } = await supabase
           .from('selected_words')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', currentUserId)
           .order('created_at', { ascending: false })
         
         if (error) throw error
@@ -124,15 +127,15 @@ export class WordSelectionService {
   /**
    * Remove a selected word
    */
-  async removeSelectedWord(wordId: string): Promise<boolean> {
+  async removeSelectedWord(wordId: string, userId?: string | null): Promise<boolean> {
     try {
-      const user = await getCurrentUser()
-      
-      if (user && supabase) {
+      const currentUserId = userId ?? (await getCurrentUser())?.id
+
+      if (currentUserId && supabase) {
         const { error } = await supabase
           .from('selected_words')
           .delete()
-          .eq('user_id', user.id)
+          .eq('user_id', currentUserId)
           .eq('id', wordId)
         
         if (error) throw error
@@ -155,9 +158,9 @@ export class WordSelectionService {
   /**
    * Check if a word is already selected
    */
-  async isWordSelected(word: string): Promise<boolean> {
+  async isWordSelected(word: string, userId?: string | null): Promise<boolean> {
     try {
-      const words = await this.getSelectedWords()
+      const words = await this.getSelectedWords(userId)
       return words.some(w => w.word.toLowerCase() === word.toLowerCase())
     } catch (error) {
       return false
@@ -167,15 +170,15 @@ export class WordSelectionService {
   /**
    * Clear all selected words
    */
-  async clearSelectedWords(): Promise<boolean> {
+  async clearSelectedWords(userId?: string | null): Promise<boolean> {
     try {
-      const user = await getCurrentUser()
+      const currentUserId = userId ?? (await getCurrentUser())?.id
       
-      if (user && supabase) {
+      if (currentUserId && supabase) {
         const { error } = await supabase
           .from('selected_words')
           .delete()
-          .eq('user_id', user.id)
+          .eq('user_id', currentUserId)
         
         if (error) throw error
       } else {

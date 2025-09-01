@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import { User } from '@supabase/supabase-js'
 import { getCurrentUser, supabase } from '../lib/supabase/client'
 
@@ -107,7 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  const signOut = async () => {
+  const signOut = useCallback(async () => {
     if (!supabase) return
 
     try {
@@ -116,9 +116,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error('Auth Context: Error signing out:', error)
     }
-  }
+  }, [])
 
-  const refreshAuth = async () => {
+  const refreshAuth = useCallback(async () => {
     if (!supabase) return
 
     try {
@@ -135,14 +135,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: error.message
       }))
     }
-  }
+  }, [])
 
-  const contextValue: AuthContextType = {
+  const contextValue: AuthContextType = useMemo(() => ({
     ...authState,
     signOut,
     refreshAuth,
     hasValidSession: authState.isAuthenticated && !!authState.user
-  }
+  }), [authState, signOut, refreshAuth])
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }

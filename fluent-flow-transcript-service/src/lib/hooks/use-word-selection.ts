@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { wordSelectionService, type WordSelectionData, type SelectedWord } from '../services/word-selection-service'
+import { useAuth } from '../../contexts/AuthContext'
 
 // Import bridge service if available (for newtab integration)
 const wordExplorerBridgeService: any = null
@@ -25,6 +26,7 @@ export interface UseWordSelectionReturn {
 }
 
 export function useWordSelection(): UseWordSelectionReturn {
+  const { user } = useAuth()
   const [state, setState] = useState<WordSelectionState>({
     isSelecting: false,
     selectedWords: [],
@@ -35,7 +37,7 @@ export function useWordSelection(): UseWordSelectionReturn {
   const refreshWords = useCallback(async () => {
     setState(prev => ({ ...prev, isLoading: true }))
     try {
-      const words = await wordSelectionService.getSelectedWords()
+      const words = await wordSelectionService.getSelectedWords(user?.id)
       setState(prev => ({
         ...prev,
         selectedWords: words,
@@ -49,7 +51,7 @@ export function useWordSelection(): UseWordSelectionReturn {
         error: error instanceof Error ? error.message : 'Failed to load words'
       }))
     }
-  }, [])
+  }, [user?.id])
 
   const addSelectedWord = useCallback(async (data: WordSelectionData): Promise<boolean> => {
     setState(prev => ({ ...prev, isLoading: true }))
@@ -57,12 +59,15 @@ export function useWordSelection(): UseWordSelectionReturn {
       const cleanWord = wordSelectionService.extractCleanWord(data.word)
       console.log('Adding word to selection:', cleanWord, 'from', data.sourceType)
       
-      const success = await wordSelectionService.addSelectedWord({
-        word: cleanWord,
-        context: data.context,
-        sourceType: data.sourceType,
-        sourceId: data.sourceId
-      })
+      const success = await wordSelectionService.addSelectedWord(
+        {
+          word: cleanWord,
+          context: data.context,
+          sourceType: data.sourceType,
+          sourceId: data.sourceId
+        },
+        user?.id
+      )
       
       console.log('Word selection service result:', success)
       
@@ -73,13 +78,9 @@ export function useWordSelection(): UseWordSelectionReturn {
         try {
           console.log('Attempting to add to vocabulary deck with AI enhancement...')
           const { userService } = await import('../services/user-service')
-          const { getCurrentUser } = await import('../supabase/client')
           const { vocabularyEnhancementService } = await import('../services/vocabulary-enhancement-service')
           
-          const currentUser = await getCurrentUser()
-          console.log('Current user:', currentUser?.id)
-          
-          if (currentUser) {
+          if (user) {
             // Get AI enhancement data
             console.log('Enhancing vocabulary with AI...')
             const enhancedData = await vocabularyEnhancementService.enhanceVocabularyWithRetry(
@@ -92,14 +93,13 @@ export function useWordSelection(): UseWordSelectionReturn {
             
             const vocabularyData = {
               text: cleanWord,
-              definition: enhancedData.definition_en || `A word/phrase selected from ${data.sourceType}`, // Use AI-generated English definition
+              definition: enhancedData.definition_en || `A word/phrase selected from ${data.sourceType}`,
               definition_vi: enhancedData.definition_vi,
               example: enhancedData.example,
-              context: data.context, // Store the original cleaned context
+              context: data.context,
               difficulty: 'intermediate',
               item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
               learning_status: 'new',
-              // Additional enhanced fields
               part_of_speech: enhancedData.part_of_speech,
               pronunciation: enhancedData.pronunciation,
               synonyms: enhancedData.synonyms,
@@ -107,7 +107,7 @@ export function useWordSelection(): UseWordSelectionReturn {
             }
             
             console.log('Adding enhanced vocabulary data to deck:', vocabularyData)
-            const result = await userService.addVocabularyToDeck(currentUser.id, vocabularyData)
+            const result = await userService.addVocabularyToDeck(user.id, vocabularyData)
             
             if (result) {
               console.log('Successfully added enhanced word to vocabulary deck:', result)
@@ -119,20 +119,17 @@ export function useWordSelection(): UseWordSelectionReturn {
           }
         } catch (bridgeError) {
           console.error('Error adding to vocabulary deck:', bridgeError)
-          // Don't fail the whole operation if bridge fails
         }
         
-        // Also add to Word Explorer if bridge service is available
         if (wordExplorerBridgeService) {
           try {
-            const selectedWords = await wordSelectionService.getSelectedWords()
+            const selectedWords = await wordSelectionService.getSelectedWords(user?.id)
             const latestWord = selectedWords.find(w => w.word.toLowerCase() === cleanWord.toLowerCase())
             if (latestWord) {
               await wordExplorerBridgeService.addWordToExplorer(latestWord)
             }
           } catch (bridgeError) {
             console.warn('Failed to add word to explorer:', bridgeError)
-            // Don't fail the whole operation if bridge fails
           }
         }
       } else {
@@ -150,12 +147,12 @@ export function useWordSelection(): UseWordSelectionReturn {
       }))
       return false
     }
-  }, [refreshWords])
+  }, [user?.id, refreshWords])
 
   const removeSelectedWord = useCallback(async (wordId: string): Promise<boolean> => {
     setState(prev => ({ ...prev, isLoading: true }))
     try {
-      const success = await wordSelectionService.removeSelectedWord(wordId)
+      const success = await wordSelectionService.removeSelectedWord(wordId, user?.id)
       if (success) {
         await refreshWords()
       }
@@ -169,16 +166,16 @@ export function useWordSelection(): UseWordSelectionReturn {
       }))
       return false
     }
-  }, [refreshWords])
+  }, [user?.id, refreshWords])
 
   const isWordSelected = useCallback(async (word: string): Promise<boolean> => {
-    return await wordSelectionService.isWordSelected(word)
-  }, [])
+    return await wordSelectionService.isWordSelected(word, user?.id)
+  }, [user?.id])
 
   const clearAllWords = useCallback(async (): Promise<boolean> => {
     setState(prev => ({ ...prev, isLoading: true }))
     try {
-      const success = await wordSelectionService.clearSelectedWords()
+      const success = await wordSelectionService.clearSelectedWords(user?.id)
       if (success) {
         setState(prev => ({
           ...prev,
@@ -195,7 +192,7 @@ export function useWordSelection(): UseWordSelectionReturn {
       }))
       return false
     }
-  }, [])
+  }, [user?.id])
 
   const handleTextSelection = useCallback((
     _event: MouseEvent,
@@ -229,7 +226,6 @@ export function useWordSelection(): UseWordSelectionReturn {
 
     console.log('Word selection: Showing tooltip for word:', cleanWord)
     
-    // Show selection feedback
     const rect = range.getBoundingClientRect()
     showSelectionTooltip(rect, cleanWord, () => {
       console.log('Word selection: Adding word to selection')
@@ -245,7 +241,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       })
     })
 
-    // Clear selection after a delay
     setTimeout(() => {
       selection.removeAllRanges()
     }, 100)
@@ -256,13 +251,11 @@ export function useWordSelection(): UseWordSelectionReturn {
     word: string,
     onConfirm: () => void
   ) => {
-    // Remove existing tooltip
     const existingTooltip = document.querySelector('.word-selection-tooltip')
     if (existingTooltip) {
       existingTooltip.remove()
     }
 
-    // Create tooltip with improved design
     const tooltip = document.createElement('div')
     tooltip.className = 'word-selection-tooltip'
     tooltip.style.cssText = `
@@ -286,7 +279,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       backdrop-filter: blur(10px);
     `
     
-    // Add CSS animation keyframes
     if (!document.querySelector('#word-selection-styles')) {
       const style = document.createElement('style')
       style.id = 'word-selection-styles'
@@ -335,7 +327,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       if (isProcessing) return
       isProcessing = true
       
-      // Show loading state
       tooltip.innerHTML = `
         <div style="text-align: center;">
           <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -345,7 +336,6 @@ export function useWordSelection(): UseWordSelectionReturn {
         </div>
       `
       
-      // Add spin animation
       const spinStyle = document.createElement('style')
       spinStyle.textContent = `
         @keyframes spin {
@@ -358,7 +348,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       try {
         await onConfirm()
         
-        // Show success state
         tooltip.style.animation = 'tooltip-success 0.6s ease-out forwards'
         tooltip.innerHTML = `
           <div style="text-align: center;">
@@ -369,7 +358,6 @@ export function useWordSelection(): UseWordSelectionReturn {
           </div>
         `
         
-        // Remove after success animation
         setTimeout(() => {
           if (tooltip.parentNode) {
             tooltip.style.opacity = '0'
@@ -378,7 +366,6 @@ export function useWordSelection(): UseWordSelectionReturn {
           }
         }, 1500)
       } catch (error) {
-        // Show error state
         tooltip.style.background = 'linear-gradient(135deg, #ef4444, #dc2626)'
         tooltip.innerHTML = `
           <div style="text-align: center;">
@@ -400,7 +387,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       spinStyle.remove()
     })
 
-    // Hover effects
     tooltip.addEventListener('mouseenter', () => {
       if (!isProcessing) {
         tooltip.style.transform = 'translateX(-50%) translateY(-2px) scale(1.02)'
@@ -417,7 +403,6 @@ export function useWordSelection(): UseWordSelectionReturn {
 
     document.body.appendChild(tooltip)
 
-    // Auto-remove after 5 seconds if not interacted
     const autoRemoveTimeout = setTimeout(() => {
       if (tooltip.parentNode && !isProcessing) {
         tooltip.style.opacity = '0'
@@ -426,7 +411,6 @@ export function useWordSelection(): UseWordSelectionReturn {
       }
     }, 5000)
     
-    // Clear timeout if user interacts
     tooltip.addEventListener('click', () => clearTimeout(autoRemoveTimeout))
   }, [])
 
@@ -469,7 +453,6 @@ export function useWordSelection(): UseWordSelectionReturn {
 
     setState(prev => ({ ...prev, isSelecting: false }))
 
-    // Remove any existing tooltips
     const tooltip = document.querySelector('.word-selection-tooltip')
     if (tooltip) tooltip.remove()
   }, [])
