@@ -13,6 +13,7 @@ interface GroupsHeaderProps {
   setActiveTab: (tab: 'my-groups' | 'public') => void
   searchQuery: string
   setSearchQuery: (query: string) => void
+  onPrefetchTab?: (tab: 'my-groups' | 'public') => void
 }
 
 export function GroupsHeader({
@@ -24,7 +25,8 @@ export function GroupsHeader({
   activeTab,
   setActiveTab,
   searchQuery,
-  setSearchQuery
+  setSearchQuery,
+  onPrefetchTab
 }: GroupsHeaderProps) {
   return (
     <div className="mb-8">
@@ -76,6 +78,7 @@ export function GroupsHeader({
             <div className="flex rounded-2xl border border-white/20 bg-white/80 p-1 shadow-lg backdrop-blur-sm">
               <button
                 onClick={() => setActiveTab('my-groups')}
+                onMouseEnter={() => onPrefetchTab?.('my-groups')}
                 className={`rounded-xl px-6 py-2 font-semibold transition-all duration-300 ${
                   activeTab === 'my-groups'
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
@@ -86,6 +89,7 @@ export function GroupsHeader({
               </button>
               <button
                 onClick={() => setActiveTab('public')}
+                onMouseEnter={() => onPrefetchTab?.('public')}
                 className={`rounded-xl px-6 py-2 font-semibold transition-all duration-300 ${
                   activeTab === 'public'
                     ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'

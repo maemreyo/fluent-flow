@@ -4,13 +4,12 @@ import { useState } from 'react'
 import { AuthPrompt } from '../../components/auth/AuthPrompt'
 import { useQuizAuth } from '../../lib/hooks/use-quiz-auth'
 import { CreateGroupModal } from './components/CreateGroupModal'
-import { JoinGroupModal } from './components/JoinGroupModal'
-import { GroupsHeader } from './components/GroupsHeader'
-import { GroupsLoadingSkeleton } from './components/GroupsLoadingSkeleton'
 import { EmptyState } from './components/EmptyState'
 import { GroupsGrid } from './components/GroupsGrid'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchGroups } from './queries'
+import { GroupsHeader } from './components/GroupsHeader'
+import { GroupsLoadingSkeleton } from './components/GroupsLoadingSkeleton'
+import { JoinGroupModal } from './components/JoinGroupModal'
+import { useGroupsData } from './hooks/useGroupsData'
 
 export default function GroupsPage() {
   const [activeTab, setActiveTab] = useState<'my-groups' | 'public'>('my-groups')
@@ -20,18 +19,20 @@ export default function GroupsPage() {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
   const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth()
-  const queryClient = useQueryClient()
 
   const {
-    data: groups = [],
-    isLoading: groupsLoading,
-    isError,
-    error
-  } = useQuery({
-    queryKey: ['groups', activeTab],
-    queryFn: () => fetchGroups(activeTab),
-    enabled: isAuthenticated
-  })
+    getGroupsForTab,
+    getLoadingStateForTab,
+    getErrorStateForTab,
+    prefetchTab,
+    invalidateTab,
+    invalidateAllGroups
+  } = useGroupsData({ isAuthenticated })
+
+  // Get current tab data
+  const groups = getGroupsForTab(activeTab)
+  const groupsLoading = getLoadingStateForTab(activeTab)
+  const { isError, error } = getErrorStateForTab(activeTab)
 
   const filteredGroups = groups.filter(
     group =>
@@ -42,7 +43,7 @@ export default function GroupsPage() {
 
   const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
-    queryClient.invalidateQueries({ queryKey: ['groups'] })
+    invalidateAllGroups()
   }
 
   const handleCloseAuthPrompt = () => {
@@ -66,7 +67,15 @@ export default function GroupsPage() {
   }
 
   const handleModalSuccess = () => {
-    queryClient.invalidateQueries({ queryKey: ['groups', activeTab] })
+    // Invalidate cả 2 tabs vì tạo/join group có thể ảnh hưởng cả 2
+    invalidateAllGroups()
+  }
+
+  const handlePrefetchTab = (tab: 'my-groups' | 'public') => {
+    // Chỉ prefetch nếu không phải tab hiện tại
+    if (tab !== activeTab) {
+      prefetchTab(tab)
+    }
   }
 
   if (authLoading) {
@@ -112,14 +121,13 @@ export default function GroupsPage() {
             setActiveTab={setActiveTab}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
+            onPrefetchTab={handlePrefetchTab}
           />
 
           {groupsLoading ? (
             <GroupsLoadingSkeleton />
           ) : isError ? (
-            <div className="text-center text-red-500">
-              Error fetching groups: {error.message}
-            </div>
+            <div className="text-center text-red-500">Error fetching groups: {error?.message}</div>
           ) : filteredGroups.length === 0 ? (
             <EmptyState
               activeTab={activeTab}

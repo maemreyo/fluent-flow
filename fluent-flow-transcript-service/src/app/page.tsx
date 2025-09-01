@@ -1,99 +1,42 @@
 'use client'
 
 import { useState } from 'react'
-
-interface TranscriptSegment {
-  text: string
-  start: number
-  duration: number
-}
-
-interface TranscriptResult {
-  segments: TranscriptSegment[]
-  fullText: string
-  videoId: string
-  language?: string
-}
-
-type ApiResult =
-  | TranscriptResult
-  | { languages: string[] }
-  | { available: boolean }
-  | { error: string }
+import { useMutation } from '@tanstack/react-query'
+import { testTranscript, checkAvailability } from './queries'
 
 export default function Home() {
   const [videoId, setVideoId] = useState('dQw4w9WgXcQ')
   const [startTime, setStartTime] = useState(0)
   const [endTime, setEndTime] = useState(30)
-  const [result, setResult] = useState<ApiResult | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const testTranscript = async () => {
-    setLoading(true)
-    setError(null)
-    setResult(null)
+  const transcriptMutation = useMutation({
+    mutationFn: testTranscript
+  })
 
-    try {
-      const response = await fetch('/api/transcript', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'getSegment',
-          videoId,
-          startTime,
-          endTime,
-          language: 'en'
-        })
-      })
+  const availabilityMutation = useMutation({
+    mutationFn: checkAvailability
+  })
 
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'API request failed')
-      }
-
-      setResult(data)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
+  const handleTestTranscript = () => {
+    transcriptMutation.mutate({
+      videoId,
+      startTime,
+      endTime,
+      language: 'en'
+    })
   }
 
-  const checkAvailability = async () => {
-    setLoading(true)
-    setError(null)
-    setResult(null)
-
-    try {
-      const response = await fetch('/api/transcript', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          action: 'checkAvailability',
-          videoId,
-          language: 'en'
-        })
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'API request failed')
-      }
-
-      setResult(data)
-    } catch (err) {
-      setError((err as Error).message)
-    } finally {
-      setLoading(false)
-    }
+  const handleCheckAvailability = () => {
+    availabilityMutation.mutate({
+      videoId,
+      language: 'en'
+    })
   }
+
+  const loading =
+    transcriptMutation.isPending || availabilityMutation.isPending
+  const error = transcriptMutation.error || availabilityMutation.error
+  const result = transcriptMutation.data || availabilityMutation.data
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -101,12 +44,14 @@ export default function Home() {
         {/* Header with User Avatar */}
         <div className="mb-8 flex items-center justify-between">
           <div className="text-center flex-1">
-            <h1 className="text-3xl font-bold text-gray-900">FluentFlow Transcript Service</h1>
+            <h1 className="text-3xl font-bold text-gray-900">
+              FluentFlow Transcript Service
+            </h1>
             <p className="mt-2 text-lg text-gray-600">
               YouTube Transcript Extraction API using YouTube.js
             </p>
           </div>
-          
+
           {/* Placeholder for UserAvatar - will be integrated with authentication */}
           <div className="flex items-center space-x-4">
             <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
@@ -116,11 +61,16 @@ export default function Home() {
         </div>
 
         <div className="mb-6 rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-xl font-semibold">Test Transcript Extraction</h2>
+          <h2 className="mb-4 text-xl font-semibold">
+            Test Transcript Extraction
+          </h2>
 
           <div className="mb-4 grid grid-cols-1 gap-4">
             <div>
-              <label htmlFor="videoId" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="videoId"
+                className="block text-sm font-medium text-gray-700"
+              >
                 Video ID or URL
               </label>
               <input
@@ -135,7 +85,10 @@ export default function Home() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="startTime"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   Start Time (seconds)
                 </label>
                 <input
@@ -148,7 +101,10 @@ export default function Home() {
               </div>
 
               <div>
-                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700">
+                <label
+                  htmlFor="endTime"
+                  className="block text-sm font-medium text-gray-700"
+                >
                   End Time (seconds)
                 </label>
                 <input
@@ -164,19 +120,21 @@ export default function Home() {
 
           <div className="flex space-x-4">
             <button
-              onClick={testTranscript}
+              onClick={handleTestTranscript}
               disabled={loading}
               className="rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
             >
-              {loading ? 'Loading...' : 'Get Transcript'}
+              {transcriptMutation.isPending ? 'Loading...' : 'Get Transcript'}
             </button>
 
             <button
-              onClick={checkAvailability}
+              onClick={handleCheckAvailability}
               disabled={loading}
               className="rounded-md bg-green-600 px-4 py-2 text-white hover:bg-green-700 disabled:opacity-50"
             >
-              {loading ? 'Loading...' : 'Check Availability'}
+              {availabilityMutation.isPending
+                ? 'Loading...'
+                : 'Check Availability'}
             </button>
           </div>
         </div>
@@ -187,7 +145,7 @@ export default function Home() {
               <div className="ml-3">
                 <h3 className="text-sm font-medium text-red-800">Error</h3>
                 <div className="mt-2 text-sm text-red-700">
-                  <p>{error}</p>
+                  <p>{error.message}</p>
                 </div>
               </div>
             </div>
@@ -210,7 +168,9 @@ export default function Home() {
         )}
 
         <div className="mt-6 rounded-lg bg-gray-50 p-6">
-          <h3 className="mb-3 text-lg font-medium text-gray-900">API Usage</h3>
+          <h3 className="mb-3 text-lg font-medium text-gray-900">
+            API Usage
+          </h3>
           <div className="space-y-2 text-sm text-gray-600">
             <p>
               <strong>Endpoint:</strong> POST /api/transcript
@@ -223,7 +183,8 @@ export default function Home() {
                 <code>getSegment</code> - Extract transcript for time range
               </li>
               <li>
-                <code>checkAvailability</code> - Check if transcript is available
+                <code>checkAvailability</code> - Check if transcript is
+                available
               </li>
               <li>
                 <code>getLanguages</code> - Get available languages

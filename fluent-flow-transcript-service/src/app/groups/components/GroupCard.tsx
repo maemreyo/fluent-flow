@@ -1,16 +1,7 @@
 'use client'
 
-import {
-  BarChart3,
-  Calendar,
-  Crown,
-  MessageCircle,
-  Settings,
-  Shield,
-  Users
-} from 'lucide-react'
+import { BarChart3, Calendar, Crown, MessageCircle, Settings, Shield, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
-
 import { StudyGroup } from '../types'
 
 interface GroupCardProps {
@@ -92,9 +83,7 @@ export function GroupCard({ group }: GroupCardProps) {
             {group.member_count}/{group.max_members} members
           </span>
         </div>
-        <div className="text-xs">
-          {new Date(group.created_at).toLocaleDateString()}
-        </div>
+        <div className="text-xs">{new Date(group.created_at).toLocaleDateString()}</div>
       </div>
 
       {/* Action Icons */}
