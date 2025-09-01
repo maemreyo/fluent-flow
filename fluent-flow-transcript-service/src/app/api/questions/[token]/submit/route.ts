@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { sharedQuestions } from '../../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
+import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supabase/server'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -47,7 +48,7 @@ export async function POST(
   try {
     const { token } = await params
     const body = await request.json()
-    const { responses } = body
+    const { responses, groupId, sessionId: groupSessionId } = body
 
     if (!token) {
       return corsResponse(
@@ -95,13 +96,47 @@ export async function POST(
     // Update the stored data
     sharedQuestions.set(token, questionSet)
 
+    // If this is a group session, record participation in database
+    if (groupId && groupSessionId) {
+      try {
+        const supabase = getSupabaseServer(request)
+        if (supabase) {
+          const user = await getCurrentUserServer(supabase)
+          if (user) {
+            // Record or update participation
+            const { error: upsertError } = await supabase
+              .from('group_session_participants')
+              .upsert({
+                session_id: groupSessionId,
+                user_id: user.id,
+                completed_at: new Date().toISOString(),
+                score: evaluation.score,
+                responses: responses
+              }, {
+                onConflict: 'session_id,user_id'
+              })
+            
+            if (upsertError) {
+              console.error('Error recording group session participation:', upsertError)
+            } else {
+              console.log(`Recorded participation for user ${user.id} in group session ${groupSessionId}`)
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error handling group session participation:', error)
+        // Don't fail the entire request if group participation tracking fails
+      }
+    }
+
     const result = {
       sessionId,
       score: evaluation.score,
       totalQuestions: evaluation.totalQuestions,
       correctAnswers: evaluation.correctAnswers,
       results: evaluation.results,
-      submittedAt: session.submittedAt
+      submittedAt: session.submittedAt,
+      isGroupSession: !!(groupId && groupSessionId)
     }
 
     return corsResponse(result)

@@ -436,6 +436,212 @@ export type Database = {
           },
         ]
       }
+      group_invitations: {
+        Row: {
+          created_at: string | null
+          current_uses: number | null
+          expires_at: string
+          group_id: string
+          id: string
+          invitation_code: string
+          invited_by: string
+          is_active: boolean | null
+          max_uses: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          current_uses?: number | null
+          expires_at: string
+          group_id: string
+          id?: string
+          invitation_code: string
+          invited_by: string
+          is_active?: boolean | null
+          max_uses?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          current_uses?: number | null
+          expires_at?: string
+          group_id?: string
+          id?: string
+          invitation_code?: string
+          invited_by?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_quiz_results: {
+        Row: {
+          completed_at: string | null
+          correct_answers: number
+          id: string
+          result_data: Json | null
+          score: number
+          session_id: string
+          time_taken_seconds: number | null
+          total_questions: number
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          completed_at?: string | null
+          correct_answers: number
+          id?: string
+          result_data?: Json | null
+          score: number
+          session_id: string
+          time_taken_seconds?: number | null
+          total_questions: number
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          completed_at?: string | null
+          correct_answers?: number
+          id?: string
+          result_data?: Json | null
+          score?: number
+          session_id?: string
+          time_taken_seconds?: number | null
+          total_questions?: number
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_quiz_sessions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          ended_at: string | null
+          group_id: string
+          id: string
+          loop_data: Json | null
+          questions_data: Json | null
+          quiz_title: string | null
+          quiz_token: string
+          scheduled_at: string | null
+          session_type: string | null
+          settings: Json | null
+          share_token: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          video_title: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          ended_at?: string | null
+          group_id: string
+          id?: string
+          loop_data?: Json | null
+          questions_data?: Json | null
+          quiz_title?: string | null
+          quiz_token: string
+          scheduled_at?: string | null
+          session_type?: string | null
+          settings?: Json | null
+          share_token?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          ended_at?: string | null
+          group_id?: string
+          id?: string
+          loop_data?: Json | null
+          questions_data?: Json | null
+          quiz_title?: string | null
+          quiz_token?: string
+          scheduled_at?: string | null
+          session_type?: string | null
+          settings?: Json | null
+          share_token?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_session_participants: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          joined_at: string | null
+          responses: Json | null
+          score: number | null
+          session_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          joined_at?: string | null
+          responses?: Json | null
+          score?: number | null
+          session_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          joined_at?: string | null
+          responses?: Json | null
+          score?: number | null
+          session_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learning_goals: {
         Row: {
           completed_at: string | null
@@ -884,8 +1090,10 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string
+          creator_id: string | null
           current_challenge_id: string | null
           description: string | null
+          group_code: string | null
           id: string
           is_private: boolean | null
           language: string
@@ -899,8 +1107,10 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by: string
+          creator_id?: string | null
           current_challenge_id?: string | null
           description?: string | null
+          group_code?: string | null
           id?: string
           is_private?: boolean | null
           language: string
@@ -914,8 +1124,10 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string
+          creator_id?: string | null
           current_challenge_id?: string | null
           description?: string | null
+          group_code?: string | null
           id?: string
           is_private?: boolean | null
           language?: string
@@ -1342,6 +1554,7 @@ export type Database = {
       user_vocabulary_deck: {
         Row: {
           antonyms: Json | null
+          context: string | null
           created_at: string | null
           definition: string
           definition_vi: string | null
@@ -1371,6 +1584,7 @@ export type Database = {
         }
         Insert: {
           antonyms?: Json | null
+          context?: string | null
           created_at?: string | null
           definition: string
           definition_vi?: string | null
@@ -1400,6 +1614,7 @@ export type Database = {
         }
         Update: {
           antonyms?: Json | null
+          context?: string | null
           created_at?: string | null
           definition?: string
           definition_vi?: string | null
@@ -1547,6 +1762,14 @@ export type Database = {
       cleanup_old_usage_data: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      generate_group_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_invitation_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_subscription_summary: {
         Args: Record<PropertyKey, never>
