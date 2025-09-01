@@ -109,7 +109,7 @@ export async function PUT(
 
     const { groupId } = await params
     const body = await request.json()
-    const { name, description, is_private, max_members } = body
+    const { name, description, is_private, max_members, language, level, tags } = body
 
     // Check if user is owner/admin
     const { data: membership, error: memberError } = await supabase
@@ -123,16 +123,23 @@ export async function PUT(
       return corsResponse({ error: 'Access denied' }, 403)
     }
 
+    // Build update object with only provided fields
+    const updateData: any = {
+      updated_at: new Date().toISOString()
+    }
+
+    if (name !== undefined) updateData.name = name?.trim()
+    if (description !== undefined) updateData.description = description?.trim()
+    if (is_private !== undefined) updateData.is_private = is_private
+    if (max_members !== undefined) updateData.max_members = max_members
+    if (language !== undefined) updateData.language = language
+    if (level !== undefined) updateData.level = level
+    if (tags !== undefined) updateData.tags = tags
+
     // Update group
     const { data: updatedGroup, error: updateError } = await supabase
       .from('study_groups')
-      .update({
-        name: name?.trim(),
-        description: description?.trim(),
-        is_private,
-        max_members,
-        updated_at: new Date().toISOString()
-      })
+      .update(updateData)
       .eq('id', groupId)
       .select()
       .single()
