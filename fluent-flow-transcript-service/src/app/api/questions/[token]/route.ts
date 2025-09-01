@@ -31,20 +31,11 @@ export async function GET(
     console.log(`Group context: groupId=${groupId}, sessionId=${sessionId}`)
 
     // Try database first using service role client (public access)
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.PLASMO_PUBLIC_SUPABASE_URL
-    const supabaseServiceKey = process.env.NEXT_PUBLIC_SERVICE_ROLE_KEY || process.env.PLASMO_PUBLIC_SERVICE_ROLE_KEY
-    
+    const supabase = getSupabaseServiceRole()
     let questionSet = null
     let fromDatabase = false
     
-    if (supabaseUrl && supabaseServiceKey) {
-      const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false
-        }
-      })
-      
+    if (supabase) {
       try {
         const { data, error } = await supabase
           .from('shared_question_sets')
@@ -62,6 +53,8 @@ export async function GET(
       } catch (error) {
         console.log(`Database lookup failed for token: ${token}, trying in-memory:`, error)
       }
+    } else {
+      console.log('Service role client not configured, trying in-memory storage only')
     }
 
     // Fallback to in-memory storage for backward compatibility
