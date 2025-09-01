@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { X, Mail, Link2, Copy, Check, UserPlus } from 'lucide-react'
-import { useQuizAuth } from '../../lib/hooks/use-quiz-auth'
+import { useAuth } from '../../contexts/AuthContext'
 import { supabase } from '../../lib/supabase/client'
 
 interface InviteMemberModalProps {
@@ -25,7 +25,7 @@ export default function InviteMemberModal({
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   
-  const { user } = useQuizAuth()
+  const { user } = useAuth()
 
   const inviteLink = `${window.location.origin}/groups/join?code=${groupCode}`
 

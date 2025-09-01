@@ -1,16 +1,31 @@
 'use client'
 
+import { useQueryClient } from '@tanstack/react-query'
 import { BarChart3, Calendar, Crown, MessageCircle, Settings, Shield, Users } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { StudyGroup } from '../types'
 
 interface GroupCardProps {
   group: StudyGroup
+  onPrefetch?: (groupId: string, groupData: StudyGroup) => void
 }
 
-export function GroupCard({ group }: GroupCardProps) {
+export function GroupCard({ group, onPrefetch }: GroupCardProps) {
   const router = useRouter()
+  const queryClient = useQueryClient()
   const userRole = group.study_group_members?.[0]?.role
+
+  // Prefetch group detail khi hover
+  const handleMouseEnter = () => {
+    onPrefetch?.(group.id, group)
+  }
+
+  // Navigate với fresh data loading
+  const handleClick = () => {
+    // Không seed cache để đảm bảo fresh data được fetch
+    // Chỉ navigate và để useGroupDetail handle loading
+    router.push(`/groups/${group.id}`)
+  }
 
   const getRoleIcon = (role: string) => {
     switch (role) {
@@ -39,7 +54,8 @@ export function GroupCard({ group }: GroupCardProps) {
   return (
     <div
       className="group cursor-pointer rounded-3xl border border-white/20 bg-white/90 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-2xl"
-      onClick={() => router.push(`/groups/${group.id}`)}
+      onClick={handleClick}
+      onMouseEnter={handleMouseEnter}
     >
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">

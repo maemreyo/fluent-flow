@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useQuizAuth } from '../../../lib/hooks/use-quiz-auth'
+import { useAuth } from '../../../contexts/AuthContext'
 import { supabase } from '../../../lib/supabase/client'
 import { Button } from '../../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
@@ -32,7 +32,7 @@ interface InvitationInfo {
 export default function JoinGroupPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { user, isLoading: authLoading } = useQuizAuth()
+  const { user, isLoading: authLoading } = useAuth()
   
   const [invitation, setInvitation] = useState<InvitationInfo | null>(null)
   const [loading, setLoading] = useState(true)

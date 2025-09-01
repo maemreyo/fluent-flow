@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { AuthPrompt } from '../../components/auth/AuthPrompt'
-import { useQuizAuth } from '../../lib/hooks/use-quiz-auth'
+import { useAuth } from '../../contexts/AuthContext'
 import { CreateGroupModal } from './components/CreateGroupModal'
 import { EmptyState } from './components/EmptyState'
 import { GroupsGrid } from './components/GroupsGrid'
@@ -18,7 +18,7 @@ export default function GroupsPage() {
   const [showJoinModal, setShowJoinModal] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth()
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth()
 
   const {
     getGroupsForTab,

@@ -1,19 +1,19 @@
 'use client'
 
 import { use, useState } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { AuthPrompt } from '../../../components/auth/AuthPrompt'
 import CreateSessionModal from '../../../components/sessions/CreateSessionModal'
 import SessionsTab from '../../../components/sessions/SessionsTab'
-import { useQuizAuth } from '../../../lib/hooks/use-quiz-auth'
+import { useAuth } from '../../../contexts/AuthContext'
 import { GroupHeader } from './components/GroupHeader'
 import { MembersTab } from './components/MembersTab'
 import { OverviewTab } from './components/OverviewTab'
 import { SettingsTab } from './components/SettingsTab'
 import { StatCards } from './components/StatCards'
 import { GroupTab, TabNavigation } from './components/TabNavigation'
-import { fetchGroup } from './queries'
+import { useGroupDetail } from './hooks/useGroupDetail'
 
 export default function GroupPage({ params }: { params: Promise<{ groupId: string }> }) {
   const router = useRouter()
@@ -24,22 +24,22 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
   const [showCreateSession, setShowCreateSession] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  const { isAuthenticated, isLoading: authLoading } = useQuizAuth()
+  const { isAuthenticated, isLoading: authLoading } = useAuth()
 
   const {
-    data: group,
+    group,
     isLoading: groupLoading,
     isError,
-    error
-  } = useQuery({
-    queryKey: ['group', groupId],
-    queryFn: () => fetchGroup(groupId),
-    enabled: isAuthenticated
+    error,
+    invalidateGroup
+  } = useGroupDetail({
+    groupId,
+    isAuthenticated
   })
 
   const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
-    queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+    invalidateGroup()
   }
 
   const handleCloseAuthPrompt = () => {
@@ -49,7 +49,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
   const handleCreateSessionSuccess = () => {
     setShowCreateSession(false)
-    queryClient.invalidateQueries({ queryKey: ['group', groupId] })
+    invalidateGroup()
   }
 
   if (authLoading || (isAuthenticated && groupLoading)) {

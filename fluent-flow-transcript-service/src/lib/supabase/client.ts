@@ -39,7 +39,15 @@ export const supabase = supabaseUrl && supabaseAnonKey ? createClient(supabaseUr
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false, // Disable for Next.js to avoid SSR issues
-    storage: defaultStorage
+    storage: defaultStorage,
+    // Reduce refresh frequency to minimize API calls
+    refreshTokenMarginSeconds: 300, // 5 minutes before expiry
+    retryDelayMs: 2000, // 2 seconds retry delay
+  },
+  global: {
+    headers: {
+      'X-Client-Info': 'fluent-flow-web'
+    }
   }
 }) : null
 
