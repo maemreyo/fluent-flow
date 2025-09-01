@@ -31,7 +31,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     error: null
   })
 
-  // Single auth initialization
+  // Optimized single auth initialization - avoid redundant API calls
   useEffect(() => {
     let mounted = true
     let authSubscription: any = null
@@ -50,19 +50,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       try {
-        // Get initial user
-        const user = await getCurrentUser()
+        // Use getSession instead of getUser to avoid extra API call
+        // onAuthStateChange will handle the initial state
+        const { data: { session } } = await supabase.auth.getSession()
 
         if (mounted) {
           setAuthState({
-            user,
-            isAuthenticated: !!user,
+            user: session?.user || null,
+            isAuthenticated: !!session?.user,
             isLoading: false,
             error: null
           })
         }
 
-        // Set up SINGLE auth state change listener
+        // Set up SINGLE auth state change listener - this handles all auth state changes
         const {
           data: { subscription }
         } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -70,18 +71,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
           console.log('Auth Context: Auth state changed:', event)
 
-          // Debounce rapid auth changes
-          setTimeout(() => {
-            if (!mounted) return
-
-            setAuthState(prev => ({
-              ...prev,
-              user: session?.user || null,
-              isAuthenticated: !!session?.user,
-              isLoading: false,
-              error: null
-            }))
-          }, 100)
+          // Direct state update - no debounce needed, no additional API calls
+          setAuthState(prev => ({
+            ...prev,
+            user: session?.user || null,
+            isAuthenticated: !!session?.user,
+            isLoading: false,
+            error: null
+          }))
         })
 
         authSubscription = subscription
@@ -122,14 +119,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     if (!supabase) return
 
     try {
-      const user = await getCurrentUser()
+      // Use getSession instead of getUser to avoid unnecessary API calls
+      // The auth listener will handle most state changes automatically
+      const { data: { session } } = await supabase.auth.getSession()
       setAuthState(prev => ({
         ...prev,
-        user,
-        isAuthenticated: !!user,
+        user: session?.user || null,
+        isAuthenticated: !!session?.user,
         error: null
       }))
     } catch (error: any) {
+      console.error('RefreshAuth error:', error)
       setAuthState(prev => ({
         ...prev,
         error: error.message
@@ -156,22 +156,32 @@ export function useAuth(): AuthContextType {
   return context
 }
 
-// Backward compatibility hook
+// Backward compatibility hook - optimized to avoid redundant setSession calls
 export function useQuizAuth(authToken?: string) {
   const auth = useAuth()
 
-  // Handle auth token if provided (for quiz pages)
+  // Handle auth token if provided (for quiz pages) - but only once per token
   useEffect(() => {
-    if (authToken && supabase) {
+    if (authToken && supabase && !auth.isAuthenticated) {
       const authenticateWithToken = async () => {
         try {
-          const { data, error } = await supabase!.auth.setSession({
+          // Only set session if we're not already authenticated
+          // This prevents unnecessary API calls
+          const { data: currentSession } = await supabase.auth.getSession()
+          if (currentSession.session?.access_token === authToken) {
+            console.debug('Already authenticated with this token')
+            return
+          }
+
+          const { data, error } = await supabase.auth.setSession({
             access_token: authToken,
             refresh_token: authToken
           })
 
           if (error) {
             console.error('Auth token error:', error)
+          } else {
+            console.debug('Successfully authenticated with token')
           }
         } catch (error) {
           console.error('Authentication with token failed:', error)
@@ -180,7 +190,7 @@ export function useQuizAuth(authToken?: string) {
 
       authenticateWithToken()
     }
-  }, [authToken])
+  }, [authToken, auth.isAuthenticated])
 
   return auth
 }

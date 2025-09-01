@@ -1,19 +1,24 @@
-Word selection service result: true
-use-word-selection.ts:74 Attempting to add to vocabulary deck with AI enhancement...
-use-word-selection.ts:80 Current user: 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
-use-word-selection.ts:84 Enhancing vocabulary with AI...
-vocabulary-enhancement-service.ts:212 Enhancement attempt 1/2 for word: "preset"
-vocabulary-enhancement-service.ts:35 Enhancing vocabulary word: "preset" with context: "Each preset is crafted for different learning goal..."
-vocabulary-enhancement-service.ts:132 
- POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M 400 (Bad Request)
-vocabulary-enhancement-service.ts:151 Gemini API error: 400 
-vocabulary-enhancement-service.ts:98 No response from Gemini API
-vocabulary-enhancement-service.ts:212 Enhancement attempt 2/2 for word: "preset"
-vocabulary-enhancement-service.ts:35 Enhancing vocabulary word: "preset" with context: "Each preset is crafted for different learning goal..."
-vocabulary-enhancement-service.ts:132 
- POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M 400 (Bad Request)
-vocabulary-enhancement-service.ts:151 Gemini API error: 400 
-callGeminiAPI	@	vocabulary-enhancement-service.ts:151
-await in callGeminiAPI
+1. Skip prev tasks
+2. Kiểm tra lỗi khi tôi remove đoạn này:
+```
+  if (accessToken) {
+    // Set the authorization header for RLS policies
+    supabase.rest.headers['authorization'] = `Bearer ${accessToken}`
 
+    // Also try to set the session (async operation handled in getCurrentUserServer)
+    supabase._accessToken = accessToken
+  }
+```
+trong `fluent-flow-transcript-service/src/lib/supabase/server.ts` thì các api của project fluent-flow-transcript-service sẽ bị lỗi 401.
+Đoạn đó có tác dụng, flow thế nào? nó đã đúng theo các best practise chưa?
+
+3. Tiếp tục triển khai fluent-flow-transcript-service/src/app/groups/[groupId]/components/SettingsTab.tsx. Bạn có thể tham khảo các file
+```
+fluent-flow-transcript-service/app.log
+fluent-flow-transcript-service/GROUP_SESSION_API_SPECS.md
+fluent-flow-transcript-service/GROUP_SESSIONS_IMPLEMENTATION_PLAN.md
+fluent-flow-transcript-service/IMPLEMENTATION_COMPLETE.md
+```
+để xem các việc đã hoàn thành rồi xem cần triển khai group setting gì.
+Trước khi triển khai, bạn nên kiểm tra supabase trước, thay vì dựa vào doc hoàn toàn, vì nhiều khi doc bị outdate (use supabase)
 

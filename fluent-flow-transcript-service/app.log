@@ -58,37 +58,8 @@ Date: 2025-01-31
 
 ### 5. MINIMAL SOCIAL FEATURES
 **Group Communication:**
-- Basic group chat (outside quiz sessions)
 - Session scheduling and reminders
 - Group announcements from admin
-
-## FEATURES TO REMOVE (Not Needed) ❌
-
-### Video Control Features (REMOVE):
-- ❌ Group members can sync video playback (teacher shares screen)
-- ❌ Shared pause/rewind controls (teacher controls via screen share)
-- ❌ Real-time chat overlay during video (distracting)
-- ❌ Collaborative note-taking on video segments (questions already detailed)
-- ❌ Highlight important moments (not needed)
-
-### Over-Complex Discussion Features (REMOVE):
-- ❌ Group discussion threads for each quiz question (explanations already provided)
-- ❌ Share explanations and learning tips (already in quiz)
-- ❌ Peer review of answers and explanations (explanations sufficient)
-- ❌ Collaborative mistake analysis (individual learning)
-
-### Advanced Social Features (REMOVE):
-- ❌ Voice message sharing for pronunciation
-- ❌ Screen sharing for explanation sessions (teacher handles)
-- ❌ Personal vocabulary deck sharing (individual focus)
-- ❌ Custom quiz creation (not needed for this workflow)
-- ❌ Mentorship pairing (group learning focused)
-
-### Complex Gamification (REMOVE):
-- ❌ Inter-group challenges and tournaments (too complex)
-- ❌ Advanced achievement system (keep simple)
-- ❌ Knowledge sharing rewards (not applicable)
-- ❌ Member of the week recognition (over-gamified)
 
 ## SIMPLIFIED IMPLEMENTATION STRATEGY
 

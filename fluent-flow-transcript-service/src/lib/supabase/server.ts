@@ -1,58 +1,62 @@
-import { NextRequest } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { NextRequest } from 'next/server'
 
 // Create Supabase client for server-side API routes
 export const getSupabaseServer = (request: NextRequest) => {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-  
+
   if (!supabaseUrl || !supabaseAnonKey) {
     return null
   }
-  
+
+  // Create client with proper auth configuration
   const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false
+    },
+    global: {
+      headers: {
+        // Extract and set authorization header properly
+        ...(() => {
+          const authHeader = request.headers.get('Authorization')
+          const headers: Record<string, string> = {}
+          if (authHeader) {
+            headers['Authorization'] = authHeader
+          }
+          return headers
+        })()
+      }
     }
   })
-  
-  // Get the Authorization header or access token from cookies
-  const authHeader = request.headers.get('Authorization')
-  const accessToken = authHeader?.replace('Bearer ', '')
-  
-  // Note: For now, we create a basic client without setting auth tokens
-  // Auth should be handled through proper session management
-  
+
   return supabase
 }
 
 export const getCurrentUserServer = async (supabase: any) => {
   if (!supabase) return null
-  
+
   try {
-    // If we have an access token stored, try to set the session first
-    if (supabase._accessToken) {
-      try {
-        await supabase.auth.setSession({
-          access_token: supabase._accessToken,
-          refresh_token: supabase._accessToken // Use same token as refresh for now
-        })
-      } catch (sessionError) {
-        console.log('Session set warning:', sessionError)
-        // Continue with getUser anyway
+    // Use getUser() directly - the authorization header is already set in client config
+    // This follows Supabase best practices for server-side auth
+    const {
+      data: { user },
+      error
+    } = await supabase.auth.getUser()
+    
+    if (error) {
+      // Don't log auth session missing as error - it's expected when user isn't signed in
+      if (error.message !== 'Auth session missing!' && error.message !== 'invalid claim: missing sub claim') {
+        console.log('Auth error:', error.message)
       }
+      return null
     }
     
-    const { data: { user }, error } = await supabase.auth.getUser()
-    if (error) {
-      console.log('Auth error:', error)
-      return null
-    }
     if (!user) {
-      console.log('No user found')
       return null
     }
+    
     return user
   } catch (error) {
     console.log('getCurrentUserServer error:', error)
@@ -61,7 +65,10 @@ export const getCurrentUserServer = async (supabase: any) => {
 }
 
 // Helper function to handle authentication in API routes
-export const withAuth = async (request: NextRequest, handler: (supabase: any, user: any) => Promise<Response>) => {
+export const withAuth = async (
+  request: NextRequest,
+  handler: (supabase: any, user: any) => Promise<Response>
+) => {
   const supabase = getSupabaseServer(request)
   if (!supabase) {
     return Response.json({ error: 'Database not configured' }, { status: 500 })
