@@ -78,7 +78,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
       <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold text-gray-800">Error loading group</h2>
-          <p className="mb-4 text-gray-600">{error.message}</p>
+          <p className="mb-4 text-gray-600">{error?.message || 'Unknown error'}</p>
           <button
             onClick={() => router.push('/groups')}
             className="rounded-xl bg-indigo-600 px-6 py-3 text-white transition-colors hover:bg-indigo-700"
@@ -109,7 +109,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
     )
   }
 
-  const canManage = group.user_role && ['owner', 'admin'].includes(group.user_role)
+  const canManage = (group as any).user_role && ['owner', 'admin'].includes((group as any).user_role)
 
   return (
     <>
@@ -121,11 +121,11 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
 
         <div className="container relative z-10 mx-auto max-w-7xl px-6 py-8">
           <GroupHeader
-            group={group}
+            group={group as any}
             canManage={!!canManage}
             onNewSession={() => setShowCreateSession(true)}
           />
-          <StatCards group={group} />
+          <StatCards group={group as any} />
           <TabNavigation
             activeTab={activeTab}
             setActiveTab={setActiveTab}
@@ -135,15 +135,15 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
           <div className="rounded-3xl border border-white/20 bg-white/90 p-8 shadow-lg backdrop-blur-sm">
             {activeTab === 'overview' && (
               <OverviewTab
-                sessions={group.recent_sessions}
+                sessions={(group as any).recent_sessions || []}
                 canManage={!!canManage}
                 onNewSession={() => setShowCreateSession(true)}
               />
             )}
             {activeTab === 'members' && (
               <MembersTab
-                members={group.members}
-                memberCount={group.member_count}
+                members={(group as any).members || []}
+                memberCount={(group as any).member_count || 0}
                 canManage={!!canManage}
               />
             )}

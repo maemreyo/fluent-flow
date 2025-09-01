@@ -18,7 +18,7 @@ export function GroupsGrid({ groups }: GroupsGridProps) {
     const queryState = queryClient.getQueryState(['group', groupId])
     
     // Nếu đã có fresh data, không cần prefetch
-    if (existingData && queryState && !queryState.isStale) {
+    if (existingData && queryState && queryState.dataUpdatedAt && Date.now() - queryState.dataUpdatedAt < 60000) {
       return
     }
     

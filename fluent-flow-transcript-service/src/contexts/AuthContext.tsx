@@ -169,7 +169,7 @@ export function useQuizAuth(authToken?: string) {
     if (authToken && supabase) {
       const authenticateWithToken = async () => {
         try {
-          const { data, error } = await supabase.auth.setSession({
+          const { data, error } = await supabase!.auth.setSession({
             access_token: authToken,
             refresh_token: authToken
           })

@@ -3,12 +3,12 @@ import { supabase, getCurrentUser } from '@/lib/supabase/client'
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { groupId: string; sessionId: string } }
+  { params }: { params: Promise<{ groupId: string; sessionId: string }> }
 ) {
   if (!supabase) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
   }
-  const { groupId, sessionId } = params
+  const { groupId, sessionId } = await params
 
   try {
     const user = await getCurrentUser()
@@ -85,12 +85,12 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { groupId: string; sessionId: string } }
+  { params }: { params: Promise<{ groupId: string; sessionId: string }> }
 ) {
   if (!supabase) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
   }
-  const { groupId, sessionId } = params
+  const { groupId, sessionId } = await params
 
   try {
     const user = await getCurrentUser()

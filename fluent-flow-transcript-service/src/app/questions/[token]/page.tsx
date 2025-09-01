@@ -73,7 +73,7 @@ export default function QuestionsPage() {
           case 'preset-selection':
             return (
               <PresetSelectionView
-                questionSet={questionSet}
+                questionSet={questionSet || null}
                 isFavorited={isFavorited}
                 favoriteLoading={favoriteLoading}
                 onFavoriteToggle={handleFavoriteToggle}
@@ -89,7 +89,7 @@ export default function QuestionsPage() {
           case 'question-info':
             return (
               <QuestionInfoView
-                questionSet={questionSet}
+                questionSet={questionSet || null}
                 onStart={handleQuestionInfoStart}
                 getAvailableQuestionCounts={getAvailableQuestionCounts}
               />
@@ -98,7 +98,7 @@ export default function QuestionsPage() {
           case 'quiz-active':
             return (
               <QuizActiveView
-                questionSet={questionSet}
+                questionSet={questionSet || null}
                 currentData={getCurrentQuestion()}
                 responses={responses}
                 onAnswerSelect={handleAnswerSelect}
@@ -133,7 +133,7 @@ export default function QuestionsPage() {
             return (
               <QuizResultsView
                 results={results}
-                questionSet={questionSet}
+                questionSet={questionSet || null}
                 onRestart={handleRestart}
               />
             )

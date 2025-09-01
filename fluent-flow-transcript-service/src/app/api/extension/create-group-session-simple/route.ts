@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
         is_public: false, // Group sessions are private
         group_id: groupId,
         session_id: sessionId,
-        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
+        expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours from now
         created_by: user.id,
         metadata: {
           sharedBy: options.sharedBy || userEmail,

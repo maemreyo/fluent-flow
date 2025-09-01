@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { corsHeaders, corsResponse } from '../../../lib/cors'
-import { sharedQuestions } from '../../../lib/shared-storage'
 import { createSharedQuestionsService } from '../../../lib/services/shared-questions-service'
+import { sharedQuestions } from '../../../lib/shared-storage'
 import { getSupabaseServer } from '../../../lib/supabase/server'
 
 export async function OPTIONS() {
@@ -12,7 +12,7 @@ export async function OPTIONS() {
   })
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json()
     const { questions, loop, vocabulary, transcript, options = {} } = body
@@ -23,14 +23,12 @@ export async function POST(request: NextRequest) {
 
     // Try database first (new approach)
     const questionsService = createSharedQuestionsService(request)
-    let useDatabase = true
-    let sharedQuestionSet = null
 
     try {
       // Check if we have authentication for enhanced metadata
       const authHeader = request.headers.get('authorization')
       let sharedByUser = 'FluentFlow User'
-      
+
       if (authHeader?.startsWith('Bearer ')) {
         const supabase = getSupabaseServer(request)
         if (supabase) {
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      sharedQuestionSet = await questionsService.createSharedQuestionSet({
+      const sharedQuestionSet = await questionsService.createSharedQuestionSet({
         title: options.title || `${loop.videoTitle} - Practice Questions`,
         video_title: loop.videoTitle,
         video_url: loop.videoUrl,
@@ -74,14 +72,10 @@ export async function POST(request: NextRequest) {
         expirationMessage: 'Expires in 4h',
         source: 'database'
       })
-
     } catch (dbError) {
       console.log('Database creation failed, falling back to in-memory storage:', dbError)
-      useDatabase = false
-    }
 
-    // Fallback to in-memory storage for backward compatibility
-    if (!useDatabase) {
+      // Fallback to in-memory storage for backward compatibility
       // Generate unique tokens
       const shareToken = uuidv4()
       const shareId = uuidv4()
@@ -133,7 +127,6 @@ export async function POST(request: NextRequest) {
         source: 'memory'
       })
     }
-
   } catch (error) {
     console.error('Failed to share questions:', error)
     return corsResponse({ error: 'Failed to share questions' }, 500)

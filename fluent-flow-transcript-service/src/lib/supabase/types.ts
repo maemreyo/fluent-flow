@@ -438,37 +438,40 @@ export type Database = {
       }
       group_invitations: {
         Row: {
-          created_at: string | null
-          current_uses: number | null
+          accepted_at: string | null
+          created_at: string
+          email: string
           expires_at: string
           group_id: string
           id: string
-          invitation_code: string
+          invite_token: string
           invited_by: string
-          is_active: boolean | null
-          max_uses: number | null
+          message: string | null
+          status: string
         }
         Insert: {
-          created_at?: string | null
-          current_uses?: number | null
+          accepted_at?: string | null
+          created_at?: string
+          email: string
           expires_at: string
           group_id: string
           id?: string
-          invitation_code: string
+          invite_token?: string
           invited_by: string
-          is_active?: boolean | null
-          max_uses?: number | null
+          message?: string | null
+          status?: string
         }
         Update: {
-          created_at?: string | null
-          current_uses?: number | null
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
           expires_at?: string
           group_id?: string
           id?: string
-          invitation_code?: string
+          invite_token?: string
           invited_by?: string
-          is_active?: boolean | null
-          max_uses?: number | null
+          message?: string | null
+          status?: string
         }
         Relationships: [
           {
@@ -1006,6 +1009,84 @@ export type Database = {
         }
         Relationships: []
       }
+      shared_question_sets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_time: number | null
+          expires_at: string
+          group_id: string | null
+          id: string
+          is_public: boolean
+          metadata: Json
+          questions: Json
+          session_id: string | null
+          share_token: string
+          start_time: number | null
+          title: string
+          transcript: string | null
+          updated_at: string
+          video_title: string | null
+          video_url: string | null
+          vocabulary: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_time?: number | null
+          expires_at?: string
+          group_id?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          questions?: Json
+          session_id?: string | null
+          share_token?: string
+          start_time?: number | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          video_title?: string | null
+          video_url?: string | null
+          vocabulary?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_time?: number | null
+          expires_at?: string
+          group_id?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          questions?: Json
+          session_id?: string | null
+          share_token?: string
+          start_time?: number | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          video_title?: string | null
+          video_url?: string | null
+          vocabulary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_question_sets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_question_sets_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_notifications: {
         Row: {
           created_at: string | null
@@ -1051,6 +1132,7 @@ export type Database = {
           joined_at: string | null
           last_active: string | null
           role: string
+          user_email: string | null
           user_id: string
           username: string
         }
@@ -1062,6 +1144,7 @@ export type Database = {
           joined_at?: string | null
           last_active?: string | null
           role?: string
+          user_email?: string | null
           user_id: string
           username: string
         }
@@ -1073,6 +1156,7 @@ export type Database = {
           joined_at?: string | null
           last_active?: string | null
           role?: string
+          user_email?: string | null
           user_id?: string
           username?: string
         }
@@ -1758,6 +1842,10 @@ export type Database = {
       cleanup_expired_notifications: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      cleanup_expired_question_sets: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       cleanup_old_usage_data: {
         Args: Record<PropertyKey, never>

@@ -1,5 +1,6 @@
 // Groups service for client-side usage
 // Uses HTTP API calls instead of direct Supabase client to maintain consistency
+import { supabase } from '../supabase/client'
 
 export interface Group {
   id: string
@@ -89,6 +90,10 @@ export class GroupsService {
   }
 
   async getInvitationByToken(token: string): Promise<GroupInvitation> {
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     const { data, error } = await supabase
       .from('group_invitations')
       .select(`
@@ -130,6 +135,10 @@ export class GroupsService {
     }
 
     // Get inviter info
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     const { data: inviterData } = await supabase
       .from('auth.users')
       .select('email')
@@ -155,6 +164,10 @@ export class GroupsService {
   }
 
   async acceptInvitation(invitationId: string, groupId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     const user = (await supabase.auth.getUser()).data.user
     if (!user) {
       throw new Error('User not authenticated')
@@ -211,6 +224,10 @@ export class GroupsService {
   }
 
   async declineInvitation(invitationId: string): Promise<void> {
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     const { error } = await supabase
       .from('group_invitations')
       .update({
@@ -224,6 +241,10 @@ export class GroupsService {
   }
 
   async getGroupSessions(groupId: string, status?: string): Promise<{ sessions: GroupSession[]; total: number }> {
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     let query = supabase
       .from('group_quiz_sessions')
       .select(`
@@ -259,19 +280,19 @@ export class GroupsService {
     }
 
     // Get participant counts for each session
-    const sessionIds = sessions.map(s => s.id)
+    const sessionIds = sessions.map((s: any) => s.id)
     const { data: participantCounts } = await supabase
       .from('group_session_participants')
       .select('session_id')
       .in('session_id', sessionIds)
 
-    const participantCountMap = participantCounts?.reduce((acc: Record<string, number>, p) => {
+    const participantCountMap = participantCounts?.reduce((acc: Record<string, number>, p: any) => {
       acc[p.session_id] = (acc[p.session_id] || 0) + 1
       return acc
     }, {}) || {}
 
     // Format sessions with participant counts
-    const formattedSessions: GroupSession[] = sessions.map(session => ({
+    const formattedSessions: GroupSession[] = sessions.map((session: any) => ({
       id: session.id,
       title: session.quiz_title,
       video_title: session.video_title,
@@ -290,6 +311,10 @@ export class GroupsService {
   }
 
   async updateSession(groupId: string, sessionId: string, updates: Partial<GroupSession>): Promise<GroupSession> {
+    if (!supabase) {
+      throw new Error('Supabase client not configured')
+    }
+    
     const user = (await supabase.auth.getUser()).data.user
     if (!user) {
       throw new Error('User not authenticated')

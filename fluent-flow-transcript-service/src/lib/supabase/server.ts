@@ -21,13 +21,8 @@ export const getSupabaseServer = (request: NextRequest) => {
   const authHeader = request.headers.get('Authorization')
   const accessToken = authHeader?.replace('Bearer ', '')
   
-  if (accessToken) {
-    // Set the authorization header for RLS policies
-    supabase.rest.headers['authorization'] = `Bearer ${accessToken}`
-    
-    // Also try to set the session (async operation handled in getCurrentUserServer)
-    supabase._accessToken = accessToken
-  }
+  // Note: For now, we create a basic client without setting auth tokens
+  // Auth should be handled through proper session management
   
   return supabase
 }

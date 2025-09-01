@@ -45,6 +45,12 @@ export default function JoinGroupPage() {
 
   useEffect(() => {
     if (authLoading) return
+    
+    if (!supabase) {
+      setError('Database not configured')
+      setLoading(false)
+      return
+    }
 
     if (token) {
       fetchInvitationByToken()
@@ -61,7 +67,7 @@ export default function JoinGroupPage() {
     if (!token) return
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = await supabase!!
         .from('group_invitations')
         .select(`
           id,
@@ -82,7 +88,7 @@ export default function JoinGroupPage() {
 
       if (!error && data) {
         // Get invited_by user info separately
-        const { data: inviterData } = await supabase
+        const { data: inviterData } = await supabase!!
           .from('group_invitations')
           .select(`
             invited_by:auth.users (
@@ -93,7 +99,7 @@ export default function JoinGroupPage() {
           .single()
           
         if (inviterData) {
-          (data as any).invited_by_user = inviterData.invited_by
+          (data as any).invited_by_user = (inviterData as any).invited_by
         }
       }
 
@@ -121,7 +127,7 @@ export default function JoinGroupPage() {
       }
 
       // Get member count
-      const { count } = await supabase
+      const { count } = await supabase!
         .from('study_group_members')
         .select('*', { count: 'exact', head: true })
         .eq('group_id', data.group_id)
@@ -129,10 +135,10 @@ export default function JoinGroupPage() {
       setInvitation({
         ...data,
         group: {
-          ...data.group,
+          ...(data as any).group,
           member_count: count || 0
         }
-      })
+      } as any)
     } catch (error) {
       setError('Failed to load invitation details')
       console.error('Error fetching invitation:', error)
@@ -165,7 +171,7 @@ export default function JoinGroupPage() {
       }
 
       // Check if user is already a member
-      const { data: existingMember } = await supabase
+      const { data: existingMember } = await supabase!
         .from('study_group_members')
         .select('id')
         .eq('group_id', invitation.group_id)
@@ -179,7 +185,7 @@ export default function JoinGroupPage() {
       }
 
       // Start transaction: Accept invitation and add as member
-      const { error: inviteError } = await supabase
+      const { error: inviteError } = await supabase!
         .from('group_invitations')
         .update({
           status: 'accepted',
@@ -194,7 +200,7 @@ export default function JoinGroupPage() {
       }
 
       // Add user as group member
-      const { error: memberError } = await supabase
+      const { error: memberError } = await supabase!
         .from('study_group_members')
         .insert({
           group_id: invitation.group_id,
@@ -206,7 +212,7 @@ export default function JoinGroupPage() {
 
       if (memberError) {
         // Rollback invitation status
-        await supabase
+        await supabase!
           .from('group_invitations')
           .update({
             status: 'pending',
@@ -236,7 +242,7 @@ export default function JoinGroupPage() {
     if (!invitation) return
 
     try {
-      const { error } = await supabase
+      const { error } = await supabase!
         .from('group_invitations')
         .update({
           status: 'declined'

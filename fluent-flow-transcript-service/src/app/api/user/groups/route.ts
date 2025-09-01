@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Get member counts for each group
-    const groupIds = memberships?.map(m => m.study_groups.id) || []
+    const groupIds = memberships?.map((m: any) => m.study_groups.id) || []
     const { data: memberCounts } = await supabase
       .from('study_group_members')
       .select('group_id')

@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { Database } from './types'
 
 /**
  * Service Role Supabase Client
@@ -13,7 +14,7 @@ import { createClient } from '@supabase/supabase-js'
  */
 
 // Cached client instance to avoid recreating
-let serviceRoleClient: ReturnType<typeof createClient> | null = null
+let serviceRoleClient: ReturnType<typeof createClient<Database>> | null = null
 
 export const getSupabaseServiceRole = () => {
   // Return cached client if it exists
@@ -32,7 +33,7 @@ export const getSupabaseServiceRole = () => {
   }
   
   // Create and cache the service role client
-  serviceRoleClient = createClient(supabaseUrl, supabaseServiceKey, {
+  serviceRoleClient = createClient<Database>(supabaseUrl, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false

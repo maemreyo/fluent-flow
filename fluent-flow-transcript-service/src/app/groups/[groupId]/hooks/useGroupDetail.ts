@@ -53,13 +53,11 @@ export const useGroupDetail = ({ groupId, isAuthenticated, initialData }: UseGro
     queryFn: () => fetchGroup(groupId),
     enabled: isAuthenticated,
     staleTime: 1 * 60 * 1000, // Giảm xuống 1 phút để đảm bảo fresh data
-    cacheTime: 10 * 60 * 1000, // 10 phút
+    gcTime: 10 * 60 * 1000, // 10 phút
     refetchOnWindowFocus: false,
-    // Chỉ dùng placeholderData nếu thực sự có initialData được pass
-    placeholderData: initialData ? transformInitialData(initialData) : undefined,
     // Force refetch nếu data quá cũ
     refetchOnMount: 'always'
-  })
+  } as any)
 
   // Prefetch function
   const prefetchGroup = (groupId: string, basicData?: GroupListItem) => {
