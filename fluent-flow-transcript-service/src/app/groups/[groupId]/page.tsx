@@ -96,7 +96,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
         <div className="text-center">
           <h2 className="mb-2 text-2xl font-bold text-gray-800">Group not found</h2>
           <p className="mb-4 text-gray-600">
-            This group doesn't exist or you don't have access to it.
+            This group doesn&apos;t exist or you don&apos;t have access to it.
           </p>
           <button
             onClick={() => router.push('/groups')}

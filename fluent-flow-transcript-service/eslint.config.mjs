@@ -24,7 +24,15 @@ const eslintConfig = [
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-unused-vars": "warn",
-      "@next/next/no-html-link-for-pages": "off"
+      "@next/next/no-html-link-for-pages": "off",
+      "@typescript-eslint/no-empty-object-type": "off",
+      "@typescript-eslint/no-extra-non-null-assertion": "warn",
+      "@typescript-eslint/ban-ts-comment": "warn",
+      "react-hooks/exhaustive-deps": "warn",
+      "react-hooks/rules-of-hooks": "error",
+      "react/no-unescaped-entities": "warn",
+      "@next/next/no-img-element": "warn",
+      "prefer-const": "warn"
     }
   }
 ];

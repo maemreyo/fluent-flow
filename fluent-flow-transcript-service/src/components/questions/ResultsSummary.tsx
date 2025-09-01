@@ -64,6 +64,16 @@ export function ResultsSummary({ results, onRestart, videoTitle, videoUrl }: Res
   }
 
 
+  // Enable word selection on mount
+  useEffect(() => {
+    if (results?.sessionId) {
+      enableSelection('results-summary', 'quiz', results.sessionId)
+    }
+    return () => {
+      disableSelection('results-summary')
+    }
+  }, [results?.sessionId, enableSelection, disableSelection])
+
   // Add safety checks for results data
   if (!results || typeof results.score !== 'number' || typeof results.totalQuestions !== 'number') {
     return (
@@ -85,14 +95,6 @@ export function ResultsSummary({ results, onRestart, videoTitle, videoUrl }: Res
 
   // Ensure results.results exists and is an array
   const questionResults = Array.isArray(results.results) ? results.results : []
-
-  // Enable word selection on mount
-  useEffect(() => {
-    enableSelection('results-summary', 'quiz', results.sessionId)
-    return () => {
-      disableSelection('results-summary')
-    }
-  }, [results.sessionId, enableSelection, disableSelection])
 
   const getPerformanceIcon = (score: number) => {
     if (score >= 90) return Trophy

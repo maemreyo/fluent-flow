@@ -2,6 +2,7 @@
 
 interface SettingsTabProps {
   // Add props as needed
+  [key: string]: unknown
 }
 
 export function SettingsTab({}: SettingsTabProps) {

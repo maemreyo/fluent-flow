@@ -14,18 +14,18 @@ export function VocabularyPanel({ vocabulary, isOpen, onToggle, enableWordSelect
   const panelRef = useRef<HTMLDivElement>(null)
   const { enableSelection, disableSelection } = useWordSelection()
   
-  if (!vocabulary || vocabulary.length === 0) return null
-
   // Enable word selection when panel is open
   useEffect(() => {
-    if (enableWordSelection && isOpen && panelRef.current) {
+    if (enableWordSelection && isOpen && panelRef.current && vocabulary && vocabulary.length > 0) {
       enableSelection('vocabulary-panel', 'vocabulary', 'vocabulary-panel')
     }
 
     return () => {
       disableSelection('vocabulary-panel')
     }
-  }, [enableWordSelection, isOpen, enableSelection, disableSelection])
+  }, [enableWordSelection, isOpen, enableSelection, disableSelection, vocabulary])
+
+  if (!vocabulary || vocabulary.length === 0) return null
 
   const filteredVocabulary = vocabulary.filter(item =>
     item.word.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -166,7 +166,7 @@ export function VocabularyPanel({ vocabulary, isOpen, onToggle, enableWordSelect
                   {item.example && (
                     <div className="rounded-lg bg-gray-50 border border-gray-200 p-3">
                       <p className="text-sm text-gray-600">
-                        <span className="font-medium">Example:</span> <em>"{item.example}"</em>
+                        <span className="font-medium">Example:</span> <em>&quot;{item.example}&quot;</em>
                       </p>
                     </div>
                   )}

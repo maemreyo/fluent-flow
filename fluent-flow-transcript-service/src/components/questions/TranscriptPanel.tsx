@@ -24,18 +24,18 @@ export function TranscriptPanel({
   const panelRef = useRef<HTMLDivElement>(null)
   const { enableSelection, disableSelection } = useWordSelection()
   
-  if (!transcript) return null
-
   // Enable word selection when panel is open
   useEffect(() => {
-    if (enableWordSelection && isOpen && panelRef.current) {
+    if (enableWordSelection && isOpen && panelRef.current && transcript) {
       enableSelection('transcript-panel', 'transcript', 'transcript-panel')
     }
 
     return () => {
       disableSelection('transcript-panel')
     }
-  }, [enableWordSelection, isOpen, enableSelection, disableSelection])
+  }, [enableWordSelection, isOpen, enableSelection, disableSelection, transcript])
+
+  if (!transcript) return null
 
   const formatTime = (timeInSeconds: number): string => {
     const minutes = Math.floor(timeInSeconds / 60)

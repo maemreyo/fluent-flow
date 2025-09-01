@@ -167,8 +167,8 @@ export async function POST(
 
     const sessionId = uuidv4()
     let finalShareToken = shareToken
-    let questionsData = questions
-    let loopData = loop
+    const questionsData = questions
+    const loopData = loop
 
     // If no shareToken provided but questions/loop provided, create new shared question set
     if (!shareToken && questions && loop) {

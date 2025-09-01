@@ -67,7 +67,7 @@ export default function JoinGroupPage() {
     if (!token) return
 
     try {
-      const { data, error } = await supabase!!
+      const { data, error } = await supabase!
         .from('group_invitations')
         .select(`
           id,
@@ -88,7 +88,7 @@ export default function JoinGroupPage() {
 
       if (!error && data) {
         // Get invited_by user info separately
-        const { data: inviterData } = await supabase!!
+        const { data: inviterData } = await supabase!
           .from('group_invitations')
           .select(`
             invited_by:auth.users (
@@ -339,7 +339,7 @@ export default function JoinGroupPage() {
           <CardContent>
             <Alert>
               <AlertDescription>
-                You've successfully joined the study group. Redirecting to group dashboard...
+                You&apos;ve successfully joined the study group. Redirecting to group dashboard...
               </AlertDescription>
             </Alert>
           </CardContent>
@@ -383,7 +383,7 @@ export default function JoinGroupPage() {
             Group Invitation
           </CardTitle>
           <CardDescription>
-            You've been invited to join a study group
+            You&apos;ve been invited to join a study group
           </CardDescription>
         </CardHeader>
         
@@ -430,8 +430,8 @@ export default function JoinGroupPage() {
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 This invitation is for <strong>{invitation.email}</strong>. 
-                You're currently signed in as <strong>{user.email}</strong>. 
-                You'll need to sign in with the correct email to accept this invitation.
+                You&apos;re currently signed in as <strong>{user.email}</strong>. 
+                You&apos;ll need to sign in with the correct email to accept this invitation.
               </AlertDescription>
             </Alert>
           )}

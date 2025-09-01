@@ -8,6 +8,10 @@ const nextConfig: NextConfig = {
       static: 0,
     },
   },
+  turbopack: {
+    // Set the root directory for Turbopack
+    root: __dirname,
+  },
 };
 
 export default nextConfig;

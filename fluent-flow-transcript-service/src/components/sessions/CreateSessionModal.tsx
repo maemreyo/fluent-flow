@@ -220,7 +220,7 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
                 placeholder="Paste the share token from FluentFlow extension"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Get this token by clicking "Share" in the FluentFlow extension
+                Get this token by clicking &quot;Share&quot; in the FluentFlow extension
               </p>
             </div>
           )}
