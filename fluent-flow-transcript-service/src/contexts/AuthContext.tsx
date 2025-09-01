@@ -1,8 +1,8 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { createContext, ReactNode, useContext, useEffect, useState } from 'react'
 import { User } from '@supabase/supabase-js'
-import { supabase, getCurrentUser } from '../lib/supabase/client'
+import { getCurrentUser, supabase } from '../lib/supabase/client'
 
 interface AuthState {
   user: User | null
@@ -52,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Get initial user
         const user = await getCurrentUser()
-        
+
         if (mounted) {
           setAuthState({
             user,
@@ -63,31 +63,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         // Set up SINGLE auth state change listener
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
+        const {
+          data: { subscription }
+        } = supabase.auth.onAuthStateChange(async (event, session) => {
+          if (!mounted) return
+
+          console.log('Auth Context: Auth state changed:', event)
+
+          // Debounce rapid auth changes
+          setTimeout(() => {
             if (!mounted) return
 
-            console.log('Auth Context: Auth state changed:', event)
-            
-            // Debounce rapid auth changes
-            setTimeout(() => {
-              if (!mounted) return
-              
-              setAuthState(prev => ({
-                ...prev,
-                user: session?.user || null,
-                isAuthenticated: !!session?.user,
-                isLoading: false,
-                error: null
-              }))
-            }, 100)
-          }
-        )
+            setAuthState(prev => ({
+              ...prev,
+              user: session?.user || null,
+              isAuthenticated: !!session?.user,
+              isLoading: false,
+              error: null
+            }))
+          }, 100)
+        })
 
         authSubscription = subscription
       } catch (error: any) {
         console.error('Auth Context: Error initializing auth:', error)
-        
+
         if (mounted) {
           setAuthState({
             user: null,
@@ -144,11 +144,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     hasValidSession: authState.isAuthenticated && !!authState.user
   }
 
-  return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
-  )
+  return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }
 
 // Custom hook to use auth context
@@ -163,7 +159,7 @@ export function useAuth(): AuthContextType {
 // Backward compatibility hook
 export function useQuizAuth(authToken?: string) {
   const auth = useAuth()
-  
+
   // Handle auth token if provided (for quiz pages)
   useEffect(() => {
     if (authToken && supabase) {
@@ -173,7 +169,7 @@ export function useQuizAuth(authToken?: string) {
             access_token: authToken,
             refresh_token: authToken
           })
-          
+
           if (error) {
             console.error('Auth token error:', error)
           }
@@ -181,10 +177,10 @@ export function useQuizAuth(authToken?: string) {
           console.error('Authentication with token failed:', error)
         }
       }
-      
+
       authenticateWithToken()
     }
   }, [authToken])
-  
+
   return auth
 }

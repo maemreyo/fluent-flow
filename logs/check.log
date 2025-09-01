@@ -1,16 +1,19 @@
-Share successed, but tôi Join, thì api load question đang failed:
-```
-useQuiz.ts:279 
- GET http://localhost:3838/api/questions/5ccfdd7b-45f0-4ee6-b45f-552b8a4c8e3a 404 (Not Found)
+Word selection service result: true
+use-word-selection.ts:74 Attempting to add to vocabulary deck with AI enhancement...
+use-word-selection.ts:80 Current user: 39abb7b6-93ca-4f4c-b07b-1087f6224cb5
+use-word-selection.ts:84 Enhancing vocabulary with AI...
+vocabulary-enhancement-service.ts:212 Enhancement attempt 1/2 for word: "preset"
+vocabulary-enhancement-service.ts:35 Enhancing vocabulary word: "preset" with context: "Each preset is crafted for different learning goal..."
+vocabulary-enhancement-service.ts:132 
+ POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M 400 (Bad Request)
+vocabulary-enhancement-service.ts:151 Gemini API error: 400 
+vocabulary-enhancement-service.ts:98 No response from Gemini API
+vocabulary-enhancement-service.ts:212 Enhancement attempt 2/2 for word: "preset"
+vocabulary-enhancement-service.ts:35 Enhancing vocabulary word: "preset" with context: "Each preset is crafted for different learning goal..."
+vocabulary-enhancement-service.ts:132 
+ POST https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyCl1jfg2xVuywGALjaBfzrQ95tgZbNE08M 400 (Bad Request)
+vocabulary-enhancement-service.ts:151 Gemini API error: 400 
+callGeminiAPI	@	vocabulary-enhancement-service.ts:151
+await in callGeminiAPI
 
-useQuiz.ts:290 Error loading questions: Error: Failed to load questions
-    at useQuiz.useEffect.fetchQuestionSet (useQuiz.ts:281:17)
-useQuiz.useEffect.fetchQuestionSet	@	useQuiz.ts:290
-Looking for token: 5ccfdd7b-45f0-4ee6-b45f-552b8a4c8e3a
-Group context: groupId=null, sessionId=null
-Available in-memory tokens: []
-Storage size: 0
-Token 5ccfdd7b-45f0-4ee6-b45f-552b8a4c8e3a not found in database or memory
- GET /api/questions/5ccfdd7b-45f0-4ee6-b45f-552b8a4c8e3a 404 in 704ms
-```
-check lại `http://localhost:3838/questions/5ccfdd7b-45f0-4ee6-b45f-552b8a4c8e3a?groupId=9f640f92-d11c-463d-b3a6-2df737c912f0&sessionId=18d7e9bf-38ef-43f9-a428-bc79e64ef44a`
+
