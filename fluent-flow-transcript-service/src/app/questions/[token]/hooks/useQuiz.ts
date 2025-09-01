@@ -2,134 +2,115 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useParams } from 'next/navigation'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { QuestionSet } from '../../../../components/questions/QuestionSetInfo'
 import { QuestionPreset } from '../../../../components/questions/PresetSelector'
-import { DifficultyGroup } from '../../../../components/questions/ProgressIndicator'
-import { Question, QuestionResponse } from '../../../../components/questions/QuestionCard'
+import {
+  DifficultyGroup
+} from '../../../../components/questions/ProgressIndicator'
+import {
+  Question,
+  QuestionResponse
+} from '../../../../components/questions/QuestionCard'
 import { useQuizAuth } from '../../../../lib/hooks/use-quiz-auth'
-import { quizFavoritesService } from '../../../../lib/services/quiz-favorites-service'
+import {
+  fetchQuestionSet,
+  isFavorited,
+  addToFavorites,
+  removeFromFavorites,
+  submitSet
+} from '../queries'
 
-type AppState = 'loading' | 'preset-selection' | 'question-info' | 'quiz-active' | 'quiz-results' | 'error'
+type AppState =
+  | 'loading'
+  | 'preset-selection'
+  | 'question-info'
+  | 'quiz-active'
+  | 'quiz-results'
+  | 'error'
 
 export function useQuiz() {
   const params = useParams()
   const token = params.token as string
+  const queryClient = useQueryClient()
 
-  const [questionSet, setQuestionSet] = useState<QuestionSet | null>(null)
   const [appState, setAppState] = useState<AppState>('loading')
-  const [error, setError] = useState<string | null>(null)
-
-  const [selectedPreset, setSelectedPreset] = useState<QuestionPreset | null>(null)
-  const [difficultyGroups, setDifficultyGroups] = useState<DifficultyGroup[]>([])
+  const [selectedPreset, setSelectedPreset] = useState<QuestionPreset | null>(
+    null
+  )
+  const [difficultyGroups, setDifficultyGroups] = useState<DifficultyGroup[]>(
+    []
+  )
   const [currentSetIndex, setCurrentSetIndex] = useState(0)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState<QuestionResponse[]>([])
   const [results, setResults] = useState<any>(null)
-  const [submitting, setSubmitting] = useState(false)
 
   const [showVocabulary, setShowVocabulary] = useState(false)
   const [showTranscript, setShowTranscript] = useState(false)
   const [showGridView, setShowGridView] = useState(false)
-
-  const [isFavorited, setIsFavorited] = useState(false)
-  const [favoriteLoading, setFavoriteLoading] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
+  const {
+    data: questionSet,
+    isLoading: questionSetLoading,
+    error: questionSetError
+  } = useQuery({
+    queryKey: ['questionSet', token],
+    queryFn: () => fetchQuestionSet(token),
+    enabled: !!token
+  })
+
   const [authToken, setAuthToken] = useState<string | undefined>()
-  const { user, isAuthenticated, isLoading: authLoading, signOut } = useQuizAuth(authToken)
+  const {
+    user,
+    isAuthenticated,
+    isLoading: authLoading,
+    signOut
+  } = useQuizAuth(authToken)
 
-  const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
-    return {
-      easy: questions.filter(q => q.difficulty === 'easy').length,
-      medium: questions.filter(q => q.difficulty === 'medium').length,
-      hard: questions.filter(q => q.difficulty === 'hard').length
+  useEffect(() => {
+    if (questionSet?.authData?.accessToken) {
+      setAuthToken(questionSet.authData.accessToken)
     }
-  }, [])
+  }, [questionSet])
 
-  const createPresetGroups = useCallback((preset: QuestionPreset, questions: Question[]): DifficultyGroup[] => {
-    const categorizedQuestions = {
-      easy: questions.filter(q => q.difficulty === 'easy'),
-      medium: questions.filter(q => q.difficulty === 'medium'),
-      hard: questions.filter(q => q.difficulty === 'hard')
-    }
+  const { data: isFavorited } = useQuery({
+    queryKey: ['isFavorited', token],
+    queryFn: () => isFavorited(token),
+    enabled: !!token && !!questionSet
+  })
 
-    const result: DifficultyGroup[] = []
-    const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard']
-    difficulties.forEach(difficulty => {
-      const questionCount = preset.distribution[difficulty]
-      if (questionCount > 0) {
-        const availableQuestions = categorizedQuestions[difficulty]
-        const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5)
-        const selectedQuestions = shuffled.slice(0, questionCount)
-        result.push({
-          difficulty,
-          questions: selectedQuestions,
-          completed: false
+  const favoriteMutation = useMutation({
+    mutationFn: async (isFavorited: boolean) => {
+      if (!questionSet || !token) return
+      if (isFavorited) {
+        await removeFromFavorites(token)
+      } else {
+        await addToFavorites({
+          sessionId: token,
+          questionSetTitle: questionSet.title || 'Quiz Session',
+          videoTitle: questionSet.videoTitle || 'Unknown Video',
+          videoUrl: questionSet.videoUrl,
+          difficulty: selectedPreset?.name || 'Mixed',
+          totalQuestions: questionSet.questions.length,
+          userScore: results?.score
         })
       }
-    })
-    return result
-  }, [])
-
-  const handlePresetSelect = useCallback((preset: QuestionPreset) => {
-    if (!questionSet) return
-    
-    // Show auth prompt if user is not authenticated
-    if (!isAuthenticated) {
-      setShowAuthPrompt(true)
-      return
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['isFavorited', token] })
     }
-    
-    setSelectedPreset(preset)
-    const groups = createPresetGroups(preset, questionSet.questions)
-    setDifficultyGroups(groups)
-    setAppState('question-info')
-  }, [questionSet, createPresetGroups, isAuthenticated])
+  })
 
-  const handleQuestionInfoStart = () => {
-    setAppState('quiz-active')
-  }
-
-  const submitCurrentSet = async () => {
-    if (!difficultyGroups.length || !questionSet) return
-
-    setSubmitting(true)
-    setError(null)
-
-    try {
-      const currentGroup = difficultyGroups[currentSetIndex]
-      let startIndex = 0
-      for (let i = 0; i < currentSetIndex; i++) {
-        startIndex += difficultyGroups[i].questions.length
-      }
-      const endIndex = startIndex + currentGroup.questions.length - 1
-      const setResponses = responses.filter(
-        r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
-      )
-
-      const submissionData = {
-        responses: setResponses,
-        questions: currentGroup.questions,
-        setIndex: currentSetIndex,
-        difficulty: currentGroup.difficulty,
-        userData: isAuthenticated ? { userId: user?.id, email: user?.email } : undefined
-      }
-
-      const response = await fetch(`/api/questions/${token}/submit-set`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(submissionData)
-      })
-
-      if (!response.ok) {
-        const errorData = await response.text()
-        throw new Error(`Failed to submit: ${response.status} ${errorData}`)
-      }
-
+  const submitSetMutation = useMutation({
+    mutationFn: (submissionData: any) => submitSet(token, submissionData),
+    onSuccess: () => {
       if (currentSetIndex < difficultyGroups.length - 1) {
         setCurrentSetIndex(currentSetIndex + 1)
         setCurrentQuestionIndex(0)
       } else {
+        // Final results calculation
         let totalQuestions = 0
         let totalCorrect = 0
         const allResults: any[] = []
@@ -139,22 +120,28 @@ export function useQuiz() {
           const setQuestions = difficultyGroups[i].questions.length
           const setEndIndex = resultStartIndex + setQuestions - 1
           const currentSetResponses = responses.filter(
-            r => r.questionIndex >= resultStartIndex && r.questionIndex <= setEndIndex
+            r =>
+              r.questionIndex >= resultStartIndex &&
+              r.questionIndex <= setEndIndex
           )
 
           totalQuestions += setQuestions
 
-          const setResults = currentSetResponses.map((response) => {
+          const setResults = currentSetResponses.map(response => {
             const question = difficultyGroups[i].questions.find(
               (_, idx) => resultStartIndex + idx === response.questionIndex
             )
-            const isCorrect = question && question.correctAnswer === response.answer
+            const isCorrect =
+              question && question.correctAnswer === response.answer
             if (isCorrect) totalCorrect++
 
             const userOptionIndex = response.answer.charCodeAt(0) - 65
-            const correctOptionIndex = question?.correctAnswer.charCodeAt(0) - 65
-            const userAnswerText = question?.options[userOptionIndex] || response.answer
-            const correctAnswerText = question?.options[correctOptionIndex] || question?.correctAnswer
+            const correctOptionIndex =
+              question?.correctAnswer.charCodeAt(0) - 65
+            const userAnswerText =
+              question?.options[userOptionIndex] || response.answer
+            const correctAnswerText =
+              question?.options[correctOptionIndex] || question?.correctAnswer
 
             return {
               questionId: question?.id || `q_${response.questionIndex}`,
@@ -162,7 +149,8 @@ export function useQuiz() {
               userAnswer: userAnswerText,
               correctAnswer: correctAnswerText,
               isCorrect: !!isCorrect,
-              explanation: question?.explanation || 'No explanation available.',
+              explanation:
+                question?.explanation || 'No explanation available.',
               points: isCorrect ? 1 : 0
             }
           })
@@ -182,26 +170,128 @@ export function useQuiz() {
           submittedAt: new Date().toISOString(),
           setIndex: difficultyGroups.length - 1,
           difficulty: 'mixed',
-          userData: isAuthenticated ? { userId: user?.id, email: user?.email } : undefined
+          userData: isAuthenticated
+            ? { userId: user?.id, email: user?.email }
+            : undefined
         })
 
         setAppState('quiz-results')
       }
-    } catch (error) {
-      console.error('Error submitting set:', error)
-      setError(error instanceof Error ? error.message : 'Unknown error occurred')
-    } finally {
-      setSubmitting(false)
     }
+  })
+
+  useEffect(() => {
+    if (questionSetLoading) {
+      setAppState('loading')
+    } else if (questionSetError) {
+      setAppState('error')
+    } else if (questionSet) {
+      setAppState('preset-selection')
+    }
+  }, [questionSetLoading, questionSetError, questionSet])
+
+  const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
+    return {
+      easy: questions.filter(q => q.difficulty === 'easy').length,
+      medium: questions.filter(q => q.difficulty === 'medium').length,
+      hard: questions.filter(q => q.difficulty === 'hard').length
+    }
+  }, [])
+
+  const createPresetGroups = useCallback(
+    (preset: QuestionPreset, questions: Question[]): DifficultyGroup[] => {
+      const categorizedQuestions = {
+        easy: questions.filter(q => q.difficulty === 'easy'),
+        medium: questions.filter(q => q.difficulty === 'medium'),
+        hard: questions.filter(q => q.difficulty === 'hard')
+      }
+
+      const result: DifficultyGroup[] = []
+      const difficulties: ('easy' | 'medium' | 'hard')[] = [
+        'easy',
+        'medium',
+        'hard'
+      ]
+      difficulties.forEach(difficulty => {
+        const questionCount = preset.distribution[difficulty]
+        if (questionCount > 0) {
+          const availableQuestions = categorizedQuestions[difficulty]
+          const shuffled = [...availableQuestions].sort(
+            () => Math.random() - 0.5
+          )
+          const selectedQuestions = shuffled.slice(0, questionCount)
+          result.push({
+            difficulty,
+            questions: selectedQuestions,
+            completed: false
+          })
+        }
+      })
+      return result
+    },
+    []
+  )
+
+  const handlePresetSelect = useCallback(
+    (preset: QuestionPreset) => {
+      if (!questionSet) return
+
+      if (!isAuthenticated) {
+        setShowAuthPrompt(true)
+        return
+      }
+
+      setSelectedPreset(preset)
+      const groups = createPresetGroups(preset, questionSet.questions)
+      setDifficultyGroups(groups)
+      setAppState('question-info')
+    },
+    [questionSet, createPresetGroups, isAuthenticated]
+  )
+
+  const handleQuestionInfoStart = () => {
+    setAppState('quiz-active')
+  }
+
+  const submitCurrentSet = async () => {
+    if (!difficultyGroups.length || !questionSet) return
+
+    const currentGroup = difficultyGroups[currentSetIndex]
+    let startIndex = 0
+    for (let i = 0; i < currentSetIndex; i++) {
+      startIndex += difficultyGroups[i].questions.length
+    }
+    const endIndex = startIndex + currentGroup.questions.length - 1
+    const setResponses = responses.filter(
+      r => r.questionIndex >= startIndex && r.questionIndex <= endIndex
+    )
+
+    const submissionData = {
+      responses: setResponses,
+      questions: currentGroup.questions,
+      setIndex: currentSetIndex,
+      difficulty: currentGroup.difficulty,
+      userData: isAuthenticated
+        ? { userId: user?.id, email: user?.email }
+        : undefined
+    }
+
+    submitSetMutation.mutate(submissionData)
   }
 
   const handleAnswerSelect = (questionIndex: number, answer: string) => {
     const newResponse: QuestionResponse = { questionIndex, answer }
-    setResponses(prev => [...prev.filter(r => r.questionIndex !== questionIndex), newResponse])
+    setResponses(prev => [
+      ...prev.filter(r => r.questionIndex !== questionIndex),
+      newResponse
+    ])
   }
 
   const moveToNextQuestion = () => {
-    if (currentQuestionIndex < (difficultyGroups[currentSetIndex]?.questions.length || 0) - 1) {
+    if (
+      currentQuestionIndex <
+      (difficultyGroups[currentSetIndex]?.questions.length || 0) - 1
+    ) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     }
   }
@@ -235,79 +325,25 @@ export function useQuiz() {
     setCurrentQuestionIndex(0)
     setResponses([])
     setResults(null)
-    setError(null)
   }
 
   const handleFavoriteToggle = async () => {
-    if (!questionSet || !token) return
-    
-    // Show auth prompt if user is not authenticated
     if (!isAuthenticated) {
       setShowAuthPrompt(true)
       return
     }
-    
-    setFavoriteLoading(true)
-    try {
-      if (isFavorited) {
-        if (await quizFavoritesService.removeFromFavorites(token)) {
-          setIsFavorited(false)
-        }
-      } else {
-        if (await quizFavoritesService.addToFavorites({
-          sessionId: token,
-          questionSetTitle: questionSet.title || 'Quiz Session',
-          videoTitle: questionSet.videoTitle || 'Unknown Video',
-          videoUrl: questionSet.videoUrl,
-          difficulty: selectedPreset?.name || 'Mixed',
-          totalQuestions: questionSet.questions.length,
-          userScore: results?.score
-        })) {
-          setIsFavorited(true)
-        }
-      }
-    } catch (error) {
-      console.error('Failed to toggle favorite:', error)
-    } finally {
-      setFavoriteLoading(false)
-    }
+    favoriteMutation.mutate(!!isFavorited)
   }
 
-  useEffect(() => {
-    const fetchQuestionSet = async () => {
-      try {
-        const response = await fetch(`/api/questions/${token}`)
-        if (!response.ok) {
-          throw new Error('Failed to load questions')
-        }
-        const data = await response.json()
-        if (data.authData?.accessToken) {
-          setAuthToken(data.authData.accessToken)
-        }
-        setQuestionSet(data)
-        setAppState('preset-selection')
-      } catch (err) {
-        console.error('Error loading questions:', err)
-        setError(err instanceof Error ? err.message : 'Unknown error occurred')
-        setAppState('error')
-      } 
-    }
-
-    if (token) {
-      fetchQuestionSet()
-    }
-  }, [token])
-
-  useEffect(() => {
-    if (questionSet && token) {
-      quizFavoritesService.isFavorited(token).then(setIsFavorited).catch(console.error)
-    }
-  }, [questionSet, token])
-
   const getCurrentQuestion = () => {
-    if (!difficultyGroups.length || currentSetIndex >= difficultyGroups.length) return null
+    if (
+      !difficultyGroups.length ||
+      currentSetIndex >= difficultyGroups.length
+    )
+      return null
     const currentGroup = difficultyGroups[currentSetIndex]
-    if (!currentGroup || currentQuestionIndex >= currentGroup.questions.length) return null
+    if (!currentGroup || currentQuestionIndex >= currentGroup.questions.length)
+      return null
 
     let startIndex = 0
     for (let i = 0; i < currentSetIndex; i++) {
@@ -323,9 +359,8 @@ export function useQuiz() {
   }
 
   const handleAuthSuccess = (authUser: any) => {
-    console.log('User authenticated successfully:', authUser.email)
     setShowAuthPrompt(false)
-    // The auth state will be updated automatically through the auth state change listener
+    queryClient.invalidateQueries({ queryKey: ['questionSet', token] })
   }
 
   const handleCloseAuthPrompt = () => {
@@ -336,18 +371,18 @@ export function useQuiz() {
     token,
     questionSet,
     appState,
-    error,
+    error: questionSetError?.message || submitSetMutation.error?.message || null,
     selectedPreset,
     difficultyGroups,
     currentSetIndex,
     currentQuestionIndex,
     responses,
     results,
-    submitting,
+    submitting: submitSetMutation.isPending,
     showVocabulary,
     showTranscript,
-    isFavorited,
-    favoriteLoading,
+    isFavorited: !!isFavorited,
+    favoriteLoading: favoriteMutation.isPending,
     showAuthPrompt,
     user,
     isAuthenticated,
