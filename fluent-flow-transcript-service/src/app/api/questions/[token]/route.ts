@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sharedQuestions, sharedSessions } from '../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../lib/cors'
 import { getSupabaseServiceRole } from '../../../../lib/supabase/service-role'
 
@@ -30,56 +29,32 @@ export async function GET(
     console.log(`Looking for token: ${token}`)
     console.log(`Group context: groupId=${groupId}, sessionId=${sessionId}`)
 
-    // Try database first using service role client (public access)
+    // Get question set from database only
     const supabase = getSupabaseServiceRole()
     let questionSet = null
-    let fromDatabase = false
     
-    if (supabase) {
-      try {
-        const { data, error } = await supabase
-          .from('shared_question_sets')
-          .select('*')
-          .eq('share_token', token)
-          .single()
-
-        if (!error && data) {
-          questionSet = data
-          fromDatabase = true
-          console.log(`Found question set in database for token: ${token}`)
-        } else {
-          console.log(`Database lookup failed for token: ${token}:`, error?.message || 'Not found')
-        }
-      } catch (error) {
-        console.log(`Database lookup failed for token: ${token}, trying in-memory:`, error)
-      }
-    } else {
-      console.log('Service role client not configured, trying in-memory storage only')
+    if (!supabase) {
+      return corsResponse(
+        { error: 'Database not configured' },
+        500
+      )
     }
 
-    // Fallback to in-memory storage for backward compatibility
-    if (!questionSet) {
-      console.log(`Available in-memory tokens:`, sharedQuestions.keys())
-      console.log(`Storage size:`, sharedQuestions.size())
-      
-      // First try enhanced shared sessions (with auth data)
-      const sharedSessionData = sharedSessions.getWithAuth(token)
-      let authData = null
-      
-      if (sharedSessionData) {
-        console.log(`Found enhanced session data for token: ${token}`)
-        questionSet = sharedSessionData.data
-        authData = sharedSessionData.authData
-      } else {
-        // Fallback to regular shared questions
-        questionSet = sharedQuestions.get(token)
-      }
+    try {
+      const { data, error } = await supabase
+        .from('shared_question_sets')
+        .select('*')
+        .eq('share_token', token)
+        .single()
 
-      if (questionSet) {
-        console.log(`Found question set in memory for token: ${token}`)
-        // Add authData to the response for backward compatibility
-        questionSet.authData = authData
+      if (!error && data) {
+        questionSet = data
+        console.log(`Found question set in database for token: ${token}`)
+      } else {
+        console.log(`Database lookup failed for token: ${token}:`, error?.message || 'Not found')
       }
+    } catch (error) {
+      console.log(`Database lookup failed for token: ${token}:`, error)
     }
 
     if (!questionSet) {
@@ -90,24 +65,18 @@ export async function GET(
       )
     }
 
-    // Calculate expiration info
-    let expirationInfo = null
-    if (fromDatabase) {
-      const expiresAt = new Date(questionSet.expires_at)
-      const now = new Date()
-      const msRemaining = expiresAt.getTime() - now.getTime()
-      const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60))
-      const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60))
-      
-      expirationInfo = {
-        expiresAt: questionSet.expires_at,
-        hoursRemaining: Math.max(0, hoursRemaining),
-        minutesRemaining: Math.max(0, minutesRemaining),
-        isExpired: msRemaining <= 0
-      }
-    } else {
-      // Use in-memory expiration info
-      expirationInfo = sharedQuestions.getExpirationInfo(token)
+    // Calculate expiration info from database
+    const expiresAt = new Date(questionSet.expires_at)
+    const now = new Date()
+    const msRemaining = expiresAt.getTime() - now.getTime()
+    const hoursRemaining = Math.floor(msRemaining / (1000 * 60 * 60))
+    const minutesRemaining = Math.floor((msRemaining % (1000 * 60 * 60)) / (1000 * 60))
+    
+    const expirationInfo = {
+      expiresAt: questionSet.expires_at,
+      hoursRemaining: Math.max(0, hoursRemaining),
+      minutesRemaining: Math.max(0, minutesRemaining),
+      isExpired: msRemaining <= 0
     }
 
     console.log(`Expires in: ${expirationInfo?.hoursRemaining}h ${expirationInfo?.minutesRemaining}m`)
@@ -124,34 +93,24 @@ export async function GET(
       }
     }
 
-    // Format response based on data source
-    if (fromDatabase) {
-      return corsResponse({
-        id: questionSet.id,
-        shareToken: questionSet.share_token,
-        title: questionSet.title,
-        videoTitle: questionSet.video_title,
-        videoUrl: questionSet.video_url,
-        startTime: questionSet.start_time,
-        endTime: questionSet.end_time,
-        questions: questionSet.questions,
-        vocabulary: questionSet.vocabulary,
-        transcript: questionSet.transcript,
-        metadata: questionSet.metadata,
-        isPublic: questionSet.is_public,
-        expirationInfo,
-        groupContext,
-        source: 'database' // For debugging
-      })
-    } else {
-      // Legacy format for in-memory data
-      return corsResponse({
-        ...questionSet,
-        expirationInfo,
-        groupContext,
-        source: 'memory' // For debugging
-      })
-    }
+    // Format response from database
+    return corsResponse({
+      id: questionSet.id,
+      shareToken: questionSet.share_token,
+      title: questionSet.title,
+      videoTitle: questionSet.video_title,
+      videoUrl: questionSet.video_url,
+      startTime: questionSet.start_time,
+      endTime: questionSet.end_time,
+      questions: questionSet.questions,
+      vocabulary: questionSet.vocabulary,
+      transcript: questionSet.transcript,
+      metadata: questionSet.metadata,
+      isPublic: questionSet.is_public,
+      expirationInfo,
+      groupContext,
+      source: 'database' // For debugging
+    })
 
   } catch (error) {
     console.error('Failed to get shared questions:', error)

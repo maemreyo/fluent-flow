@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { sharedQuestions } from '../../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
 import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supabase/server'
+import { getSupabaseServiceRole } from '../../../../../lib/supabase/service-role'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -64,7 +64,33 @@ export async function POST(
       )
     }
 
-    const questionSet = sharedQuestions.get(token)
+    // Get question set from database
+    const supabase = getSupabaseServiceRole()
+    let questionSet = null
+    
+    if (!supabase) {
+      return corsResponse(
+        { error: 'Database not configured' },
+        500
+      )
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('shared_question_sets')
+        .select('*')
+        .eq('share_token', token)
+        .single()
+
+      if (!error && data) {
+        questionSet = data
+        console.log(`Loaded question set from database for token: ${token}`)
+      } else {
+        console.log(`Database lookup failed for token: ${token}:`, error?.message || 'Not found')
+      }
+    } catch (error) {
+      console.log(`Database lookup failed for token: ${token}:`, error)
+    }
 
     if (!questionSet) {
       return corsResponse(
@@ -74,7 +100,7 @@ export async function POST(
     }
 
     // Check answers and calculate score
-    const evaluation = checkAnswers(questionSet.questions, responses)
+    const evaluation = checkAnswers(questionSet.questions as any, responses)
     
     // Create session
     const sessionId = uuidv4()
@@ -87,14 +113,25 @@ export async function POST(
       userAgent: request.headers.get('user-agent') || 'Unknown'
     }
 
-    // Store session in questionSet
-    if (!questionSet.sessions) {
-      questionSet.sessions = []
+    // Store session data in database metadata
+    try {
+      const currentSessions = (questionSet.metadata as any)?.sessions || []
+      const updatedSessions = [...currentSessions, session]
+      
+      await supabase
+        .from('shared_question_sets')
+        .update({
+          metadata: {
+            ...(questionSet.metadata as any),
+            sessions: updatedSessions
+          },
+          updated_at: new Date().toISOString()
+        })
+        .eq('share_token', token)
+    } catch (error) {
+      console.error('Failed to update question set sessions in database:', error)
+      // Continue execution - don't fail the request if metadata update fails
     }
-    questionSet.sessions.push(session)
-
-    // Update the stored data
-    sharedQuestions.set(token, questionSet)
 
     // If this is a group session, record participation in database
     if (groupId && groupSessionId) {

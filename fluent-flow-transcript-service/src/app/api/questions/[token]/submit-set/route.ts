@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { sharedQuestions, sharedSessions } from '../../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
 import { getSupabaseServiceRole } from '../../../../../lib/supabase/service-role'
 
@@ -64,43 +63,32 @@ export async function POST(
       )
     }
 
-    // Try to get question set from memory first
-    let questionSet = sharedQuestions.get(token)
-    let fromDatabase = false
+    // Get question set from database
+    const supabase = getSupabaseServiceRole()
+    let questionSet = null
+    
+    if (!supabase) {
+      return corsResponse(
+        { error: 'Database not configured' },
+        500
+      )
+    }
 
-    // If not found in memory, try database
-    if (!questionSet) {
-      const supabase = getSupabaseServiceRole()
-      
-      if (supabase) {
-        try {
-          const { data, error } = await supabase
-            .from('shared_question_sets')
-            .select('*')
-            .eq('share_token', token)
-            .single()
+    try {
+      const { data, error } = await supabase
+        .from('shared_question_sets')
+        .select('*')
+        .eq('share_token', token)
+        .single()
 
-          if (!error && data) {
-            questionSet = data
-            fromDatabase = true
-            console.log(`Loaded question set from database for token: ${token}`)
-            
-            // Store in memory for future requests (2 hour expiration for submit operations)
-            sharedQuestions.set(token, data, 2)
-          }
-        } catch (error) {
-          console.log(`Database lookup failed for token: ${token}:`, error)
-        }
+      if (!error && data) {
+        questionSet = data
+        console.log(`Loaded question set from database for token: ${token}`)
+      } else {
+        console.log(`Database lookup failed for token: ${token}:`, error?.message || 'Not found')
       }
-      
-      // Also try enhanced shared sessions as fallback
-      if (!questionSet) {
-        const sharedSessionData = sharedSessions.getWithAuth(token)
-        if (sharedSessionData) {
-          questionSet = sharedSessionData.data
-          console.log(`Loaded question set from shared sessions for token: ${token}`)
-        }
-      }
+    } catch (error) {
+      console.log(`Database lookup failed for token: ${token}:`, error)
     }
 
     if (!questionSet) {
@@ -126,14 +114,38 @@ export async function POST(
       userAgent: request.headers.get('user-agent') || 'Unknown'
     }
 
-    // Store session in questionSet
-    if (!questionSet.sessions) {
-      questionSet.sessions = []
+    // Store session results in database if we have a group_id and session_id
+    if (questionSet.group_id && questionSet.session_id) {
+      try {
+        // Store in group_quiz_results table (only if we have required fields)
+        if (questionSet.created_by) {
+          await supabase
+            .from('group_quiz_results')
+            .insert({
+              session_id: questionSet.session_id,
+              user_id: questionSet.created_by,
+              score: evaluation.score,
+              total_questions: evaluation.totalQuestions,
+              correct_answers: evaluation.correctAnswers,
+              result_data: {
+                responses,
+                evaluation,
+                setIndex,
+                difficulty,
+                submittedAt: session.submittedAt,
+                userAgent: session.userAgent
+              }
+            })
+        }
+        
+        console.log(`Stored quiz results in database for session: ${questionSet.session_id}`)
+      } catch (error) {
+        console.error('Failed to store quiz results in database:', error)
+        // Continue execution - don't fail the request if database storage fails
+      }
     }
-    questionSet.sessions.push(session)
 
-    // Update the stored data
-    sharedQuestions.set(token, questionSet)
+    // Session data is now stored in the group_quiz_results table instead of question set metadata
 
     const result = {
       sessionId,

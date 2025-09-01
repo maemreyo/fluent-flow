@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supabase/server'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
-import { sharedQuestions } from '../../../../../lib/shared-storage'
 import { v4 as uuidv4 } from 'uuid'
 
 export async function OPTIONS() {
@@ -206,8 +205,30 @@ export async function POST(
         }
       }
 
-      // Store in memory
-      sharedQuestions.set(finalShareToken, sharedQuestionSet)
+      // Store in database
+      const { error: questionSetError } = await supabase
+        .from('shared_question_sets')
+        .insert({
+          share_token: finalShareToken,
+          title: sharedQuestionSet.title,
+          video_title: sharedQuestionSet.videoTitle,
+          video_url: sharedQuestionSet.videoUrl,
+          start_time: sharedQuestionSet.startTime,
+          end_time: sharedQuestionSet.endTime,
+          questions: sharedQuestionSet.questions,
+          vocabulary: sharedQuestionSet.vocabulary,
+          transcript: sharedQuestionSet.transcript,
+          metadata: sharedQuestionSet.metadata,
+          is_public: sharedQuestionSet.isPublic,
+          created_by: user.id,
+          group_id: groupId,
+          session_id: sessionId
+        })
+
+      if (questionSetError) {
+        console.error('Failed to store question set in database:', questionSetError)
+        // Continue execution - don't fail the request if database storage fails
+      }
     }
 
     // Create database record for group session

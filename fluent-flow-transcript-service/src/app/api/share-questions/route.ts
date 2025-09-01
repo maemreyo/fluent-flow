@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { corsHeaders, corsResponse } from '../../../lib/cors'
 import { createSharedQuestionsService } from '../../../lib/services/shared-questions-service'
-import { sharedQuestions } from '../../../lib/shared-storage'
 import { getSupabaseServer } from '../../../lib/supabase/server'
+import { getSupabaseServiceRole } from '../../../lib/supabase/service-role'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -106,14 +106,42 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         sessions: []
       }
 
-      // Store in memory with 4-hour expiration
-      const { expiresAt, expiresIn } = sharedQuestions.set(shareToken, memoryQuestionSet)
+      // Store in database with 4-hour expiration
+      const expiresAt = Date.now() + (4 * 60 * 60 * 1000) // 4 hours
+      const expiresIn = 4 * 60 * 60 * 1000 // 4 hours in milliseconds
+      const expiresAtISO = new Date(expiresAt).toISOString()
+      
+      const supabaseServiceRole = getSupabaseServiceRole()
+      if (!supabaseServiceRole) {
+        console.error('Database not configured')
+        return corsResponse({ error: 'Failed to share questions' }, 500)
+      }
+      
+      const { error: insertError } = await supabaseServiceRole
+        .from('shared_question_sets')
+        .insert({
+          share_token: shareToken,
+          title: memoryQuestionSet.title,
+          video_title: memoryQuestionSet.videoTitle,
+          video_url: memoryQuestionSet.videoUrl,
+          start_time: memoryQuestionSet.startTime,
+          end_time: memoryQuestionSet.endTime,
+          questions: memoryQuestionSet.questions,
+          vocabulary: memoryQuestionSet.vocabulary,
+          transcript: memoryQuestionSet.transcript,
+          metadata: memoryQuestionSet.metadata,
+          is_public: memoryQuestionSet.isPublic,
+          expires_at: expiresAtISO
+        })
 
-      console.log(`Questions shared to memory: ${shareToken}`)
-      console.log(`Memory storage:`, {
+      if (insertError) {
+        console.error('Failed to store question set in database:', insertError)
+        return corsResponse({ error: 'Failed to share questions' }, 500)
+      }
+
+      console.log(`Questions shared to database: ${shareToken}`)
+      console.log(`Database storage:`, {
         token: shareToken,
-        keys: sharedQuestions.keys(),
-        size: sharedQuestions.size(),
         expiresAt: new Date(expiresAt).toLocaleString()
       })
 
