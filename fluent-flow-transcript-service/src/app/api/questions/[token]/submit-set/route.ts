@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
-import { sharedQuestions } from '../../../../../lib/shared-storage'
+import { sharedQuestions, sharedSessions } from '../../../../../lib/shared-storage'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
+import { getSupabaseServiceRole } from '../../../../../lib/supabase/service-role'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -63,7 +64,44 @@ export async function POST(
       )
     }
 
-    const questionSet = sharedQuestions.get(token)
+    // Try to get question set from memory first
+    let questionSet = sharedQuestions.get(token)
+    let fromDatabase = false
+
+    // If not found in memory, try database
+    if (!questionSet) {
+      const supabase = getSupabaseServiceRole()
+      
+      if (supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('shared_question_sets')
+            .select('*')
+            .eq('share_token', token)
+            .single()
+
+          if (!error && data) {
+            questionSet = data
+            fromDatabase = true
+            console.log(`Loaded question set from database for token: ${token}`)
+            
+            // Store in memory for future requests (2 hour expiration for submit operations)
+            sharedQuestions.set(token, data, 2)
+          }
+        } catch (error) {
+          console.log(`Database lookup failed for token: ${token}:`, error)
+        }
+      }
+      
+      // Also try enhanced shared sessions as fallback
+      if (!questionSet) {
+        const sharedSessionData = sharedSessions.getWithAuth(token)
+        if (sharedSessionData) {
+          questionSet = sharedSessionData.data
+          console.log(`Loaded question set from shared sessions for token: ${token}`)
+        }
+      }
+    }
 
     if (!questionSet) {
       return corsResponse(
