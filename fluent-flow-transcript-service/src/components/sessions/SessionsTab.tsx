@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { Plus, Calendar, Clock, Users, Play, Eye, Trash2, Edit3 } from 'lucide-react'
+import { Plus, Calendar, Clock, Users, Play, Eye, Trash2, Edit3, UserCheck } from 'lucide-react'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
 import EditSessionModal from '../groups/EditSessionModal'
+import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
 
 interface SessionsTabProps {
   groupId: string
@@ -18,6 +19,7 @@ export default function SessionsTab({ groupId, canManage, onCreateSession }: Ses
   const [filters, setFilters] = useState<SessionFilters>({ status: 'all' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [editingSession, setEditingSession] = useState<any | null>(null)
+  const [quizRoomSession, setQuizRoomSession] = useState<any | null>(null)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -205,6 +207,16 @@ export default function SessionsTab({ groupId, canManage, onCreateSession }: Ses
                 </div>
 
                 <div className="flex items-center gap-2">
+                  {/* Quiz Room Button */}
+                  <button
+                    onClick={() => setQuizRoomSession(session)}
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    title="Join quiz room to see other participants"
+                  >
+                    <UserCheck className="w-4 h-4" />
+                    Quiz Room
+                  </button>
+
                   {/* Join/View Session Button */}
                   {session.share_token && (
                     <button
@@ -217,12 +229,12 @@ export default function SessionsTab({ groupId, canManage, onCreateSession }: Ses
                       {session.status === 'active' ? (
                         <>
                           <Play className="w-4 h-4" />
-                          Join
+                          Join Quiz
                         </>
                       ) : (
                         <>
                           <Eye className="w-4 h-4" />
-                          View
+                          View Results
                         </>
                       )}
                     </button>
@@ -308,6 +320,27 @@ export default function SessionsTab({ groupId, canManage, onCreateSession }: Ses
               console.error('Error updating session:', error)
               throw error
             }
+          }}
+        />
+      )}
+
+      {/* Group Quiz Room Modal */}
+      {quizRoomSession && (
+        <GroupQuizRoomModal
+          isOpen={true}
+          onClose={() => setQuizRoomSession(null)}
+          sessionId={quizRoomSession.id}
+          groupId={groupId}
+          session={{
+            id: quizRoomSession.id,
+            quiz_title: quizRoomSession.title,
+            video_title: quizRoomSession.video_title,
+            video_url: quizRoomSession.video_url,
+            scheduled_at: quizRoomSession.scheduled_at,
+            status: quizRoomSession.status,
+            quiz_token: quizRoomSession.share_token,
+            created_by: quizRoomSession.created_by,
+            questions_data: quizRoomSession.questions_data
           }}
         />
       )}

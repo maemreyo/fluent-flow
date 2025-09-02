@@ -154,7 +154,12 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
                 onCreateSession={() => setShowCreateSession(true)}
               />
             )}
-            {activeTab === 'settings' && canManage && <SettingsTab />}
+            {activeTab === 'settings' && canManage && (
+              <SettingsTab 
+                group={group as any} 
+                isOwner={!!(group as any).user_role && (group as any).user_role === 'owner'} 
+              />
+            )}
           </div>
         </div>
 
