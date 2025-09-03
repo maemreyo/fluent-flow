@@ -1,6 +1,14 @@
 'use client'
 
-import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState
+} from 'react'
 import { User } from '@supabase/supabase-js'
 import { getCurrentUser, supabase } from '../lib/supabase/client'
 
@@ -52,7 +60,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         // Use getSession instead of getUser to avoid extra API call
         // onAuthStateChange will handle the initial state
-        const { data: { session } } = await supabase.auth.getSession()
+        const {
+          data: { session }
+        } = await supabase.auth.getSession()
 
         if (mounted) {
           setAuthState({
@@ -121,7 +131,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       // Use getSession instead of getUser to avoid unnecessary API calls
       // The auth listener will handle most state changes automatically
-      const { data: { session } } = await supabase.auth.getSession()
+      const {
+        data: { session }
+      } = await supabase.auth.getSession()
       setAuthState(prev => ({
         ...prev,
         user: session?.user || null,
@@ -137,12 +149,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
-  const contextValue: AuthContextType = useMemo(() => ({
-    ...authState,
-    signOut,
-    refreshAuth,
-    hasValidSession: authState.isAuthenticated && !!authState.user
-  }), [authState, signOut, refreshAuth])
+  const contextValue: AuthContextType = useMemo(
+    () => ({
+      ...authState,
+      signOut,
+      refreshAuth,
+      hasValidSession: authState.isAuthenticated && !!authState.user
+    }),
+    [authState, signOut, refreshAuth]
+  )
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
 }
@@ -167,16 +182,24 @@ export function useQuizAuth(authToken?: string) {
         try {
           // Only set session if we're not already authenticated
           // This prevents unnecessary API calls
-          const { data: currentSession } = await supabase.auth.getSession()
+          const { data: currentSession } = (await supabase?.auth.getSession()) || {
+            data: { session: null }
+          }
           if (currentSession.session?.access_token === authToken) {
             console.debug('Already authenticated with this token')
             return
           }
 
-          const { data, error } = await supabase.auth.setSession({
+          const result = await supabase?.auth.setSession({
             access_token: authToken,
             refresh_token: authToken
           })
+          
+          if (!result) {
+            throw new Error('Supabase client not available')
+          }
+          
+          const { data, error } = result
 
           if (error) {
             console.error('Auth token error:', error)

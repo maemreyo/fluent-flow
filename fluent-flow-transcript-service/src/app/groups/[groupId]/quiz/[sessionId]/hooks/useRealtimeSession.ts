@@ -72,10 +72,10 @@ export function useRealtimeSession({
         })
         
         // Update realtime data
-        setRealtimeData(prev => ({
+        setRealtimeData(prev => prev ? ({
           ...prev,
           session_status: (payload.new as any).status,
-        }))
+        }) : null)
       })
       // Listen for new quiz results (live scores)
       .on('postgres_changes', {
