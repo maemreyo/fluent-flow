@@ -10,6 +10,37 @@ export async function OPTIONS() {
   })
 }
 
+/**
+ * Shuffle array options with seeded randomization for consistent results
+ * This ensures the same group session always has the same shuffle pattern
+ */
+function shuffleOptionsWithSeed(options: string[], seed: string): string[] {
+  // Create a simple hash from the seed for consistent randomization
+  let hash = 0
+  for (let i = 0; i < seed.length; i++) {
+    const char = seed.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32bit integer
+  }
+
+  // Create a copy of options to shuffle
+  const shuffled = [...options]
+  
+  // Fisher-Yates shuffle with seeded random
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    // Generate deterministic "random" index based on hash and position
+    hash = (hash * 9301 + 49297) % 233280
+    const j = Math.abs(hash) % (i + 1)
+    
+    // Swap elements
+    const temp = shuffled[i]
+    shuffled[i] = shuffled[j]
+    shuffled[j] = temp
+  }
+
+  return shuffled
+}
+
 export async function POST(request: NextRequest) {
   // Use service role client to bypass RLS for this public endpoint
   const supabase = getSupabaseServiceRole()
@@ -71,6 +102,34 @@ export async function POST(request: NextRequest) {
     const sessionId = uuidv4()
     const shareToken = uuidv4()
     
+    // Apply basic answer shuffling to avoid AI bias (level a: fix A-bias)
+    const shuffledQuestions = questions.questions.map((q: any, index: number) => {
+      // Get the correct option text before shuffling
+      const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
+      const correctOption = q.options[correctAnswerIndex] || q.options[0]
+      
+      // Create seeded shuffle for consistency
+      const seed = `${groupId}-${sessionId}-${index}` // Use group/session/index as seed
+      const shuffledOptions = shuffleOptionsWithSeed(q.options, seed)
+      
+      // Find new position of correct answer
+      const newCorrectIndex = shuffledOptions.indexOf(correctOption)
+      const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex]
+      
+      return {
+        ...q,
+        options: shuffledOptions,
+        correctAnswer: newCorrectAnswer
+      }
+    })
+
+    // Session settings including the new per_member_shuffle option
+    const sessionSettings = {
+      allowLateJoin: true,
+      showRealTimeResults: options.showRealTimeResults || false,
+      per_member_shuffle: options.per_member_shuffle || false // Default: false (off)
+    }
+    
     // Create database record for group session FIRST (to satisfy foreign key constraint)
     const { data: groupSession, error: sessionError } = await supabase
       .from('group_quiz_sessions')
@@ -85,8 +144,9 @@ export async function POST(request: NextRequest) {
         status: options.scheduledAt ? 'scheduled' : 'active',
         session_type: 'instant',
         share_token: shareToken,
+        settings: sessionSettings, // Include the new settings
         questions_data: {
-          questions: questions.questions,
+          questions: shuffledQuestions, // Use shuffled questions
           vocabulary,
           transcript
         },
@@ -111,7 +171,7 @@ export async function POST(request: NextRequest) {
         video_url: loop.videoUrl,
         start_time: loop.startTime,
         end_time: loop.endTime,
-        questions: questions.questions,
+        questions: shuffledQuestions, // Use shuffled questions here too
         vocabulary: vocabulary || [],
         transcript: transcript || null,
         is_public: false, // Group sessions are private
@@ -122,13 +182,15 @@ export async function POST(request: NextRequest) {
         metadata: {
           sharedBy: options.sharedBy || userEmail,
           difficulty: 'mixed',
-          topics: questions.questions
+          topics: shuffledQuestions
             .map((q: any) => q.type)
             .filter((t: any, i: number, arr: any[]) => arr.indexOf(t) === i),
           groupName: group.name,
           isGroupSession: true,
           createdBy: user.id,
-          createdViaExtension: true
+          createdViaExtension: true,
+          answersShuffled: true, // Mark that answers were shuffled (level a)
+          per_member_shuffle: sessionSettings.per_member_shuffle // Store the setting
         }
       })
       .select()
@@ -141,15 +203,13 @@ export async function POST(request: NextRequest) {
 
     console.log(`Group session created successfully: ${sessionId}`)
 
-    // Generate share URL
+    // Generate NEW group-focused share URL with tab navigation and session highlighting
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3838'
-    const shareUrl = groupId 
-      ? `${baseUrl}/questions/${shareToken}?group=${groupId}&session=${sessionId}`
-      : `${baseUrl}/questions/${shareToken}`
+    const shareUrl = `${baseUrl}/groups/${groupId}?tab=sessions&highlight=${sessionId}`
 
     return corsResponse({
       shareToken: shareToken,
-      shareUrl: shareUrl,
+      shareUrl: shareUrl, // Now points to group page with tab focus
       sessionId,
       groupId,
       expiresAt: sharedQuestionSet.expires_at,
@@ -159,6 +219,13 @@ export async function POST(request: NextRequest) {
       },
       user: {
         email: user.email
+      },
+      settings: sessionSettings, // Return the session settings
+      // Add navigation hints for frontend
+      navigation: {
+        targetTab: 'sessions',
+        highlightSession: sessionId,
+        groupPage: `/groups/${groupId}`
       }
     })
   } catch (error) {

@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { AuthPrompt } from '../../../components/auth/AuthPrompt'
@@ -15,12 +15,22 @@ import { StatCards } from './components/StatCards'
 import { GroupTab, TabNavigation } from './components/TabNavigation'
 import { useGroupDetail } from './hooks/useGroupDetail'
 
-export default function GroupPage({ params }: { params: Promise<{ groupId: string }> }) {
+export default function GroupPage({ 
+  params, 
+  searchParams 
+}: { 
+  params: Promise<{ groupId: string }>
+  searchParams: Promise<{ tab?: string; highlight?: string }>
+}) {
   const router = useRouter()
   const { groupId } = use(params)
+  const { tab: initialTab, highlight: highlightSessionId } = use(searchParams)
   const queryClient = useQueryClient()
 
-  const [activeTab, setActiveTab] = useState<GroupTab>('overview')
+  // Use URL tab parameter or default to 'overview'
+  const [activeTab, setActiveTab] = useState<GroupTab>(
+    (initialTab as GroupTab) || 'overview'
+  )
   const [showCreateSession, setShowCreateSession] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
@@ -36,6 +46,30 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
     groupId,
     isAuthenticated
   })
+
+  // Update tab based on URL parameters
+  useEffect(() => {
+    if (initialTab && initialTab !== activeTab) {
+      setActiveTab(initialTab as GroupTab)
+    }
+  }, [initialTab, activeTab])
+
+  const handleTabChange = (newTab: GroupTab) => {
+    setActiveTab(newTab)
+    
+    // Update URL without navigation
+    const current = new URLSearchParams()
+    current.set('tab', newTab)
+    if (highlightSessionId) {
+      current.set('highlight', highlightSessionId)
+    }
+    
+    const search = current.toString()
+    const query = search ? `?${search}` : ''
+    
+    // Use replace to avoid adding to browser history for each tab click
+    window.history.replaceState(null, '', `/groups/${groupId}${query}`)
+  }
 
   const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
@@ -128,7 +162,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
           <StatCards group={group as any} />
           <TabNavigation
             activeTab={activeTab}
-            setActiveTab={setActiveTab}
+            setActiveTab={handleTabChange} // Use the new handler
             canManage={!!canManage}
           />
 
@@ -152,6 +186,7 @@ export default function GroupPage({ params }: { params: Promise<{ groupId: strin
                 groupId={groupId}
                 canManage={!!canManage}
                 onCreateSession={() => setShowCreateSession(true)}
+                highlightSessionId={highlightSessionId}
               />
             )}
             {activeTab === 'settings' && canManage && (

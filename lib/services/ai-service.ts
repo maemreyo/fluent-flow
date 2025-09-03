@@ -496,11 +496,21 @@ export class AIService extends ImprovedBaseService {
             throw new Error(`Invalid question structure at index ${index}`)
           }
 
+          // Shuffle answer options to randomize correct answer position
+          const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
+          const correctOption = q.options[correctAnswerIndex] || q.options[0]
+          
+          // Create shuffled array with seeded randomization for consistency
+          const seed = loop.id + index // Use loop ID and index as seed for reproducible shuffling
+          const shuffledData = this.shuffleOptionsWithSeed(q.options, seed)
+          const newCorrectIndex = shuffledData.options.indexOf(correctOption)
+          const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex]
+
           return {
             id: `q_${loop.id}_ai_${index + 1}`,
             question: q.question,
-            options: q.options,
-            correctAnswer: q.correctAnswer || 'A',
+            options: shuffledData.options,
+            correctAnswer: newCorrectAnswer,
             explanation: q.explanation || 'No explanation provided',
             difficulty: ['easy', 'medium', 'hard'].includes(q.difficulty) ? q.difficulty : 'medium',
             type: [
@@ -522,6 +532,36 @@ export class AIService extends ImprovedBaseService {
     } catch (error) {
       throw new Error(`Conversation questions generation failed: ${error.message}`)
     }
+  }
+
+  /**
+   * Shuffle array options with seeded randomization for consistent results
+   */
+  private shuffleOptionsWithSeed(options: string[], seed: string): { options: string[] } {
+    // Create a simple hash from the seed for consistent randomization
+    let hash = 0
+    for (let i = 0; i < seed.length; i++) {
+      const char = seed.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+
+    // Create a copy of options to shuffle
+    const shuffled = [...options]
+    
+    // Fisher-Yates shuffle with seeded random
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      // Generate deterministic "random" index based on hash and position
+      hash = (hash * 9301 + 49297) % 233280
+      const j = Math.abs(hash) % (i + 1)
+      
+      // Swap elements
+      const temp = shuffled[i]
+      shuffled[i] = shuffled[j]
+      shuffled[j] = temp
+    }
+
+    return { options: shuffled }
   }
 
   // Batch processing for multiple texts

@@ -317,9 +317,12 @@ export const QuestionShareButton: React.FC<QuestionShareButtonProps> = ({
   }
 
   const handleOpenLink = () => {
-    if (shareUrl) {
-      window.open(shareUrl, '_blank')
-    }
+    if (!shareUrl) return
+
+    // For group sessions, the shareUrl now points directly to the group page
+    // with proper tab navigation (?tab=sessions&highlight=[sessionId])
+    console.log(`Opening ${shareMode} quiz:`, shareUrl)
+    window.open(shareUrl, '_blank')
   }
 
   return (
