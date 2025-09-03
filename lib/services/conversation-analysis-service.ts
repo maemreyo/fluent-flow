@@ -55,8 +55,8 @@ export class ConversationAnalysisService {
       const aiService = await this.getAIService()
       const result = await aiService.generateConversationQuestions(loop, transcript, preset)
 
-      // Use the preset or default to 15 total questions
-      const actualPreset = preset || { easy: 4, medium: 7, hard: 4 }
+      // Use the preset or default to largest preset (15 questions) to ensure we have enough
+      const actualPreset = preset || { easy: 5, medium: 6, hard: 4 }
       const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
 
       // Ensure we have the correct number of questions

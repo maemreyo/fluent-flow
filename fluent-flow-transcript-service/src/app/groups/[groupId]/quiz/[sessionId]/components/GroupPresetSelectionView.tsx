@@ -51,24 +51,24 @@ export function GroupPresetSelectionView({
       name: 'Balanced Challenge',
       description: 'Good mix for group learning',
       icon: Target,
-      distribution: { easy: 3, medium: 4, hard: 3 },
-      totalQuestions: 10
+      distribution: { easy: 3, medium: 3, hard: 3 },
+      totalQuestions: 9
     },
     {
       id: 'comprehensive',
       name: 'Comprehensive Practice',
       description: 'Thorough practice session',
       icon: Brain,
-      distribution: { easy: 5, medium: 7, hard: 5 },
-      totalQuestions: 17
+      distribution: { easy: 4, medium: 5, hard: 3 },
+      totalQuestions: 12
     },
     {
       id: 'intensive',
       name: 'Intensive Training',
       description: 'Challenge the whole group',
       icon: Trophy,
-      distribution: { easy: 5, medium: 10, hard: 10 },
-      totalQuestions: 25
+      distribution: { easy: 5, medium: 6, hard: 4 },
+      totalQuestions: 15
     }
   ]
 

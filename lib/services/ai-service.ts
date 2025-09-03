@@ -458,8 +458,8 @@ export class AIService extends ImprovedBaseService {
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.conversationQuestions
 
-    // Default distribution for backward compatibility
-    const defaultPreset = { easy: 4, medium: 7, hard: 4 }
+    // Default to largest preset (15 questions) to ensure we have enough for all presets
+    const defaultPreset = { easy: 5, medium: 6, hard: 4 }
     const actualPreset = preset || defaultPreset
     const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
 

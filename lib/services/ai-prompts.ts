@@ -1,7 +1,9 @@
+;
 // AI Prompt Templates and Management
 // Centralized prompts to keep AIService clean and maintainable
 
-import type { SavedLoop } from '../types/fluent-flow-types'
+import type { SavedLoop } from '../types/fluent-flow-types';
+
 
 export interface PromptTemplate {
   system: string
@@ -180,15 +182,19 @@ Please generate multiple-choice questions with the following criteria:
 
 **IMPORTANT:** You will receive specific instructions about how many questions of each difficulty level to generate. Follow these numbers exactly to ensure the user can complete their chosen learning preset successfully.`,
 
-  userTemplate: (context: { loop: SavedLoop; transcript: string; preset?: { easy: number; medium: number; hard: number } }) => {
+  userTemplate: (context: {
+    loop: SavedLoop
+    transcript: string
+    preset?: { easy: number; medium: number; hard: number }
+  }) => {
     const formatTime = (seconds: number): string => {
       const mins = Math.floor(seconds / 60)
       const secs = Math.floor(seconds % 60)
       return `${mins}:${secs.toString().padStart(2, '0')}`
     }
 
-    // Default distribution if no preset provided (maintains backward compatibility)
-    const distribution = context.preset || { easy: 4, medium: 7, hard: 4 }
+    // Default to largest preset (15 questions) to ensure we generate enough for all presets
+    const distribution = context.preset || { easy: 5, medium: 6, hard: 4 }
     const totalQuestions = distribution.easy + distribution.medium + distribution.hard
 
     return `Based on the following YouTube video transcript, generate exactly ${totalQuestions} comprehension questions with this specific difficulty distribution:
@@ -215,7 +221,7 @@ ${context.transcript}`
   },
 
   config: {
-    maxTokens: 32000,
+    maxTokens: 64000,
     temperature: 0.3
   }
 }
