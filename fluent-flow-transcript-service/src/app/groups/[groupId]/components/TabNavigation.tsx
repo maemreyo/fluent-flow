@@ -29,11 +29,14 @@ export function TabNavigation({
         return (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id as GroupTab)}
-            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 ${
+            onClick={() => {
+              console.log(`Switching to tab: ${tab.id}`) // Debug log
+              setActiveTab(tab.id as GroupTab)
+            }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-300 cursor-pointer ${
               activeTab === tab.id
                 ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md'
-                : 'text-gray-600 hover:text-indigo-600'
+                : 'text-gray-600 hover:text-indigo-600 hover:bg-white/60'
             }`}
           >
             <Icon className="w-5 h-5" />

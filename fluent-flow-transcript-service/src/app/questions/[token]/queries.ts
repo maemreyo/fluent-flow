@@ -1,12 +1,26 @@
-import { quizFavoritesService } from '../../../lib/services/quiz-favorites-service'
 import { QuestionSet } from '../../../components/questions/QuestionSetInfo'
+import { quizFavoritesService } from '../../../lib/services/quiz-favorites-service'
 
-export const fetchQuestionSet = async (
-  token: string
-): Promise<QuestionSet> => {
+export const fetchQuestionSet = async (token: string): Promise<QuestionSet> => {
   const response = await fetch(`/api/questions/${token}`)
   if (!response.ok) {
-    throw new Error('Failed to load questions')
+    // Parse error response for better error handling
+    try {
+      const errorData = await response.json()
+      console.log('errorData', errorData)
+      if (errorData.isExpired) {
+        // Create a special expired error that can be handled differently
+        const expiredError = new Error(errorData.message || 'This quiz session has expired')
+        ;(expiredError as any).isExpired = true
+        ;(expiredError as any).expiredAt = errorData.expiredAt
+        throw expiredError
+      } else {
+        throw new Error(errorData.error || 'Failed to load questions')
+      }
+    } catch (jsonError) {
+      // If JSON parsing fails, use generic error
+      throw new Error('Failed to load questions')
+    }
   }
   return response.json()
 }
@@ -31,10 +45,7 @@ export const removeFromFavorites = async (token: string): Promise<boolean> => {
   return quizFavoritesService.removeFromFavorites(token)
 }
 
-export const submitSet = async (
-  token: string,
-  submissionData: any
-): Promise<any> => {
+export const submitSet = async (token: string, submissionData: any): Promise<any> => {
   const response = await fetch(`/api/questions/${token}/submit-set`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

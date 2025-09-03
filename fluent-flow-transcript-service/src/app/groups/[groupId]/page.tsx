@@ -52,13 +52,14 @@ export default function GroupPage({
     if (initialTab && initialTab !== activeTab) {
       setActiveTab(initialTab as GroupTab)
     }
-  }, [initialTab, activeTab])
+  }, [initialTab]) // Remove activeTab from deps to avoid infinite loop
 
   const handleTabChange = (newTab: GroupTab) => {
+    console.log(`handleTabChange called with: ${newTab}, current activeTab: ${activeTab}`)
     setActiveTab(newTab)
     
     // Update URL without navigation
-    const current = new URLSearchParams()
+    const current = new URLSearchParams(window.location.search)
     current.set('tab', newTab)
     if (highlightSessionId) {
       current.set('highlight', highlightSessionId)
@@ -144,6 +145,8 @@ export default function GroupPage({
   }
 
   const canManage = (group as any).user_role && ['owner', 'admin'].includes((group as any).user_role)
+
+  console.log(`Rendering with activeTab: ${activeTab}, initialTab: ${initialTab}`)
 
   return (
     <>

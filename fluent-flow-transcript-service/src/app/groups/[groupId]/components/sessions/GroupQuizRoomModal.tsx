@@ -40,14 +40,14 @@ export function GroupQuizRoomModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-6xl max-h-[95vh] overflow-hidden bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-xl border-white/20 shadow-2xl">
+      <DialogContent className="max-h-[95vh] w-[900] overflow-hidden border-white/20 bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-50/95 shadow-2xl backdrop-blur-xl">
         <DialogHeader className="pb-4">
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <DialogTitle className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-2xl font-bold text-transparent">
             Quiz Room - {session.quiz_title}
           </DialogTitle>
         </DialogHeader>
-        
-        <div className="overflow-y-auto pr-2 max-h-[calc(95vh-100px)] custom-scrollbar">
+
+        <div className="custom-scrollbar max-h-[calc(95vh-120px)] overflow-y-auto pr-2">
           <GroupQuizRoom
             sessionId={sessionId}
             groupId={groupId}

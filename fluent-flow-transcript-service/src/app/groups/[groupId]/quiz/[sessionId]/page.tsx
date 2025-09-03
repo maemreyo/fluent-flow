@@ -88,6 +88,44 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   }
 
   if (appState === 'error') {
+    // Check if it's an expired session error
+    const isExpiredSession = (error as any)?.isExpired
+    
+    if (isExpiredSession) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+          <div className="rounded-2xl border border-white/20 bg-white/80 p-8 text-center shadow-lg backdrop-blur-sm max-w-md">
+            <div className="mb-6">
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
+                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-800 mb-2">Quiz Session Expired</h1>
+              <p className="text-gray-600 leading-relaxed">
+                This quiz session has expired and is no longer available. Please request a new session from the group organizer.
+              </p>
+            </div>
+            
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => window.location.href = `/groups/${groupId}`}
+                className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-700"
+              >
+                Back to Group
+              </button>
+              <button
+                onClick={() => window.location.href = '/groups'}
+                className="rounded-xl border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                All Groups
+              </button>
+            </div>
+          </div>
+        </div>
+      )
+    }
+    
     return (
       <ErrorView
         error={error?.message || 'An error occurred'}

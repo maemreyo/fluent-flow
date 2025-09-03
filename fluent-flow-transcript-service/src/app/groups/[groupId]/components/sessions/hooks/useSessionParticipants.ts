@@ -1,3 +1,4 @@
+import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { 
@@ -27,8 +28,8 @@ export const useSessionParticipants = ({
     queryKey: ['session-participants', groupId, sessionId],
     queryFn: () => fetchSessionParticipants(groupId, sessionId),
     enabled,
-    // Reduce polling significantly since we have realtime updates
-    refetchInterval: 30000, // 30 seconds instead of 2-10 seconds
+    // Fixed interval - we'll use conditional logic elsewhere to reduce calls
+    refetchInterval: 30000, // 30 seconds baseline
     refetchIntervalInBackground: false,
     staleTime: 5000, // Consider data stale after 5 seconds
     gcTime: 60 * 1000, // Keep in cache for 1 minute
@@ -36,20 +37,71 @@ export const useSessionParticipants = ({
     refetchOnMount: 'always' // Always fresh data on mount
   })
 
+  // Derived state
+  const participants = participantsQuery.data?.participants || []
+  const onlineParticipants = participants.filter(p => p.is_online)
+  const isUserJoined = participants.some(p => p.user_id === userId && p.is_online)
+
+  // Dynamic interval adjustment based on user status
+  React.useEffect(() => {
+    if (participantsQuery.data) {
+      // If user is not joined, we can poll less frequently
+      const newInterval = isUserJoined ? 15000 : 60000
+      
+      // Update the query's refetch interval
+      queryClient.setQueryDefaults(['session-participants', groupId, sessionId], {
+        refetchInterval: newInterval
+      })
+    }
+  }, [isUserJoined, groupId, sessionId, queryClient, participantsQuery.data])
+
   // Join session mutation
   const joinMutation = useMutation({
     mutationFn: () => {
       if (!userId) throw new Error('User ID is required')
       return joinSession(groupId, sessionId, userId)
     },
+    onMutate: async () => {
+      // Optimistically update the cache
+      await queryClient.cancelQueries({
+        queryKey: ['session-participants', groupId, sessionId]
+      })
+      
+      const previousData = queryClient.getQueryData(['session-participants', groupId, sessionId])
+      
+      queryClient.setQueryData(['session-participants', groupId, sessionId], (old: any) => {
+        if (!old) return old
+        
+        const existingParticipant = old.participants.find((p: any) => p.user_id === userId)
+        if (existingParticipant) {
+          // Update existing participant to online
+          return {
+            ...old,
+            participants: old.participants.map((p: any) => 
+              p.user_id === userId ? { ...p, is_online: true } : p
+            ),
+            online: old.online + (existingParticipant.is_online ? 0 : 1)
+          }
+        }
+        
+        return old
+      })
+      
+      return { previousData }
+    },
     onSuccess: () => {
       toast.success('Successfully joined the quiz room!')
-      // Immediately refetch participants
+      // Refetch to get the latest data
       queryClient.invalidateQueries({
         queryKey: ['session-participants', groupId, sessionId]
       })
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context: any) => {
+      // Revert optimistic update
+      if (context?.previousData) {
+        queryClient.setQueryData(['session-participants', groupId, sessionId], context.previousData)
+      }
+      
       console.error('Error joining session:', error)
       if (error.message.includes('Authentication required')) {
         toast.error('Authentication required. Please refresh the page.')
@@ -65,14 +117,47 @@ export const useSessionParticipants = ({
       if (!userId) throw new Error('User ID is required')
       return leaveSession(groupId, sessionId, userId)
     },
+    onMutate: async () => {
+      // Optimistically update the cache
+      await queryClient.cancelQueries({
+        queryKey: ['session-participants', groupId, sessionId]
+      })
+      
+      const previousData = queryClient.getQueryData(['session-participants', groupId, sessionId])
+      
+      queryClient.setQueryData(['session-participants', groupId, sessionId], (old: any) => {
+        if (!old) return old
+        
+        const existingParticipant = old.participants.find((p: any) => p.user_id === userId)
+        if (existingParticipant && existingParticipant.is_online) {
+          // Update existing participant to offline
+          return {
+            ...old,
+            participants: old.participants.map((p: any) => 
+              p.user_id === userId ? { ...p, is_online: false } : p
+            ),
+            online: Math.max(0, old.online - 1)
+          }
+        }
+        
+        return old
+      })
+      
+      return { previousData }
+    },
     onSuccess: () => {
       toast.success('Left the quiz room')
-      // Immediately refetch participants
+      // Refetch to get the latest data
       queryClient.invalidateQueries({
         queryKey: ['session-participants', groupId, sessionId]
       })
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _variables, context: any) => {
+      // Revert optimistic update
+      if (context?.previousData) {
+        queryClient.setQueryData(['session-participants', groupId, sessionId], context.previousData)
+      }
+      
       console.error('Error leaving session:', error)
       if (error.message.includes('Authentication required')) {
         toast.error('Authentication required. Please refresh the page.')
@@ -81,11 +166,6 @@ export const useSessionParticipants = ({
       }
     }
   })
-
-  // Derived state
-  const participants = participantsQuery.data?.participants || []
-  const onlineParticipants = participants.filter(p => p.is_online)
-  const isUserJoined = participants.some(p => p.user_id === userId)
 
   return {
     // Data

@@ -35,7 +35,7 @@ interface SessionDetails extends GroupSession {
 
 export function useGroupSessions(groupId: string) {
   const [sessions, setSessions] = useState<GroupSession[]>([])
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true) // Start with loading true
   const [error, setError] = useState<string | null>(null)
   const { user, isAuthenticated } = useQuizAuth()
 
@@ -53,7 +53,10 @@ export function useGroupSessions(groupId: string) {
   }
 
   const fetchSessions = async (status?: string) => {
-    if (!isAuthenticated || !user) return
+    if (!isAuthenticated || !user) {
+      setLoading(false)
+      return
+    }
 
     setLoading(true)
     setError(null)

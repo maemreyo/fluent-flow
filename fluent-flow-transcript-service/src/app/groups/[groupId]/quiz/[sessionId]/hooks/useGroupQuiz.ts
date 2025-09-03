@@ -96,7 +96,16 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   } = useQuery({
     queryKey: ['questionSet', session?.share_token],
     queryFn: () => fetchQuestionSet(session?.share_token || ''),
-    enabled: !!session?.share_token
+    enabled: !!session?.share_token,
+    retry: (failureCount, error: any) => {
+      // Don't retry if session is expired
+      if (error?.isExpired) {
+        return false
+      }
+      // Default retry behavior for other errors (3 times)
+      return failureCount < 3
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 
   // Debug logging
