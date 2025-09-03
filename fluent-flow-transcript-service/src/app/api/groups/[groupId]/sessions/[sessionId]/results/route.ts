@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer, getCurrentUserServer } from '@/lib/supabase/server'
+import { corsResponse, corsHeaders } from '@/lib/cors'
+
+export async function OPTIONS() {
+  return new NextResponse(null, {
+    status: 200,
+    headers: corsHeaders()
+  })
+}
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +15,7 @@ export async function GET(
 ) {
   const supabase = getSupabaseServer(request)
   if (!supabase) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+    return corsResponse({ error: 'Database not configured' }, 500)
   }
   const { groupId, sessionId } = await params
 
@@ -15,7 +23,7 @@ export async function GET(
     const user = await getCurrentUserServer(supabase)
     
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return corsResponse({ error: 'Unauthorized' }, 401)
     }
 
     // Verify user is a member of the group
@@ -27,7 +35,7 @@ export async function GET(
       .single()
 
     if (!membership) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return corsResponse({ error: 'Access denied' }, 403)
     }
 
     // Get session details
@@ -39,7 +47,7 @@ export async function GET(
       .single()
 
     if (sessionError || !session) {
-      return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+      return corsResponse({ error: 'Session not found' }, 404)
     }
 
     // Get results for this session
@@ -51,7 +59,7 @@ export async function GET(
 
     if (resultsError) {
       console.error('Error fetching results:', resultsError)
-      return NextResponse.json({ error: resultsError.message }, { status: 500 })
+      return corsResponse({ error: resultsError.message }, 500)
     }
 
     // Get user emails from group members for the results
@@ -91,14 +99,14 @@ export async function GET(
         : 0
     }
 
-    return NextResponse.json({ 
+    return corsResponse({ 
       session,
       results: transformedResults,
       stats
     })
   } catch (error) {
     console.error('Error in session results GET:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return corsResponse({ error: 'Internal server error' }, 500)
   }
 }
 
@@ -108,7 +116,7 @@ export async function POST(
 ) {
   const supabase = getSupabaseServer(request)
   if (!supabase) {
-    return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+    return corsResponse({ error: 'Database not configured' }, 500)
   }
   const { groupId, sessionId } = await params
 
@@ -116,7 +124,7 @@ export async function POST(
     const user = await getCurrentUserServer(supabase)
     
     if (!user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return corsResponse({ error: 'Unauthorized' }, 401)
     }
 
     // Verify user is a member of the group
@@ -128,7 +136,7 @@ export async function POST(
       .single()
 
     if (!membership) {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+      return corsResponse({ error: 'Access denied' }, 403)
     }
 
     const body = await request.json()
@@ -142,7 +150,7 @@ export async function POST(
 
     // Validation
     if (typeof score !== 'number' || typeof total_questions !== 'number' || typeof correct_answers !== 'number') {
-      return NextResponse.json({ error: 'Invalid result data' }, { status: 400 })
+      return corsResponse({ error: 'Invalid result data' }, 400)
     }
 
     // Insert or update result
@@ -166,15 +174,15 @@ export async function POST(
 
     if (resultError) {
       console.error('Error saving result:', resultError)
-      return NextResponse.json({ error: resultError.message }, { status: 500 })
+      return corsResponse({ error: resultError.message }, 500)
     }
 
-    return NextResponse.json({ 
+    return corsResponse({ 
       message: 'Result saved successfully', 
       result 
     })
   } catch (error) {
     console.error('Error in session results POST:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return corsResponse({ error: 'Internal server error' }, 500)
   }
 }

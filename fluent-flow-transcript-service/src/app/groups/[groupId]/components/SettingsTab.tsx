@@ -24,6 +24,9 @@ interface SettingsTabProps {
     maxMembers?: number
     tags?: string[]
     groupCode?: string
+    settings?: {
+      shuffleQuestions?: boolean
+    }
   } | null
   isOwner: boolean
 }
@@ -40,7 +43,8 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
     level: group?.level || 'intermediate',
     isPrivate: group?.isPrivate || false,
     maxMembers: group?.maxMembers || 20,
-    tags: group?.tags || []
+    tags: group?.tags || [],
+    shuffleQuestions: group?.settings?.shuffleQuestions || false
   })
 
   if (!group) {
@@ -85,7 +89,10 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
           // Note: language, level, and tags might need separate API endpoints
           language: formData.language,
           level: formData.level,
-          tags: formData.tags
+          tags: formData.tags,
+          settings: {
+            shuffleQuestions: formData.shuffleQuestions
+          }
         })
       })
       
@@ -129,7 +136,8 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
     level: group.level,
     isPrivate: group.isPrivate,
     maxMembers: group.maxMembers,
-    tags: group.tags
+    tags: group.tags,
+    shuffleQuestions: group.settings?.shuffleQuestions || false
   })
 
   return (
@@ -153,8 +161,10 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
         <LearningSettingsForm
           language={formData.language}
           level={formData.level}
+          shuffleQuestions={formData.shuffleQuestions}
           onLanguageChange={(language) => setFormData(prev => ({ ...prev, language }))}
           onLevelChange={(level) => setFormData(prev => ({ ...prev, level }))}
+          onShuffleQuestionsChange={(shuffleQuestions) => setFormData(prev => ({ ...prev, shuffleQuestions }))}
         />
 
         <PrivacySettingsForm
@@ -188,7 +198,8 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
             level: group.level,
             isPrivate: group.isPrivate,
             maxMembers: group.maxMembers || 20,
-            tags: group.tags || []
+            tags: group.tags || [],
+            shuffleQuestions: group.settings?.shuffleQuestions || false
           })}
           disabled={!hasChanges}
         >

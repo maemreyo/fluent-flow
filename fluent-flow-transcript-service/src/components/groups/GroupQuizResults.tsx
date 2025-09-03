@@ -1,6 +1,5 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { 
   Trophy, 
   Users, 
@@ -9,32 +8,15 @@ import {
   Medal,
   BarChart3,
   TrendingUp,
-  CheckCircle
+  CheckCircle,
+  AlertCircle
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Badge } from '@/components/ui/badge'
 import { Avatar } from '@/components/ui/avatar'
-
-interface QuizResult {
-  id: string
-  user_id: string
-  user_name: string
-  score: number
-  total_questions: number
-  correct_answers: number
-  time_taken_seconds?: number
-  completed_at: string
-  result_data: any
-}
-
-interface SessionStats {
-  total_participants: number
-  average_score: number
-  highest_score: number
-  completion_rate: number
-}
+import { useQuizResults } from '../../hooks/useQuizResults'
 
 interface GroupQuizResultsProps {
   groupId: string
@@ -43,32 +25,7 @@ interface GroupQuizResultsProps {
 }
 
 export function GroupQuizResults({ groupId, sessionId, sessionTitle }: GroupQuizResultsProps) {
-  const [results, setResults] = useState<QuizResult[]>([])
-  const [stats, setStats] = useState<SessionStats | null>(null)
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchResults()
-  }, [groupId, sessionId])
-
-  const fetchResults = async () => {
-    setLoading(true)
-    try {
-      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`)
-      const data = await response.json()
-      
-      if (response.ok) {
-        setResults(data.results || [])
-        setStats(data.stats)
-      } else {
-        console.error('Error fetching results:', data.error)
-      }
-    } catch (error) {
-      console.error('Error fetching results:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { results, stats, loading, error, refetch } = useQuizResults(groupId, sessionId)
 
   const getRankColor = (rank: number) => {
     switch (rank) {
@@ -103,6 +60,15 @@ export function GroupQuizResults({ groupId, sessionId, sessionTitle }: GroupQuiz
     return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
   }
 
+  const getUserDisplayName = (result: any) => {
+    return result.username || result.user_name || result.user_email || 'Anonymous User'
+  }
+
+  const getUserInitial = (result: any) => {
+    const displayName = getUserDisplayName(result)
+    return displayName.charAt(0).toUpperCase()
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -123,6 +89,24 @@ export function GroupQuizResults({ groupId, sessionId, sessionTitle }: GroupQuiz
     )
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-center p-8">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Error Loading Results</h3>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <Button onClick={refetch} variant="outline">
+              <TrendingUp className="w-4 h-4 mr-2" />
+              Try Again
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -133,7 +117,7 @@ export function GroupQuizResults({ groupId, sessionId, sessionTitle }: GroupQuiz
             <p className="text-gray-600">{sessionTitle}</p>
           )}
         </div>
-        <Button onClick={fetchResults} variant="outline">
+        <Button onClick={refetch} variant="outline">
           <TrendingUp className="w-4 h-4 mr-2" />
           Refresh
         </Button>
@@ -229,11 +213,11 @@ export function GroupQuizResults({ groupId, sessionId, sessionTitle }: GroupQuiz
                     <div className="flex items-center gap-3 flex-1">
                       <Avatar className="w-10 h-10">
                         <div className="w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                          {result.user_name.charAt(0).toUpperCase()}
+                          {getUserInitial(result)}
                         </div>
                       </Avatar>
                       <div>
-                        <p className="font-semibold text-gray-800">{result.user_name}</p>
+                        <p className="font-semibold text-gray-800">{getUserDisplayName(result)}</p>
                         <p className="text-sm text-gray-600">
                           Completed {new Date(result.completed_at).toLocaleString()}
                         </p>

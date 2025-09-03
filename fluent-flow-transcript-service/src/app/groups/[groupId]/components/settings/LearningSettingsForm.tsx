@@ -3,12 +3,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Switch } from '@/components/ui/switch'
 
 interface LearningSettingsFormProps {
   language: string
   level: string
+  shuffleQuestions: boolean
   onLanguageChange: (value: string) => void
   onLevelChange: (value: string) => void
+  onShuffleQuestionsChange: (value: boolean) => void
 }
 
 const LANGUAGES = [
@@ -30,8 +33,10 @@ const LEVELS = [
 export function LearningSettingsForm({
   language,
   level,
+  shuffleQuestions,
   onLanguageChange,
-  onLevelChange
+  onLevelChange,
+  onShuffleQuestionsChange
 }: LearningSettingsFormProps) {
   return (
     <Card>
@@ -69,6 +74,22 @@ export function LearningSettingsForm({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        <div className="space-y-3 pt-4 border-t">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Label htmlFor="shuffle-questions">Shuffle Questions</Label>
+              <p className="text-sm text-muted-foreground">
+                Randomize question order for each participant in quiz sessions
+              </p>
+            </div>
+            <Switch
+              id="shuffle-questions"
+              checked={shuffleQuestions}
+              onCheckedChange={onShuffleQuestionsChange}
+            />
           </div>
         </div>
       </CardContent>

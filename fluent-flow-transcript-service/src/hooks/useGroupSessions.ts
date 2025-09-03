@@ -178,9 +178,36 @@ export function useGroupSessions(groupId: string) {
     return await response.json()
   }
 
+  const checkExpiredSessions = async () => {
+    if (!isAuthenticated) return
+
+    try {
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/groups/${groupId}/sessions/expired`, {
+        method: 'POST',
+        headers
+      })
+
+      if (response.ok) {
+        const result = await response.json()
+        if (result.expiredSessionIds?.length > 0) {
+          // Refresh sessions if any were updated
+          fetchSessions()
+        }
+      }
+    } catch (error) {
+      console.error('Error checking expired sessions:', error)
+    }
+  }
+
   useEffect(() => {
     if (groupId && isAuthenticated) {
       fetchSessions()
+      
+      // Check for expired sessions every 30 seconds
+      const interval = setInterval(checkExpiredSessions, 30000)
+      
+      return () => clearInterval(interval)
     }
   }, [groupId, isAuthenticated])
 
@@ -193,6 +220,7 @@ export function useGroupSessions(groupId: string) {
     getSessionDetails,
     updateSession,
     deleteSession,
+    checkExpiredSessions,
     refetch: () => fetchSessions()
   }
 }

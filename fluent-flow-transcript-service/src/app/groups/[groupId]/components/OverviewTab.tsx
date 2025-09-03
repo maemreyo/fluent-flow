@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   AlertCircle,
   Calendar,
@@ -9,18 +10,22 @@ import {
   Plus
 } from 'lucide-react'
 import { QuizSession } from '../types'
+import { GroupQuizResultsModal } from './GroupQuizResultsModal'
 
 interface OverviewTabProps {
   sessions: QuizSession[]
   canManage: boolean
   onNewSession: () => void
+  groupId: string
 }
 
 export function OverviewTab({
   sessions,
   canManage,
-  onNewSession
+  onNewSession,
+  groupId
 }: OverviewTabProps) {
+  const [selectedSession, setSelectedSession] = useState<QuizSession | null>(null)
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
@@ -79,12 +84,26 @@ export function OverviewTab({
                   </p>
                 </div>
               </div>
-              <button className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+              <button 
+                onClick={() => setSelectedSession(session)}
+                className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+              >
                 View Results
               </button>
             </div>
           ))}
         </div>
+      )}
+      
+      {/* Results Modal */}
+      {selectedSession && (
+        <GroupQuizResultsModal
+          isOpen={true}
+          onClose={() => setSelectedSession(null)}
+          sessionId={selectedSession.id}
+          groupId={groupId}
+          sessionTitle={selectedSession.quiz_title || selectedSession.video_title}
+        />
       )}
     </div>
   )

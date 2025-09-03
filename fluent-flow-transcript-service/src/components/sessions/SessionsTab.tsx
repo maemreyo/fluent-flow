@@ -16,7 +16,7 @@ interface SessionFilters {
 }
 
 export default function SessionsTab({ groupId, canManage, onCreateSession, highlightSessionId }: SessionsTabProps) {
-  const { sessions, loading, error, deleteSession } = useGroupSessions(groupId)
+  const { sessions, loading, error, deleteSession, checkExpiredSessions } = useGroupSessions(groupId)
   const [filters, setFilters] = useState<SessionFilters>({ status: 'all' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [editingSession, setEditingSession] = useState<any | null>(null)
@@ -81,7 +81,7 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
   }
 
   const getSessionClassName = (sessionId: string) => {
-    const baseClass = "bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl p-6 hover:bg-white/90 hover:border-indigo-300/50 transition-all duration-200"
+    const baseClass = "bg-white/80 backdrop-blur-sm border border-white/40 rounded-xl p-6 hover:bg-white/90 hover:border-indigo-300/50 transition-all duration-200 hover:shadow-lg hover:scale-[1.02] cursor-pointer group"
     
     if (isHighlighted(sessionId)) {
       return `${baseClass} ring-2 ring-indigo-500 border-indigo-500 bg-indigo-50/90 ${
@@ -90,6 +90,23 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
     }
     
     return baseClass
+  }
+
+  const getStatusBadgeClass = (status: string) => {
+    const baseClass = "px-3 py-1 text-xs font-semibold rounded-full border transition-all duration-200"
+    
+    switch (status) {
+      case 'active': 
+        return `${baseClass} bg-green-100 text-green-800 border-green-200 group-hover:bg-green-200 animate-pulse`
+      case 'scheduled': 
+        return `${baseClass} bg-blue-100 text-blue-800 border-blue-200 group-hover:bg-blue-200`
+      case 'completed': 
+        return `${baseClass} bg-gray-100 text-gray-800 border-gray-200 group-hover:bg-gray-200`
+      case 'cancelled': 
+        return `${baseClass} bg-red-100 text-red-800 border-red-200 group-hover:bg-red-200`
+      default: 
+        return `${baseClass} bg-gray-100 text-gray-800 border-gray-200`
+    }
   }
 
   if (loading) {
@@ -151,15 +168,24 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
             </p>
           )}
         </div>
-        {canManage && (
+        <div className="flex items-center gap-3">
           <button
-            onClick={onCreateSession}
-            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105"
+            onClick={checkExpiredSessions}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-medium hover:bg-gray-200 transition-all"
           >
-            <Plus className="w-5 h-5" />
-            New Session
+            <Calendar className="w-4 h-4" />
+            Refresh Status
           </button>
-        )}
+          {canManage && (
+            <button
+              onClick={onCreateSession}
+              className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105"
+            >
+              <Plus className="w-5 h-5" />
+              New Session
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Filters */}
@@ -241,6 +267,16 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
                     >
                       <Play className="w-3 h-3" />
                       Join
+                    </button>
+                  )}
+                  
+                  {session.status === 'scheduled' && (
+                    <button 
+                      onClick={() => setQuizRoomSession(session)}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
+                    >
+                      <Play className="w-3 h-3" />
+                      Enter Room
                     </button>
                   )}
                   

@@ -175,6 +175,7 @@ export default function GroupPage({
                 sessions={(group as any).recent_sessions || []}
                 canManage={!!canManage}
                 onNewSession={() => setShowCreateSession(true)}
+                groupId={groupId}
               />
             )}
             {activeTab === 'members' && (
@@ -182,6 +183,10 @@ export default function GroupPage({
                 members={(group as any).members || []}
                 memberCount={(group as any).member_count || 0}
                 canManage={!!canManage}
+                groupId={groupId}
+                groupName={(group as any).name || 'Group'}
+                groupCode={(group as any).group_code || ''}
+                onRefreshMembers={invalidateGroup}
               />
             )}
             {activeTab === 'sessions' && (

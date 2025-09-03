@@ -1,19 +1,30 @@
 'use client'
 
+import { useState } from 'react'
 import { Crown, Share2, Shield } from 'lucide-react'
 import { GroupMember } from '../types'
+import InviteMemberModal from '../../../../components/groups/InviteMemberModal'
 
 interface MembersTabProps {
   members: GroupMember[]
   memberCount: number
   canManage: boolean
+  groupId: string
+  groupName: string
+  groupCode: string
+  onRefreshMembers?: () => void
 }
 
 export function MembersTab({
   members,
   memberCount,
-  canManage
+  canManage,
+  groupId,
+  groupName,
+  groupCode,
+  onRefreshMembers
 }: MembersTabProps) {
+  const [showInviteModal, setShowInviteModal] = useState(false)
   const getRoleIcon = (role: string) => {
     switch (role) {
       case 'owner':
@@ -32,7 +43,10 @@ export function MembersTab({
           Members ({memberCount})
         </h2>
         {canManage && (
-          <button className="inline-flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors">
+          <button 
+            onClick={() => setShowInviteModal(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 text-indigo-600 hover:bg-indigo-50 rounded-xl transition-colors"
+          >
             <Share2 className="w-4 h-4" />
             Invite Members
           </button>
@@ -61,6 +75,20 @@ export function MembersTab({
           </div>
         ))}
       </div>
+      
+      {/* Invite Member Modal */}
+      {showInviteModal && (
+        <InviteMemberModal
+          groupId={groupId}
+          groupName={groupName}
+          groupCode={groupCode}
+          onClose={() => setShowInviteModal(false)}
+          onSuccess={() => {
+            setShowInviteModal(false)
+            onRefreshMembers?.()
+          }}
+        />
+      )}
     </div>
   )
 }
