@@ -65,23 +65,35 @@ Date: 2025-01-31
 
 ## IMPLEMENTATION STRATEGY 📋
 
-### Component Structure (Following Existing Patterns)
+### Component Structure (Following Existing Patterns) ⚠️ UPDATED
 ```
-src/app/groups/[groupId]/components/
-├── sessions/
-│   ├── GroupQuizRoom.tsx          # Main quiz room component
-│   ├── ParticipantList.tsx        # Real-time participant tracking  
-│   ├── QuizRoomLobby.tsx         # Pre-session lobby
-│   ├── SessionResults.tsx         # Post-quiz results
-│   └── GroupLeaderboard.tsx       # Competition features
-├── results/
-│   ├── GroupResultsDashboard.tsx  # Results comparison
-│   ├── MemberComparison.tsx       # Side-by-side analysis
-│   └── PerformanceCharts.tsx      # Visual analytics
-└── scheduling/
-    ├── SessionScheduler.tsx        # Enhanced scheduling
-    ├── RecurringSessionForm.tsx    # Template management
-    └── NotificationSettings.tsx    # Member notifications
+src/app/groups/[groupId]/
+├── components/sessions/           # ✅ COMPLETED - Quiz Room
+│   ├── GroupQuizRoom.tsx          # ✅ Main quiz room component  
+│   ├── ParticipantList.tsx        # ✅ Real-time participant tracking
+│   ├── QuizRoomLobby.tsx         # ✅ Pre-session lobby
+│   ├── SessionCountdown.tsx       # ✅ Session countdown timer
+│   ├── hooks/
+│   │   └── useSessionParticipants.ts # ✅ React Query hooks
+│   └── queries.ts                 # ✅ API functions
+├── quiz/[sessionId]/              # 🔄 NEW - Dedicated Group Quiz Page
+│   ├── page.tsx                   # [ ] Main group quiz page
+│   ├── hooks/
+│   │   ├── useGroupQuiz.ts        # [ ] Extended from individual useQuiz
+│   │   └── useGroupResults.ts     # [ ] Group results management
+│   ├── queries.ts                 # [ ] Group quiz API calls
+│   └── components/
+│       ├── GroupQuizHeader.tsx    # [ ] Session info + participant count
+│       ├── ParticipantsSidebar.tsx # [ ] Live participant sidebar
+│       └── GroupQuizResults.tsx   # [ ] Group leaderboard results
+├── results/                       # 🔮 FUTURE - Advanced Analytics
+│   ├── GroupResultsDashboard.tsx  # [ ] Results comparison
+│   ├── MemberComparison.tsx       # [ ] Side-by-side analysis
+│   └── PerformanceCharts.tsx      # [ ] Visual analytics
+└── scheduling/                    # 🔮 FUTURE - Enhanced Management
+    ├── SessionScheduler.tsx        # [ ] Enhanced scheduling
+    ├── RecurringSessionForm.tsx    # [ ] Template management
+    └── NotificationSettings.tsx    # [ ] Member notifications
 ```
 
 ### API Endpoints to Create/Enhance
@@ -136,11 +148,19 @@ CREATE TABLE group_achievements (
 
 ## IMPLEMENTATION STEPS 🔨
 
-### Step 1: Group Quiz Room Foundation
-1. Create GroupQuizRoom component with UI components
-2. Implement real-time participant tracking
-3. Add session join/leave functionality
-4. Create pre-session lobby experience
+### Step 1: Group Quiz Room Foundation ⚠️ UPDATED
+1. ✅ Create GroupQuizRoom component with UI components (COMPLETED)
+2. ✅ Implement real-time participant tracking (COMPLETED with React Query)
+3. ✅ Add session join/leave functionality (COMPLETED)
+4. ✅ Create pre-session lobby experience (COMPLETED)
+
+### Step 1.5: **NEW** - Group Quiz Page Implementation
+**CRITICAL DISCOVERY:** Current `/questions/[token]` page does NOT support group mode
+- [ ] Create new page: `/groups/[groupId]/quiz/[sessionId]/page.tsx`
+- [ ] Reuse existing quiz logic but with group context
+- [ ] Add real-time participant sidebar during quiz
+- [ ] Implement group results submission
+- [ ] Add group-specific UX (participant avatars, waiting states)
 
 ### Step 2: Results & Comparison System  
 1. Build group results dashboard

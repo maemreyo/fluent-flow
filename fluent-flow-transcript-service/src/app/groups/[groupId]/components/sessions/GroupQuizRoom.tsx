@@ -93,7 +93,7 @@ export function GroupQuizRoom({
   }
 
   const handleStartQuiz = () => {
-    const quizUrl = `/questions/${session.quiz_token}?groupId=${groupId}&sessionId=${sessionId}`
+    const quizUrl = `/groups/${groupId}/quiz/${sessionId}`
     onJoinQuiz()
     router.push(quizUrl)
   }

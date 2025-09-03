@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
-import { AlertTriangle, BookOpen, Brain, Clock, Rocket, Sparkles, Target, Tv } from 'lucide-react'
+import { AlertTriangle, Clock, Rocket, Tv } from 'lucide-react'
 import { useWordSelection } from '../../lib/hooks/use-word-selection'
 
 export interface VocabularyItem {
@@ -91,7 +91,7 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
 
       <div id="question-set-info" className="relative z-10 mx-auto max-w-4xl p-6">
         {/* Enhanced Header */}
-        <div className="mb-12 text-center">
+        {/* <div className="mb-12 text-center">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/70 px-4 py-2 shadow-lg backdrop-blur-sm">
             <div className="h-2 w-2 animate-pulse rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"></div>
             <span className="text-sm font-medium text-indigo-700">Quiz Preparation</span>
@@ -104,7 +104,7 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
             Let&apos;s test your understanding of the video content with
             <span className="font-semibold text-indigo-600"> personalized questions</span>
           </p>
-        </div>
+        </div> */}
 
         {/* Enhanced Main Content Card */}
         <div className="relative">
@@ -195,7 +195,7 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
         {/* Enhanced Tips Section */}
         <div className="relative mt-16">
           {/* Background blur effect */}
-          <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-blue-50/50 via-indigo-50/50 to-purple-50/50 blur-3xl"></div>
+          {/* <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-blue-50/50 via-indigo-50/50 to-purple-50/50 blur-3xl"></div>
 
           <div className="relative rounded-3xl border-2 border-white/20 bg-white/80 p-8 shadow-2xl backdrop-blur-sm">
             <div className="mb-6 text-center">
@@ -250,7 +250,7 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
                 )
               })}
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

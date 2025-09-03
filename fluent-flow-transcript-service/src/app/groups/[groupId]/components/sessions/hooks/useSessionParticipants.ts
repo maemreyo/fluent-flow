@@ -22,15 +22,18 @@ export const useSessionParticipants = ({
 }: UseSessionParticipantsProps) => {
   const queryClient = useQueryClient()
 
-  // Query participants with polling
+  // Query participants with minimal polling - rely on realtime updates
   const participantsQuery = useQuery({
     queryKey: ['session-participants', groupId, sessionId],
     queryFn: () => fetchSessionParticipants(groupId, sessionId),
     enabled,
-    refetchInterval: 5000, // Poll every 5 seconds
+    // Reduce polling significantly since we have realtime updates
+    refetchInterval: 30000, // 30 seconds instead of 2-10 seconds
     refetchIntervalInBackground: false,
-    staleTime: 0, // Always consider data stale for real-time updates
-    gcTime: 30 * 1000, // Keep in cache for 30 seconds
+    staleTime: 5000, // Consider data stale after 5 seconds
+    gcTime: 60 * 1000, // Keep in cache for 1 minute
+    refetchOnWindowFocus: true, // Refresh when user comes back
+    refetchOnMount: 'always' // Always fresh data on mount
   })
 
   // Join session mutation
