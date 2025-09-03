@@ -33,15 +33,24 @@ export function GroupQuizResults({
     enabled: !!groupId && !!sessionId
   })
 
-  const getInitials = (email: string, username?: string) => {
-    if (username) {
+  const getInitials = (email?: string | null, username?: string | null) => {
+    if (username && username.trim()) {
       return username.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
     }
-    return email.split('@')[0].slice(0, 2).toUpperCase()
+    if (email && email.includes('@')) {
+      return email.split('@')[0].slice(0, 2).toUpperCase()
+    }
+    return '??'
   }
 
-  const getDisplayName = (email: string, username?: string) => {
-    return username || email.split('@')[0]
+  const getDisplayName = (email?: string | null, username?: string | null) => {
+    if (username && username.trim()) {
+      return username.trim()
+    }
+    if (email && email.includes('@')) {
+      return email.split('@')[0]
+    }
+    return 'Unknown User'
   }
 
   const getRankIcon = (rank: number) => {
