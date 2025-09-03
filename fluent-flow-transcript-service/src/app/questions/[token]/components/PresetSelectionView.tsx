@@ -28,9 +28,11 @@ interface PresetSelectionViewProps {
 
 const QUESTION_PRESETS: QuestionPreset[] = [
   {
+    id: 'entry-level',
     name: 'Entry Level',
     description: 'Perfect starting point! Gentle introduction with confidence-building questions.',
     distribution: { easy: 4, medium: 3, hard: 2 },
+    totalQuestions: 9,
     icon: Smile,
     color: 'emerald',
     estimatedTime: '8-12 min',
@@ -38,9 +40,11 @@ const QUESTION_PRESETS: QuestionPreset[] = [
     badge: '🌱 Great Start'
   },
   {
+    id: 'intermediate',
     name: 'Intermediate',
     description: 'Balanced challenge for steady growth. Mix of all difficulty levels.',
     distribution: { easy: 3, medium: 3, hard: 3 },
+    totalQuestions: 9,
     icon: Target,
     color: 'blue',
     estimatedTime: '12-18 min',
@@ -48,9 +52,11 @@ const QUESTION_PRESETS: QuestionPreset[] = [
     badge: '🎯 Balanced'
   },
   {
+    id: 'advanced',
     name: 'Advanced',
     description: 'Push your limits! Focused on challenging questions for mastery.',
     distribution: { easy: 2, medium: 3, hard: 4 },
+    totalQuestions: 9,
     icon: Trophy,
     color: 'purple',
     estimatedTime: '15-25 min',
@@ -58,9 +64,11 @@ const QUESTION_PRESETS: QuestionPreset[] = [
     badge: '🏆 Expert'
   },
   {
+    id: 'quick-practice',
     name: 'Quick Practice',
     description: 'Short but sweet! Quick session to maintain your momentum.',
     distribution: { easy: 2, medium: 2, hard: 1 },
+    totalQuestions: 5,
     icon: Clock,
     color: 'orange',
     estimatedTime: '5-8 min',

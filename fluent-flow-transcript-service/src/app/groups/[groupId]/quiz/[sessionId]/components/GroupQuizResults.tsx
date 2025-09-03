@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, Medal, Users, Clock, TrendingUp, RotateCcw, Share2 } from 'lucide-react'
+import { Trophy, Medal, Users, Clock, TrendingUp, RotateCcw, Share2, ArrowLeft, Home } from 'lucide-react'
 import { fetchGroupResults } from '../queries'
 import type { SessionParticipant } from '../../../components/sessions/queries'
 
@@ -164,54 +164,90 @@ export function GroupQuizResults({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4 max-h-96 overflow-y-auto">
+                {/* Summary Stats */}
+                <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-green-600">
+                      {results.results.filter((r: any) => r.isCorrect).length}
+                    </div>
+                    <div className="text-xs text-gray-600">Correct</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-red-600">
+                      {results.results.filter((r: any) => !r.isCorrect).length}
+                    </div>
+                    <div className="text-xs text-gray-600">Incorrect</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {results.totalQuestions}
+                    </div>
+                    <div className="text-xs text-gray-600">Total</div>
+                  </div>
+                </div>
+
+                {/* Questions Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
                   {results.results.map((result: any, index: number) => (
                     <div
                       key={result.questionId}
-                      className={`p-4 rounded-lg border-l-4 ${
+                      className={`p-3 rounded-lg border transition-all hover:shadow-sm ${
                         result.isCorrect
-                          ? 'bg-green-50 border-l-green-500'
-                          : 'bg-red-50 border-l-red-500'
+                          ? 'bg-green-50 border-green-200 hover:bg-green-100'
+                          : 'bg-red-50 border-red-200 hover:bg-red-100'
                       }`}
                     >
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-medium text-gray-800">
-                          Question {index + 1}
-                        </h4>
-                        <Badge
-                          className={
+                      {/* Question Header */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                            result.isCorrect 
+                              ? 'bg-green-500 text-white' 
+                              : 'bg-red-500 text-white'
+                          }`}>
+                            {index + 1}
+                          </div>
+                          <span className={`text-xs px-2 py-1 rounded ${
                             result.isCorrect
-                              ? 'bg-green-100 text-green-800 border-green-200'
-                              : 'bg-red-100 text-red-800 border-red-200'
-                          }
-                        >
-                          {result.isCorrect ? 'Correct' : 'Incorrect'}
-                        </Badge>
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {result.isCorrect ? '✓' : '✗'}
+                          </span>
+                        </div>
                       </div>
                       
-                      <p className="text-sm text-gray-700 mb-3">
+                      {/* Question Text */}
+                      <p className="text-sm text-gray-700 mb-2 line-clamp-2">
                         {result.question}
                       </p>
                       
-                      <div className="text-sm space-y-1">
-                        <div>
-                          <span className="font-medium text-gray-600">Your answer: </span>
-                          <span className={result.isCorrect ? 'text-green-700' : 'text-red-700'}>
+                      {/* Answers */}
+                      <div className="text-xs space-y-1">
+                        <div className="flex items-start gap-2">
+                          <span className="text-gray-500 shrink-0">Your:</span>
+                          <span className={`font-medium ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
                             {result.userAnswer}
                           </span>
                         </div>
                         {!result.isCorrect && (
-                          <div>
-                            <span className="font-medium text-gray-600">Correct answer: </span>
-                            <span className="text-green-700">{result.correctAnswer}</span>
+                          <div className="flex items-start gap-2">
+                            <span className="text-gray-500 shrink-0">Correct:</span>
+                            <span className="font-medium text-green-700">{result.correctAnswer}</span>
                           </div>
                         )}
                       </div>
                       
+                      {/* Explanation (Collapsed by default) */}
                       {result.explanation && (
-                        <div className="mt-2 p-2 bg-gray-100 rounded text-xs text-gray-600">
-                          {result.explanation}
-                        </div>
+                        <details className="mt-2">
+                          <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                            View explanation
+                          </summary>
+                          <div className="mt-1 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                            {result.explanation}
+                          </div>
+                        </details>
                       )}
                     </div>
                   ))}
@@ -337,32 +373,59 @@ export function GroupQuizResults({
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-center gap-4">
-        <Button
-          onClick={onRestart}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Try Again
-        </Button>
-        
-        <Button
-          onClick={() => {
-            // Share results functionality
-            if (navigator.share) {
-              navigator.share({
-                title: 'Group Quiz Results',
-                text: `I scored ${results?.score || 0}% in our group quiz!`,
-                url: window.location.href
-              })
-            }
-          }}
-          className="flex items-center gap-2"
-        >
-          <Share2 className="w-4 h-4" />
-          Share Results
-        </Button>
+      <div className="flex flex-col sm:flex-row justify-center gap-3">
+        {/* Primary Actions */}
+        <div className="flex gap-3">
+          <Button
+            onClick={() => window.location.href = `/groups/${groupId}`}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Back to Group
+          </Button>
+          
+          <Button
+            onClick={onRestart}
+            className="flex items-center gap-2"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Try Again
+          </Button>
+        </div>
+
+        {/* Secondary Actions */}
+        <div className="flex gap-3">
+          <Button
+            onClick={() => window.location.href = '/groups'}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Home className="w-4 h-4" />
+            All Groups
+          </Button>
+          
+          <Button
+            onClick={() => {
+              // Share results functionality
+              if (navigator.share) {
+                navigator.share({
+                  title: 'Group Quiz Results',
+                  text: `I scored ${results?.score || 0}% in our group quiz!`,
+                  url: window.location.href
+                })
+              } else {
+                // Fallback: copy to clipboard
+                navigator.clipboard?.writeText(`I scored ${results?.score || 0}% in our group quiz! ${window.location.href}`)
+              }
+            }}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Share2 className="w-4 h-4" />
+            Share
+          </Button>
+        </div>
       </div>
     </div>
   )

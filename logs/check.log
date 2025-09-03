@@ -1,7 +1,9 @@
-Error submitting group quiz results: {
-  code: 'PGRST204',
-  details: null,
-  hint: null,
-  message: "Could not find the 'time_taken' column of 'group_quiz_results' in the schema cache"
-}
- POST /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/634c7536-9a90-4ec2-a6e3-a1232b3028d5/submit 500 in 4390ms
+Question 1
+Incorrect
+What does the speaker mention Jesus did in the evening?
+
+Your answer: He prayed alone on a mountain.
+Correct answer: He prayed alone on a mountain.
+The transcript says, 'he goes up to the mountain and he spends time there alone with the father.' This refers to Jesus praying.
+
+Việc tính toán đúng hay sai đang bị lỗi. mặc dù `your answer` và `Correct anwer` giống nhau, nhưng nó vẫn tính là sai. Có thể include thêm cả đáp án A, B, C, D không? thay vì chỉ nội dung đáp án

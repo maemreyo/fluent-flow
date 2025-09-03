@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
@@ -15,6 +15,7 @@ interface GroupQuizActiveViewProps {
   onAnswerSelect: (questionIndex: number, answer: string) => void
   onNextQuestion: () => void
   onSubmitSet: () => void
+  onMoveToNextSet: () => void
   isLastQuestion: boolean
   allAnswered: boolean
   submitting: boolean
@@ -30,6 +31,7 @@ export function GroupQuizActiveView({
   onAnswerSelect,
   onNextQuestion,
   onSubmitSet,
+  onMoveToNextSet,
   isLastQuestion,
   allAnswered,
   submitting,
@@ -39,7 +41,47 @@ export function GroupQuizActiveView({
   onlineParticipants
 }: GroupQuizActiveViewProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('')
+  const [setSubmitted, setSetSubmitted] = useState(false)
   console.log('currentQuestion', currentQuestion)
+
+  // Reset selectedAnswer when question changes
+  useEffect(() => {
+    setSelectedAnswer('')
+  }, [currentQuestion?.questionIndex])
+  
+  const handleAnswerClick = (optionLetter: string) => {
+    setSelectedAnswer(optionLetter)
+    onAnswerSelect(currentQuestion?.questionIndex || 0, optionLetter)
+  }
+
+  const handleNext = () => {
+    if (isLastQuestion) {
+      onSubmitSet()
+      setSetSubmitted(true)
+      
+      // If this is the last set, automatically calculate final results after a brief delay
+      const isLastSet = currentSetIndex >= totalSets - 1
+      if (isLastSet) {
+        setTimeout(() => {
+          onMoveToNextSet() // This will call calculateFinalResults()
+        }, 2000) // 2 second delay to show completion message
+      }
+    } else {
+      onNextQuestion()
+    }
+  }
+
+  const handleContinueToNextSet = () => {
+    onMoveToNextSet()
+    setSetSubmitted(false) // Reset for next set
+  }
+
+  const handleGoBack = () => {
+    if (window.confirm('Are you sure you want to go back? You will lose your current progress in this quiz session.')) {
+      window.history.back()
+    }
+  }
+  
   if (!currentQuestion) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -50,24 +92,109 @@ export function GroupQuizActiveView({
     )
   }
 
+  // Show set completion screen after submission
+  if (setSubmitted) {
+    const isLastSet = currentSetIndex >= totalSets - 1
+    
+    return (
+      <div className="space-y-6">
+        {/* Back Navigation */}
+        <div className="flex items-center justify-between">
+          <button
+            onClick={handleGoBack}
+            className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          >
+            ← Back to Group
+          </button>
+        </div>
+
+        {/* Set Completion Card */}
+        <Card className="border-green-200 bg-green-50/80 shadow-lg">
+          <CardContent className="text-center py-12">
+            <div className="mb-6">
+              <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
+                <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
+                  <span className="text-white font-bold">✓</span>
+                </div>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+                Set {currentSetIndex + 1} Complete!
+              </h2>
+              <p className="text-gray-600">
+                {isLastSet 
+                  ? "Congratulations! You've completed all sets. Your results are being processed."
+                  : "Great job! Ready to continue with the next set?"
+                }
+              </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-4">
+              {!isLastSet && (
+                <Button
+                  onClick={handleContinueToNextSet}
+                  disabled={submitting}
+                  className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700"
+                >
+                  Continue to Set {currentSetIndex + 2} →
+                </Button>
+              )}
+              
+              {isLastSet && (
+                <div className="flex flex-col items-center gap-3">
+                  <div className="text-sm text-gray-500">
+                    {submitting ? "Processing your final results..." : "All sets completed!"}
+                  </div>
+                  {!submitting && (
+                    <Button
+                      onClick={handleContinueToNextSet}
+                      className="rounded-xl bg-green-600 px-6 py-2 font-semibold text-white hover:bg-green-700"
+                    >
+                      View Results →
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Progress Summary */}
+        <div className="rounded-xl border border-white/40 bg-white/60 p-4">
+          <h3 className="font-semibold text-gray-800 mb-2">Progress Summary</h3>
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-green-600 font-medium">
+              Set {currentSetIndex + 1} of {totalSets} completed
+            </span>
+            <div className="flex-1 bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${((currentSetIndex + 1) / totalSets) * 100}%` }}
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const { question, questionIndex } = currentQuestion
   const currentResponse = responses.find(r => r.questionIndex === questionIndex)
 
-  const handleAnswerClick = (answer: string) => {
-    setSelectedAnswer(answer)
-    onAnswerSelect(questionIndex, answer)
-  }
-
-  const handleNext = () => {
-    if (isLastQuestion) {
-      onSubmitSet()
-    } else {
-      onNextQuestion()
-    }
-  }
-
   return (
     <div className="space-y-6">
+      {/* Back Navigation */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={handleGoBack}
+          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          ← Back to Group
+        </button>
+        <div className="text-sm text-gray-500">
+          Question {questionIndex + 1}
+        </div>
+      </div>
+
       {/* Progress Header */}
       <div className="rounded-xl border border-white/40 bg-white/60 p-4">
         <div className="mb-3 flex items-center justify-between">
@@ -82,24 +209,10 @@ export function GroupQuizActiveView({
               <span>Question {questionIndex + 1}</span>
             </div>
           </div>
-          <div className="text-right">
-            <div className="text-sm text-gray-600">Progress</div>
-            <div className="text-lg font-semibold text-gray-800">
-              {Math.round(((currentSetIndex + 1) / totalSets) * 100)}%
-            </div>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="h-2 w-full rounded-full bg-gray-200">
-          <div
-            className="h-2 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-300"
-            style={{ width: `${((currentSetIndex + 1) / totalSets) * 100}%` }}
-          />
         </div>
       </div>
 
-      {/* Question Card - Much larger space */}
+      {/* Question Card */}
       <Card className="border-white/40 bg-white/80 shadow-lg">
         <CardContent>
           {/* Question Text */}
@@ -125,17 +238,17 @@ export function GroupQuizActiveView({
             )}
           </div>
 
-          {/* Answer Options - Large clickable areas */}
+          {/* Answer Options */}
           <div className="space-y-4">
             {question.options?.map((option: any, index: number) => {
               const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
-              const isSelected = currentResponse?.answer === option
-              const wasSelected = selectedAnswer === option
+              const isSelected = currentResponse?.answer === optionLetter
+              const wasSelected = selectedAnswer === optionLetter
 
               return (
                 <button
                   key={index}
-                  onClick={() => handleAnswerClick(option)}
+                  onClick={() => handleAnswerClick(optionLetter)}
                   disabled={submitting}
                   className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-200 ${
                     isSelected || wasSelected
@@ -163,29 +276,6 @@ export function GroupQuizActiveView({
           </div>
         </CardContent>
       </Card>
-
-      {/* Live Participants Status during question */}
-      {/* <div className="rounded-xl border border-white/40 bg-white/60 p-4">
-        <h4 className="mb-3 font-medium text-gray-800">Participants Status</h4>
-        <div className="flex flex-wrap items-center gap-2">
-          {onlineParticipants.slice(0, 8).map(participant => (
-            <div
-              key={participant.user_id}
-              className="flex items-center gap-1.5 rounded-full bg-white/60 px-3 py-1.5 text-sm"
-            >
-              <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-              <span className="text-gray-700">
-                {participant.user_email?.split('@')[0] || 'User'}
-              </span>
-            </div>
-          ))}
-          {onlineParticipants.length > 8 && (
-            <span className="px-2 text-sm text-gray-500">
-              +{onlineParticipants.length - 8} more
-            </span>
-          )}
-        </div>
-      </div> */}
 
       {/* Action Buttons */}
       <div className="flex items-center justify-between">

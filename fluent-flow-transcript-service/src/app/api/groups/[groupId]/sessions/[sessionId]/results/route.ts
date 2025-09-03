@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase, getCurrentUser } from '@/lib/supabase/client'
+import { getSupabaseServer, getCurrentUserServer } from '@/lib/supabase/server'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ groupId: string; sessionId: string }> }
 ) {
+  const supabase = getSupabaseServer(request)
   if (!supabase) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
   }
   const { groupId, sessionId } = await params
 
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserServer(supabase)
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -44,14 +45,7 @@ export async function GET(
     // Get results for this session
     const { data: results, error: resultsError } = await supabase
       .from('group_quiz_results')
-      .select(`
-        *,
-        users:user_id (
-          id,
-          email,
-          user_metadata
-        )
-      `)
+      .select('*')
       .eq('session_id', sessionId)
       .order('score', { ascending: false })
 
@@ -87,13 +81,14 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ groupId: string; sessionId: string }> }
 ) {
+  const supabase = getSupabaseServer(request)
   if (!supabase) {
     return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
   }
   const { groupId, sessionId } = await params
 
   try {
-    const user = await getCurrentUser()
+    const user = await getCurrentUserServer(supabase)
     
     if (!user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })

@@ -377,6 +377,41 @@ export type Database = {
         }
         Relationships: []
       }
+      group_achievements: {
+        Row: {
+          achievement_data: Json | null
+          achievement_type: string
+          earned_at: string | null
+          group_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          achievement_data?: Json | null
+          achievement_type: string
+          earned_at?: string | null
+          group_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          achievement_data?: Json | null
+          achievement_type?: string
+          earned_at?: string | null
+          group_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_achievements_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_challenges: {
         Row: {
           created_at: string | null
@@ -485,36 +520,42 @@ export type Database = {
       }
       group_quiz_results: {
         Row: {
+          answers_data: Json | null
           completed_at: string | null
           correct_answers: number
           id: string
           result_data: Json | null
           score: number
           session_id: string
+          time_taken: number | null
           time_taken_seconds: number | null
           total_questions: number
           user_id: string
           user_name: string | null
         }
         Insert: {
+          answers_data?: Json | null
           completed_at?: string | null
           correct_answers: number
           id?: string
           result_data?: Json | null
           score: number
           session_id: string
+          time_taken?: number | null
           time_taken_seconds?: number | null
           total_questions: number
           user_id: string
           user_name?: string | null
         }
         Update: {
+          answers_data?: Json | null
           completed_at?: string | null
           correct_answers?: number
           id?: string
           result_data?: Json | null
           score?: number
           session_id?: string
+          time_taken?: number | null
           time_taken_seconds?: number | null
           total_questions?: number
           user_id?: string
@@ -1008,6 +1049,38 @@ export type Database = {
           word?: string
         }
         Relationships: []
+      }
+      session_participants: {
+        Row: {
+          is_online: boolean | null
+          joined_at: string | null
+          last_seen: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean | null
+          joined_at?: string | null
+          last_seen?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean | null
+          joined_at?: string | null
+          last_seen?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shared_question_sets: {
         Row: {

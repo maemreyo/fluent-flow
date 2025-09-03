@@ -144,7 +144,7 @@ export async function POST(
       userData: userData || { userId: user.id, email: user.email },
       // Additional group context
       groupId,
-      sessionId,
+      groupSessionId: sessionId, // Renamed to avoid duplicate
       isGroupQuiz: true
     }
 

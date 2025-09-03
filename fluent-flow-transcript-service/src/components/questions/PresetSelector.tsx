@@ -3,6 +3,7 @@ import { Badge } from '../ui/badge'
 import { Card, CardContent } from '../ui/card'
 
 interface QuestionPreset {
+  id: string
   name: string
   description: string
   distribution: {
@@ -10,6 +11,7 @@ interface QuestionPreset {
     medium: number
     hard: number
   }
+  totalQuestions: number
   icon: LucideIcon
   color?: string
   estimatedTime?: string
@@ -23,10 +25,6 @@ interface PresetSelectorProps {
 }
 
 export function PresetSelector({ presets, onPresetSelect }: PresetSelectorProps) {
-
-  const getTotalQuestions = (preset: QuestionPreset): number => {
-    return preset.distribution.easy + preset.distribution.medium + preset.distribution.hard
-  }
 
   const getColorClasses = (color: string) => {
     const colors = {
@@ -67,7 +65,7 @@ export function PresetSelector({ presets, onPresetSelect }: PresetSelectorProps)
     <div className="mx-auto max-w-6xl">
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
         {presets.map((preset, index) => {
-          const totalQuestions = getTotalQuestions(preset)
+          const totalQuestions = preset.totalQuestions
           const Icon = preset.icon
           const colorClasses = getColorClasses(preset.color || 'blue')
 

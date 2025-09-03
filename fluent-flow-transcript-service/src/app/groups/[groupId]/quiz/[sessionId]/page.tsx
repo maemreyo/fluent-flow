@@ -44,6 +44,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     handleAnswerSelect,
     moveToNextQuestion,
     submitCurrentSet,
+    moveToNextSet,
     isLastQuestionInSet,
     allQuestionsInSetAnswered,
     submitting,
@@ -242,6 +243,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           onAnswerSelect={handleAnswerSelect}
                           onNextQuestion={moveToNextQuestion}
                           onSubmitSet={submitCurrentSet}
+                          onMoveToNextSet={moveToNextSet}
                           isLastQuestion={isLastQuestionInSet()}
                           allAnswered={allQuestionsInSetAnswered()}
                           submitting={submitting}

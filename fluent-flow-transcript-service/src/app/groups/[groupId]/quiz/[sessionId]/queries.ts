@@ -3,11 +3,13 @@ import { supabase } from '../../../../../lib/supabase/client'
 export interface GroupSession {
   id: string
   quiz_title: string
+  title?: string // Alias for quiz_title if needed
   video_title?: string
   video_url?: string
   scheduled_at?: string
   status: 'scheduled' | 'active' | 'completed' | 'cancelled'
   quiz_token: string
+  share_token: string // Add share_token property
   created_by: string
   questions_data?: any
   created_at: string

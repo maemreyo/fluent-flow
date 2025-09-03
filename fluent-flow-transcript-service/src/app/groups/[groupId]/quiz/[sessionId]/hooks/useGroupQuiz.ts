@@ -3,8 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuth } from '../../../../../../contexts/AuthContext'
 import { useSessionParticipants } from '../../../components/sessions/hooks/useSessionParticipants'
 import { useRealtimeSession } from './useRealtimeSession'
-import { fetchQuestionSet } from '../../../../../questions/[token]/queries'
-import { fetchGroupSession, fetchGroup, submitGroupQuizResults } from '../queries'
+import { fetchQuestionSet, submitSet } from '../../../../../questions/[token]/queries'
+import { fetchGroupSession, fetchGroup } from '../queries'
 import { useQuizAuth } from '../../../../../../lib/hooks/use-quiz-auth'
 
 // Import types and utilities from individual quiz
@@ -44,9 +44,6 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   // Enhanced real-time features
   const {
-    realtimeData,
-    isConnected: isRealtimeConnected,
-    broadcastQuizEvent,
     refreshSession
   } = useRealtimeSession({
     groupId,
@@ -139,15 +136,19 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   // Group results submission
   const submitGroupResultsMutation = useMutation({
-    mutationFn: (resultsData: any) => submitGroupQuizResults(groupId, sessionId, resultsData),
-    onSuccess: (data) => {
-      // Use formatted results from API response
-      setResults(data.formattedResults || data)
-      setAppState('quiz-results')
-      // Invalidate group results queries
-      queryClient.invalidateQueries({
-        queryKey: ['group-results', groupId, sessionId]
-      })
+    mutationFn: (resultsData: any) => {
+      // Use the submit-set API instead of group-specific API
+      if (!session?.share_token) {
+        throw new Error('Share token not available')
+      }
+      return submitSet(session.share_token, resultsData)
+    },
+    onSuccess: () => {
+      // Just confirm submission success - don't auto-advance
+      console.log('Set submitted successfully')
+    },
+    onError: (error) => {
+      console.error('Error submitting set:', error)
     }
   })
 
@@ -255,16 +256,85 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       }))
     }
 
+    // Always submit current set results, but don't auto-advance
+    // The UI component will handle showing results and letting user decide to continue
+    submitGroupResultsMutation.mutate(submissionData)
+  }
+
+  const moveToNextSet = () => {
     if (currentSetIndex < difficultyGroups.length - 1) {
-      // Continue with next set (but still submit current results)
       setCurrentSetIndex(currentSetIndex + 1)
       setCurrentQuestionIndex(0)
-      // Submit current set results to group
-      submitGroupResultsMutation.mutate(submissionData)
     } else {
-      // Final submission - calculate final results
-      submitGroupResultsMutation.mutate(submissionData)
+      // Final set completed - calculate and show results
+      calculateFinalResults()
     }
+  }
+
+  const calculateFinalResults = () => {
+    let totalQuestions = 0
+    let totalCorrect = 0
+    const allResults: any[] = []
+    let resultStartIndex = 0
+
+    for (let i = 0; i < difficultyGroups.length; i++) {
+      const setQuestions = difficultyGroups[i].questions.length
+      const setEndIndex = resultStartIndex + setQuestions - 1
+      const currentSetResponses = responses.filter(
+        r => r.questionIndex >= resultStartIndex && r.questionIndex <= setEndIndex
+      )
+
+      totalQuestions += setQuestions
+
+      const setResults = currentSetResponses.map(response => {
+        const question = difficultyGroups[i].questions.find(
+          (_, idx) => resultStartIndex + idx === response.questionIndex
+        )
+        const isCorrect = question && question.correctAnswer === response.answer
+        if (isCorrect) totalCorrect++
+
+        const userOptionIndex = response.answer.charCodeAt(0) - 65
+        const correctOptionIndex = question?.correctAnswer.charCodeAt(0) - 65
+        const userAnswerText = question?.options[userOptionIndex] ? 
+          `${response.answer}. ${question.options[userOptionIndex]}` : response.answer
+        const correctAnswerText = question?.options[correctOptionIndex] ? 
+          `${question.correctAnswer}. ${question.options[correctOptionIndex]}` : question?.correctAnswer
+
+        return {
+          questionId: question?.id || `q_${response.questionIndex}`,
+          question: question?.question || 'Unknown question',
+          userAnswer: userAnswerText,
+          correctAnswer: correctAnswerText,
+          isCorrect: !!isCorrect,
+          explanation: question?.explanation || 'No explanation available.',
+          points: isCorrect ? 1 : 0
+        }
+      })
+
+      allResults.push(...setResults)
+      resultStartIndex += setQuestions
+    }
+
+    const finalScore = Math.round((totalCorrect / totalQuestions) * 100)
+
+    const finalResults = {
+      sessionId: `group_${sessionId}_${Date.now()}`,
+      score: finalScore,
+      totalQuestions,
+      correctAnswers: totalCorrect,
+      results: allResults,
+      submittedAt: new Date().toISOString(),
+      setIndex: difficultyGroups.length - 1,
+      difficulty: 'mixed',
+      userData: isAuthenticated ? { userId: user?.id, email: user?.email } : undefined,
+      // Additional group context
+      groupId,
+      groupSessionId: sessionId,
+      isGroupQuiz: true
+    }
+
+    setResults(finalResults)
+    setAppState('quiz-results')
   }
 
   const handleAnswerSelect = (questionIndex: number, answer: string) => {
@@ -346,7 +416,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     // Simplified for group context
   }
 
-  const handleAuthSuccess = (authUser: any) => {
+  const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
     queryClient.invalidateQueries({ queryKey: ['questionSet', session?.share_token] })
   }
@@ -386,6 +456,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     handleAnswerSelect,
     moveToNextQuestion,
     submitCurrentSet,
+    moveToNextSet,
     isLastQuestionInSet,
     allQuestionsInSetAnswered,
     submitting: submitGroupResultsMutation.isPending,
