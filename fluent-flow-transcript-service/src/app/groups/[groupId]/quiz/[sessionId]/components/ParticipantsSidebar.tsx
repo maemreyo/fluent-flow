@@ -22,15 +22,24 @@ export function ParticipantsSidebar({
 }: ParticipantsSidebarProps) {
   const [isMinimized, setIsMinimized] = useState(false)
 
-  const getInitials = (email: string, username?: string) => {
-    if (username) {
+  const getInitials = (email?: string | null, username?: string | null) => {
+    if (username && username.trim()) {
       return username.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
     }
-    return email.split('@')[0].slice(0, 2).toUpperCase()
+    if (email && email.includes('@')) {
+      return email.split('@')[0].slice(0, 2).toUpperCase()
+    }
+    return '??'
   }
 
   const getDisplayName = (participant: SessionParticipant) => {
-    return participant.username || participant.user_email.split('@')[0]
+    if (participant.username && participant.username.trim()) {
+      return participant.username.trim()
+    }
+    if (participant.user_email && participant.user_email.includes('@')) {
+      return participant.user_email.split('@')[0]
+    }
+    return 'Unknown User'
   }
 
   const formatJoinTime = (joinedAt: string) => {

@@ -56,6 +56,32 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     isAuthenticated
   } = useGroupQuiz({ groupId, sessionId })
 
+  // Helper functions for participant display
+  const getInitials = (email?: string | null, username?: string | null) => {
+    if (username && username.trim()) {
+      return username
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
+    }
+    if (email && email.includes('@')) {
+      return email.split('@')[0].slice(0, 2).toUpperCase()
+    }
+    return '??'
+  }
+
+  const getDisplayName = (email?: string | null, username?: string | null) => {
+    if (username && username.trim()) {
+      return username.trim()
+    }
+    if (email && email.includes('@')) {
+      return email.split('@')[0]
+    }
+    return 'Unknown User'
+  }
+
   // Simplified loading condition - only depend on appState
   if (appState === 'loading') {
     return <LoadingView message="Loading group quiz..." />
@@ -128,19 +154,19 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                 >
                   <div className="flex items-center gap-2">
                     <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-semibold text-white">
-                      {(participant.user_email || 'U')[0].toUpperCase()}
+                      {getInitials(participant.user_email, participant.username)}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium text-gray-800">
-                        {participant.user_email || 'Unknown'}
+                        {getDisplayName(participant.user_email, participant.username)}
                         {participant.user_id === user?.id && (
                           <span className="ml-1 text-xs text-indigo-600">(You)</span>
                         )}
                       </div>
-                      <div className="mt-1 flex items-center gap-2">
+                      {/* <div className="mt-1 flex items-center gap-2">
                         <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
                         <span className="text-xs text-gray-500">Active now</span>
-                      </div>
+                      </div> */}
                     </div>
                   </div>
                 </div>
@@ -156,11 +182,11 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                   >
                     <div className="flex items-center gap-2 opacity-60">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white">
-                        {(participant.user_email || 'U')[0].toUpperCase()}
+                        {getInitials(participant.user_email, participant.username)}
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-medium text-gray-600">
-                          {participant.user_email || 'Unknown'}
+                          {getDisplayName(participant.user_email, participant.username)}
                         </div>
                         <div className="mt-1 flex items-center gap-2">
                           <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>

@@ -2,12 +2,12 @@
 
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Button } from '@/components/ui/button'
+import { ArrowLeft, Home, Medal, RotateCcw, Share2, TrendingUp, Trophy } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Trophy, Medal, Users, Clock, TrendingUp, RotateCcw, Share2, ArrowLeft, Home } from 'lucide-react'
-import { fetchGroupResults } from '../queries'
 import type { SessionParticipant } from '../../../components/sessions/queries'
+import { fetchGroupResults } from '../queries'
 
 interface GroupQuizResultsProps {
   results: any
@@ -17,12 +17,12 @@ interface GroupQuizResultsProps {
   participants: SessionParticipant[]
 }
 
-export function GroupQuizResults({ 
-  results, 
-  groupId, 
-  sessionId, 
-  onRestart, 
-  participants 
+export function GroupQuizResults({
+  results,
+  groupId,
+  sessionId,
+  onRestart,
+  participants
 }: GroupQuizResultsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'leaderboard'>('personal')
 
@@ -35,7 +35,12 @@ export function GroupQuizResults({
 
   const getInitials = (email?: string | null, username?: string | null) => {
     if (username && username.trim()) {
-      return username.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
+      return username
+        .split(' ')
+        .map(word => word[0])
+        .join('')
+        .toUpperCase()
+        .slice(0, 2)
     }
     if (email && email.includes('@')) {
       return email.split('@')[0].slice(0, 2).toUpperCase()
@@ -56,13 +61,17 @@ export function GroupQuizResults({
   const getRankIcon = (rank: number) => {
     switch (rank) {
       case 1:
-        return <Trophy className="w-5 h-5 text-yellow-600" />
+        return <Trophy className="h-5 w-5 text-yellow-600" />
       case 2:
-        return <Medal className="w-5 h-5 text-gray-600" />
+        return <Medal className="h-5 w-5 text-gray-600" />
       case 3:
-        return <Medal className="w-5 h-5 text-amber-600" />
+        return <Medal className="h-5 w-5 text-amber-600" />
       default:
-        return <span className="w-5 h-5 flex items-center justify-center text-sm font-bold text-blue-600">#{rank}</span>
+        return (
+          <span className="flex h-5 w-5 items-center justify-center text-sm font-bold text-blue-600">
+            #{rank}
+          </span>
+        )
     }
   }
 
@@ -86,30 +95,29 @@ export function GroupQuizResults({
   }
 
   // Sort results by score for leaderboard
-  const sortedResults = groupResults?.slice().sort((a, b) => {
-    if (b.score !== a.score) return b.score - a.score
-    return a.time_taken - b.time_taken // Faster time wins if same score
-  }) || []
+  const sortedResults =
+    groupResults?.slice().sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score
+      return a.time_taken - b.time_taken // Faster time wins if same score
+    }) || []
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="text-center space-y-4">
+      <div className="space-y-4 text-center">
         <div className="space-y-2">
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
+          <h1 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-3xl font-bold text-transparent">
             Quiz Complete! 🎉
           </h1>
-          <p className="text-gray-600">
-            Great job completing the group quiz session
-          </p>
+          <p className="text-gray-600">Great job completing the group quiz session</p>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex justify-center">
-          <div className="bg-gray-100 rounded-lg p-1">
+          <div className="rounded-lg bg-gray-100 p-1">
             <button
               onClick={() => setActiveTab('personal')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'personal'
                   ? 'bg-white text-indigo-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
@@ -119,7 +127,7 @@ export function GroupQuizResults({
             </button>
             <button
               onClick={() => setActiveTab('leaderboard')}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              className={`rounded-md px-4 py-2 text-sm font-medium transition-colors ${
                 activeTab === 'leaderboard'
                   ? 'bg-white text-indigo-600 shadow-sm'
                   : 'text-gray-600 hover:text-gray-800'
@@ -134,19 +142,17 @@ export function GroupQuizResults({
       {activeTab === 'personal' && results && (
         <div className="space-y-6">
           {/* Personal Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-indigo-600 mb-2">
-                  {results.score}%
-                </div>
+                <div className="mb-2 text-3xl font-bold text-indigo-600">{results.score}%</div>
                 <p className="text-sm text-gray-600">Your Score</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">
+                <div className="mb-2 text-3xl font-bold text-green-600">
                   {results.correctAnswers}/{results.totalQuestions}
                 </div>
                 <p className="text-sm text-gray-600">Correct Answers</p>
@@ -155,7 +161,7 @@ export function GroupQuizResults({
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
+                <div className="mb-2 text-3xl font-bold text-blue-600">
                   {sortedResults.findIndex(r => r.user_id === results.userData?.userId) + 1 || '?'}
                 </div>
                 <p className="text-sm text-gray-600">Group Rank</p>
@@ -168,13 +174,13 @@ export function GroupQuizResults({
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
+                  <TrendingUp className="h-5 w-5" />
                   Question Breakdown
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 {/* Summary Stats */}
-                <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+                <div className="mb-6 grid grid-cols-3 gap-4 rounded-lg bg-gray-50 p-4">
                   <div className="text-center">
                     <div className="text-2xl font-bold text-green-600">
                       {results.results.filter((r: any) => r.isCorrect).length}
@@ -188,72 +194,74 @@ export function GroupQuizResults({
                     <div className="text-xs text-gray-600">Incorrect</div>
                   </div>
                   <div className="text-center">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {results.totalQuestions}
-                    </div>
+                    <div className="text-2xl font-bold text-blue-600">{results.totalQuestions}</div>
                     <div className="text-xs text-gray-600">Total</div>
                   </div>
                 </div>
 
                 {/* Questions Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-96 overflow-y-auto">
+                <div className="grid max-h-96 grid-cols-1 gap-3 overflow-y-auto md:grid-cols-2">
                   {results.results.map((result: any, index: number) => (
                     <div
                       key={result.questionId}
-                      className={`p-3 rounded-lg border transition-all hover:shadow-sm ${
+                      className={`rounded-lg border p-3 transition-all hover:shadow-sm ${
                         result.isCorrect
-                          ? 'bg-green-50 border-green-200 hover:bg-green-100'
-                          : 'bg-red-50 border-red-200 hover:bg-red-100'
+                          ? 'border-green-200 bg-green-50 hover:bg-green-100'
+                          : 'border-red-200 bg-red-50 hover:bg-red-100'
                       }`}
                     >
                       {/* Question Header */}
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            result.isCorrect 
-                              ? 'bg-green-500 text-white' 
-                              : 'bg-red-500 text-white'
-                          }`}>
+                          <div
+                            className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
+                              result.isCorrect ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                            }`}
+                          >
                             {index + 1}
                           </div>
-                          <span className={`text-xs px-2 py-1 rounded ${
-                            result.isCorrect
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
+                          <span
+                            className={`rounded px-2 py-1 text-xs ${
+                              result.isCorrect
+                                ? 'bg-green-100 text-green-700'
+                                : 'bg-red-100 text-red-700'
+                            }`}
+                          >
                             {result.isCorrect ? '✓' : '✗'}
                           </span>
                         </div>
                       </div>
-                      
+
                       {/* Question Text */}
-                      <p className="text-sm text-gray-700 mb-2 line-clamp-2">
-                        {result.question}
-                      </p>
-                      
+                      <p className="mb-2 line-clamp-2 text-sm text-gray-700">{result.question}</p>
+
                       {/* Answers */}
-                      <div className="text-xs space-y-1">
+                      <div className="space-y-1 text-xs">
                         <div className="flex items-start gap-2">
-                          <span className="text-gray-500 shrink-0">Your:</span>
-                          <span className={`font-medium ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}>
+                          <span className="shrink-0 text-gray-500">Your:</span>
+                          <span
+                            className={`font-medium ${result.isCorrect ? 'text-green-700' : 'text-red-700'}`}
+                          >
                             {result.userAnswer}
                           </span>
                         </div>
                         {!result.isCorrect && (
                           <div className="flex items-start gap-2">
-                            <span className="text-gray-500 shrink-0">Correct:</span>
-                            <span className="font-medium text-green-700">{result.correctAnswer}</span>
+                            <span className="shrink-0 text-gray-500">Correct:</span>
+                            <span className="font-medium text-green-700">
+                              {result.correctAnswer}
+                            </span>
                           </div>
                         )}
                       </div>
-                      
+
                       {/* Explanation (Collapsed by default) */}
                       {result.explanation && (
                         <details className="mt-2">
-                          <summary className="text-xs text-blue-600 cursor-pointer hover:text-blue-800">
+                          <summary className="cursor-pointer text-xs text-blue-600 hover:text-blue-800">
                             View explanation
                           </summary>
-                          <div className="mt-1 p-2 bg-blue-50 rounded text-xs text-blue-800">
+                          <div className="mt-1 rounded bg-blue-50 p-2 text-xs text-blue-800">
                             {result.explanation}
                           </div>
                         </details>
@@ -270,31 +278,30 @@ export function GroupQuizResults({
       {activeTab === 'leaderboard' && (
         <div className="space-y-6">
           {/* Group Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-blue-600 mb-2">
-                  {participants.length}
-                </div>
+                <div className="mb-2 text-3xl font-bold text-blue-600">{participants.length}</div>
                 <p className="text-sm text-gray-600">Total Participants</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-green-600 mb-2">
-                  {sortedResults.length}
-                </div>
+                <div className="mb-2 text-3xl font-bold text-green-600">{sortedResults.length}</div>
                 <p className="text-sm text-gray-600">Completed Quiz</p>
               </CardContent>
             </Card>
 
             <Card>
               <CardContent className="p-6 text-center">
-                <div className="text-3xl font-bold text-indigo-600 mb-2">
-                  {sortedResults.length > 0 
-                    ? Math.round(sortedResults.reduce((acc, r) => acc + r.score, 0) / sortedResults.length)
-                    : 0}%
+                <div className="mb-2 text-3xl font-bold text-indigo-600">
+                  {sortedResults.length > 0
+                    ? Math.round(
+                        sortedResults.reduce((acc, r) => acc + r.score, 0) / sortedResults.length
+                      )
+                    : 0}
+                  %
                 </div>
                 <p className="text-sm text-gray-600">Average Score</p>
               </CardContent>
@@ -305,19 +312,19 @@ export function GroupQuizResults({
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Trophy className="w-5 h-5 text-yellow-600" />
+                <Trophy className="h-5 w-5 text-yellow-600" />
                 Group Leaderboard
               </CardTitle>
             </CardHeader>
             <CardContent>
               {groupResultsLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
-                  <p className="text-gray-600 mt-4">Loading results...</p>
+                <div className="py-8 text-center">
+                  <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-indigo-600"></div>
+                  <p className="mt-4 text-gray-600">Loading results...</p>
                 </div>
               ) : sortedResults.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <Trophy className="w-8 h-8 mx-auto mb-3 opacity-50" />
+                <div className="py-8 text-center text-gray-500">
+                  <Trophy className="mx-auto mb-3 h-8 w-8 opacity-50" />
                   <p>No results available yet</p>
                 </div>
               ) : (
@@ -325,19 +332,21 @@ export function GroupQuizResults({
                   {sortedResults.map((result, index) => (
                     <div
                       key={result.id}
-                      className={`flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                      className={`flex items-center gap-4 rounded-xl border p-4 transition-all ${
                         result.user_id === results?.userData?.userId
-                          ? 'bg-indigo-50 border-indigo-200 ring-2 ring-indigo-500/30'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                          ? 'border-indigo-200 bg-indigo-50 ring-2 ring-indigo-500/30'
+                          : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
                       }`}
                     >
                       {/* Rank */}
-                      <div className={`flex items-center justify-center w-12 h-12 rounded-full border ${getRankColor(index + 1)}`}>
+                      <div
+                        className={`flex h-12 w-12 items-center justify-center rounded-full border ${getRankColor(index + 1)}`}
+                      >
                         {getRankIcon(index + 1)}
                       </div>
 
                       {/* User Avatar */}
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-blue-500 to-indigo-500 text-sm font-bold text-white">
                         {getInitials(result.user_email, result.username)}
                       </div>
 
@@ -348,28 +357,30 @@ export function GroupQuizResults({
                             {getDisplayName(result.user_email, result.username)}
                           </p>
                           {result.user_id === results?.userData?.userId && (
-                            <Badge className="text-xs bg-indigo-100 text-indigo-700 border-indigo-200">
+                            <Badge className="border-indigo-200 bg-indigo-100 text-xs text-indigo-700">
                               You
                             </Badge>
                           )}
                         </div>
                         <div className="flex items-center gap-4 text-sm text-gray-600">
-                          <span>{result.score}% ({result.total_questions} questions)</span>
-                          <div className="flex items-center gap-1">
+                          {/* <span>{result.score}% ({result.total_questions} questions)</span> */}
+                          {/* <div className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
                             <span>{formatTime(result.time_taken)}</span>
-                          </div>
+                          </div> */}
                         </div>
                       </div>
 
                       {/* Score Badge */}
-                      <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        result.score >= 80
-                          ? 'bg-green-100 text-green-700 border border-green-200'
-                          : result.score >= 60
-                          ? 'bg-yellow-100 text-yellow-700 border border-yellow-200'
-                          : 'bg-red-100 text-red-700 border border-red-200'
-                      }`}>
+                      <div
+                        className={`rounded-full px-3 py-1 text-sm font-medium ${
+                          result.score >= 80
+                            ? 'border border-green-200 bg-green-100 text-green-700'
+                            : result.score >= 60
+                              ? 'border border-yellow-200 bg-yellow-100 text-yellow-700'
+                              : 'border border-red-200 bg-red-100 text-red-700'
+                        }`}
+                      >
                         {result.score}%
                       </div>
                     </div>
@@ -382,23 +393,20 @@ export function GroupQuizResults({
       )}
 
       {/* Action Buttons */}
-      <div className="flex flex-col sm:flex-row justify-center gap-3">
+      <div className="flex flex-col justify-center gap-3 sm:flex-row">
         {/* Primary Actions */}
         <div className="flex gap-3">
           <Button
-            onClick={() => window.location.href = `/groups/${groupId}`}
+            onClick={() => (window.location.href = `/groups/${groupId}`)}
             variant="outline"
             className="flex items-center gap-2"
           >
-            <ArrowLeft className="w-4 h-4" />
+            <ArrowLeft className="h-4 w-4" />
             Back to Group
           </Button>
-          
-          <Button
-            onClick={onRestart}
-            className="flex items-center gap-2"
-          >
-            <RotateCcw className="w-4 h-4" />
+
+          <Button onClick={onRestart} className="flex items-center gap-2">
+            <RotateCcw className="h-4 w-4" />
             Try Again
           </Button>
         </div>
@@ -406,14 +414,14 @@ export function GroupQuizResults({
         {/* Secondary Actions */}
         <div className="flex gap-3">
           <Button
-            onClick={() => window.location.href = '/groups'}
+            onClick={() => (window.location.href = '/groups')}
             variant="outline"
             className="flex items-center gap-2"
           >
-            <Home className="w-4 h-4" />
+            <Home className="h-4 w-4" />
             All Groups
           </Button>
-          
+
           <Button
             onClick={() => {
               // Share results functionality
@@ -425,13 +433,15 @@ export function GroupQuizResults({
                 })
               } else {
                 // Fallback: copy to clipboard
-                navigator.clipboard?.writeText(`I scored ${results?.score || 0}% in our group quiz! ${window.location.href}`)
+                navigator.clipboard?.writeText(
+                  `I scored ${results?.score || 0}% in our group quiz! ${window.location.href}`
+                )
               }
             }}
             variant="outline"
             className="flex items-center gap-2"
           >
-            <Share2 className="w-4 h-4" />
+            <Share2 className="h-4 w-4" />
             Share
           </Button>
         </div>

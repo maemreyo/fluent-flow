@@ -54,21 +54,46 @@ export async function GET(
       return NextResponse.json({ error: resultsError.message }, { status: 500 })
     }
 
+    // Get user emails from group members for the results
+    let transformedResults = results || []
+    
+    if (results && results.length > 0) {
+      const userIds = results.map(r => r.user_id)
+      
+      // Get user data from study_group_members table
+      const { data: members } = await supabase
+        .from('study_group_members')
+        .select('user_id, username, user_email')
+        .eq('group_id', groupId)
+        .in('user_id', userIds)
+      
+      const memberDataMap = new Map(
+        members?.map(member => [member.user_id, member]) || []
+      )
+      
+      // Transform results to match frontend expectations
+      transformedResults = results.map(result => ({
+        ...result,
+        user_email: memberDataMap.get(result.user_id)?.user_email || null,
+        username: memberDataMap.get(result.user_id)?.username || result.user_name || null
+      }))
+    }
+
     // Calculate session statistics
     const stats = {
-      total_participants: results.length,
-      average_score: results.length > 0 
-        ? Math.round(results.reduce((sum, r) => sum + r.score, 0) / results.length)
+      total_participants: transformedResults.length,
+      average_score: transformedResults.length > 0 
+        ? Math.round(transformedResults.reduce((sum, r) => sum + r.score, 0) / transformedResults.length)
         : 0,
-      highest_score: results.length > 0 ? Math.max(...results.map(r => r.score)) : 0,
-      completion_rate: results.length > 0 
-        ? Math.round((results.filter(r => r.completed_at).length / results.length) * 100)
+      highest_score: transformedResults.length > 0 ? Math.max(...transformedResults.map(r => r.score)) : 0,
+      completion_rate: transformedResults.length > 0 
+        ? Math.round((transformedResults.filter(r => r.completed_at).length / transformedResults.length) * 100)
         : 0
     }
 
     return NextResponse.json({ 
       session,
-      results,
+      results: transformedResults,
       stats
     })
   } catch (error) {
@@ -133,6 +158,8 @@ export async function POST(
         time_taken_seconds: time_taken_seconds || null,
         result_data: result_data || {},
         completed_at: new Date().toISOString()
+      }, {
+        onConflict: 'session_id,user_id'
       })
       .select()
       .single()

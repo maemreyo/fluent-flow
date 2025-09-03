@@ -1,16 +1,19 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useAuth } from '../../../../../../contexts/AuthContext'
-import { useSessionParticipants } from '../../../components/sessions/hooks/useSessionParticipants'
-import { useRealtimeSession } from './useRealtimeSession'
-import { fetchQuestionSet, submitSet } from '../../../../../questions/[token]/queries'
-import { fetchGroupSession, fetchGroup } from '../queries'
-import { useQuizAuth } from '../../../../../../lib/hooks/use-quiz-auth'
-
+import { useCallback, useEffect, useState } from 'react'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 // Import types and utilities from individual quiz
 import type { QuestionPreset } from '../../../../../../components/questions/PresetSelector'
 import type { DifficultyGroup } from '../../../../../../components/questions/ProgressIndicator'
-import type { Question, QuestionResponse } from '../../../../../../components/questions/QuestionCard'
+import type {
+  Question,
+  QuestionResponse
+} from '../../../../../../components/questions/QuestionCard'
+import { useAuth } from '../../../../../../contexts/AuthContext'
+import { useQuizAuth } from '../../../../../../lib/hooks/use-quiz-auth'
+import { supabase } from '../../../../../../lib/supabase/client'
+import { fetchQuestionSet, submitSet } from '../../../../../questions/[token]/queries'
+import { useSessionParticipants } from '../../../components/sessions/hooks/useSessionParticipants'
+import { fetchGroup, fetchGroupSession } from '../queries'
+import { useRealtimeSession } from './useRealtimeSession'
 
 type AppState =
   | 'loading'
@@ -43,9 +46,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   })
 
   // Enhanced real-time features
-  const {
-    refreshSession
-  } = useRealtimeSession({
+  const { refreshSession } = useRealtimeSession({
     groupId,
     sessionId,
     enabled: true
@@ -66,14 +67,22 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
   // Fetch group session data
-  const { data: session, isLoading: sessionLoading, error: sessionError } = useQuery({
+  const {
+    data: session,
+    isLoading: sessionLoading,
+    error: sessionError
+  } = useQuery({
     queryKey: ['group-session', groupId, sessionId],
     queryFn: () => fetchGroupSession(groupId, sessionId),
     enabled: !!groupId && !!sessionId
   })
 
   // Fetch group data
-  const { data: group, isLoading: groupLoading, error: groupError } = useQuery({
+  const {
+    data: group,
+    isLoading: groupLoading,
+    error: groupError
+  } = useQuery({
     queryKey: ['group', groupId],
     queryFn: () => fetchGroup(groupId),
     enabled: !!groupId
@@ -97,12 +106,14 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       groupLoading,
       questionSetLoading,
       participantsLoading,
-      session: session ? { 
-        id: session.id, 
-        title: session.title,
-        share_token: session.share_token,
-        hasShareToken: !!session.share_token 
-      } : null,
+      session: session
+        ? {
+            id: session.id,
+            title: session.title,
+            share_token: session.share_token,
+            hasShareToken: !!session.share_token
+          }
+        : null,
       questionSet: questionSet ? 'loaded' : 'null',
       questionSetQueryEnabled: !!session?.share_token,
       sessionError: sessionError?.message,
@@ -110,7 +121,18 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       questionSetError: questionSetError?.message,
       appState
     })
-  }, [sessionLoading, groupLoading, questionSetLoading, participantsLoading, session, questionSet, sessionError, groupError, questionSetError, appState])
+  }, [
+    sessionLoading,
+    groupLoading,
+    questionSetLoading,
+    participantsLoading,
+    session,
+    questionSet,
+    sessionError,
+    groupError,
+    questionSetError,
+    appState
+  ])
 
   // Auth handling (similar to individual quiz)
   const [authToken, setAuthToken] = useState<string | undefined>()
@@ -147,7 +169,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       // Just confirm submission success - don't auto-advance
       console.log('Set submitted successfully')
     },
-    onError: (error) => {
+    onError: error => {
       console.error('Error submitting set:', error)
     }
   })
@@ -155,7 +177,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   // State management
   useEffect(() => {
     const isLoading = sessionLoading || groupLoading || questionSetLoading || participantsLoading
-    
+
     if (isLoading) {
       setAppState('loading')
     } else if (sessionError || groupError || questionSetError) {
@@ -164,7 +186,16 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       // If we have questionSet, we can proceed (isUserJoined will be handled in component)
       setAppState('preset-selection')
     }
-  }, [sessionLoading, groupLoading, questionSetLoading, participantsLoading, sessionError, groupError, questionSetError, questionSet])
+  }, [
+    sessionLoading,
+    groupLoading,
+    questionSetLoading,
+    participantsLoading,
+    sessionError,
+    groupError,
+    questionSetError,
+    questionSet
+  ])
 
   // Quiz functionality (reused from individual quiz)
   const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
@@ -185,7 +216,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
       const result: DifficultyGroup[] = []
       const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard']
-      
+
       difficulties.forEach(difficulty => {
         const questionCount = preset.distribution[difficulty]
         if (questionCount > 0) {
@@ -244,15 +275,13 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       questions: currentGroup.questions,
       setIndex: currentSetIndex,
       difficulty: currentGroup.difficulty,
-      userData: isAuthenticated
-        ? { userId: user?.id, email: user?.email }
-        : undefined,
+      userData: isAuthenticated ? { userId: user?.id, email: user?.email } : undefined,
       // Additional group context
       groupId,
       sessionId,
-      participants: participants.map(p => ({ 
-        user_id: p.user_id, 
-        user_email: p.user_email 
+      participants: participants.map(p => ({
+        user_id: p.user_id,
+        user_email: p.user_email
       }))
     }
 
@@ -271,7 +300,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
   }
 
-  const calculateFinalResults = () => {
+  const calculateFinalResults = async () => {
     let totalQuestions = 0
     let totalCorrect = 0
     const allResults: any[] = []
@@ -295,10 +324,12 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
         const userOptionIndex = response.answer.charCodeAt(0) - 65
         const correctOptionIndex = question?.correctAnswer.charCodeAt(0) - 65
-        const userAnswerText = question?.options[userOptionIndex] ? 
-          `${response.answer}. ${question.options[userOptionIndex]}` : response.answer
-        const correctAnswerText = question?.options[correctOptionIndex] ? 
-          `${question.correctAnswer}. ${question.options[correctOptionIndex]}` : question?.correctAnswer
+        const userAnswerText = question?.options[userOptionIndex]
+          ? `${response.answer}. ${question.options[userOptionIndex]}`
+          : response.answer
+        const correctAnswerText = question?.options[correctOptionIndex]
+          ? `${question.correctAnswer}. ${question.options[correctOptionIndex]}`
+          : question?.correctAnswer
 
         return {
           questionId: question?.id || `q_${response.questionIndex}`,
@@ -333,23 +364,62 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       isGroupQuiz: true
     }
 
+    // Submit final results to group leaderboard with proper authentication
+    if (isAuthenticated && user?.id) {
+      try {
+        // Get the current session for authentication
+        const {
+          data: { session: authSession }
+        } = await supabase!.auth.getSession()
+
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        }
+
+        if (authSession?.access_token) {
+          headers['Authorization'] = `Bearer ${authSession.access_token}`
+        }
+
+        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({
+            score: finalScore,
+            total_questions: totalQuestions,
+            correct_answers: totalCorrect,
+            time_taken_seconds: null, // Could add timer functionality later
+            result_data: {
+              allResults,
+              difficultyGroups: difficultyGroups.map(g => ({
+                difficulty: g.difficulty,
+                questionCount: g.questions.length
+              }))
+            }
+          })
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          console.error('Failed to submit final results to group leaderboard:', errorData)
+        } else {
+          console.log('Final results submitted successfully to group leaderboard')
+        }
+      } catch (error) {
+        console.error('Error submitting final results:', error)
+      }
+    }
+
     setResults(finalResults)
     setAppState('quiz-results')
   }
 
   const handleAnswerSelect = (questionIndex: number, answer: string) => {
     const newResponse: QuestionResponse = { questionIndex, answer }
-    setResponses(prev => [
-      ...prev.filter(r => r.questionIndex !== questionIndex),
-      newResponse
-    ])
+    setResponses(prev => [...prev.filter(r => r.questionIndex !== questionIndex), newResponse])
   }
 
   const moveToNextQuestion = () => {
-    if (
-      currentQuestionIndex <
-      (difficultyGroups[currentSetIndex]?.questions.length || 0) - 1
-    ) {
+    if (currentQuestionIndex < (difficultyGroups[currentSetIndex]?.questions.length || 0) - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1)
     }
   }
@@ -376,14 +446,9 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   }
 
   const getCurrentQuestion = () => {
-    if (
-      !difficultyGroups.length ||
-      currentSetIndex >= difficultyGroups.length
-    )
-      return null
+    if (!difficultyGroups.length || currentSetIndex >= difficultyGroups.length) return null
     const currentGroup = difficultyGroups[currentSetIndex]
-    if (!currentGroup || currentQuestionIndex >= currentGroup.questions.length)
-      return null
+    if (!currentGroup || currentQuestionIndex >= currentGroup.questions.length) return null
 
     let startIndex = 0
     for (let i = 0; i < currentSetIndex; i++) {
