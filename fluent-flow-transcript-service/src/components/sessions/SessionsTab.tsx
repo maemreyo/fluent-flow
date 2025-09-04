@@ -1,19 +1,21 @@
 import { useEffect, useState } from 'react'
 import { Calendar, Clock, Edit, Play, Plus, Trash2 } from 'lucide-react'
 import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
+import { GroupQuizResultsModal } from '../../app/groups/[groupId]/components/GroupQuizResultsModal'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
 import EditSessionModal from '../groups/EditSessionModal'
 import { FullscreenModal } from '../ui/dialog'
+import { SessionDetailsModal } from './SessionDetailsModal'
 
 interface SessionsTabProps {
   groupId: string
   canManage: boolean
   onCreateSession: () => void
-  highlightSessionId?: string // New prop for highlighting specific session
+  highlightSessionId?: string
 }
 
 interface SessionFilters {
-  status: 'all' | 'scheduled' | 'active' | 'completed' | 'cancelled'
+  status: 'all' | 'scheduled' | 'active' | 'completed' | 'cancelled' | 'expired'
 }
 
 export default function SessionsTab({
@@ -28,15 +30,17 @@ export default function SessionsTab({
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [editingSession, setEditingSession] = useState<any | null>(null)
   const [quizRoomSession, setQuizRoomSession] = useState<any | null>(null)
+  const [selectedSession, setSelectedSession] = useState<any | null>(null)
+  const [detailsSession, setDetailsSession] = useState<any | null>(null)
   const [highlightPulse, setHighlightPulse] = useState<string | null>(highlightSessionId || null)
-  const [joiningSession, setJoiningSession] = useState<string | null>(null) // Track which session is being validated
+  const [joiningSession, setJoiningSession] = useState<string | null>(null)
 
   // Remove highlight pulse after animation
   useEffect(() => {
     if (highlightSessionId) {
       const timer = setTimeout(() => {
         setHighlightPulse(null)
-      }, 3000) // Remove highlight after 3 seconds
+      }, 3000)
 
       return () => clearTimeout(timer)
     }
@@ -52,6 +56,8 @@ export default function SessionsTab({
         return 'bg-gray-100 text-gray-800 border-gray-200'
       case 'cancelled':
         return 'bg-red-100 text-red-800 border-red-200'
+      case 'expired':
+        return 'bg-orange-100 text-orange-800 border-orange-200'
       default:
         return 'bg-gray-100 text-gray-800 border-gray-200'
     }
@@ -80,9 +86,11 @@ export default function SessionsTab({
     })
   }
 
-  const filteredSessions = sessions.filter(
-    (session: any) => filters.status === 'all' || session.status === filters.status
-  )
+  const filteredSessions = sessions.filter((session: any) => {
+    if (filters.status === 'all') return true
+    if (filters.status === 'expired') return isLikelyExpired(session)
+    return session.status === filters.status
+  })
 
   const handleDeleteSession = async (sessionId: string) => {
     try {
@@ -97,12 +105,7 @@ export default function SessionsTab({
     setJoiningSession(session.id)
 
     try {
-      // Check for expired sessions before joining
       await checkExpiredSessions()
-
-      // Find the updated session status
-      // Note: In a real implementation, you might want to refetch sessions
-      // or check the specific session validity
       setQuizRoomSession(session)
     } catch (error) {
       console.error('Failed to validate session:', error)
@@ -128,21 +131,36 @@ export default function SessionsTab({
     return baseClass
   }
 
-  const getStatusBadgeClass = (status: string) => {
-    const baseClass =
-      'px-3 py-1 text-xs font-semibold rounded-full border transition-all duration-200'
+  // Helper function to determine if session should have View Results button
+  const shouldShowViewResults = (session: any) => {
+    return session.status === 'completed' || 
+           (session.status === 'active' && session.result_count > 0)
+  }
 
-    switch (status) {
-      case 'active':
-        return `${baseClass} bg-green-100 text-green-800 border-green-200 group-hover:bg-green-200 animate-pulse`
-      case 'scheduled':
-        return `${baseClass} bg-blue-100 text-blue-800 border-blue-200 group-hover:bg-blue-200`
-      case 'completed':
-        return `${baseClass} bg-gray-100 text-gray-800 border-gray-200 group-hover:bg-gray-200`
-      case 'cancelled':
-        return `${baseClass} bg-red-100 text-red-800 border-red-200 group-hover:bg-red-200`
-      default:
-        return `${baseClass} bg-gray-100 text-gray-800 border-gray-200`
+  // Helper function to check if session might be expired based on scheduled time
+  const isLikelyExpired = (session: any) => {
+    if (session.status !== 'scheduled') return false
+    if (!session.scheduled_at) return false
+    
+    const scheduledTime = new Date(session.scheduled_at)
+    const now = new Date()
+    // Consider sessions expired if they're more than 2 hours past scheduled time
+    const twoHoursAgo = new Date(now.getTime() - (2 * 60 * 60 * 1000))
+    
+    return scheduledTime < twoHoursAgo
+  }
+
+  // Enhanced refresh function with user feedback
+  const handleRefreshSessions = async () => {
+    try {
+      const result = await checkExpiredSessions()
+      if (result?.expiredSessionIds?.length > 0) {
+        // Could show toast notification here in the future
+        console.log(`Updated ${result.expiredSessionIds.length} expired sessions`)
+      }
+    } catch (error) {
+      console.error('Failed to refresh sessions:', error)
+      // Could show error toast here
     }
   }
 
@@ -205,7 +223,7 @@ export default function SessionsTab({
         </div>
         <div className="flex items-center gap-3">
           <button
-            onClick={checkExpiredSessions}
+            onClick={handleRefreshSessions}
             className="inline-flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2 font-medium text-gray-700 transition-all hover:bg-gray-200"
           >
             <Calendar className="h-4 w-4" />
@@ -225,7 +243,7 @@ export default function SessionsTab({
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {(['all', 'scheduled', 'active', 'completed', 'cancelled'] as const).map(status => (
+        {(['all', 'scheduled', 'active', 'completed', 'cancelled', 'expired'] as const).map(status => (
           <button
             key={status}
             onClick={() => setFilters({ status })}
@@ -235,10 +253,37 @@ export default function SessionsTab({
                 : 'bg-white/60 text-gray-700 hover:bg-white/80'
             }`}
           >
-            {status === 'all' ? 'All Sessions' : status.charAt(0).toUpperCase() + status.slice(1)}
+            {status === 'all' ? 'All Sessions' : 
+             status === 'expired' ? 'Likely Expired' :
+             status.charAt(0).toUpperCase() + status.slice(1)}
           </button>
         ))}
       </div>
+
+      {/* Expired Sessions Warning */}
+      {filteredSessions.some(isLikelyExpired) && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-orange-200 p-1">
+                <Calendar className="h-4 w-4 text-orange-600" />
+              </div>
+              <div>
+                <p className="font-medium text-orange-800">Some sessions may be expired</p>
+                <p className="text-sm text-orange-600">
+                  {filteredSessions.filter(isLikelyExpired).length} session(s) appear to be past their scheduled time.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleRefreshSessions}
+              className="rounded-lg bg-orange-600 px-3 py-1 text-sm text-white transition-colors hover:bg-orange-700"
+            >
+              Check Status
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Sessions List */}
       <div className="space-y-4">
@@ -259,7 +304,11 @@ export default function SessionsTab({
           </div>
         ) : (
           filteredSessions.map((session: any) => (
-            <div key={session.id} className={getSessionClassName(session.id)}>
+            <div 
+              key={session.id} 
+              className={getSessionClassName(session.id)}
+              onClick={() => setDetailsSession(session)}
+            >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="mb-2 flex items-center gap-3">
@@ -270,6 +319,11 @@ export default function SessionsTab({
                     >
                       {session.status}
                     </span>
+                    {isLikelyExpired(session) && (
+                      <span className="rounded-full border border-orange-200 bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
+                        ⚠️ Likely Expired
+                      </span>
+                    )}
                     {isHighlighted(session.id) && (
                       <span className="rounded-full border border-indigo-200 bg-indigo-100 px-2 py-1 text-xs font-medium text-indigo-700">
                         ✨ New
@@ -286,10 +340,23 @@ export default function SessionsTab({
                     {session.scheduled_at && (
                       <span>Scheduled for {formatDate(session.scheduled_at)}</span>
                     )}
+                    {session.result_count > 0 && (
+                      <span>{session.result_count} participants</span>
+                    )}
                   </div>
                 </div>
 
                 <div className="ml-4 flex items-center gap-2">
+                  {/* View Results button - for completed sessions or active sessions with results */}
+                  {shouldShowViewResults(session) && (
+                    <button
+                      onClick={() => setSelectedSession(session)}
+                      className="flex items-center gap-1 rounded-lg bg-indigo-600 px-3 py-1 text-sm text-white transition-colors hover:bg-indigo-700"
+                    >
+                      View Results
+                    </button>
+                  )}
+
                   {session.status === 'active' && (
                     <button
                       onClick={() => handleJoinSession(session)}
@@ -335,6 +402,17 @@ export default function SessionsTab({
         )}
       </div>
 
+      {/* Results Modal */}
+      {selectedSession && (
+        <GroupQuizResultsModal
+          isOpen={true}
+          onClose={() => setSelectedSession(null)}
+          sessionId={selectedSession.id}
+          groupId={groupId}
+          sessionTitle={selectedSession.title || selectedSession.video_title}
+        />
+      )}
+
       {/* Quiz Room Modal */}
       {quizRoomSession && (
         <GroupQuizRoomModal
@@ -377,6 +455,29 @@ export default function SessionsTab({
         </FullscreenModal>
       )}
 
+      {/* Session Details Modal */}
+      {detailsSession && (
+        <SessionDetailsModal
+          isOpen={true}
+          onClose={() => setDetailsSession(null)}
+          session={detailsSession}
+          groupId={groupId}
+          canManage={canManage}
+          onEdit={(session) => {
+            setDetailsSession(null)
+            setEditingSession(session)
+          }}
+          onJoin={(session) => {
+            setDetailsSession(null)
+            handleJoinSession(session)
+          }}
+          onViewResults={(session) => {
+            setDetailsSession(null)
+            setSelectedSession(session)
+          }}
+        />
+      )}
+
       {/* Edit Session Modal */}
       {editingSession && (
         <EditSessionModal
@@ -384,7 +485,7 @@ export default function SessionsTab({
           groupId={groupId}
           canEdit={canManage}
           onClose={() => setEditingSession(null)}
-          onSave={async () => {}}
+          onSave={async () => setEditingSession(null)}
         />
       )}
     </div>

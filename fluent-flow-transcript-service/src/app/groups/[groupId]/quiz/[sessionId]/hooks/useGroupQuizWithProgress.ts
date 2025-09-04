@@ -109,7 +109,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     console.log('handleQuestionInfoStartWithCheck: Checking for existing results...')
     setShouldCheckResults(true)
     refetchExistingResults() // Manually trigger the query
-  }, [groupQuizData, refetchExistingResults, existingResults])
+  }, [groupQuizData, existingResults])
 
   // Reset progress when starting quiz without existing results
   useEffect(() => {
@@ -128,7 +128,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
           console.warn('Failed to reset progress for fresh start:', error)
         })
     }
-  }, [groupQuizData.appState, groupQuizData.isAuthenticated, existingResults, resetProgress])
+  }, [groupQuizData.appState, groupQuizData.isAuthenticated, existingResults])
 
   // Clear cache when quiz starts (preset-selection to question-info transition)
   useEffect(() => {
@@ -194,8 +194,8 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     groupQuizData.isAuthenticated,
     groupQuizData.responses,
     groupQuizData.currentSetIndex,
-    groupQuizData.difficultyGroups,
-    updateProgress
+    groupQuizData.difficultyGroups
+    // updateProgress
   ])
 
   // Enhanced submitCurrentSet that marks set completion
@@ -236,8 +236,8 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     groupQuizData.isAuthenticated,
     groupQuizData.currentSetIndex,
     groupQuizData.responses,
-    groupQuizData.difficultyGroups,
-    updateProgress
+    groupQuizData.difficultyGroups
+    // updateProgress
   ])
 
   // Mark quiz as completed when results are shown
@@ -279,8 +279,8 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     groupQuizData.appState,
     groupQuizData.isAuthenticated,
     groupQuizData.results,
-    groupQuizData.difficultyGroups.length,
-    updateProgress
+    groupQuizData.difficultyGroups.length
+    // updateProgress
   ])
 
   // Modal handlers
@@ -304,7 +304,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     } catch (error) {
       console.error('Failed to reset progress:', error)
     }
-  }, [resetProgress, groupQuizData])
+  }, [groupQuizData])
 
   const handleCloseModal = useCallback(() => {
     setShowExistingResultsModal(false)
@@ -324,7 +324,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     }
 
     return false
-  }, [groupQuizData.isAuthenticated, refetchExistingResults])
+  }, [groupQuizData.isAuthenticated])
 
   // // Debug logging
   // useEffect(() => {
