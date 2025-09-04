@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useQuizAuth } from '../lib/hooks/use-quiz-auth'
 import { supabase } from '../lib/supabase/client'
+import { getAuthHeaders } from '../lib/supabase/auth-utils'
 
 interface GroupSession {
   id: string
@@ -39,18 +40,6 @@ export function useGroupSessions(groupId: string) {
   const [error, setError] = useState<string | null>(null)
   const { user, isAuthenticated } = useQuizAuth()
 
-  const getAuthHeaders = async () => {
-    const { data: { session } } = await supabase?.auth.getSession() || { data: { session: null } }
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    }
-    
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
-    }
-    
-    return headers
-  }
 
   const fetchSessions = async (status?: string) => {
     if (!isAuthenticated || !user) {

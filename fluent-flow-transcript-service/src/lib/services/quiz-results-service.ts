@@ -1,4 +1,5 @@
 import { supabase } from '../supabase/client'
+import { getAuthHeaders } from '../supabase/auth-utils'
 
 export interface QuizResult {
   id: string
@@ -28,21 +29,8 @@ export interface QuizResultsResponse {
 }
 
 class QuizResultsService {
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const { data: { session } } = await supabase?.auth.getSession() || { data: { session: null } }
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    }
-    
-    if (session?.access_token) {
-      headers['Authorization'] = `Bearer ${session.access_token}`
-    }
-    
-    return headers
-  }
-
   async fetchQuizResults(groupId: string, sessionId: string): Promise<QuizResultsResponse> {
-    const headers = await this.getAuthHeaders()
+    const headers = await getAuthHeaders()
     const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`, {
       headers
     })
@@ -62,7 +50,7 @@ class QuizResultsService {
     time_taken_seconds?: number
     result_data?: any
   }): Promise<any> {
-    const headers = await this.getAuthHeaders()
+    const headers = await getAuthHeaders()
     const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`, {
       method: 'POST',
       headers,

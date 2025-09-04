@@ -1,6 +1,7 @@
 // Groups service for client-side usage
 // Uses HTTP API calls instead of direct Supabase client to maintain consistency
 import { supabase } from '../supabase/client'
+import { getAuthHeaders } from '../supabase/auth-utils'
 
 export interface Group {
   id: string
@@ -57,28 +58,9 @@ export class GroupsService {
     }
   }
 
-  private async getAuthHeaders(): Promise<HeadersInit> {
-    const headers: HeadersInit = {
-      'Content-Type': 'application/json'
-    }
-
-    // Try to get auth token from various sources
-    if (typeof window !== 'undefined') {
-      // For browser/extension context, try localStorage or other storage
-      const token = localStorage.getItem('supabase_auth_token') || 
-                   localStorage.getItem('access_token')
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`
-      }
-    }
-
-    return headers
-  }
-
   async getUserGroups(): Promise<{ groups: Group[]; total: number }> {
     const response = await fetch(`${this.baseUrl}/api/user/groups`, {
-      headers: await this.getAuthHeaders()
+      headers: await getAuthHeaders()
     })
 
     if (!response.ok) {

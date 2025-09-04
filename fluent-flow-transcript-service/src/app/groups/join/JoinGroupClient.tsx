@@ -1,267 +1,119 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '../../../contexts/AuthContext'
-import { supabase } from '../../../lib/supabase/client'
 import { Button } from '../../../components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../../components/ui/card'
 import { Alert, AlertDescription } from '../../../components/ui/alert'
 import { Users, Mail, Calendar, AlertCircle, CheckCircle } from 'lucide-react'
 import { AuthPrompt } from '../../../components/auth/AuthPrompt'
-
-interface InvitationInfo {
-  id: string
-  group_id: string
-  email: string
-  invite_token: string
-  message: string
-  status: string
-  expires_at: string
-  group: {
-    name: string
-    description: string
-    member_count: number
-    is_private: boolean
-  }
-  invited_by_user: {
-    email: string
-  }
-}
+import { useJoinGroupByInvitation } from '../../../hooks/useJoinGroupByInvitation'
+import { useJoinGroupByCode } from '../../../hooks/useJoinGroupByCode'
 
 export default function JoinGroupClient() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, isLoading: authLoading } = useAuth()
   
-  const [invitation, setInvitation] = useState<InvitationInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [joining, setJoining] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-
   const token = searchParams.get('token')
-  const code = searchParams.get('code') // Alternative: join by group code
+  const code = searchParams.get('code')
 
+  // Use invitation hook if token exists
+  const {
+    invitation,
+    isLoading: invitationLoading,
+    error: invitationError,
+    acceptInvitation,
+    isAccepting,
+    acceptError,
+    acceptSuccess,
+    acceptData,
+    declineInvitation,
+    isDeclining,
+    canAccept
+  } = useJoinGroupByInvitation(token)
+
+  // Use code join hook if code exists
+  const {
+    joinGroup,
+    isJoining,
+    error: joinError,
+    isSuccess: joinSuccess,
+    data: joinData
+  } = useJoinGroupByCode()
+
+  // Handle direct join by code on mount
   useEffect(() => {
     if (authLoading) return
     
-    if (!supabase) {
-      setError('Database not configured')
-      setLoading(false)
+    if (!token && !code) {
       return
     }
 
-    if (token) {
-      fetchInvitationByToken()
-    } else if (code) {
-      // Handle joining by group code (direct join)
-      handleDirectJoinByCode()
-    } else {
-      setError('No invitation token or group code provided')
-      setLoading(false)
+    if (code && user) {
+      joinGroup(code)
     }
-  }, [token, code, authLoading])
+  }, [code, user, authLoading, joinGroup, token])
 
-  const fetchInvitationByToken = async () => {
-    if (!token) return
-
-    try {
-      const { data, error } = await supabase!
-        .from('group_invitations')
-        .select(`
-          id,
-          group_id,
-          email,
-          invite_token,
-          message,
-          status,
-          expires_at,
-          group:study_groups (
-            name,
-            description,
-            is_private
-          )
-        `)
-        .eq('invite_token', token)
-        .single()
-
-      if (!error && data) {
-        // Get invited_by user info separately
-        const { data: inviterData } = await supabase!
-          .from('group_invitations')
-          .select(`
-            invited_by:auth.users (
-              email
-            )
-          `)
-          .eq('invite_token', token)
-          .single()
-          
-        if (inviterData) {
-          (data as any).invited_by_user = (inviterData as any).invited_by
-        }
-      }
-
-      if (error) {
-        setError('Invalid or expired invitation link')
-        return
-      }
-
-      // Check if invitation is expired
-      if (new Date(data.expires_at) < new Date()) {
-        setError('This invitation has expired')
-        return
-      }
-
-      // Check if invitation is not pending
-      if (data.status !== 'pending') {
-        if (data.status === 'accepted') {
-          setError('This invitation has already been accepted')
-        } else if (data.status === 'declined') {
-          setError('This invitation has been declined')
-        } else {
-          setError('This invitation is no longer valid')
-        }
-        return
-      }
-
-      // Get member count
-      const { count } = await supabase!
-        .from('study_group_members')
-        .select('*', { count: 'exact', head: true })
-        .eq('group_id', data.group_id)
-
-      setInvitation({
-        ...data,
-        group: {
-          ...(data as any).group,
-          member_count: count || 0
-        }
-      } as any)
-    } catch (error) {
-      setError('Failed to load invitation details')
-      console.error('Error fetching invitation:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const handleDirectJoinByCode = async () => {
-    if (!code) return
-
-    // TODO: Implement direct join by group code
-    // This would be for public groups or groups that allow direct joining
-    setError('Direct join by code not yet implemented')
-    setLoading(false)
-  }
-
-  const handleAcceptInvitation = async () => {
-    if (!invitation || !user) return
-
-    setJoining(true)
-    setError(null)
-
-    try {
-      // Check if user email matches invitation email
-      if (user.email !== invitation.email) {
-        setError(`This invitation is for ${invitation.email}. Please sign in with the correct email address.`)
-        setJoining(false)
-        return
-      }
-
-      // Check if user is already a member
-      const { data: existingMember } = await supabase!
-        .from('study_group_members')
-        .select('id')
-        .eq('group_id', invitation.group_id)
-        .eq('user_id', user.id)
-        .maybeSingle()
-
-      if (existingMember) {
-        setError('You are already a member of this group')
-        setJoining(false)
-        return
-      }
-
-      // Start transaction: Accept invitation and add as member
-      const { error: inviteError } = await supabase!
-        .from('group_invitations')
-        .update({
-          status: 'accepted',
-          accepted_at: new Date().toISOString()
-        })
-        .eq('id', invitation.id)
-
-      if (inviteError) {
-        setError('Failed to accept invitation')
-        setJoining(false)
-        return
-      }
-
-      // Add user as group member
-      const { error: memberError } = await supabase!
-        .from('study_group_members')
-        .insert({
-          group_id: invitation.group_id,
-          user_id: user.id,
-          user_email: user.email,
-          role: 'member',
-          joined_at: new Date().toISOString()
-        })
-
-      if (memberError) {
-        // Rollback invitation status
-        await supabase!
-          .from('group_invitations')
-          .update({
-            status: 'pending',
-            accepted_at: null
-          })
-          .eq('id', invitation.id)
-
-        setError('Failed to join group')
-        setJoining(false)
-        return
-      }
-
-      setSuccess(true)
+  // Handle redirects
+  useEffect(() => {
+    if (acceptSuccess && acceptData) {
       setTimeout(() => {
-        router.push(`/groups/${invitation.group_id}`)
+        router.push(`/groups/${acceptData.groupId}`)
       }, 2000)
-
-    } catch (error) {
-      setError('An unexpected error occurred')
-      console.error('Error accepting invitation:', error)
-    } finally {
-      setJoining(false)
     }
+  }, [acceptSuccess, acceptData, router])
+
+  useEffect(() => {
+    if (joinSuccess && joinData) {
+      setTimeout(() => {
+        router.push(`/groups/${joinData.group.id}`)
+      }, 2000)
+    }
+  }, [joinSuccess, joinData, router])
+
+  // Add decline redirect handler
+  const handleDeclineSuccess = () => {
+    router.push('/')
   }
 
-  const handleDeclineInvitation = async () => {
-    if (!invitation) return
+  const isLoading = authLoading || invitationLoading || isJoining
+  const error = invitationError || acceptError || joinError
+  const success = acceptSuccess || joinSuccess
+  const groupName = acceptData?.groupName || joinData?.group.name
 
-    try {
-      const { error } = await supabase!
-        .from('group_invitations')
-        .update({
-          status: 'declined'
-        })
-        .eq('id', invitation.id)
-
-      if (error) {
-        setError('Failed to decline invitation')
-        return
-      }
-
-      router.push('/')
-    } catch (error) {
-      setError('An unexpected error occurred')
-      console.error('Error declining invitation:', error)
-    }
+  // Handle no token/code error
+  if (!token && !code) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2 text-red-600">
+              <AlertCircle className="w-5 h-5" />
+              Invalid Link
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Alert>
+              <AlertDescription>
+                No invitation token or group code provided
+              </AlertDescription>
+            </Alert>
+            <Button 
+              onClick={() => router.push('/')} 
+              className="w-full mt-4"
+              variant="outline"
+            >
+              Go to Dashboard
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
-  if (loading || authLoading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -333,7 +185,7 @@ export default function JoinGroupClient() {
               Welcome to the Group!
             </CardTitle>
             <CardDescription>
-              Successfully joined {invitation?.group.name}
+              Successfully joined {groupName}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -425,12 +277,12 @@ export default function JoinGroupClient() {
           </div>
 
           {/* Email Verification Warning */}
-          {user.email !== invitation.email && (
+          {!canAccept && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
               <AlertDescription>
                 This invitation is for <strong>{invitation.email}</strong>. 
-                You&apos;re currently signed in as <strong>{user.email}</strong>. 
+                You&apos;re currently signed in as <strong>{user?.email}</strong>. 
                 You&apos;ll need to sign in with the correct email to accept this invitation.
               </AlertDescription>
             </Alert>
@@ -439,18 +291,22 @@ export default function JoinGroupClient() {
           {/* Action Buttons */}
           <div className="flex gap-3">
             <Button
-              onClick={handleAcceptInvitation}
-              disabled={joining || user.email !== invitation.email}
+              onClick={() => acceptInvitation()}
+              disabled={isAccepting || !canAccept}
               className="flex-1"
             >
-              {joining ? 'Joining...' : 'Accept Invitation'}
+              {isAccepting ? 'Joining...' : 'Accept Invitation'}
             </Button>
             <Button
-              onClick={handleDeclineInvitation}
+              onClick={() => {
+                declineInvitation()
+                handleDeclineSuccess()
+              }}
+              disabled={isDeclining}
               variant="outline"
               className="flex-1"
             >
-              Decline
+              {isDeclining ? 'Declining...' : 'Decline'}
             </Button>
           </div>
         </CardContent>
