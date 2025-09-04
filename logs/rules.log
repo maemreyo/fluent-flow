@@ -1,0 +1,4 @@
+Ok, trước khi bắt đầu làm, cần nhớ 1 vài rules như sau:
+1. supabase project id: fxawystovhtbuqhllswl
+2. các component dùng chung: fluent-flow-transcript-service/src/components/ui/dialog.tsx
+3. API fluent-flow-transcript-service/src/lib/supabase/auth-utils.ts
