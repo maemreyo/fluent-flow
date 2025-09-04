@@ -3,6 +3,8 @@
 import { use } from 'react'
 import { AuthPrompt } from '../../../../../components/auth/AuthPrompt'
 import { CompactProgressSidebar } from '../../../../../components/groups/progress/CompactProgressSidebar'
+import { CheckingResultsModal } from '../../../../../components/groups/quiz/CheckingResultsModal'
+import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
 import { ErrorView } from '../../../../questions/[token]/components/ErrorView'
 import { LoadingView } from '../../../../questions/[token]/components/LoadingView'
 import { QuestionInfoView } from '../../../../questions/[token]/components/QuestionInfoView'
@@ -10,7 +12,6 @@ import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
 import { GroupQuizResults } from './components/GroupQuizResults'
 import { useGroupQuizWithProgress } from './hooks/useGroupQuizWithProgress'
-import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
 
 interface GroupQuizPageProps {
   params: Promise<{
@@ -330,22 +331,14 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
                   case 'question-info':
                     return (
-                      <div className="mx-auto max-w-4xl relative">
+                      <div className="relative mx-auto max-w-4xl">
                         <QuestionInfoView
                           questionSet={questionSet || null}
                           onStart={handleQuestionInfoStart}
                           getAvailableQuestionCounts={getAvailableQuestionCounts}
                         />
-                        
-                        {/* Loading overlay when checking existing results */}
-                        {isCheckingExistingResults && (
-                          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
-                            <div className="flex flex-col items-center gap-3">
-                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
-                              <p className="text-sm text-gray-600 font-medium">Checking previous results...</p>
-                            </div>
-                          </div>
-                        )}
+
+                        <CheckingResultsModal isOpen={isCheckingExistingResults} />
                       </div>
                     )
 

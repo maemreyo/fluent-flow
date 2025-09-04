@@ -1,7 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
-import { useProgressTracking } from '../../../../../../hooks/useProgressTracking'
-import type { ProgressUpdatePayload } from '../../../../../../lib/services/progress-tracking-service'
-import { useGroupQuiz } from './useGroupQuiz'
+import { useCallback, useEffect, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { useProgressTracking } from '../../../../../../hooks/useProgressTracking';
+import type { ProgressUpdatePayload } from '../../../../../../lib/services/progress-tracking-service';
+import { useGroupQuiz } from './useGroupQuiz';
+
 
 interface UseGroupQuizWithProgressProps {
   groupId: string
@@ -31,73 +33,77 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
   })
 
   // State for existing results modal
-  const [existingResults, setExistingResults] = useState<{
-    hasResults: boolean
-    results?: {
-      score: number
-      totalQuestions: number
-      correctAnswers: number
-      timeSpent: number
-      completedAt: string
-    }
-  } | null>(null)
   const [showExistingResultsModal, setShowExistingResultsModal] = useState(false)
-  const [isCheckingExistingResults, setIsCheckingExistingResults] = useState(false)
+  const [shouldCheckResults, setShouldCheckResults] = useState(false)
 
-  // Manual check for existing results
-  const checkAndHandleExistingResults = useCallback(async () => {
-    if (!groupQuizData.isAuthenticated) return false
+  // React Query for checking existing results
+  const {
+    data: existingResults,
+    isLoading: isCheckingExistingResults,
+    error: existingResultsError,
+    refetch: refetchExistingResults
+  } = useQuery({
+    queryKey: ['existing-results', groupId, sessionId],
+    queryFn: () => {
+      console.log('useQuery: Actually calling checkExistingResults')
+      return checkExistingResults(groupId)
+    },
+    enabled: false, // We'll trigger manually
+    staleTime: 5 * 60 * 1000, // Always fetch fresh data
+    gcTime: 1 * 60 * 1000, // Don't cache results
+    retry: 1, // Don't retry on error
+    refetchOnWindowFocus: false
+  })
 
-    console.log('Checking for existing results...')
-    setIsCheckingExistingResults(true)
-
-    try {
-      const results = await checkExistingResults(groupId)
-      console.log('Existing results check result:', results)
-      setExistingResults(results)
-
-      if (results.hasResults) {
+  // Handle query results
+  useEffect(() => {
+    if (existingResults !== undefined && shouldCheckResults) {
+      console.log('Processing existing results:', existingResults)
+      
+      if (existingResults.hasResults) {
         console.log('Found existing results, showing modal')
         setShowExistingResultsModal(true)
-        return true // Indicate that we should wait for user choice
       } else {
         console.log('No existing results found, proceeding with quiz')
-        return false // Indicate that we can proceed directly
+        // Auto-proceed with quiz start if no existing results
+        groupQuizData.handleQuestionInfoStart()
       }
-    } catch (error) {
-      console.warn('Failed to check existing results:', error)
-      setExistingResults({ hasResults: false })
-      return false
-    } finally {
-      setIsCheckingExistingResults(false)
+      
+      // Reset the trigger after processing
+      setShouldCheckResults(false)
     }
-  }, [groupId, groupQuizData.isAuthenticated, checkExistingResults])
+  }, [existingResults, shouldCheckResults, groupQuizData])
+
+  // Handle query errors
+  useEffect(() => {
+    if (existingResultsError && shouldCheckResults) {
+      console.warn('Failed to check existing results:', existingResultsError)
+      // On error, proceed with quiz start
+      groupQuizData.handleQuestionInfoStart()
+      setShouldCheckResults(false)
+    }
+  }, [existingResultsError, shouldCheckResults, groupQuizData])
 
   // Enhanced handleQuestionInfoStart that checks for existing results first
-  const handleQuestionInfoStartWithCheck = useCallback(async () => {
+  const handleQuestionInfoStartWithCheck = useCallback(() => {
     if (!groupQuizData.isAuthenticated) {
       // If not authenticated, proceed normally - auth prompt will be handled elsewhere
       groupQuizData.handleQuestionInfoStart()
       return
     }
 
-    // Check for existing results before starting
-    const hasExistingResults = await checkAndHandleExistingResults()
-
-    if (!hasExistingResults) {
-      // No existing results, proceed with quiz start
-      groupQuizData.handleQuestionInfoStart()
-    }
-    // If there are existing results, the modal is shown and user must choose
-    // The modal handlers will either restart or go back to presets
-  }, [groupQuizData])
+    // Trigger existing results check
+    console.log('handleQuestionInfoStartWithCheck: Checking for existing results...')
+    setShouldCheckResults(true)
+    refetchExistingResults() // Manually trigger the query
+  }, [groupQuizData, refetchExistingResults])
 
   // Reset progress when starting quiz without existing results
   useEffect(() => {
     if (
-      groupQuizData.appState === 'quiz-active' &&
+      groupQuizData.appState === 'quiz-active' && 
       groupQuizData.isAuthenticated &&
-      existingResults !== null && // We've checked for existing results
+      existingResults !== undefined && // We've checked for existing results
       !existingResults.hasResults // And found no existing results
     ) {
       // Safe to reset progress for fresh start
@@ -109,7 +115,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
           console.warn('Failed to reset progress for fresh start:', error)
         })
     }
-  }, [groupQuizData.appState, groupQuizData.isAuthenticated, existingResults])
+  }, [groupQuizData.appState, groupQuizData.isAuthenticated, existingResults, resetProgress])
 
   // Clear cache when quiz starts (preset-selection to question-info transition)
   useEffect(() => {
@@ -236,7 +242,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
       groupQuizData.results
     ) {
       console.log('Marking quiz as completed...')
-
+      
       const finalProgressUpdate: ProgressUpdatePayload = {
         currentQuestion: groupQuizData.results.totalQuestions || 0,
         currentSet: groupQuizData.difficultyGroups.length,
@@ -260,15 +266,14 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     groupQuizData.appState,
     groupQuizData.isAuthenticated,
     groupQuizData.results,
-    groupQuizData.difficultyGroups.length
+    groupQuizData.difficultyGroups.length,
+    updateProgress
   ])
 
   // Modal handlers
   const handleGoBackToPresets = useCallback(() => {
     setShowExistingResultsModal(false)
-    // Reset existing results check so user can come back
-    setExistingResults(null)
-    // Navigate back to preset selection - assuming there's a method in groupQuizData for this
+    // Navigate back to preset selection
     if (groupQuizData.handleRestart) {
       groupQuizData.handleRestart()
     }
@@ -280,7 +285,6 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     try {
       // Reset progress to clear old data
       await resetProgress()
-      setExistingResults({ hasResults: false })
       console.log('Starting fresh quiz - old data cleared')
       // Now proceed with starting the quiz
       groupQuizData.handleQuestionInfoStart()
@@ -293,6 +297,32 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     setShowExistingResultsModal(false)
   }, [])
 
+  // Manual trigger for checking existing results (for testing purposes)
+  const checkAndHandleExistingResults = useCallback(async () => {
+    if (!groupQuizData.isAuthenticated) return false
+    
+    console.log('Manual checkAndHandleExistingResults called')
+    setShouldCheckResults(true)
+    const { data } = await refetchExistingResults()
+    
+    if (data?.hasResults) {
+      setShowExistingResultsModal(true)
+      return true
+    }
+    
+    return false
+  }, [groupQuizData.isAuthenticated, refetchExistingResults])
+
+  // Debug logging
+  useEffect(() => {
+    console.log('Debug state:', {
+      shouldCheckResults,
+      isCheckingExistingResults,
+      existingResults: existingResults ? 'has data' : 'no data',
+      showExistingResultsModal
+    })
+  }, [shouldCheckResults, isCheckingExistingResults, existingResults, showExistingResultsModal])
+
   return {
     ...groupQuizData,
     // Override with progress-enhanced handlers
@@ -304,9 +334,9 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     progressParticipants,
     groupStats,
     // Add existing results modal data
-    existingResults,
+    existingResults: existingResults || { hasResults: false },
     showExistingResultsModal,
-    isCheckingExistingResults,
+    isCheckingExistingResults: isCheckingExistingResults && shouldCheckResults,
     checkAndHandleExistingResults, // Expose for manual testing if needed
     handleGoBackToPresets,
     handleStartFresh,
