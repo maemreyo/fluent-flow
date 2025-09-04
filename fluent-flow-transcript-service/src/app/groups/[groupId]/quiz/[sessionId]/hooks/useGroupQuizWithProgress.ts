@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import { useProgressTracking } from '../../../../../../hooks/useProgressTracking';
-import type { ProgressUpdatePayload } from '../../../../../../lib/services/progress-tracking-service';
-import { useGroupQuiz } from './useGroupQuiz';
-
+import { useCallback, useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { useProgressTracking } from '../../../../../../hooks/useProgressTracking'
+import type { ProgressUpdatePayload } from '../../../../../../lib/services/progress-tracking-service'
+import { useGroupQuiz } from './useGroupQuiz'
 
 interface UseGroupQuizWithProgressProps {
   groupId: string
@@ -36,30 +35,32 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
   const [showExistingResultsModal, setShowExistingResultsModal] = useState(false)
   const [shouldCheckResults, setShouldCheckResults] = useState(false)
 
-  // React Query for checking existing results
+  // React Query for checking existing results - Optimized caching
   const {
     data: existingResults,
     isLoading: isCheckingExistingResults,
     error: existingResultsError,
     refetch: refetchExistingResults
   } = useQuery({
-    queryKey: ['existing-results', groupId, sessionId],
+    queryKey: ['existing-results', groupId, sessionId, groupQuizData.isAuthenticated],
     queryFn: () => {
       console.log('useQuery: Actually calling checkExistingResults')
       return checkExistingResults(groupId)
     },
     enabled: false, // We'll trigger manually
-    staleTime: 5 * 60 * 1000, // Always fetch fresh data
-    gcTime: 1 * 60 * 1000, // Don't cache results
-    retry: 1, // Don't retry on error
-    refetchOnWindowFocus: false
+    staleTime: 2 * 60 * 1000, // Cache for 2 minutes - reasonable for existing results
+    gcTime: 5 * 60 * 1000, // Keep in memory for 5 minutes
+    retry: false, // Don't retry on error for user experience
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false, // Don't refetch on network reconnection
+    refetchOnMount: false // Don't refetch on component remount
   })
 
   // Handle query results
   useEffect(() => {
     if (existingResults !== undefined && shouldCheckResults) {
       console.log('Processing existing results:', existingResults)
-      
+
       if (existingResults.hasResults) {
         console.log('Found existing results, showing modal')
         setShowExistingResultsModal(true)
@@ -68,7 +69,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
         // Auto-proceed with quiz start if no existing results
         groupQuizData.handleQuestionInfoStart()
       }
-      
+
       // Reset the trigger after processing
       setShouldCheckResults(false)
     }
@@ -92,16 +93,28 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
       return
     }
 
-    // Trigger existing results check
+    // Check if we already have cached results
+    if (existingResults !== undefined) {
+      console.log('Using cached existing results:', existingResults)
+      if (existingResults.hasResults) {
+        setShowExistingResultsModal(true)
+        return
+      } else {
+        groupQuizData.handleQuestionInfoStart()
+        return
+      }
+    }
+
+    // Trigger existing results check if no cache
     console.log('handleQuestionInfoStartWithCheck: Checking for existing results...')
     setShouldCheckResults(true)
     refetchExistingResults() // Manually trigger the query
-  }, [groupQuizData, refetchExistingResults])
+  }, [groupQuizData, refetchExistingResults, existingResults])
 
   // Reset progress when starting quiz without existing results
   useEffect(() => {
     if (
-      groupQuizData.appState === 'quiz-active' && 
+      groupQuizData.appState === 'quiz-active' &&
       groupQuizData.isAuthenticated &&
       existingResults !== undefined && // We've checked for existing results
       !existingResults.hasResults // And found no existing results
@@ -229,12 +242,12 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
 
   // Mark quiz as completed when results are shown
   useEffect(() => {
-    console.log('Quiz completion effect check:', {
-      appState: groupQuizData.appState,
-      isAuthenticated: groupQuizData.isAuthenticated,
-      hasResults: !!groupQuizData.results,
-      results: groupQuizData.results
-    })
+    // console.log('Quiz completion effect check:', {
+    //   appState: groupQuizData.appState,
+    //   isAuthenticated: groupQuizData.isAuthenticated,
+    //   hasResults: !!groupQuizData.results,
+    //   results: groupQuizData.results
+    // })
 
     if (
       groupQuizData.appState === 'quiz-results' &&
@@ -242,7 +255,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
       groupQuizData.results
     ) {
       console.log('Marking quiz as completed...')
-      
+
       const finalProgressUpdate: ProgressUpdatePayload = {
         currentQuestion: groupQuizData.results.totalQuestions || 0,
         currentSet: groupQuizData.difficultyGroups.length,
@@ -300,16 +313,16 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
   // Manual trigger for checking existing results (for testing purposes)
   const checkAndHandleExistingResults = useCallback(async () => {
     if (!groupQuizData.isAuthenticated) return false
-    
+
     console.log('Manual checkAndHandleExistingResults called')
     setShouldCheckResults(true)
     const { data } = await refetchExistingResults()
-    
+
     if (data?.hasResults) {
       setShowExistingResultsModal(true)
       return true
     }
-    
+
     return false
   }, [groupQuizData.isAuthenticated, refetchExistingResults])
 

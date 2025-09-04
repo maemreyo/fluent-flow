@@ -147,76 +147,28 @@ export async function checkExistingResults(
 
     const userId = session.user.id
 
-    // Check for completed progress record (after completion logic is fixed)
-    // Also check for progress with answers as fallback for testing
-    const { data: completedData, error: completedError } = await supabase
+    // Optimized: Single query to check for any existing progress
+    // Check for completed progress first, then any progress with answers
+    const { data: progressData, error: progressError } = await supabase
       .from('group_quiz_progress')
       .select('*')
       .eq('session_id', sessionId)
       .eq('user_id', userId)
-      .eq('completed', true)
+      .or('completed.eq.true,total_answered.gt.0') // Completed OR has answers
       .order('updated_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    if (completedError) {
-      console.error('Error checking completed progress:', completedError)
-    }
-
-    // If no completed progress found, check for any progress with answers (for testing)
-    let progressData = completedData
-    if (!completedData) {
-      console.log('No completed progress found, checking for any progress with answers...')
-      const { data: anyProgressData, error: progressError } = await supabase
-        .from('group_quiz_progress')
-        .select('*')
-        .eq('session_id', sessionId)
-        .eq('user_id', userId)
-        .gt('total_answered', 0)
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (progressError) {
-        console.error('Error checking any progress:', progressError)
-        throw progressError
-      }
-      
-      progressData = anyProgressData
+    if (progressError) {
+      console.error('Error checking existing progress:', progressError)
+      return { hasResults: false }
     }
 
     console.log('Found progress data:', progressData)
 
     if (progressData) {
-      // Also check if there are actual quiz results saved
-      try {
-        const headers = await getAuthHeaders()
-        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`, {
-          headers
-        })
-
-        if (response.ok) {
-          const data = await response.json()
-          const userResults = data.results?.find((r: any) => r.user_id === userId)
-          
-          if (userResults) {
-            return { 
-              hasResults: true, 
-              results: {
-                score: userResults.score,
-                totalQuestions: userResults.total_questions,
-                correctAnswers: progressData.correct_answers,
-                timeSpent: progressData.time_spent,
-                completedAt: progressData.last_activity
-              }
-            }
-          }
-        }
-      } catch (error) {
-        console.warn('Failed to fetch quiz results:', error)
-      }
-
-      // Even if no API results, we have progress data
+      // We have existing progress - build results from progress data only
+      // No need to call results API since we already have the data we need
       return { 
         hasResults: true, 
         results: {

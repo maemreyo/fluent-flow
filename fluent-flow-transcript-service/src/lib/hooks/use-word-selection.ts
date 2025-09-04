@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { wordSelectionService, type WordSelectionData, type SelectedWord } from '../services/word-selection-service'
 import { useAuth } from '../../contexts/AuthContext'
+import {
+  wordSelectionService,
+  type SelectedWord,
+  type WordSelectionData
+} from '../services/word-selection-service'
 
 // Import bridge service if available (for newtab integration)
 const wordExplorerBridgeService: any = null
@@ -20,7 +24,11 @@ export interface UseWordSelectionReturn {
   removeSelectedWord: (wordId: string) => Promise<boolean>
   isWordSelected: (word: string) => Promise<boolean>
   clearAllWords: () => Promise<boolean>
-  enableSelection: (containerId: string, sourceType: 'quiz' | 'vocabulary' | 'transcript', sourceId: string) => void
+  enableSelection: (
+    containerId: string,
+    sourceType: 'quiz' | 'vocabulary' | 'transcript',
+    sourceId: string
+  ) => void
   disableSelection: (containerId: string) => void
   refreshWords: () => Promise<void>
 }
@@ -53,124 +61,138 @@ export function useWordSelection(): UseWordSelectionReturn {
     }
   }, [user?.id])
 
-  const addSelectedWord = useCallback(async (data: WordSelectionData): Promise<boolean> => {
-    setState(prev => ({ ...prev, isLoading: true }))
-    try {
-      const cleanWord = wordSelectionService.extractCleanWord(data.word)
-      console.log('Adding word to selection:', cleanWord, 'from', data.sourceType)
-      
-      const success = await wordSelectionService.addSelectedWord(
-        {
-          word: cleanWord,
-          context: data.context,
-          sourceType: data.sourceType,
-          sourceId: data.sourceId
-        },
-        user?.id
-      )
-      
-      console.log('Word selection service result:', success)
-      
-      if (success) {
-        await refreshWords()
-        
-        // Also add to user vocabulary deck for better integration with AI enhancement
-        try {
-          console.log('Attempting to add to vocabulary deck with AI enhancement...')
-          const { userService } = await import('../services/user-service')
-          const { vocabularyEnhancementService } = await import('../services/vocabulary-enhancement-service')
-          
-          if (user) {
-            // Get AI enhancement data
-            console.log('Enhancing vocabulary with AI...')
-            const enhancedData = await vocabularyEnhancementService.enhanceVocabularyWithRetry(
-              cleanWord,
-              data.context,
-              'intermediate'
-            )
-            
-            console.log('AI enhancement result:', enhancedData)
-            
-            const vocabularyData = {
-              text: cleanWord,
-              definition: enhancedData.definition_en || `A word/phrase selected from ${data.sourceType}`,
-              definition_vi: enhancedData.definition_vi,
-              example: enhancedData.example,
-              context: data.context,
-              difficulty: 'intermediate',
-              item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
-              learning_status: 'new',
-              part_of_speech: enhancedData.part_of_speech,
-              pronunciation: enhancedData.pronunciation,
-              synonyms: enhancedData.synonyms,
-              antonyms: enhancedData.antonyms
-            }
-            
-            console.log('Adding enhanced vocabulary data to deck:', vocabularyData)
-            const result = await userService.addVocabularyToDeck(user.id, vocabularyData)
-            
-            if (result) {
-              console.log('Successfully added enhanced word to vocabulary deck:', result)
-            } else {
-              console.warn('Failed to add word to vocabulary deck - no result returned')
-            }
-          } else {
-            console.warn('No current user found for vocabulary deck')
-          }
-        } catch (bridgeError) {
-          console.error('Error adding to vocabulary deck:', bridgeError)
-        }
-        
-        if (wordExplorerBridgeService) {
+  const addSelectedWord = useCallback(
+    async (data: WordSelectionData): Promise<boolean> => {
+      setState(prev => ({ ...prev, isLoading: true }))
+      try {
+        const cleanWord = wordSelectionService.extractCleanWord(data.word)
+        console.log('Adding word to selection:', cleanWord, 'from', data.sourceType)
+
+        const success = await wordSelectionService.addSelectedWord(
+          {
+            word: cleanWord,
+            context: data.context,
+            sourceType: data.sourceType,
+            sourceId: data.sourceId
+          },
+          user?.id
+        )
+
+        console.log('Word selection service result:', success)
+
+        if (success) {
+          await refreshWords()
+
+          // Also add to user vocabulary deck for better integration with AI enhancement
           try {
-            const selectedWords = await wordSelectionService.getSelectedWords(user?.id)
-            const latestWord = selectedWords.find(w => w.word.toLowerCase() === cleanWord.toLowerCase())
-            if (latestWord) {
-              await wordExplorerBridgeService.addWordToExplorer(latestWord)
+            console.log('Attempting to add to vocabulary deck with AI enhancement...')
+            const { userService } = await import('../services/user-service')
+            const { vocabularyEnhancementService } = await import(
+              '../services/vocabulary-enhancement-service'
+            )
+
+            if (user) {
+              // Get AI enhancement data
+              console.log('Enhancing vocabulary with AI...')
+              const enhancedData = await vocabularyEnhancementService.enhanceVocabularyWithRetry(
+                cleanWord,
+                data.context,
+                'intermediate'
+              )
+
+              console.log('AI enhancement result:', enhancedData)
+
+              const vocabularyData = {
+                text: cleanWord,
+                definition:
+                  enhancedData.definition_en || `A word/phrase selected from ${data.sourceType}`,
+                definition_vi: enhancedData.definition_vi,
+                example: enhancedData.example,
+                context: data.context,
+                difficulty: 'intermediate',
+                item_type: cleanWord.includes(' ') ? 'phrase' : 'word',
+                learning_status: 'new',
+                part_of_speech: enhancedData.part_of_speech,
+                pronunciation: enhancedData.pronunciation,
+                synonyms: enhancedData.synonyms,
+                antonyms: enhancedData.antonyms
+              }
+
+              console.log('Adding enhanced vocabulary data to deck:', vocabularyData)
+              const result = await userService.addVocabularyToDeck(user.id, vocabularyData)
+
+              if (result) {
+                console.log('Successfully added enhanced word to vocabulary deck:', result)
+              } else {
+                console.warn('Failed to add word to vocabulary deck - no result returned')
+              }
+            } else {
+              console.warn('No current user found for vocabulary deck')
             }
           } catch (bridgeError) {
-            console.warn('Failed to add word to explorer:', bridgeError)
+            console.error('Error adding to vocabulary deck:', bridgeError)
           }
+
+          if (wordExplorerBridgeService) {
+            try {
+              const selectedWords = await wordSelectionService.getSelectedWords(user?.id)
+              const latestWord = selectedWords.find(
+                w => w.word.toLowerCase() === cleanWord.toLowerCase()
+              )
+              if (latestWord) {
+                await wordExplorerBridgeService.addWordToExplorer(latestWord)
+              }
+            } catch (bridgeError) {
+              console.warn('Failed to add word to explorer:', bridgeError)
+            }
+          }
+        } else {
+          console.warn('Failed to add word to selection service')
         }
-      } else {
-        console.warn('Failed to add word to selection service')
-      }
-      
-      setState(prev => ({ ...prev, isLoading: false }))
-      return success
-    } catch (error) {
-      console.error('Error in addSelectedWord:', error)
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to add word'
-      }))
-      return false
-    }
-  }, [user?.id, refreshWords])
 
-  const removeSelectedWord = useCallback(async (wordId: string): Promise<boolean> => {
-    setState(prev => ({ ...prev, isLoading: true }))
-    try {
-      const success = await wordSelectionService.removeSelectedWord(wordId, user?.id)
-      if (success) {
-        await refreshWords()
+        setState(prev => ({ ...prev, isLoading: false }))
+        return success
+      } catch (error) {
+        console.error('Error in addSelectedWord:', error)
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Failed to add word'
+        }))
+        return false
       }
-      setState(prev => ({ ...prev, isLoading: false }))
-      return success
-    } catch (error) {
-      setState(prev => ({
-        ...prev,
-        isLoading: false,
-        error: error instanceof Error ? error.message : 'Failed to remove word'
-      }))
-      return false
-    }
-  }, [user?.id, refreshWords])
+    },
+    [user?.id, refreshWords]
+  )
 
-  const isWordSelected = useCallback(async (word: string): Promise<boolean> => {
-    return await wordSelectionService.isWordSelected(word, user?.id)
-  }, [user?.id])
+  const removeSelectedWord = useCallback(
+    async (wordId: string): Promise<boolean> => {
+      setState(prev => ({ ...prev, isLoading: true }))
+      try {
+        const success = await wordSelectionService.removeSelectedWord(wordId, user?.id)
+        if (success) {
+          await refreshWords()
+        }
+        setState(prev => ({ ...prev, isLoading: false }))
+        return success
+      } catch (error) {
+        setState(prev => ({
+          ...prev,
+          isLoading: false,
+          error: error instanceof Error ? error.message : 'Failed to remove word'
+        }))
+        return false
+      }
+    },
+    [user?.id, refreshWords]
+  )
+
+  const isWordSelected = useCallback(
+    async (word: string): Promise<boolean> => {
+      return await wordSelectionService.isWordSelected(word, user?.id)
+    },
+    [user?.id]
+  )
 
   const clearAllWords = useCallback(async (): Promise<boolean> => {
     setState(prev => ({ ...prev, isLoading: true }))
@@ -194,63 +216,58 @@ export function useWordSelection(): UseWordSelectionReturn {
     }
   }, [user?.id])
 
-  const handleTextSelection = useCallback((
-    _event: MouseEvent,
-    sourceType: 'quiz' | 'vocabulary' | 'transcript',
-    sourceId: string
-  ) => {
-    console.log('Word selection: Text selection event triggered')
-    const selection = window.getSelection()
-    if (!selection || selection.isCollapsed) {
-      console.log('Word selection: No selection or collapsed')
-      return
-    }
+  const handleTextSelection = useCallback(
+    (_event: MouseEvent, sourceType: 'quiz' | 'vocabulary' | 'transcript', sourceId: string) => {
+      // console.log('Word selection: Text selection event triggered')
+      const selection = window.getSelection()
+      if (!selection || selection.isCollapsed) {
+        // console.log('Word selection: No selection or collapsed')
+        return
+      }
 
-    const selectedText = selection.toString().trim()
-    console.log('Word selection: Selected text:', selectedText)
-    if (!selectedText || selectedText.length < 2) {
-      console.log('Word selection: Text too short')
-      return
-    }
+      const selectedText = selection.toString().trim()
+      // console.log('Word selection: Selected text:', selectedText)
+      if (!selectedText || selectedText.length < 2) {
+        // console.log('Word selection: Text too short')
+        return
+      }
 
-    const range = selection.getRangeAt(0)
-    const container = range.commonAncestorContainer.parentElement
+      const range = selection.getRangeAt(0)
+      const container = range.commonAncestorContainer.parentElement
 
-    if (!container) {
-      console.log('Word selection: No container found')
-      return
-    }
+      if (!container) {
+        // console.log('Word selection: No container found')
+        return
+      }
 
-    const context = wordSelectionService.getWordContext(container, selectedText)
-    const cleanWord = wordSelectionService.extractCleanWord(selectedText)
+      const context = wordSelectionService.getWordContext(container, selectedText)
+      const cleanWord = wordSelectionService.extractCleanWord(selectedText)
 
-    console.log('Word selection: Showing tooltip for word:', cleanWord)
-    
-    const rect = range.getBoundingClientRect()
-    showSelectionTooltip(rect, cleanWord, () => {
-      console.log('Word selection: Adding word to selection')
-      addSelectedWord({
-        word: selectedText,
-        context,
-        sourceType,
-        sourceId,
-        position: {
-          x: rect.left + rect.width / 2,
-          y: rect.top
-        }
+      // console.log('Word selection: Showing tooltip for word:', cleanWord)
+
+      const rect = range.getBoundingClientRect()
+      showSelectionTooltip(rect, cleanWord, () => {
+        // console.log('Word selection: Adding word to selection')
+        addSelectedWord({
+          word: selectedText,
+          context,
+          sourceType,
+          sourceId,
+          position: {
+            x: rect.left + rect.width / 2,
+            y: rect.top
+          }
+        })
       })
-    })
 
-    setTimeout(() => {
-      selection.removeAllRanges()
-    }, 100)
-  }, [addSelectedWord])
+      setTimeout(() => {
+        selection.removeAllRanges()
+      }, 100)
+    },
+    [addSelectedWord]
+  )
 
-  const showSelectionTooltip = useCallback((
-    rect: DOMRect,
-    word: string,
-    onConfirm: () => void
-  ) => {
+  const showSelectionTooltip = useCallback((rect: DOMRect, word: string, onConfirm: () => void) => {
     const existingTooltip = document.querySelector('.word-selection-tooltip')
     if (existingTooltip) {
       existingTooltip.remove()
@@ -278,7 +295,7 @@ export function useWordSelection(): UseWordSelectionReturn {
       border: 1px solid rgba(255,255,255,0.2);
       backdrop-filter: blur(10px);
     `
-    
+
     if (!document.querySelector('#word-selection-styles')) {
       const style = document.createElement('style')
       style.id = 'word-selection-styles'
@@ -310,7 +327,7 @@ export function useWordSelection(): UseWordSelectionReturn {
       `
       document.head.appendChild(style)
     }
-    
+
     tooltip.innerHTML = `
       <div style="text-align: center;">
         <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -326,7 +343,7 @@ export function useWordSelection(): UseWordSelectionReturn {
     tooltip.addEventListener('click', async () => {
       if (isProcessing) return
       isProcessing = true
-      
+
       tooltip.innerHTML = `
         <div style="text-align: center;">
           <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; justify-content: center; gap: 6px;">
@@ -335,7 +352,7 @@ export function useWordSelection(): UseWordSelectionReturn {
           </div>
         </div>
       `
-      
+
       const spinStyle = document.createElement('style')
       spinStyle.textContent = `
         @keyframes spin {
@@ -344,10 +361,10 @@ export function useWordSelection(): UseWordSelectionReturn {
         }
       `
       document.head.appendChild(spinStyle)
-      
+
       try {
         await onConfirm()
-        
+
         tooltip.style.animation = 'tooltip-success 0.6s ease-out forwards'
         tooltip.innerHTML = `
           <div style="text-align: center;">
@@ -357,7 +374,7 @@ export function useWordSelection(): UseWordSelectionReturn {
             </div>
           </div>
         `
-        
+
         setTimeout(() => {
           if (tooltip.parentNode) {
             tooltip.style.opacity = '0'
@@ -375,7 +392,7 @@ export function useWordSelection(): UseWordSelectionReturn {
             </div>
           </div>
         `
-        
+
         setTimeout(() => {
           if (tooltip.parentNode) {
             tooltip.style.opacity = '0'
@@ -383,7 +400,7 @@ export function useWordSelection(): UseWordSelectionReturn {
           }
         }, 2000)
       }
-      
+
       spinStyle.remove()
     })
 
@@ -393,7 +410,7 @@ export function useWordSelection(): UseWordSelectionReturn {
         tooltip.style.boxShadow = '0 12px 40px rgba(0,0,0,0.25)'
       }
     })
-    
+
     tooltip.addEventListener('mouseleave', () => {
       if (!isProcessing) {
         tooltip.style.transform = 'translateX(-50%) translateY(0) scale(1)'
@@ -410,33 +427,32 @@ export function useWordSelection(): UseWordSelectionReturn {
         setTimeout(() => tooltip.remove(), 300)
       }
     }, 5000)
-    
+
     tooltip.addEventListener('click', () => clearTimeout(autoRemoveTimeout))
   }, [])
 
-  const enableSelection = useCallback((
-    containerId: string,
-    sourceType: 'quiz' | 'vocabulary' | 'transcript',
-    sourceId: string
-  ) => {
-    const container = document.getElementById(containerId)
-    if (!container) {
-      console.log(`Word selection: Container not found: ${containerId}`)
-      return
-    }
+  const enableSelection = useCallback(
+    (containerId: string, sourceType: 'quiz' | 'vocabulary' | 'transcript', sourceId: string) => {
+      const container = document.getElementById(containerId)
+      if (!container) {
+        // console.log(`Word selection: Container not found: ${containerId}`)
+        return
+      }
 
-    console.log(`Word selection: Enabling selection for ${containerId}`)
-    const handler = (event: MouseEvent) => handleTextSelection(event, sourceType, sourceId)
-    
-    container.addEventListener('mouseup', handler)
-    container.style.userSelect = 'text'
-    container.style.cursor = 'text'
+      // console.log(`Word selection: Enabling selection for ${containerId}`)
+      const handler = (event: MouseEvent) => handleTextSelection(event, sourceType, sourceId)
 
-    setState(prev => ({ ...prev, isSelecting: true }))
+      container.addEventListener('mouseup', handler)
+      container.style.userSelect = 'text'
+      container.style.cursor = 'text'
 
-    // Store handler for cleanup
-    ;(container as any)._wordSelectionHandler = handler
-  }, [handleTextSelection])
+      setState(prev => ({ ...prev, isSelecting: true }))
+
+      // Store handler for cleanup
+      ;(container as any)._wordSelectionHandler = handler
+    },
+    [handleTextSelection]
+  )
 
   const disableSelection = useCallback((containerId: string) => {
     const container = document.getElementById(containerId)
