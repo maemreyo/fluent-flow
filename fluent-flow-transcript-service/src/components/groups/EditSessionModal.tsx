@@ -1,13 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { X, Calendar, Clock, Users, Save } from 'lucide-react'
+import { Calendar, Clock, Users, Save } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Textarea } from '../ui/textarea'
 import { Label } from '../ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../ui/select'
 import { Switch } from '../ui/switch'
+import { FullscreenModal } from '../ui/dialog'
 
 interface GroupSession {
   id: string
@@ -100,18 +101,16 @@ export default function EditSessionModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div className="flex items-center justify-between mb-6">
+    <FullscreenModal
+      isOpen={true}
+      onClose={onClose}
+      className="max-w-2xl w-full"
+    >
+      <div className="p-6">
+        <div className="mb-6">
           <h2 className="text-2xl font-bold text-gray-800">
             {canEdit ? 'Edit Session' : 'Session Details'}
           </h2>
-          <button
-            onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
         </div>
 
         {/* Session Info Summary */}
@@ -335,6 +334,6 @@ export default function EditSessionModal({
           </div>
         )}
       </div>
-    </div>
+    </FullscreenModal>
   )
 }

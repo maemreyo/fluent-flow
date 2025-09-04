@@ -2,8 +2,89 @@
 
 import * as React from 'react'
 import * as DialogPrimitive from '@radix-ui/react-dialog'
-import { XIcon } from 'lucide-react'
+import { XIcon, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { createPortal } from 'react-dom'
+import { useEffect } from 'react'
+
+interface FullscreenModalProps {
+  isOpen: boolean
+  onClose: () => void
+  children: React.ReactNode
+  className?: string
+  showCloseButton?: boolean
+  closeOnBackdropClick?: boolean
+}
+
+export function FullscreenModal({
+  isOpen,
+  onClose,
+  children,
+  className,
+  showCloseButton = true,
+  closeOnBackdropClick = true
+}: FullscreenModalProps) {
+  // Handle escape key
+  useEffect(() => {
+    if (!isOpen) return
+    
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    
+    document.addEventListener('keydown', handleEscape)
+    return () => document.removeEventListener('keydown', handleEscape)
+  }, [isOpen, onClose])
+
+  // Prevent body scroll when modal is open
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+      return () => {
+        document.body.style.overflow = 'unset'
+      }
+    }
+  }, [isOpen])
+
+  if (!isOpen) return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <div 
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-200"
+        onClick={closeOnBackdropClick ? onClose : undefined}
+        aria-hidden="true"
+      />
+      
+      {/* Modal content */}
+      <div 
+        className={cn(
+          'relative z-10 bg-white rounded-2xl shadow-2xl max-h-[95vh] overflow-auto',
+          'animate-in fade-in-0 zoom-in-95 duration-200',
+          className
+        )}
+        role="dialog"
+        aria-modal="true"
+      >
+        {showCloseButton && (
+          <button
+            onClick={onClose}
+            className="absolute right-4 top-4 z-20 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600"
+            aria-label="Close modal"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+        
+        {children}
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 function Dialog({ ...props }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />

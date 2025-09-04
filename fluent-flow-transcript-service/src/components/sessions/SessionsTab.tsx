@@ -3,6 +3,7 @@ import { Plus, Calendar, Clock, Play, Trash2, Edit } from 'lucide-react'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
 import EditSessionModal from '../groups/EditSessionModal'
 import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
+import { FullscreenModal } from '../ui/dialog'
 
 interface SessionsTabProps {
   groupId: string
@@ -316,8 +317,13 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
 
       {/* Delete Confirmation */}
       {deleteConfirm && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 max-w-md w-full mx-4">
+        <FullscreenModal
+          isOpen={true}
+          onClose={() => setDeleteConfirm(null)}
+          className="max-w-md w-full"
+          closeOnBackdropClick={false}
+        >
+          <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Delete Session</h3>
             <p className="text-gray-600 mb-6">
               Are you sure you want to delete this session? This action cannot be undone.
@@ -337,7 +343,7 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
               </button>
             </div>
           </div>
-        </div>
+        </FullscreenModal>
       )}
 
       {/* Edit Session Modal */}
