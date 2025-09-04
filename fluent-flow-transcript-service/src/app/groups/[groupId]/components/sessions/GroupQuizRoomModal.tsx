@@ -42,12 +42,12 @@ export function GroupQuizRoomModal({
     <FullscreenModal
       isOpen={isOpen}
       onClose={onClose}
-      className="max-w-4xl w-[95vw] bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-50/95 backdrop-blur-xl border-white/20 shadow-2xl"
+      className="w-[95vw] max-w-4xl border-white/20 bg-gradient-to-br from-slate-50/95 via-blue-50/95 to-indigo-50/95 shadow-2xl backdrop-blur-xl"
     >
       <div className="p-6">
         <div className="pb-4">
           <h2 className="bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-2xl font-bold text-transparent">
-            Quiz Room - {session.quiz_title}
+            Quiz Room
           </h2>
         </div>
 
