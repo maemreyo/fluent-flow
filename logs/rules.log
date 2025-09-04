@@ -1,4 +1,12 @@
-Ok, trước khi bắt đầu làm, cần nhớ 1 vài rules như sau:
 1. supabase project id: fxawystovhtbuqhllswl
-2. các component dùng chung: fluent-flow-transcript-service/src/components/ui/dialog.tsx
+2. take advantage of common UI components when creating components: fluent-flow-transcript-service/src/components/ui/*
 3. API fluent-flow-transcript-service/src/lib/supabase/auth-utils.ts
+4. Use React Query
+5. Separate of concerns into components, files (logic API call and UI need to be splitted to files - components, hooks)
+6. 4 important files to use when calling api:
+```
+fluent-flow-transcript-service/src/lib/supabase/auth-utils.ts
+fluent-flow-transcript-service/src/lib/supabase/client.ts
+fluent-flow-transcript-service/src/lib/supabase/server.ts
+fluent-flow-transcript-service/src/lib/supabase/service-role.ts
+```

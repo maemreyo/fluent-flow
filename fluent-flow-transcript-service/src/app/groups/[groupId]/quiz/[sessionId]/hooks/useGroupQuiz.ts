@@ -108,41 +108,6 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   })
 
-  // Debug logging
-  useEffect(() => {
-    console.log('🔍 Group Quiz Debug:', {
-      sessionLoading,
-      groupLoading,
-      questionSetLoading,
-      participantsLoading,
-      session: session
-        ? {
-            id: session.id,
-            title: session.title,
-            share_token: session.share_token,
-            hasShareToken: !!session.share_token
-          }
-        : null,
-      questionSet: questionSet ? 'loaded' : 'null',
-      questionSetQueryEnabled: !!session?.share_token,
-      sessionError: sessionError?.message,
-      groupError: groupError?.message,
-      questionSetError: questionSetError?.message,
-      appState
-    })
-  }, [
-    sessionLoading,
-    groupLoading,
-    questionSetLoading,
-    participantsLoading,
-    session,
-    questionSet,
-    sessionError,
-    groupError,
-    questionSetError,
-    appState
-  ])
-
   // Auth handling (similar to individual quiz)
   const [authToken, setAuthToken] = useState<string | undefined>()
   const {

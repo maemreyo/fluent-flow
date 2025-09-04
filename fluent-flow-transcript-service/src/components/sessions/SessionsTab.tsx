@@ -23,6 +23,7 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
   const [editingSession, setEditingSession] = useState<any | null>(null)
   const [quizRoomSession, setQuizRoomSession] = useState<any | null>(null)
   const [highlightPulse, setHighlightPulse] = useState<string | null>(highlightSessionId || null)
+  const [joiningSession, setJoiningSession] = useState<string | null>(null) // Track which session is being validated
 
   // Remove highlight pulse after animation
   useEffect(() => {
@@ -74,6 +75,24 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
       setDeleteConfirm(null)
     } catch (err) {
       console.error('Failed to delete session:', err)
+    }
+  }
+
+  const handleJoinSession = async (session: any) => {
+    setJoiningSession(session.id)
+    
+    try {
+      // Check for expired sessions before joining
+      await checkExpiredSessions()
+      
+      // Find the updated session status
+      // Note: In a real implementation, you might want to refetch sessions
+      // or check the specific session validity
+      setQuizRoomSession(session)
+    } catch (error) {
+      console.error('Failed to validate session:', error)
+    } finally {
+      setJoiningSession(null)
     }
   }
 
@@ -263,21 +282,23 @@ export default function SessionsTab({ groupId, canManage, onCreateSession, highl
                 <div className="flex items-center gap-2 ml-4">
                   {session.status === 'active' && (
                     <button 
-                      onClick={() => setQuizRoomSession(session)}
-                      className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1"
+                      onClick={() => handleJoinSession(session)}
+                      disabled={joiningSession === session.id}
+                      className="px-3 py-1 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition-colors flex items-center gap-1 disabled:opacity-50"
                     >
                       <Play className="w-3 h-3" />
-                      Join
+                      {joiningSession === session.id ? 'Checking...' : 'Join'}
                     </button>
                   )}
                   
                   {session.status === 'scheduled' && (
                     <button 
-                      onClick={() => setQuizRoomSession(session)}
-                      className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
+                      onClick={() => handleJoinSession(session)}
+                      disabled={joiningSession === session.id}
+                      className="px-3 py-1 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors flex items-center gap-1 disabled:opacity-50"
                     >
                       <Play className="w-3 h-3" />
-                      Enter Room
+                      {joiningSession === session.id ? 'Checking...' : 'Enter Room'}
                     </button>
                   )}
                   

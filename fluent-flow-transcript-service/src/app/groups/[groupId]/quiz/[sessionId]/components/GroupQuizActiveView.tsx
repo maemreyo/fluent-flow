@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
@@ -42,13 +42,12 @@ export function GroupQuizActiveView({
 }: GroupQuizActiveViewProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('')
   const [setSubmitted, setSetSubmitted] = useState(false)
-  console.log('currentQuestion', currentQuestion)
 
   // Reset selectedAnswer when question changes
   useEffect(() => {
     setSelectedAnswer('')
   }, [currentQuestion?.questionIndex])
-  
+
   const handleAnswerClick = (optionLetter: string) => {
     setSelectedAnswer(optionLetter)
     onAnswerSelect(currentQuestion?.questionIndex || 0, optionLetter)
@@ -58,7 +57,7 @@ export function GroupQuizActiveView({
     if (isLastQuestion) {
       onSubmitSet()
       setSetSubmitted(true)
-      
+
       // If this is the last set, automatically calculate final results after a brief delay
       const isLastSet = currentSetIndex >= totalSets - 1
       if (isLastSet) {
@@ -77,11 +76,15 @@ export function GroupQuizActiveView({
   }
 
   const handleGoBack = () => {
-    if (window.confirm('Are you sure you want to go back? You will lose your current progress in this quiz session.')) {
+    if (
+      window.confirm(
+        'Are you sure you want to go back? You will lose your current progress in this quiz session.'
+      )
+    ) {
       window.history.back()
     }
   }
-  
+
   if (!currentQuestion) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -95,7 +98,7 @@ export function GroupQuizActiveView({
   // Show set completion screen after submission
   if (setSubmitted) {
     const isLastSet = currentSetIndex >= totalSets - 1
-    
+
     return (
       <div className="space-y-6">
         {/* Back Navigation */}
@@ -110,21 +113,20 @@ export function GroupQuizActiveView({
 
         {/* Set Completion Card */}
         <Card className="border-green-200 bg-green-50/80 shadow-lg">
-          <CardContent className="text-center py-12">
+          <CardContent className="py-12 text-center">
             <div className="mb-6">
-              <div className="mx-auto h-16 w-16 rounded-full bg-green-100 flex items-center justify-center mb-4">
-                <div className="h-8 w-8 rounded-full bg-green-500 flex items-center justify-center">
-                  <span className="text-white font-bold">✓</span>
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500">
+                  <span className="font-bold text-white">✓</span>
                 </div>
               </div>
-              <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              <h2 className="mb-2 text-2xl font-bold text-gray-800">
                 Set {currentSetIndex + 1} Complete!
               </h2>
               <p className="text-gray-600">
-                {isLastSet 
+                {isLastSet
                   ? "Congratulations! You've completed all sets. Your results are being processed."
-                  : "Great job! Ready to continue with the next set?"
-                }
+                  : 'Great job! Ready to continue with the next set?'}
               </p>
             </div>
 
@@ -138,11 +140,11 @@ export function GroupQuizActiveView({
                   Continue to Set {currentSetIndex + 2} →
                 </Button>
               )}
-              
+
               {isLastSet && (
                 <div className="flex flex-col items-center gap-3">
                   <div className="text-sm text-gray-500">
-                    {submitting ? "Processing your final results..." : "All sets completed!"}
+                    {submitting ? 'Processing your final results...' : 'All sets completed!'}
                   </div>
                   {!submitting && (
                     <Button
@@ -160,14 +162,14 @@ export function GroupQuizActiveView({
 
         {/* Progress Summary */}
         <div className="rounded-xl border border-white/40 bg-white/60 p-4">
-          <h3 className="font-semibold text-gray-800 mb-2">Progress Summary</h3>
+          <h3 className="mb-2 font-semibold text-gray-800">Progress Summary</h3>
           <div className="flex items-center gap-4 text-sm">
-            <span className="text-green-600 font-medium">
+            <span className="font-medium text-green-600">
               Set {currentSetIndex + 1} of {totalSets} completed
             </span>
-            <div className="flex-1 bg-gray-200 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
+            <div className="h-2 flex-1 rounded-full bg-gray-200">
+              <div
+                className="h-2 rounded-full bg-green-500 transition-all duration-300"
                 style={{ width: `${((currentSetIndex + 1) / totalSets) * 100}%` }}
               ></div>
             </div>
@@ -190,9 +192,7 @@ export function GroupQuizActiveView({
         >
           ← Back to Group
         </button>
-        <div className="text-sm text-gray-500">
-          Question {questionIndex + 1}
-        </div>
+        <div className="text-sm text-gray-500">Question {questionIndex + 1}</div>
       </div>
 
       {/* Progress Header */}

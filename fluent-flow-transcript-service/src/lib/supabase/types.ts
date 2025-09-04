@@ -518,6 +518,80 @@ export type Database = {
           },
         ]
       }
+      group_quiz_progress: {
+        Row: {
+          completed: boolean | null
+          confidence_level: string | null
+          correct_answers: number | null
+          created_at: string | null
+          current_question: number | null
+          current_set: number | null
+          help_requested: boolean | null
+          id: string
+          is_online: boolean | null
+          last_activity: string | null
+          question_start_time: string | null
+          session_id: string
+          set_start_time: string | null
+          struggling_indicators: Json | null
+          time_spent: number | null
+          total_answered: number | null
+          updated_at: string | null
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          confidence_level?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_question?: number | null
+          current_set?: number | null
+          help_requested?: boolean | null
+          id?: string
+          is_online?: boolean | null
+          last_activity?: string | null
+          question_start_time?: string | null
+          session_id: string
+          set_start_time?: string | null
+          struggling_indicators?: Json | null
+          time_spent?: number | null
+          total_answered?: number | null
+          updated_at?: string | null
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          confidence_level?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_question?: number | null
+          current_set?: number | null
+          help_requested?: boolean | null
+          id?: string
+          is_online?: boolean | null
+          last_activity?: string | null
+          question_start_time?: string | null
+          session_id?: string
+          set_start_time?: string | null
+          struggling_indicators?: Json | null
+          time_spent?: number | null
+          total_answered?: number | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_progress_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_quiz_results: {
         Row: {
           answers_data: Json | null
@@ -992,6 +1066,41 @@ export type Database = {
           user_preferences?: Json | null
         }
         Relationships: []
+      }
+      progress_events: {
+        Row: {
+          event_data: Json
+          event_type: string
+          id: string
+          session_id: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          event_data?: Json
+          event_type: string
+          id?: string
+          session_id: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          event_data?: Json
+          event_type?: string
+          id?: string
+          session_id?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       selected_words: {
         Row: {

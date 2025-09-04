@@ -26,11 +26,16 @@ export function GroupQuizResults({
 }: GroupQuizResultsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'leaderboard'>('personal')
 
-  // Fetch group results for leaderboard
+  // Fetch group results for leaderboard with proper caching
   const { data: groupResults, isLoading: groupResultsLoading } = useQuery({
     queryKey: ['group-results', groupId, sessionId],
     queryFn: () => fetchGroupResults(groupId, sessionId),
-    enabled: !!groupId && !!sessionId
+    enabled: !!groupId && !!sessionId,
+    staleTime: 10 * 60 * 1000, // 10 minutes - results don't change often
+    refetchInterval: false, // Disable auto-refetch
+    refetchOnWindowFocus: false, // Don't refetch on window focus
+    refetchOnMount: false, // Don't refetch on component mount if data exists
+    retry: 1 // Only retry once on failure
   })
 
   const getInitials = (email?: string | null, username?: string | null) => {
@@ -88,11 +93,7 @@ export function GroupQuizResults({
     }
   }
 
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60)
-    const remainingSeconds = seconds % 60
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`
-  }
+  // Removed unused formatTime function
 
   // Sort results by score for leaderboard
   const sortedResults =

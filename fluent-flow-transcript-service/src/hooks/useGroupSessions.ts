@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { useQuizAuth } from '../lib/hooks/use-quiz-auth'
-import { supabase } from '../lib/supabase/client'
 import { getAuthHeaders } from '../lib/supabase/auth-utils'
 
 interface GroupSession {
@@ -193,10 +192,27 @@ export function useGroupSessions(groupId: string) {
     if (groupId && isAuthenticated) {
       fetchSessions()
       
-      // Check for expired sessions every 30 seconds
-      const interval = setInterval(checkExpiredSessions, 30000)
-      
-      return () => clearInterval(interval)
+      // Only check expired sessions once when component mounts
+      // Remove auto-polling to prevent API spam
+      checkExpiredSessions()
+    }
+  }, [groupId, isAuthenticated])
+
+  // Optional: Check expired sessions when window becomes visible
+  useEffect(() => {
+    if (!groupId || !isAuthenticated) return
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Window became visible, check for expired sessions
+        checkExpiredSessions()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [groupId, isAuthenticated])
 

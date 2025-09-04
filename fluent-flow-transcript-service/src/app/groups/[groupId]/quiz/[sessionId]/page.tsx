@@ -2,13 +2,15 @@
 
 import { use } from 'react'
 import { AuthPrompt } from '../../../../../components/auth/AuthPrompt'
+import { CompactProgressSidebar } from '../../../../../components/groups/progress/CompactProgressSidebar'
 import { ErrorView } from '../../../../questions/[token]/components/ErrorView'
 import { LoadingView } from '../../../../questions/[token]/components/LoadingView'
 import { QuestionInfoView } from '../../../../questions/[token]/components/QuestionInfoView'
 import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
 import { GroupQuizResults } from './components/GroupQuizResults'
-import { useGroupQuiz } from './hooks/useGroupQuiz'
+import { useGroupQuizWithProgress } from './hooks/useGroupQuizWithProgress'
+import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
 
 interface GroupQuizPageProps {
   params: Promise<{
@@ -53,8 +55,20 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     difficultyGroups,
     results,
     user,
-    isAuthenticated
-  } = useGroupQuiz({ groupId, sessionId })
+    isAuthenticated,
+
+    // Progress tracking data
+    progressParticipants,
+    groupStats,
+
+    // Existing results modal data
+    existingResults,
+    showExistingResultsModal,
+    isCheckingExistingResults,
+    handleGoBackToPresets,
+    handleStartFresh,
+    handleCloseModal
+  } = useGroupQuizWithProgress({ groupId, sessionId })
 
   // Helper functions for participant display
   const getInitials = (email?: string | null, username?: string | null) => {
@@ -90,32 +104,43 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   if (appState === 'error') {
     // Check if it's an expired session error
     const isExpiredSession = (error as any)?.isExpired
-    
+
     if (isExpiredSession) {
       return (
         <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-          <div className="rounded-2xl border border-white/20 bg-white/80 p-8 text-center shadow-lg backdrop-blur-sm max-w-md">
+          <div className="max-w-md rounded-2xl border border-white/20 bg-white/80 p-8 text-center shadow-lg backdrop-blur-sm">
             <div className="mb-6">
               <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                <svg className="h-8 w-8 text-red-600" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                <svg
+                  className="h-8 w-8 text-red-600"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={1.5}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
+                  />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-gray-800 mb-2">Quiz Session Expired</h1>
-              <p className="text-gray-600 leading-relaxed">
-                This quiz session has expired and is no longer available. Please request a new session from the group organizer.
+              <h1 className="mb-2 text-2xl font-bold text-gray-800">Quiz Session Expired</h1>
+              <p className="leading-relaxed text-gray-600">
+                This quiz session has expired and is no longer available. Please request a new
+                session from the group organizer.
               </p>
             </div>
-            
+
             <div className="flex flex-col gap-3">
               <button
-                onClick={() => window.location.href = `/groups/${groupId}`}
+                onClick={() => (window.location.href = `/groups/${groupId}`)}
                 className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-700"
               >
                 Back to Group
               </button>
               <button
-                onClick={() => window.location.href = '/groups'}
+                onClick={() => (window.location.href = '/groups')}
                 className="rounded-xl border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
               >
                 All Groups
@@ -125,7 +150,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
         </div>
       )
     }
-    
+
     return (
       <ErrorView
         error={error?.message || 'An error occurred'}
@@ -165,77 +190,93 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
         />
       )}
 
+      {/* Existing Results Modal */}
+      {showExistingResultsModal && existingResults?.hasResults && existingResults.results && (
+        <ExistingResultsModal
+          isOpen={showExistingResultsModal}
+          results={existingResults.results}
+          onGoBackToPresets={handleGoBackToPresets}
+          onStartFresh={handleStartFresh}
+          onClose={handleCloseModal}
+        />
+      )}
+
       {/* Group Quiz Layout - Improved proportions */}
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <div className="flex h-screen">
-          {/* Left Sidebar - Live Participants */}
-          <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
-            <div className="border-b border-white/20 bg-white/60 p-4">
-              <h2 className="flex items-center gap-2 font-semibold text-gray-800">
-                <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                Live Participants
-              </h2>
-              <div className="mt-1 text-sm text-gray-600">
-                {onlineParticipants.length} online • {participants.length} total
-              </div>
-            </div>
-
-            <div className="space-y-3 p-4">
-              {onlineParticipants.map(participant => (
-                <div
-                  key={participant.user_id}
-                  className={`rounded-lg border p-3 transition-all ${
-                    participant.user_id === user?.id
-                      ? 'border-indigo-200 bg-indigo-50 shadow-sm'
-                      : 'border-white/40 bg-white/60 hover:bg-white/80'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-semibold text-white">
-                      {getInitials(participant.user_email, participant.username)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium text-gray-800">
-                        {getDisplayName(participant.user_email, participant.username)}
-                        {participant.user_id === user?.id && (
-                          <span className="ml-1 text-xs text-indigo-600">(You)</span>
-                        )}
-                      </div>
-                      {/* <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                        <span className="text-xs text-gray-500">Active now</span>
-                      </div> */}
-                    </div>
-                  </div>
+          {/* Left Sidebar - Progress Tracking */}
+          {appState === 'quiz-active' ? (
+            <CompactProgressSidebar
+              participants={progressParticipants}
+              groupStats={groupStats}
+              sessionStartTime={session?.started_at}
+              currentUserId={user?.id}
+            />
+          ) : (
+            // Fallback sidebar for non-active states
+            <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
+              <div className="border-b border-white/20 bg-white/60 p-4">
+                <h2 className="flex items-center gap-2 font-semibold text-gray-800">
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+                  Participants
+                </h2>
+                <div className="mt-1 text-sm text-gray-600">
+                  {onlineParticipants.length} online • {participants.length} total
                 </div>
-              ))}
+              </div>
 
-              {/* Offline participants */}
-              {participants
-                .filter(p => !p.is_online)
-                .map(participant => (
+              <div className="space-y-3 p-4">
+                {onlineParticipants.map(participant => (
                   <div
                     key={participant.user_id}
-                    className="rounded-lg border border-gray-200/40 bg-gray-50/60 p-3"
+                    className={`rounded-lg border p-3 transition-all ${
+                      participant.user_id === user?.id
+                        ? 'border-indigo-200 bg-indigo-50 shadow-sm'
+                        : 'border-white/40 bg-white/60 hover:bg-white/80'
+                    }`}
                   >
-                    <div className="flex items-center gap-2 opacity-60">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-semibold text-white">
                         {getInitials(participant.user_email, participant.username)}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-gray-600">
+                        <div className="truncate text-sm font-medium text-gray-800">
                           {getDisplayName(participant.user_email, participant.username)}
-                        </div>
-                        <div className="mt-1 flex items-center gap-2">
-                          <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
-                          <span className="text-xs text-gray-400">Offline</span>
+                          {participant.user_id === user?.id && (
+                            <span className="ml-1 text-xs text-indigo-600">(You)</span>
+                          )}
                         </div>
                       </div>
                     </div>
                   </div>
                 ))}
+
+                {participants
+                  .filter(p => !p.is_online)
+                  .map(participant => (
+                    <div
+                      key={participant.user_id}
+                      className="rounded-lg border border-gray-200/40 bg-gray-50/60 p-3"
+                    >
+                      <div className="flex items-center gap-2 opacity-60">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white">
+                          {getInitials(participant.user_email, participant.username)}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="truncate text-sm font-medium text-gray-600">
+                            {getDisplayName(participant.user_email, participant.username)}
+                          </div>
+                          <div className="mt-1 flex items-center gap-2">
+                            <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
+                            <span className="text-xs text-gray-400">Offline</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Main Content - Quiz */}
           <div className="flex flex-1 flex-col overflow-hidden">
@@ -289,12 +330,22 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
                   case 'question-info':
                     return (
-                      <div className="mx-auto max-w-4xl">
+                      <div className="mx-auto max-w-4xl relative">
                         <QuestionInfoView
                           questionSet={questionSet || null}
                           onStart={handleQuestionInfoStart}
                           getAvailableQuestionCounts={getAvailableQuestionCounts}
                         />
+                        
+                        {/* Loading overlay when checking existing results */}
+                        {isCheckingExistingResults && (
+                          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm flex items-center justify-center rounded-xl">
+                            <div className="flex flex-col items-center gap-3">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+                              <p className="text-sm text-gray-600 font-medium">Checking previous results...</p>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )
 
