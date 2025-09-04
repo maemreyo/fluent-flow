@@ -1,17 +1,17 @@
 'use client'
 
 import { useState } from 'react'
-import { Clock, Target, Trophy, ArrowLeft, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Clock, RotateCcw, Target, Trophy } from 'lucide-react'
+import { Badge } from '../../ui/badge'
+import { Button } from '../../ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
-  DialogTitle,
+  DialogTitle
 } from '../../ui/dialog'
-import { Button } from '../../ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../ui/card'
-import { Badge } from '../../ui/badge'
 import { Separator } from '../../ui/separator'
 
 interface ExistingResultsModalProps {
@@ -78,29 +78,27 @@ export function ExistingResultsModal({
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             {/* Score Card */}
-            <Card className="p-0 border-indigo-200">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-xs text-indigo-600 flex items-center gap-1">
+            <Card className="border-indigo-200 p-0">
+              <CardHeader className="px-3 pb-2 pt-3">
+                <CardTitle className="flex items-center gap-1 text-xs text-indigo-600">
                   <Trophy className="h-3 w-3" />
                   Score
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 px-3 pb-3">
-                <div className="text-2xl font-bold text-indigo-700">
-                  {results.score}%
-                </div>
+              <CardContent className="px-3 pb-3 pt-0">
+                <div className="text-2xl font-bold text-indigo-700">{results.score}%</div>
               </CardContent>
             </Card>
 
             {/* Correct Answers Card */}
-            <Card className="p-0 border-green-200">
-              <CardHeader className="pb-2 pt-3 px-3">
-                <CardTitle className="text-xs text-green-600 flex items-center gap-1">
+            <Card className="border-green-200 p-0">
+              <CardHeader className="px-3 pb-2 pt-3">
+                <CardTitle className="flex items-center gap-1 text-xs text-green-600">
                   <Target className="h-3 w-3" />
                   Correct
                 </CardTitle>
               </CardHeader>
-              <CardContent className="pt-0 px-3 pb-3">
+              <CardContent className="px-3 pb-3 pt-0">
                 <div className="text-2xl font-bold text-green-700">
                   {results.correctAnswers}/{results.totalQuestions}
                 </div>
@@ -142,12 +140,12 @@ export function ExistingResultsModal({
             className="w-full bg-indigo-600 text-white hover:bg-indigo-700"
           >
             <RotateCcw className={`h-4 w-4 ${isDeleting ? 'animate-spin' : ''}`} />
-            {isDeleting ? 'Starting Fresh...' : 'Start Fresh (Delete Old Data)'}
+            {isDeleting ? 'Starting Fresh...' : 'Start Fresh'}
           </Button>
         </div>
 
         <div className="text-center">
-          <Badge variant="outline" className="text-xs text-orange-600 border-orange-200">
+          <Badge variant="outline" className="border-orange-200 text-xs text-orange-600">
             Starting fresh will permanently delete your previous results
           </Badge>
         </div>
