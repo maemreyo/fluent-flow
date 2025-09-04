@@ -50,12 +50,12 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
 
     console.log('Checking for existing results...')
     setIsCheckingExistingResults(true)
-    
+
     try {
       const results = await checkExistingResults(groupId)
       console.log('Existing results check result:', results)
       setExistingResults(results)
-      
+
       if (results.hasResults) {
         console.log('Found existing results, showing modal')
         setShowExistingResultsModal(true)
@@ -83,7 +83,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
 
     // Check for existing results before starting
     const hasExistingResults = await checkAndHandleExistingResults()
-    
+
     if (!hasExistingResults) {
       // No existing results, proceed with quiz start
       groupQuizData.handleQuestionInfoStart()
@@ -95,7 +95,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
   // Reset progress when starting quiz without existing results
   useEffect(() => {
     if (
-      groupQuizData.appState === 'quiz-active' && 
+      groupQuizData.appState === 'quiz-active' &&
       groupQuizData.isAuthenticated &&
       existingResults !== null && // We've checked for existing results
       !existingResults.hasResults // And found no existing results
@@ -236,7 +236,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
       groupQuizData.results
     ) {
       console.log('Marking quiz as completed...')
-      
+
       const finalProgressUpdate: ProgressUpdatePayload = {
         currentQuestion: groupQuizData.results.totalQuestions || 0,
         currentSet: groupQuizData.difficultyGroups.length,
@@ -260,8 +260,7 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     groupQuizData.appState,
     groupQuizData.isAuthenticated,
     groupQuizData.results,
-    groupQuizData.difficultyGroups.length,
-    updateProgress
+    groupQuizData.difficultyGroups.length
   ])
 
   // Modal handlers

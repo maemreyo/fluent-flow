@@ -246,15 +246,15 @@ export async function resetUserProgress(sessionId: string): Promise<void> {
   if (!sessionId) throw new Error('Session ID is required')
   if (!supabase) throw new Error('Supabase client not available')
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !session?.user) throw new Error('User not authenticated')
 
   // Delete existing progress record for fresh start
   const { error: deleteError } = await supabase
     .from('group_quiz_progress')
     .delete()
     .eq('session_id', sessionId)
-    .eq('user_id', user.id)
+    .eq('user_id', session.user.id)
 
   if (deleteError) throw deleteError
 }
@@ -269,15 +269,15 @@ export async function updateUserProgress(
   if (!sessionId) throw new Error('Session ID is required')
   if (!supabase) throw new Error('Supabase client not available')
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !session?.user) throw new Error('User not authenticated')
 
   // Upsert progress record
   const { error: upsertError } = await supabase
     .from('group_quiz_progress')
     .upsert({
       session_id: sessionId,
-      user_id: user.id,
+      user_id: session.user.id,
       current_question: progressUpdate.currentQuestion,
       current_set: progressUpdate.currentSet,
       total_answered: progressUpdate.totalAnswered,
@@ -307,14 +307,14 @@ export async function logProgressEvent(
   if (!sessionId) throw new Error('Session ID is required')
   if (!supabase) throw new Error('Supabase client not available')
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) throw new Error('User not authenticated')
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+  if (sessionError || !session?.user) throw new Error('User not authenticated')
 
   const { error } = await supabase
     .from('progress_events')
     .insert({
       session_id: sessionId,
-      user_id: user.id,
+      user_id: session.user.id,
       event_type: eventData.event_type,
       event_data: eventData.event_data || {},
       timestamp: new Date().toISOString().slice(0, 19) // timestamp without timezone
