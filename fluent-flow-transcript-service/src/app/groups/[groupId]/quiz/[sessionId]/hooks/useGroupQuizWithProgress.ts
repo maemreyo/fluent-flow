@@ -326,15 +326,15 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     return false
   }, [groupQuizData.isAuthenticated, refetchExistingResults])
 
-  // Debug logging
-  useEffect(() => {
-    console.log('Debug state:', {
-      shouldCheckResults,
-      isCheckingExistingResults,
-      existingResults: existingResults ? 'has data' : 'no data',
-      showExistingResultsModal
-    })
-  }, [shouldCheckResults, isCheckingExistingResults, existingResults, showExistingResultsModal])
+  // // Debug logging
+  // useEffect(() => {
+  //   console.log('Debug state:', {
+  //     shouldCheckResults,
+  //     isCheckingExistingResults,
+  //     existingResults: existingResults ? 'has data' : 'no data',
+  //     showExistingResultsModal
+  //   })
+  // }, [shouldCheckResults, isCheckingExistingResults, existingResults, showExistingResultsModal])
 
   return {
     ...groupQuizData,
