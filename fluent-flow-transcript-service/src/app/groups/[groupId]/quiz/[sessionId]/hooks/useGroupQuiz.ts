@@ -88,27 +88,6 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     enabled: !!groupId
   })
 
-  // Fetch question set using share token from session
-  // Disable automatic loading - questions should be generated manually by owner
-  const {
-    data: questionSet,
-    isLoading: questionSetLoading,
-    error: questionSetError
-  } = useQuery({
-    queryKey: ['questionSet', session?.share_token],
-    queryFn: () => fetchQuestionSet(session?.share_token || ''),
-    enabled: false, // Disable automatic loading
-    retry: (failureCount, error: any) => {
-      // Don't retry if session is expired
-      if (error?.isExpired) {
-        return false
-      }
-      // Default retry behavior for other errors (3 times)
-      return failureCount < 3
-    },
-    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
-  })
-
   // Auth handling (similar to individual quiz)
   const [authToken, setAuthToken] = useState<string | undefined>()
   const {
@@ -118,17 +97,38 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     signOut
   } = useQuizAuth(authToken)
 
-  useEffect(() => {
-    if ((questionSet as any)?.authData?.accessToken) {
-      setAuthToken((questionSet as any).authData.accessToken)
+  // Function to load questions from shareTokens
+  const loadQuestionsFromShareTokens = useCallback(async (shareTokens: Record<string, string>) => {
+    const availableTokens = Object.entries(shareTokens).filter(([_, token]) => token)
+    if (availableTokens.length === 0) {
+      throw new Error('No questions available')
     }
-  }, [questionSet])
+
+    const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
+      const response = await fetch(`/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`)
+      
+      if (!response.ok) {
+        throw new Error(`Failed to load ${difficulty} questions`)
+      }
+      
+      const questionData = await response.json()
+      return {
+        difficulty,
+        questions: questionData.questions || [],
+        shareToken,
+        questionSet: questionData
+      }
+    })
+
+    const loadedQuestions = await Promise.all(questionPromises)
+    return loadedQuestions
+  }, [groupId, sessionId])
 
   // Favorites handling (simplified for group context)
   const { data: isFavorited = false } = useQuery({
     queryKey: ['isFavorited', session?.share_token],
     queryFn: () => false, // Simplified for now
-    enabled: !!session?.share_token && !!questionSet
+    enabled: !!session?.share_token
   })
 
   // Group results submission
@@ -210,20 +210,52 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   )
 
   const handlePresetSelect = useCallback(
-    (preset: QuestionPreset) => {
-      if (!questionSet) return
-
+    async (preset: QuestionPreset, shareTokens?: Record<string, string>) => {
       if (!isAuthenticated) {
         setShowAuthPrompt(true)
         return
       }
 
-      setSelectedPreset(preset)
-      const groups = createPresetGroups(preset, questionSet.questions)
-      setDifficultyGroups(groups)
-      setAppState('question-info')
+      try {
+        let allQuestions: Question[] = []
+        
+        if (shareTokens) {
+          // Load questions from shareTokens
+          const loadedQuestions = await loadQuestionsFromShareTokens(shareTokens)
+          allQuestions = loadedQuestions.flatMap(q => q.questions)
+          
+          // Cache the primary question set for compatibility
+          const primaryQuestionSet = loadedQuestions.find(q => q.questions.length > 0)
+          if (primaryQuestionSet && session?.share_token) {
+            queryClient.setQueryData(
+              ['questionSet', session.share_token],
+              primaryQuestionSet.questionSet
+            )
+          }
+        } else {
+          // Try to get questions from existing cache (fallback)
+          const cachedQuestionSet = queryClient.getQueryData(['questionSet', session?.share_token])
+          if (cachedQuestionSet && (cachedQuestionSet as any).questions) {
+            allQuestions = (cachedQuestionSet as any).questions
+          } else {
+            throw new Error('No questions available. Please generate questions first.')
+          }
+        }
+
+        if (allQuestions.length === 0) {
+          throw new Error('No questions found. Please generate questions first.')
+        }
+
+        setSelectedPreset(preset)
+        const groups = createPresetGroups(preset, allQuestions)
+        setDifficultyGroups(groups)
+        setAppState('question-info')
+      } catch (error) {
+        console.error('Error loading questions:', error)
+        alert(error instanceof Error ? error.message : 'Failed to load questions')
+      }
     },
-    [questionSet, createPresetGroups, isAuthenticated]
+    [isAuthenticated, session?.share_token, queryClient]
   )
 
   const handleQuestionInfoStart = () => {
@@ -231,7 +263,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   }
 
   const submitCurrentSet = async () => {
-    if (!difficultyGroups.length || !questionSet) return
+    if (!difficultyGroups.length) return
 
     const currentGroup = difficultyGroups[currentSetIndex]
     let startIndex = 0
@@ -470,8 +502,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   return {
     // App state
     appState,
-    questionSet,
-    error: sessionError || groupError || questionSetError,
+    questionSet: null, // Removed questionSet dependency
+    error: sessionError || groupError,
 
     // Group context
     session,
@@ -513,6 +545,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     closeGridView,
     user: quizUser || user,
     isAuthenticated,
-    signOut
+    signOut,
+    loadQuestionsFromShareTokens // Expose for external use
   }
 }

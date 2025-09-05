@@ -100,6 +100,24 @@ export function useLoop(groupId: string, loopId: string) {
   })
 }
 
+export function useSessionQuestions(groupId: string, sessionId: string) {
+  return useQuery({
+    queryKey: ['sessionQuestions', groupId, sessionId],
+    queryFn: async () => {
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
+        headers
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch session questions')
+      }
+      const data = await response.json()
+      return data.data
+    },
+    enabled: !!groupId && !!sessionId
+  })
+}
+
 export function useDeleteLoop(groupId: string) {
   const queryClient = useQueryClient()
 

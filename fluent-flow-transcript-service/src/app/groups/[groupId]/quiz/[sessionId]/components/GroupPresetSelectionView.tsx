@@ -30,6 +30,8 @@ interface GroupPresetSelectionViewProps {
     medium: number
     hard: number
   }
+  shareTokens?: Record<string, string>
+  onStartQuiz?: (shareTokens: Record<string, string>) => void
 }
 
 export function GroupPresetSelectionView({
@@ -38,7 +40,9 @@ export function GroupPresetSelectionView({
   onGenerateQuestions,
   onGenerateAllQuestions,
   generatingState = { easy: false, medium: false, hard: false, all: false },
-  generatedCounts = { easy: 0, medium: 0, hard: 0 }
+  generatedCounts = { easy: 0, medium: 0, hard: 0 },
+  shareTokens = {},
+  onStartQuiz
 }: GroupPresetSelectionViewProps) {
   // Predefined difficulty levels for question generation
   const difficultyLevels = [
@@ -214,16 +218,21 @@ export function GroupPresetSelectionView({
 
             <Button
               onClick={() => {
-                // Start quiz with generated questions
-                const mockPreset: QuestionPreset = {
-                  id: 'generated',
-                  name: 'Generated Questions',
-                  description: 'AI Generated Questions',
-                  icon: Sparkles,
-                  distribution: generatedCounts,
-                  totalQuestions: totalGenerated
+                if (onStartQuiz) {
+                  // Use real shareTokens to load actual questions
+                  onStartQuiz(shareTokens)
+                } else {
+                  // Fallback to old method with mock preset
+                  const mockPreset: QuestionPreset = {
+                    id: 'generated',
+                    name: 'Generated Questions',
+                    description: 'AI Generated Questions',
+                    icon: Sparkles,
+                    distribution: generatedCounts,
+                    totalQuestions: totalGenerated
+                  }
+                  onPresetSelect(mockPreset)
                 }
-                onPresetSelect(mockPreset)
               }}
               className="rounded-lg bg-green-600 px-12 py-4 font-semibold text-white hover:bg-green-700"
             >

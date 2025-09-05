@@ -90,22 +90,6 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
       </div>
 
       <div id="question-set-info" className="relative z-10 mx-auto max-w-4xl p-6">
-        {/* Enhanced Header */}
-        {/* <div className="mb-12 text-center">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/70 px-4 py-2 shadow-lg backdrop-blur-sm">
-            <div className="h-2 w-2 animate-pulse rounded-full bg-gradient-to-r from-indigo-500 to-purple-500"></div>
-            <span className="text-sm font-medium text-indigo-700">Quiz Preparation</span>
-          </div>
-
-          <h1 className="mb-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-4xl font-bold text-transparent sm:text-5xl lg:text-6xl">
-            Ready to Practice?
-          </h1>
-          <p className="mx-auto max-w-2xl text-xl leading-relaxed text-gray-600">
-            Let&apos;s test your understanding of the video content with
-            <span className="font-semibold text-indigo-600"> personalized questions</span>
-          </p>
-        </div> */}
-
         {/* Enhanced Main Content Card */}
         <div className="relative">
           {/* Background blur effect */}
@@ -192,66 +176,6 @@ export function QuestionSetInfo({ questionSet, onStart, availableCounts }: Quest
           </div>
         </div>
 
-        {/* Enhanced Tips Section */}
-        <div className="relative mt-16">
-          {/* Background blur effect */}
-          {/* <div className="absolute inset-0 -z-10 rounded-3xl bg-gradient-to-br from-blue-50/50 via-indigo-50/50 to-purple-50/50 blur-3xl"></div>
-
-          <div className="relative rounded-3xl border-2 border-white/20 bg-white/80 p-8 shadow-2xl backdrop-blur-sm">
-            <div className="mb-6 text-center">
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-2 shadow-sm">
-                <Sparkles className="h-5 w-5 text-blue-600" />
-                <span className="font-bold text-blue-900">Success Tips</span>
-              </div>
-              <h3 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-2xl font-bold text-transparent">
-                Maximize Your Learning
-              </h3>
-            </div>
-
-            <div className="grid gap-4 md:grid-cols-2">
-              {[
-                {
-                  icon: Target,
-                  title: 'Stay Focused',
-                  text: 'Read each question carefully before looking at the options'
-                },
-                {
-                  icon: Brain,
-                  title: 'Think Back',
-                  text: 'Think about what you heard in the video segment'
-                },
-                {
-                  icon: Sparkles,
-                  title: 'Trust Instinct',
-                  text: "Don't overthink - your first instinct is often correct"
-                },
-                {
-                  icon: BookOpen,
-                  title: 'Learn More',
-                  text: 'Review the explanations to learn from any mistakes'
-                }
-              ].map((tip, index) => {
-                const IconComponent = tip.icon
-                return (
-                  <div
-                    key={index}
-                    className="group rounded-2xl border-2 border-gray-100 bg-gradient-to-br from-white to-gray-50 p-4 transition-all duration-300 hover:border-indigo-200 hover:shadow-lg"
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className="rounded-xl bg-gradient-to-r from-indigo-100 to-blue-100 p-2 transition-all duration-300 group-hover:from-indigo-200 group-hover:to-blue-200">
-                        <IconComponent className="h-5 w-5 text-indigo-600" />
-                      </div>
-                      <div>
-                        <h4 className="mb-1 font-bold text-gray-900">{tip.title}</h4>
-                        <p className="text-sm leading-relaxed text-gray-600">{tip.text}</p>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div> */}
-        </div>
       </div>
     </div>
   )

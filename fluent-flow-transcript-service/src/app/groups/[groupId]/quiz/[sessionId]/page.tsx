@@ -1,16 +1,16 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useState, useEffect } from 'react'
+import { Bot } from 'lucide-react'
 import { useMutation } from '@tanstack/react-query'
 import { AuthPrompt } from '../../../../../components/auth/AuthPrompt'
 import { CompactProgressSidebar } from '../../../../../components/groups/progress/CompactProgressSidebar'
 import { CheckingResultsModal } from '../../../../../components/groups/quiz/CheckingResultsModal'
 import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
-import { useLoop } from '../../../../../hooks/useLoops'
+import { useLoop, useSessionQuestions } from '../../../../../hooks/useLoops'
 import { getAuthHeaders } from '../../../../../lib/supabase/auth-utils'
 import { ErrorView } from '../../../../questions/[token]/components/ErrorView'
 import { LoadingView } from '../../../../questions/[token]/components/LoadingView'
-import { QuestionInfoView } from '../../../../questions/[token]/components/QuestionInfoView'
 import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
 import { GroupQuizResults } from './components/GroupQuizResults'
@@ -39,6 +39,9 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     medium: 0,
     hard: 0
   })
+
+  // Store shareTokens for each difficulty to load questions later
+  const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
 
   // Single difficulty question generation mutation
   const generateQuestionsMutation = useMutation({
@@ -87,7 +90,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
       return {
         difficulty,
         questions: result.data.questions,
-        count: result.data.questions.length
+        count: result.data.questions.length,
+        shareToken: result.shareToken
       }
     },
     onMutate: ({ difficulty }) => {
@@ -102,7 +106,13 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
         [data.difficulty]: data.count
       }))
 
-      // TODO: Store questions in state or database for quiz usage
+      // Store shareToken for later loading
+      if (data.shareToken) {
+        setShareTokens(prev => ({
+          ...prev,
+          [data.difficulty]: data.shareToken
+        }))
+      }
 
       // Clear loading state
       setGeneratingState(prev => ({ ...prev, [data.difficulty]: false }))
@@ -163,7 +173,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
         return {
           difficulty,
           questions: result.data.questions,
-          count: result.data.questions.length
+          count: result.data.questions.length,
+          shareToken: result.shareToken
         }
       })
 
@@ -177,12 +188,19 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     onSuccess: results => {
       console.log('Successfully generated all questions:', results)
 
-      // Update all generated counts
+      // Update all generated counts and shareTokens
       const newCounts = { easy: 0, medium: 0, hard: 0 }
+      const newShareTokens: Record<string, string> = {}
+      
       results.forEach(result => {
         newCounts[result.difficulty] = result.count
+        if (result.shareToken) {
+          newShareTokens[result.difficulty] = result.shareToken
+        }
       })
+      
       setGeneratedCounts(newCounts)
+      setShareTokens(prev => ({ ...prev, ...newShareTokens }))
 
       // Clear loading state
       setGeneratingState(prev => ({ ...prev, all: false }))
@@ -201,7 +219,6 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   const {
     // Quiz state
     appState,
-    questionSet,
     error,
 
     // Group context
@@ -247,7 +264,34 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   } = useGroupQuizWithProgress({ groupId, sessionId })
 
   const loopId = (session as any)?.loop_data?.id
-  const { data: loopData, isLoading: loopLoading, error: loopError } = useLoop(groupId, loopId)
+  const { data: loopData } = useLoop(groupId, loopId)
+  
+  // Load existing questions for this session
+  const { data: sessionQuestions } = useSessionQuestions(groupId, sessionId)
+
+  // Load existing questions into state on mount
+  useEffect(() => {
+    if (sessionQuestions?.questionsByDifficulty) {
+      const counts = { easy: 0, medium: 0, hard: 0 }
+      const tokens: Record<string, string> = {}
+
+      // Handle both individual difficulty questions and mixed questions
+      Object.entries(sessionQuestions.questionsByDifficulty).forEach(([difficulty, data]: [string, any]) => {
+        if (difficulty === 'mixed') {
+          // For mixed difficulty, we might need to parse the questions to count by difficulty
+          counts.easy = data.count || 0
+          counts.medium = data.count || 0 
+          counts.hard = data.count || 0
+        } else if (['easy', 'medium', 'hard'].includes(difficulty)) {
+          counts[difficulty as 'easy' | 'medium' | 'hard'] = data.count || 0
+          tokens[difficulty] = data.shareToken
+        }
+      })
+
+      setGeneratedCounts(counts)
+      setShareTokens(tokens)
+    }
+  }, [sessionQuestions])
 
   // Question generation handlers
   const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
@@ -286,6 +330,68 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     }
 
     await generateAllQuestionsMutation.mutateAsync({ loop })
+  }
+
+  // Handle starting quiz with generated questions
+  const handleStartQuiz = async (shareTokensForQuiz: Record<string, string>) => {
+    console.log('Starting quiz with shareTokens:', shareTokensForQuiz)
+    
+    // Find available shareTokens
+    const availableTokens = Object.entries(shareTokensForQuiz).filter(([_, token]) => token)
+    if (availableTokens.length === 0) {
+      alert('No questions available to start quiz')
+      return
+    }
+
+    try {
+      // Load questions from all available shareTokens
+      const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
+        const response = await fetch(`/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`)
+        
+        if (!response.ok) {
+          throw new Error(`Failed to load ${difficulty} questions`)
+        }
+        
+        const questionData = await response.json()
+        return {
+          difficulty,
+          questions: questionData.questions || [],
+          shareToken
+        }
+      })
+
+      const loadedQuestions = await Promise.all(questionPromises)
+      console.log('Loaded all questions:', loadedQuestions)
+
+      // Verify we have questions to start the quiz
+      const hasQuestions = loadedQuestions.some(q => q.questions.length > 0)
+      
+      if (!hasQuestions) {
+        alert('No questions found to start quiz')
+        return
+      }
+
+      // Note: Question caching is now handled in useGroupQuiz.handlePresetSelect
+
+      // Create a mock preset that matches the loaded questions
+      const generatedPreset = {
+        id: 'generated',
+        name: 'Generated Questions',
+        description: 'AI Generated Questions',
+        icon: Bot,
+        distribution: generatedCounts,
+        totalQuestions: loadedQuestions.reduce((sum, q) => sum + q.questions.length, 0)
+      }
+
+      // Now call handlePresetSelect to start the normal flow
+      // This will show question-info first, then proceed to quiz-active
+      // Pass the shareTokens so useGroupQuiz can handle loading directly
+      handlePresetSelect(generatedPreset, shareTokensForQuiz)
+
+    } catch (error) {
+      console.error('Failed to start quiz with generated questions:', error)
+      alert('Failed to load questions. Please try again.')
+    }
   }
 
   // Helper functions for participant display
@@ -543,6 +649,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           onGenerateAllQuestions={handleGenerateAllQuestions}
                           generatingState={generatingState}
                           generatedCounts={generatedCounts}
+                          shareTokens={shareTokens}
+                          onStartQuiz={handleStartQuiz}
                         />
                       </div>
                     )
@@ -550,11 +658,45 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                   case 'question-info':
                     return (
                       <div className="relative mx-auto max-w-4xl">
-                        <QuestionInfoView
-                          questionSet={questionSet || null}
-                          onStart={handleQuestionInfoStart}
-                          getAvailableQuestionCounts={getAvailableQuestionCounts}
-                        />
+                        <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+                          <div className="mx-auto max-w-3xl px-4 py-8">
+                            <div className="rounded-2xl border border-white/20 bg-white/80 p-8 shadow-xl backdrop-blur-sm">
+                              <h1 className="mb-6 text-3xl font-bold text-gray-800">Ready to Start Quiz</h1>
+                              
+                              <div className="mb-8 space-y-4">
+                                <div className="rounded-lg bg-blue-50 p-4">
+                                  <h3 className="mb-2 font-semibold text-blue-900">Question Summary</h3>
+                                  <div className="grid grid-cols-3 gap-4 text-sm">
+                                    {difficultyGroups.map((group, index) => (
+                                      <div key={index} className="text-center">
+                                        <div className="font-medium text-gray-700 capitalize">{group.difficulty}</div>
+                                        <div className="text-2xl font-bold text-blue-600">{group.questions.length}</div>
+                                        <div className="text-xs text-gray-500">questions</div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                                
+                                <div className="text-center">
+                                  <p className="text-gray-600">
+                                    Total Questions: <span className="font-bold text-gray-800">
+                                      {difficultyGroups.reduce((sum, group) => sum + group.questions.length, 0)}
+                                    </span>
+                                  </p>
+                                </div>
+                              </div>
+
+                              <div className="flex justify-center">
+                                <button
+                                  onClick={handleQuestionInfoStart}
+                                  className="rounded-xl bg-indigo-600 px-8 py-4 text-lg font-semibold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                >
+                                  Start Quiz →
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
 
                         <CheckingResultsModal isOpen={isCheckingExistingResults} />
                       </div>
