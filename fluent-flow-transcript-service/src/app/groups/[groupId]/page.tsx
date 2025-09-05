@@ -8,6 +8,7 @@ import CreateSessionModal from '../../../components/sessions/CreateSessionModal'
 import SessionsTab from '../../../components/sessions/SessionsTab'
 import { useAuth } from '../../../contexts/AuthContext'
 import { GroupHeader } from './components/GroupHeader'
+import { LoopsTab } from './components/LoopsTab'
 import { MembersTab } from './components/MembersTab'
 import { OverviewTab } from './components/OverviewTab'
 import { SettingsTab } from './components/SettingsTab'
@@ -195,6 +196,13 @@ export default function GroupPage({
                 canManage={!!canManage}
                 onCreateSession={() => setShowCreateSession(true)}
                 highlightSessionId={highlightSessionId}
+              />
+            )}
+            {activeTab === 'loops' && (
+              <LoopsTab
+                groupId={groupId}
+                canManage={!!canManage}
+                onCreateSession={() => setShowCreateSession(true)}
               />
             )}
             {activeTab === 'settings' && canManage && (

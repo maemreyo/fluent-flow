@@ -1,0 +1,210 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { z } from 'zod'
+import { createAIService, type DifficultyPreset, type SavedLoop } from '@/lib/services/ai-service'
+import { getSupabaseServer, getCurrentUserServer } from '@/lib/supabase/server'
+
+// Request validation schema
+const generateRequestSchema = z.object({
+  transcript: z.string().min(10, 'Transcript must be at least 10 characters'),
+  loop: z.object({
+    id: z.string(),
+    videoTitle: z.string().optional(),
+    startTime: z.number(),
+    endTime: z.number()
+  }),
+  preset: z.object({
+    easy: z.number().min(0).max(20),
+    medium: z.number().min(0).max(20), 
+    hard: z.number().min(0).max(20)
+  }).optional(),
+  aiProvider: z.enum(['openai', 'anthropic', 'google']).optional(),
+  saveToDatabase: z.boolean().default(false),
+  groupId: z.string().optional(),
+  sessionId: z.string().optional()
+})
+
+type GenerateRequest = z.infer<typeof generateRequestSchema>
+
+/**
+ * POST /api/questions/generate
+ * Generate questions from transcript using AI
+ */
+export async function POST(request: NextRequest) {
+  try {
+    // Parse and validate request
+    const body = await request.json()
+    const validatedData = generateRequestSchema.parse(body)
+    const { transcript, loop, preset, aiProvider, saveToDatabase, groupId, sessionId } = validatedData
+
+    // Initialize AI service
+    const aiService = createAIService(aiProvider ? { provider: aiProvider } : undefined)
+
+    // Generate questions
+    console.log(`Generating questions for loop ${loop.id} with ${transcript.length} chars transcript`)
+    
+    const startTime = Date.now()
+    const generatedQuestions = await aiService.generateConversationQuestions(
+      loop as SavedLoop,
+      transcript,
+      preset as DifficultyPreset
+    )
+    const processingTime = Date.now() - startTime
+
+    console.log(`Generated ${generatedQuestions.questions.length} questions in ${processingTime}ms`)
+
+    // Save to database if requested
+    let shareToken: string | undefined = undefined
+    if (saveToDatabase) {
+      try {
+        const supabase = getSupabaseServer(request)
+        const user = await getCurrentUserServer(supabase)
+
+        if (!user) {
+          return NextResponse.json(
+            { error: 'Authentication required for database save' },
+            { status: 401 }
+          )
+        }
+
+        // Create shared question set using existing service
+        const { createSharedQuestionsService } = await import('@/lib/services/shared-questions-service')
+        const sharedService = createSharedQuestionsService(request)
+        
+        const questionSet = await sharedService.createSharedQuestionSet({
+          title: loop.videoTitle || `Generated Questions - ${new Date().toLocaleDateString()}`,
+          questions: generatedQuestions.questions,
+          transcript,
+          video_title: loop.videoTitle,
+          start_time: loop.startTime,
+          end_time: loop.endTime,
+          group_id: groupId,
+          session_id: sessionId,
+          is_public: !!groupId, // Public if part of group
+          expires_hours: 24, // 24 hour expiry
+          metadata: {
+            totalQuestions: generatedQuestions.questions.length,
+            preset: generatedQuestions.preset,
+            actualDistribution: generatedQuestions.actualDistribution,
+            aiProvider: aiProvider || process.env.AI_PROVIDER,
+            processingTimeMs: processingTime,
+            generatedAt: new Date().toISOString()
+          }
+        })
+
+        shareToken = questionSet.share_token
+        console.log(`Saved questions to database with token: ${shareToken}`)
+      } catch (saveError) {
+        console.error('Failed to save questions to database:', saveError)
+        // Don't fail the entire request if saving fails
+      }
+    }
+
+    // Return response
+    return NextResponse.json({
+      success: true,
+      data: {
+        questions: generatedQuestions.questions,
+        preset: generatedQuestions.preset,
+        actualDistribution: generatedQuestions.actualDistribution,
+        metadata: {
+          totalQuestions: generatedQuestions.questions.length,
+          processingTimeMs: processingTime,
+          aiProvider: aiProvider || process.env.AI_PROVIDER,
+          transcript: {
+            length: transcript.length,
+            wordCount: transcript.split(/\s+/).length
+          },
+          loop: {
+            id: loop.id,
+            duration: loop.endTime - loop.startTime
+          }
+        }
+      },
+      ...(shareToken && { shareToken })
+    })
+
+  } catch (error) {
+    console.error('Question generation error:', error)
+
+    // Handle validation errors
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Invalid request data',
+          details: (error as any).errors.map((e: any) => ({
+            field: e.path.join('.'),
+            message: e.message
+          }))
+        },
+        { status: 400 }
+      )
+    }
+
+    // Handle AI service errors
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        return NextResponse.json(
+          { error: 'AI service configuration error' },
+          { status: 500 }
+        )
+      }
+
+      if (error.message.includes('rate limit')) {
+        return NextResponse.json(
+          { error: 'AI service rate limit exceeded. Please try again later.' },
+          { status: 429 }
+        )
+      }
+
+      if (error.message.includes('context_length_exceeded') || error.message.includes('too long')) {
+        return NextResponse.json(
+          { error: 'Transcript is too long for processing. Please try with shorter text.' },
+          { status: 413 }
+        )
+      }
+    }
+
+    // Generic error response
+    return NextResponse.json(
+      { error: 'Failed to generate questions. Please try again.' },
+      { status: 500 }
+    )
+  }
+}
+
+/**
+ * GET /api/questions/generate
+ * Get generation status and capabilities
+ */
+export async function GET(request: NextRequest) {
+  try {
+    const aiService = createAIService()
+    const capabilities = await aiService.getCapabilities()
+    const config = aiService.getConfig()
+
+    return NextResponse.json({
+      status: 'ready',
+      aiProvider: config.provider,
+      model: config.model,
+      capabilities,
+      limits: {
+        maxTokens: config.maxTokens,
+        maxTranscriptLength: 50000, // Rough estimate
+        supportedPresets: {
+          min: { easy: 1, medium: 1, hard: 1 },
+          max: { easy: 10, medium: 10, hard: 10 }
+        }
+      }
+    })
+  } catch (error) {
+    console.error('AI service status error:', error)
+    return NextResponse.json(
+      { 
+        status: 'error', 
+        error: 'AI service not available',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
+  }
+}

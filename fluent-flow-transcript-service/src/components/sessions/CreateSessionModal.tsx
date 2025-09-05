@@ -1,5 +1,6 @@
+import { useLoops } from '@/hooks/useLoops'
+import { BookOpen, Calendar, Clock, X } from 'lucide-react'
 import { useState } from 'react'
-import { X, Calendar, Clock, Link } from 'lucide-react'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
 
 interface CreateSessionModalProps {
@@ -15,13 +16,17 @@ interface SessionFormData {
   sessionType: 'instant' | 'scheduled'
   notifyMembers: boolean
   shareToken: string
-  importMethod: 'token' | 'manual' | 'none'
+  importMethod: 'token' | 'manual' | 'loop' | 'none'
+  selectedLoop?: string
 }
 
 export default function CreateSessionModal({ groupId, onClose, onSuccess }: CreateSessionModalProps) {
   const { createSession } = useGroupSessions(groupId)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Fetch available loops for this group
+  const { data: loops = [] } = useLoops(groupId)
   
   const [formData, setFormData] = useState<SessionFormData>({
     title: '',
@@ -30,7 +35,8 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
     sessionType: 'instant',
     notifyMembers: true,
     shareToken: '',
-    importMethod: 'none'
+    importMethod: 'none',
+    selectedLoop: undefined
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -39,13 +45,55 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
     setError(null)
 
     try {
-      const sessionData = {
+      let sessionData: any = {
         title: formData.title,
         description: formData.description,
         scheduledAt: formData.sessionType === 'scheduled' ? formData.scheduledAt : undefined,
         shareToken: formData.importMethod === 'token' ? formData.shareToken : undefined,
         notifyMembers: formData.notifyMembers,
         sessionType: formData.sessionType
+      }
+
+      // If using a loop, generate questions from it
+      if (formData.importMethod === 'loop' && formData.selectedLoop) {
+        const selectedLoopData = loops.find((loop: any) => loop.id === formData.selectedLoop)
+        if (selectedLoopData) {
+          try {
+            // Generate questions from the loop transcript
+            const questionResponse = await fetch('/api/questions/generate', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                transcript: selectedLoopData.transcript,
+                loop: {
+                  id: selectedLoopData.id,
+                  videoTitle: selectedLoopData.videoTitle,
+                  startTime: selectedLoopData.startTime,
+                  endTime: selectedLoopData.endTime
+                },
+                preset: { easy: 3, medium: 3, hard: 2 }, // Default preset
+                saveToDatabase: true,
+                groupId,
+                sessionId: undefined // Will be set after session creation
+              })
+            })
+
+            if (questionResponse.ok) {
+              const questionResult = await questionResponse.json()
+              sessionData.shareToken = questionResult.shareToken
+              sessionData.loopData = {
+                id: selectedLoopData.id,
+                videoTitle: selectedLoopData.videoTitle,
+                videoUrl: selectedLoopData.videoUrl,
+                startTime: selectedLoopData.startTime,
+                endTime: selectedLoopData.endTime
+              }
+            }
+          } catch (questionError) {
+            console.error('Failed to generate questions from loop:', questionError)
+            // Continue with session creation without questions
+          }
+        }
       }
 
       await createSession(sessionData)
@@ -171,7 +219,7 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
               Questions Source
             </label>
             <div className="space-y-3">
-              <button
+              {/* <button
                 type="button"
                 onClick={() => setFormData(prev => ({ ...prev, importMethod: 'none' }))}
                 className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
@@ -201,7 +249,25 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
                   <span className="font-medium">Import from Extension</span>
                 </div>
                 <p className="text-sm text-gray-600">Use share token from FluentFlow extension</p>
-              </button>
+              </button> */}
+
+              {loops.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setFormData(prev => ({ ...prev, importMethod: 'loop' }))}
+                  className={`w-full p-4 rounded-xl border-2 text-left transition-all ${
+                    formData.importMethod === 'loop'
+                      ? 'border-indigo-300 bg-indigo-50'
+                      : 'border-gray-200 hover:border-gray-300'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <BookOpen className="w-4 h-4" />
+                    <span className="font-medium">Generate from Practice Loop</span>
+                  </div>
+                  <p className="text-sm text-gray-600">Auto-generate questions from existing loop</p>
+                </button>
+              )}
             </div>
           </div>
 
@@ -221,6 +287,31 @@ export default function CreateSessionModal({ groupId, onClose, onSuccess }: Crea
               />
               <p className="text-xs text-gray-500 mt-1">
                 Get this token by clicking &quot;Share&quot; in the FluentFlow extension
+              </p>
+            </div>
+          )}
+
+          {/* Loop Selection */}
+          {formData.importMethod === 'loop' && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Select Practice Loop *
+              </label>
+              <select
+                required
+                value={formData.selectedLoop || ''}
+                onChange={(e) => setFormData(prev => ({ ...prev, selectedLoop: e.target.value }))}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50 transition-all"
+              >
+                <option value="">Choose a practice loop...</option>
+                {loops.map((loop: any) => (
+                  <option key={loop.id} value={loop.id}>
+                    {loop.videoTitle} ({Math.floor((loop.endTime - loop.startTime) / 60)}m {((loop.endTime - loop.startTime) % 60).toFixed(0)}s)
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-500 mt-1">
+                Questions will be automatically generated from the selected loop transcript
               </p>
             </div>
           )}
