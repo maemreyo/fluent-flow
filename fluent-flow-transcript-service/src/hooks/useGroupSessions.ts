@@ -104,7 +104,7 @@ export function useGroupSessions(groupId: string) {
       scheduledAt?: string
       questions?: any
       shareToken?: string
-      loop?: any
+      loopData?: any
       notifyMembers?: boolean
       sessionType?: 'instant' | 'scheduled'
     }) => {

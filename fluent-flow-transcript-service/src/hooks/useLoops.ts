@@ -82,6 +82,24 @@ export function useCreateLoop(groupId: string) {
   })
 }
 
+export function useLoop(groupId: string, loopId: string) {
+  return useQuery({
+    queryKey: ['loop', groupId, loopId],
+    queryFn: async (): Promise<LoopWithStats> => {
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/groups/${groupId}/loops/${loopId}`, {
+        headers
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch loop')
+      }
+      const data = await response.json()
+      return data.loop
+    },
+    enabled: !!loopId && !!groupId
+  })
+}
+
 export function useDeleteLoop(groupId: string) {
   const queryClient = useQueryClient()
 

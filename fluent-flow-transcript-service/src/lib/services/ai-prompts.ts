@@ -1,4 +1,4 @@
-import { ChatMessage, SavedLoop, DifficultyPreset } from './ai-service'
+import { ChatMessage, DifficultyPreset, SavedLoop } from './ai-service'
 
 /**
  * AI Prompts for Question Generation and other AI operations
@@ -149,6 +149,9 @@ Please generate multiple-choice questions with the following criteria:
    - Format your response as a valid JSON object with the exact structure below.
    - Generate the EXACT number of questions requested for each difficulty level.
 
+**7. Timestamp Reference:**
+   - For each question, include a 'timestamp' field indicating the start time (in seconds) of the most relevant transcript segment. This helps learners locate the context.
+
 {
   "questions": [
     {
@@ -157,7 +160,8 @@ Please generate multiple-choice questions with the following criteria:
       "correctAnswer": "A",
       "explanation": "Explanation of why A is correct and why others might be wrong.",
       "difficulty": "easy",
-      "type": "specific_detail"
+      "type": "specific_detail",
+      "timestamp": 15
     }
   ]
 }
@@ -169,8 +173,9 @@ Please generate multiple-choice questions with the following criteria:
 
   userTemplate: (context: {
     loop: SavedLoop
-    transcript: string
+    transcript?: string
     preset?: DifficultyPreset
+    segments?: Array<{ text: string; start: number; duration: number }>
   }) => {
     const formatTime = (seconds: number): string => {
       const mins = Math.floor(seconds / 60)
@@ -181,6 +186,15 @@ Please generate multiple-choice questions with the following criteria:
     // Default to largest preset (15 questions) to ensure we generate enough for all presets
     const distribution = context.preset || { easy: 5, medium: 6, hard: 4 }
     const totalQuestions = distribution.easy + distribution.medium + distribution.hard
+
+    const transcriptContent = context.segments
+      ? context.segments
+          .map(segment => {
+            const endTime = segment.start + segment.duration
+            return `[${formatTime(segment.start)}-${formatTime(endTime)}] ${segment.text}`
+          })
+          .join('\n')
+      : context.transcript
 
     return `Based on the following YouTube video transcript, generate exactly ${totalQuestions} comprehension questions with this specific difficulty distribution:
 
@@ -202,7 +216,7 @@ Duration: ${formatTime(context.loop.endTime - context.loop.startTime)}
 - Generate EXACTLY the number specified for each difficulty level
 
 Transcript:
-${context.transcript}`
+${transcriptContent}`
   },
 
   config: {
@@ -223,7 +237,7 @@ export class PromptManager {
         content: template.system
       },
       {
-        role: 'user', 
+        role: 'user',
         content: template.userTemplate(context)
       }
     ]
@@ -295,14 +309,17 @@ export class PromptManager {
         return false
       }
 
-      if (!question.type || ![
-        'main_idea',
-        'specific_detail', 
-        'vocabulary_in_context',
-        'inference',
-        'speaker_tone',
-        'language_function'
-      ].includes(question.type)) {
+      if (
+        !question.type ||
+        ![
+          'main_idea',
+          'specific_detail',
+          'vocabulary_in_context',
+          'inference',
+          'speaker_tone',
+          'language_function'
+        ].includes(question.type)
+      ) {
         return false
       }
     }
@@ -315,7 +332,7 @@ export class PromptManager {
    */
   static cleanAndValidateQuestionResponse(content: string): any {
     const parsed = this.parseJSONResponse(content)
-    
+
     if (!this.validateQuestionResponse(parsed)) {
       throw new Error('AI response failed validation')
     }
@@ -334,11 +351,122 @@ export class PromptManager {
   }
 }
 
+// Single Difficulty Question Generation Prompt
+export const singleDifficultyQuestionsPrompt: PromptTemplate = {
+  system: `You are an expert ESL/EFL instructor designing a learning module for ambitious entry-level students aiming for advanced proficiency. The primary focus is on improving **active listening skills**, moving beyond literal comprehension to understand nuance, tone, and implied meaning.
+
+Please generate multiple-choice questions for a SINGLE DIFFICULTY LEVEL with the following criteria:
+
+**1. Difficulty Levels:**
+   - **Easy:** Questions that can be answered by finding explicitly stated information in the text. Use simple, everyday vocabulary that students encounter in daily life.
+   - **Medium:** Questions that require connecting ideas or understanding vocabulary/idioms in context. Use familiar words and common expressions.
+   - **Hard:** Questions that require deep inference, understanding the speaker's tone, or analyzing the function of their language.
+
+**2. Language Simplification Requirements:**
+   - Use simple, familiar vocabulary in questions and options
+   - Avoid overly complex or academic words that might shock students
+   - Choose everyday language that students encounter in daily conversation
+   - Make questions accessible and approachable for entry-level learners
+   - Prioritize clarity and comprehension over complexity
+
+**3. Question Type Variety (Focus on Listening Sub-skills):**
+   - **Main Idea/Gist:** What is the overall point of this segment?
+   - **Specific Detail:** Who, what, when, where, why?
+   - **Vocabulary in Context:** What does a specific word, phrasal verb, or idiom mean *in this situation*?
+   - **Inference & Implication:** What is the speaker suggesting but not saying directly?
+   - **Speaker's Attitude/Tone:** What is the speaker's emotion or opinion (e.g., sarcastic, enthusiastic, skeptical)?
+   - **Function of Language:** *Why* did the speaker say something? (e.g., to persuade, to clarify, to express doubt).
+
+**4. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D).
+   - The correct answer must be clearly supported by the transcript.
+   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
+   - Use simple, everyday language in all options.
+
+**5. Explanations for Learning:**
+   - Provide a clear and concise explanation for why the correct answer is right.
+   - Use simple language in explanations that entry-level students can understand.
+   - Briefly explain why the other options are incorrect, if it adds learning value.
+
+**6. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below.
+   - Generate EXACTLY 6 questions for the specified difficulty level.
+
+**7. Timestamp Reference:**
+   - For each question, include a 'timestamp' field indicating the start time (in seconds) of the most relevant transcript segment. This helps learners locate the context.
+
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": "A",
+      "explanation": "Explanation of why A is correct and why others might be wrong.",
+      "difficulty": "easy",
+      "type": "specific_detail",
+      "timestamp": 15
+    }
+  ]
+}
+
+**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
+**Difficulties to use:** "easy", "medium", "hard"
+
+**IMPORTANT:** Generate EXACTLY 6 questions at the specified difficulty level to ensure optimal quality and AI response consistency.`,
+
+  userTemplate: (context: {
+    loop: SavedLoop
+    transcript?: string
+    difficulty: 'easy' | 'medium' | 'hard'
+    segments?: Array<{ text: string; start: number; duration: number }>
+  }) => {
+    const formatTime = (seconds: number): string => {
+      const mins = Math.floor(seconds / 60)
+      const secs = Math.floor(seconds % 60)
+      return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+
+    const transcriptContent = context.segments
+      ? context.segments
+          .map(segment => {
+            const endTime = segment.start + segment.duration
+            return `[${formatTime(segment.start)}-${formatTime(endTime)}] ${segment.text}`
+          })
+          .join('\n')
+      : context.transcript
+
+    const difficultyDescriptions = {
+      easy: 'simple, everyday vocabulary - finding explicitly stated information',
+      medium: 'familiar words, common expressions - connecting ideas and understanding context',
+      hard: 'advanced comprehension - deep inference, tone analysis, and language function'
+    }
+
+    return `Based on the following YouTube video transcript, generate exactly 6 comprehension questions at the **${context.difficulty.toUpperCase()}** difficulty level.
+
+**TARGET DIFFICULTY:** ${context.difficulty} (${difficultyDescriptions[context.difficulty]})
+**REQUIRED:** Exactly 6 questions
+
+Video Title: ${context.loop.videoTitle || 'YouTube Video'}
+Segment: ${formatTime(context.loop.startTime)} to ${formatTime(context.loop.endTime)}
+
+**TRANSCRIPT:**
+${transcriptContent}
+
+Generate exactly 6 questions at the **${context.difficulty}** level. Focus on quality over quantity - each question should be well-crafted and appropriate for the specified difficulty level.`
+  },
+
+  config: {
+    maxTokens: 16000,
+    temperature: 0.3
+  }
+}
+
 // Export all prompts
 export const prompts = {
   vocabularyAnalysis: vocabularyAnalysisPrompt,
   transcriptSummary: transcriptSummaryPrompt,
-  conversationQuestions: conversationQuestionsPrompt
+  conversationQuestions: conversationQuestionsPrompt,
+  singleDifficultyQuestions: singleDifficultyQuestionsPrompt
 }
 
 // Export default

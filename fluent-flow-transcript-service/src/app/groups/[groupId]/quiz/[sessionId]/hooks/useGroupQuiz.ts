@@ -89,6 +89,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   })
 
   // Fetch question set using share token from session
+  // Disable automatic loading - questions should be generated manually by owner
   const {
     data: questionSet,
     isLoading: questionSetLoading,
@@ -96,7 +97,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   } = useQuery({
     queryKey: ['questionSet', session?.share_token],
     queryFn: () => fetchQuestionSet(session?.share_token || ''),
-    enabled: !!session?.share_token,
+    enabled: false, // Disable automatic loading
     retry: (failureCount, error: any) => {
       // Don't retry if session is expired
       if (error?.isExpired) {
@@ -150,25 +151,24 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   // State management
   useEffect(() => {
-    const isLoading = sessionLoading || groupLoading || questionSetLoading || participantsLoading
+    const isLoading = sessionLoading || groupLoading || participantsLoading
 
     if (isLoading) {
       setAppState('loading')
-    } else if (sessionError || groupError || questionSetError) {
+    } else if (sessionError || groupError) {
       setAppState('error')
-    } else if (questionSet) {
-      // If we have questionSet, we can proceed (isUserJoined will be handled in component)
+    } else if (session && group) {
+      // Show preset selection first - questions will be generated manually by owner
       setAppState('preset-selection')
     }
   }, [
     sessionLoading,
     groupLoading,
-    questionSetLoading,
     participantsLoading,
     sessionError,
     groupError,
-    questionSetError,
-    questionSet
+    session,
+    group
   ])
 
   // Quiz functionality (reused from individual quiz)

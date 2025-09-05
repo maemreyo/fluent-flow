@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supabase/server'
-import { corsResponse, corsHeaders } from '../../../../../lib/cors'
 import { v4 as uuidv4 } from 'uuid'
+import { corsHeaders, corsResponse } from '../../../../../lib/cors'
+import { getCurrentUserServer, getSupabaseServer } from '../../../../../lib/supabase/server'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -21,7 +21,7 @@ export async function GET(
 
   try {
     const user = await getCurrentUserServer(supabase)
-    
+
     if (!user) {
       return corsResponse({ error: 'Unauthorized' }, 401)
     }
@@ -45,7 +45,8 @@ export async function GET(
     // Build query for sessions
     let query = supabase
       .from('group_quiz_sessions')
-      .select(`
+      .select(
+        `
         id,
         quiz_title,
         video_title,
@@ -57,7 +58,8 @@ export async function GET(
         session_type,
         share_token,
         created_at
-      `)
+      `
+      )
       .eq('group_id', groupId)
 
     // Apply status filter if provided
@@ -81,27 +83,29 @@ export async function GET(
       .select('session_id')
       .in('session_id', sessionIds)
 
-    const participantCountMap = participantCounts?.reduce((acc: Record<string, number>, p) => {
-      acc[p.session_id] = (acc[p.session_id] || 0) + 1
-      return acc
-    }, {}) || {}
+    const participantCountMap =
+      participantCounts?.reduce((acc: Record<string, number>, p) => {
+        acc[p.session_id] = (acc[p.session_id] || 0) + 1
+        return acc
+      }, {}) || {}
 
     // Format sessions with participant counts
-    const formattedSessions = sessions?.map(session => ({
-      id: session.id,
-      title: session.quiz_title,
-      video_title: session.video_title,
-      status: session.status,
-      session_type: session.session_type,
-      scheduled_at: session.scheduled_at,
-      started_at: session.started_at,
-      ended_at: session.ended_at,
-      created_by: session.created_by,
-      created_at: session.created_at,
-      share_token: session.share_token,
-      participant_count: participantCountMap[session.id] || 0,
-      questions_count: 0 // Can be populated from questions_data if needed
-    })) || []
+    const formattedSessions =
+      sessions?.map(session => ({
+        id: session.id,
+        title: session.quiz_title,
+        video_title: session.video_title,
+        status: session.status,
+        session_type: session.session_type,
+        scheduled_at: session.scheduled_at,
+        started_at: session.started_at,
+        ended_at: session.ended_at,
+        created_by: session.created_by,
+        created_at: session.created_at,
+        share_token: session.share_token,
+        participant_count: participantCountMap[session.id] || 0,
+        questions_count: 0 // Can be populated from questions_data if needed
+      })) || []
 
     return corsResponse({
       sessions: formattedSessions,
@@ -124,7 +128,7 @@ export async function POST(
 
   try {
     const user = await getCurrentUserServer(supabase)
-    
+
     if (!user) {
       return corsResponse({ error: 'Unauthorized' }, 401)
     }
@@ -137,7 +141,7 @@ export async function POST(
       scheduledAt,
       questions,
       shareToken,
-      loop,
+      loopData,
       notifyMembers = false,
       sessionType = 'scheduled'
     } = body
@@ -168,21 +172,21 @@ export async function POST(
     const sessionId = uuidv4()
     let finalShareToken = shareToken
     const questionsData = questions
-    const loopData = loop
+    const _loopData = loopData
 
     // If no shareToken provided but questions/loop provided, create new shared question set
-    if (!shareToken && questions && loop) {
+    if (!shareToken && questions && loopData) {
       finalShareToken = uuidv4()
       const shareId = uuidv4()
 
       const sharedQuestionSet = {
         id: shareId,
         shareToken: finalShareToken,
-        title: title || `${loop.videoTitle} - Group Session`,
-        videoTitle: loop.videoTitle,
-        videoUrl: loop.videoUrl,
-        startTime: loop.startTime,
-        endTime: loop.endTime,
+        title: title || `${loopData.videoTitle} - Group Session`,
+        videoTitle: loopData.videoTitle,
+        videoUrl: loopData.videoUrl,
+        startTime: loopData.startTime,
+        endTime: loopData.endTime,
         questions: questions.questions || questions,
         vocabulary: questions.vocabulary || [],
         transcript: questions.transcript || null,
@@ -206,24 +210,22 @@ export async function POST(
       }
 
       // Store in database
-      const { error: questionSetError } = await supabase
-        .from('shared_question_sets')
-        .insert({
-          share_token: finalShareToken,
-          title: sharedQuestionSet.title,
-          video_title: sharedQuestionSet.videoTitle,
-          video_url: sharedQuestionSet.videoUrl,
-          start_time: sharedQuestionSet.startTime,
-          end_time: sharedQuestionSet.endTime,
-          questions: sharedQuestionSet.questions,
-          vocabulary: sharedQuestionSet.vocabulary,
-          transcript: sharedQuestionSet.transcript,
-          metadata: sharedQuestionSet.metadata,
-          is_public: sharedQuestionSet.isPublic,
-          created_by: user.id,
-          group_id: groupId,
-          session_id: sessionId
-        })
+      const { error: questionSetError } = await supabase.from('shared_question_sets').insert({
+        share_token: finalShareToken,
+        title: sharedQuestionSet.title,
+        video_title: sharedQuestionSet.videoTitle,
+        video_url: sharedQuestionSet.videoUrl,
+        start_time: sharedQuestionSet.startTime,
+        end_time: sharedQuestionSet.endTime,
+        questions: sharedQuestionSet.questions,
+        vocabulary: sharedQuestionSet.vocabulary,
+        transcript: sharedQuestionSet.transcript,
+        metadata: sharedQuestionSet.metadata,
+        is_public: sharedQuestionSet.isPublic,
+        created_by: user.id,
+        group_id: groupId,
+        session_id: sessionId
+      })
 
       if (questionSetError) {
         console.error('Failed to store question set in database:', questionSetError)
@@ -239,14 +241,14 @@ export async function POST(
         group_id: groupId,
         quiz_token: finalShareToken || sessionId, // Use share token or session ID for backward compatibility
         quiz_title: title || 'Group Quiz Session',
-        video_title: loopData?.videoTitle || null,
+        video_title: _loopData?.videoTitle || null,
         scheduled_at: scheduledAt || new Date().toISOString(),
         created_by: user.id,
         status: scheduledAt ? 'scheduled' : 'active',
         session_type: sessionType,
         share_token: finalShareToken,
         questions_data: questionsData,
-        loop_data: loopData
+        loop_data: _loopData
       })
       .select()
       .single()
@@ -267,9 +269,9 @@ export async function POST(
         id: session.id,
         title: session.quiz_title,
         share_token: finalShareToken,
-        share_url: finalShareToken ? 
-          `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/questions/${finalShareToken}?groupId=${groupId}&sessionId=${sessionId}` : 
-          null,
+        share_url: finalShareToken
+          ? `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/questions/${finalShareToken}?groupId=${groupId}&sessionId=${sessionId}`
+          : null,
         status: session.status,
         scheduled_at: session.scheduled_at
       }

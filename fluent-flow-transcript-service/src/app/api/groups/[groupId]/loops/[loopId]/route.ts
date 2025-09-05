@@ -2,6 +2,41 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createLoopManagementService } from '@/lib/services/loop-management-service'
 import { getSupabaseServer, getCurrentUserServer } from '@/lib/supabase/server'
 
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ groupId: string; loopId: string }> }
+) {
+  try {
+    const { groupId, loopId } = await params
+    const supabase = getSupabaseServer(request)
+    const user = await getCurrentUserServer(supabase)
+
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    const service = createLoopManagementService(request)
+    const loop = await service.getLoop(loopId)
+
+    if (!loop) {
+      return NextResponse.json({ error: 'Loop not found' }, { status: 404 })
+    }
+
+    // Verify user has access to this group's loop
+    if (loop.groupId !== groupId) {
+      return NextResponse.json({ error: 'Access denied' }, { status: 403 })
+    }
+
+    return NextResponse.json({ loop })
+  } catch (error) {
+    console.error('Failed to get loop:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to get loop' },
+      { status: 500 }
+    )
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ groupId: string; loopId: string }> }

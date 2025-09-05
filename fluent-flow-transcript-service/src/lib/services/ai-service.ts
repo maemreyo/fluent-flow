@@ -1,6 +1,6 @@
-import OpenAI from 'openai'
 import Anthropic from '@anthropic-ai/sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { z } from 'zod'
 
 // Types
@@ -23,7 +23,17 @@ export interface AIResponse {
 }
 
 export type AIProvider = 'openai' | 'anthropic' | 'google' | 'custom'
-export type AICapability = 'text-generation' | 'text-analysis' | 'summarization' | 'translation' | 'code-generation' | 'function-calling' | 'long-context' | 'reasoning' | 'multimodal' | 'fast-generation'
+export type AICapability =
+  | 'text-generation'
+  | 'text-analysis'
+  | 'summarization'
+  | 'translation'
+  | 'code-generation'
+  | 'function-calling'
+  | 'long-context'
+  | 'reasoning'
+  | 'multimodal'
+  | 'fast-generation'
 
 // Configuration Schema
 export const aiConfigSchema = z.object({
@@ -58,7 +68,13 @@ export interface GeneratedQuestion {
   correctAnswer: 'A' | 'B' | 'C' | 'D'
   explanation: string
   difficulty: 'easy' | 'medium' | 'hard'
-  type: 'main_idea' | 'specific_detail' | 'vocabulary_in_context' | 'inference' | 'speaker_tone' | 'language_function'
+  type:
+    | 'main_idea'
+    | 'specific_detail'
+    | 'vocabulary_in_context'
+    | 'inference'
+    | 'speaker_tone'
+    | 'language_function'
   timestamp?: number
 }
 
@@ -91,7 +107,7 @@ export class AIService {
       case 'openai':
         this.openai = new OpenAI({
           apiKey: this.config.apiKey,
-          baseURL: this.config.baseUrl,
+          baseURL: this.config.baseUrl
         })
         break
 
@@ -287,7 +303,7 @@ export class AIService {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.config.apiKey}`
+        Authorization: `Bearer ${this.config.apiKey}`
       },
       body: JSON.stringify({
         model: this.config.model,
@@ -321,8 +337,8 @@ export class AIService {
    * Generate conversation questions from transcript text
    */
   async generateConversationQuestions(
-    loop: SavedLoop, 
-    transcript: string, 
+    loop: SavedLoop,
+    transcript: string,
     preset?: DifficultyPreset,
     options?: { segments?: Array<{ text: string; start: number; duration: number }> }
   ): Promise<GeneratedQuestions> {
@@ -337,9 +353,10 @@ export class AIService {
 
     // Use segments if provided, otherwise fallback to transcript
     // This avoids duplication since segments contain timeframe-specific content
-    const promptData = options?.segments && options.segments.length > 0 
-      ? { loop, segments: options.segments, preset: actualPreset }
-      : { loop, transcript, preset: actualPreset }
+    const promptData =
+      options?.segments && options.segments.length > 0
+        ? { loop, segments: options.segments, preset: actualPreset }
+        : { loop, transcript, preset: actualPreset }
 
     const messages = PromptManager.buildMessages(template, promptData)
     const config = PromptManager.getConfig(template)
@@ -356,7 +373,9 @@ export class AIService {
       // Validate we have the correct number of questions
       const questions = parsedResponse.questions
       if (questions.length !== totalQuestions) {
-        console.warn(`Expected ${totalQuestions} questions but got ${questions.length}. Adjusting...`)
+        console.warn(
+          `Expected ${totalQuestions} questions but got ${questions.length}. Adjusting...`
+        )
       }
 
       // Validate difficulty distribution
@@ -364,8 +383,12 @@ export class AIService {
       const mediumCount = questions.filter((q: any) => q.difficulty === 'medium').length
       const hardCount = questions.filter((q: any) => q.difficulty === 'hard').length
 
-      console.log(`Question distribution - Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}`)
-      console.log(`Expected distribution - Easy: ${actualPreset.easy}, Medium: ${actualPreset.medium}, Hard: ${actualPreset.hard}`)
+      console.log(
+        `Question distribution - Easy: ${easyCount}, Medium: ${mediumCount}, Hard: ${hardCount}`
+      )
+      console.log(
+        `Expected distribution - Easy: ${actualPreset.easy}, Medium: ${actualPreset.medium}, Hard: ${actualPreset.hard}`
+      )
 
       return {
         questions: questions.slice(0, totalQuestions).map((q: any, index: number) => {
@@ -377,7 +400,7 @@ export class AIService {
           // Shuffle answer options to randomize correct answer position
           const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
           const correctOption = q.options[correctAnswerIndex] || q.options[0]
-          
+
           // Create shuffled array with seeded randomization for consistency
           const seed = loop.id + index // Use loop ID and index as seed for reproducible shuffling
           const shuffledData = this.shuffleOptionsWithSeed(q.options, seed)
@@ -401,7 +424,9 @@ export class AIService {
             ].includes(q.type)
               ? q.type
               : 'main_idea',
-            timestamp: loop.startTime + (index * (loop.endTime - loop.startTime)) / totalQuestions
+            timestamp:
+              q.timestamp ??
+              loop.startTime + (index * (loop.endTime - loop.startTime)) / totalQuestions
           } as GeneratedQuestion
         }),
         preset: actualPreset,
@@ -413,6 +438,99 @@ export class AIService {
   }
 
   /**
+   * Generate questions for a single difficulty level (max 6 questions)
+   */
+  async generateSingleDifficultyQuestions(
+    loop: SavedLoop,
+    transcript: string,
+    difficulty: 'easy' | 'medium' | 'hard',
+    options?: { segments?: Array<{ text: string; start: number; duration: number }> }
+  ): Promise<GeneratedQuestions> {
+    // Import AI prompts dynamically to avoid circular dependencies
+    const { prompts, PromptManager } = await import('./ai-prompts')
+    const template = prompts.singleDifficultyQuestions
+
+    // Use segments if provided, otherwise fallback to transcript
+    const promptData = options?.segments && options.segments.length > 0
+      ? { loop, segments: options.segments, difficulty }
+      : { loop, transcript, difficulty }
+
+    const messages = PromptManager.buildMessages(template, promptData)
+    const config = PromptManager.getConfig(template)
+
+    try {
+      const response = await this.chat(messages, config)
+      const parsedResponse = PromptManager.parseJSONResponse(response.content)
+
+      // Validate response structure
+      if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
+        throw new Error('AI response missing questions array')
+      }
+
+      // Validate we have exactly 6 questions
+      const questions = parsedResponse.questions
+      if (questions.length !== 6) {
+        console.warn(`Expected 6 questions but got ${questions.length}. Using available questions.`)
+      }
+
+      // Validate all questions are at the correct difficulty level
+      const correctDifficultyQuestions = questions.filter((q: any) => q.difficulty === difficulty)
+      const finalQuestions = correctDifficultyQuestions.slice(0, 6) // Take max 6 questions
+
+      console.log(`Generated ${finalQuestions.length} ${difficulty} questions`)
+
+      return {
+        questions: finalQuestions.map((q: any, index: number) => {
+          // Validate question structure
+          if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
+            throw new Error(`Invalid question structure at index ${index}`)
+          }
+
+          // Shuffle answer options to randomize correct answer position
+          const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
+          const correctOption = q.options[correctAnswerIndex] || q.options[0]
+          
+          // Create shuffled array with seeded randomization for consistency
+          const seed = loop.id + difficulty + index // Use loop ID, difficulty and index as seed
+          const shuffledData = this.shuffleOptionsWithSeed(q.options, seed)
+          const newCorrectIndex = shuffledData.options.indexOf(correctOption)
+          const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex] as 'A' | 'B' | 'C' | 'D'
+
+          return {
+            id: `q_${loop.id}_${difficulty}_${index + 1}`,
+            question: q.question,
+            options: shuffledData.options,
+            correctAnswer: newCorrectAnswer,
+            explanation: q.explanation || 'No explanation provided',
+            difficulty: difficulty, // Ensure difficulty is consistent
+            type: [
+              'main_idea',
+              'specific_detail',
+              'vocabulary_in_context',
+              'inference',
+              'speaker_tone',
+              'language_function'
+            ].includes(q.type)
+              ? q.type
+              : 'main_idea',
+            timestamp:
+              q.timestamp ??
+              loop.startTime + (index * (loop.endTime - loop.startTime)) / finalQuestions.length
+          } as GeneratedQuestion
+        }),
+        preset: { easy: difficulty === 'easy' ? finalQuestions.length : 0, medium: difficulty === 'medium' ? finalQuestions.length : 0, hard: difficulty === 'hard' ? finalQuestions.length : 0 },
+        actualDistribution: { 
+          easy: difficulty === 'easy' ? finalQuestions.length : 0, 
+          medium: difficulty === 'medium' ? finalQuestions.length : 0, 
+          hard: difficulty === 'hard' ? finalQuestions.length : 0 
+        }
+      }
+    } catch (error: any) {
+      throw new Error(`Single difficulty questions generation failed: ${error.message}`)
+    }
+  }
+
+  /**
    * Shuffle array options with seeded randomization for consistent results
    */
   private shuffleOptionsWithSeed(options: string[], seed: string): { options: string[] } {
@@ -420,19 +538,19 @@ export class AIService {
     let hash = 0
     for (let i = 0; i < seed.length; i++) {
       const char = seed.charCodeAt(i)
-      hash = ((hash << 5) - hash) + char
+      hash = (hash << 5) - hash + char
       hash = hash & hash // Convert to 32bit integer
     }
 
     // Create a copy of options to shuffle
     const shuffled = [...options]
-    
+
     // Fisher-Yates shuffle with seeded random
     for (let i = shuffled.length - 1; i > 0; i--) {
       // Generate deterministic "random" index based on hash and position
       hash = (hash * 9301 + 49297) % 233280
       const j = Math.abs(hash) % (i + 1)
-      
+
       // Swap elements
       const temp = shuffled[i]
       shuffled[i] = shuffled[j]

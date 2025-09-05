@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { createAIService, type DifficultyPreset, type SavedLoop } from '@/lib/services/ai-service'
-import { getSupabaseServer, getCurrentUserServer } from '@/lib/supabase/server'
+import { getCurrentUserServer, getSupabaseServer } from '@/lib/supabase/server'
 
 // Request validation schema
 const generateRequestSchema = z.object({
@@ -12,16 +12,22 @@ const generateRequestSchema = z.object({
     startTime: z.number(),
     endTime: z.number()
   }),
-  segments: z.array(z.object({
-    text: z.string(),
-    start: z.number(),
-    duration: z.number()
-  })).optional(),
-  preset: z.object({
-    easy: z.number().min(0).max(6),
-    medium: z.number().min(0).max(6), 
-    hard: z.number().min(0).max(6)
-  }).optional(),
+  segments: z
+    .array(
+      z.object({
+        text: z.string(),
+        start: z.number(),
+        duration: z.number()
+      })
+    )
+    .optional(),
+  preset: z
+    .object({
+      easy: z.number().min(0).max(6),
+      medium: z.number().min(0).max(6),
+      hard: z.number().min(0).max(6)
+    })
+    .optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
   aiProvider: z.enum(['openai', 'anthropic', 'google']).optional(),
   saveToDatabase: z.boolean().default(false),
@@ -39,12 +45,23 @@ export async function POST(request: NextRequest) {
   try {
     // Parse and validate request
     const body = await request.json()
+    console.log("BODY", body)
     const validatedData = generateRequestSchema.parse(body)
-    const { transcript, loop, segments, preset, difficulty, aiProvider, saveToDatabase, groupId, sessionId } = validatedData
+    const {
+      transcript,
+      loop,
+      segments,
+      preset,
+      difficulty,
+      aiProvider,
+      saveToDatabase,
+      groupId,
+      sessionId
+    } = validatedData
 
     // Initialize AI service
     const aiService = createAIService(aiProvider ? { provider: aiProvider } : undefined)
-
+    console.log('aiService', aiService)
     // Handle difficulty-based generation (max 6 questions per level)
     let finalPreset: DifficultyPreset
     if (difficulty) {
@@ -67,15 +84,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate questions with segments for enhanced AI context
-    console.log(`Generating questions for loop ${loop.id} with ${transcript.length} chars transcript and ${segments?.length || 0} segments`)
-    
-    const startTime = Date.now()
-    const generatedQuestions = await aiService.generateConversationQuestions(
-      loop as SavedLoop,
-      transcript,
-      finalPreset,
-      { segments } // Pass segments to AI for timeframe references
+    console.log(
+      `Generating questions for loop ${loop.id} with ${transcript.length} chars transcript and ${segments?.length || 0} segments`
     )
+
+    const startTime = Date.now()
+    let generatedQuestions
+
+    if (difficulty) {
+      // Generate questions for single difficulty level (max 6 questions)
+      generatedQuestions = await aiService.generateSingleDifficultyQuestions(
+        loop as SavedLoop,
+        transcript,
+        difficulty,
+        { segments }
+      )
+    } else {
+      // Generate questions with mixed difficulty levels
+      generatedQuestions = await aiService.generateConversationQuestions(
+        loop as SavedLoop,
+        transcript,
+        finalPreset,
+        { segments }
+      )
+    }
+
     const processingTime = Date.now() - startTime
 
     console.log(`Generated ${generatedQuestions.questions.length} questions in ${processingTime}ms`)
@@ -95,9 +128,11 @@ export async function POST(request: NextRequest) {
         }
 
         // Create shared question set using existing service
-        const { createSharedQuestionsService } = await import('@/lib/services/shared-questions-service')
+        const { createSharedQuestionsService } = await import(
+          '@/lib/services/shared-questions-service'
+        )
         const sharedService = createSharedQuestionsService(request)
-        
+
         const questionSet = await sharedService.createSharedQuestionSet({
           title: loop.videoTitle || `Generated Questions - ${new Date().toLocaleDateString()}`,
           questions: generatedQuestions.questions,
@@ -156,7 +191,6 @@ export async function POST(request: NextRequest) {
       },
       ...(shareToken && { shareToken })
     })
-
   } catch (error) {
     console.error('Question generation error:', error)
 
@@ -165,10 +199,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: 'Invalid request data',
-          details: (error as any).errors.map((e: any) => ({
-            field: e.path.join('.'),
-            message: e.message
-          }))
+          details:
+            (error as any).errors?.map((e: any) => ({
+              field: e.path?.join('.') || 'unknown',
+              message: e.message
+            })) || []
         },
         { status: 400 }
       )
@@ -177,10 +212,7 @@ export async function POST(request: NextRequest) {
     // Handle AI service errors
     if (error instanceof Error) {
       if (error.message.includes('API key')) {
-        return NextResponse.json(
-          { error: 'AI service configuration error' },
-          { status: 500 }
-        )
+        return NextResponse.json({ error: 'AI service configuration error' }, { status: 500 })
       }
 
       if (error.message.includes('rate limit')) {
@@ -233,8 +265,8 @@ export async function GET() {
   } catch (error) {
     console.error('AI service status error:', error)
     return NextResponse.json(
-      { 
-        status: 'error', 
+      {
+        status: 'error',
         error: 'AI service not available',
         message: error instanceof Error ? error.message : 'Unknown error'
       },
