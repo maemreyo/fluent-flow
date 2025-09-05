@@ -3,20 +3,16 @@ A. Khi chia sẻ link vào thẳng session, user chưa login sẽ có 2 step h�
 2. -> Join group
 Vậy làm thế nào để 1 flow này liền mạch
 
-B. Khi user vào tab SessionsTab.tsx, họ nhấn Join
-1. 1 Modal show lên
-2. Ngay sau đó, tự dưng 1 modal khác cũng show lên -> bị trùng rồi
 
 C. Hiện tại, tất cả mọi người đều có thể Start Quiz -> Có thể nào thêm setting để chỉ Owner hoặc những người do Onwer set cho permission mới được Start Quiz không?
 D. Khi tôi mở modal quiz room lên, thì tôi đợi 3 người vào, rồi tôi Start Quiz, nhưng 3 người kia cũng phải Start Quiz, dẫn tới việc không đồng bộ, không ai biết là tôi đã vào, có thể đồng bộ không?
 -> Nếu user đang ở Quiz room, thì Start họ vào màn quiz view
 -> Nếu user đang không ở Quiz room, thì báo cho họ 1 session đang xảy ra, khi nhấn vào thì họ vào quiz view
 
-E. Tôi cần kế hoạch để move toàn bộ logic Generate Question từ bên extension sang bên project Nextjs này để triển khai. Tìm hiểu để chuẩn bị triển khai việc này.
-
 F. User cần sửa màn hình result như sau:
 -> Các câu hỏi cần show detail, rõ ràng hơn, không bé từng card nữa, thay vào đó, chữa từng câu theo từng row
--> Mỗi câu hỏi chữa cần có ref tới đoạn mà speaker nói trong video (ví dụ: 0:15-0:23)
+-> Mỗi câu hỏi chữa cần có ref tới đoạn mà speaker nói trong video (ví dụ: 0:15-0:23) - nếu có thể gắn link tới đoạn đó thì tốt (cần research phần này, optional thôi, nên không cần cố gắng)
+-> Ngoài ra, leaderboard có thể thêm nút refresh để tôi xem xem ai đã xong chưa không? (Có thể không cần realtime, vì tốn chi phí lắm) hiện tại tôi phải refresh cả page, nhưng khi reload thì toàn bộ progress đã bị mất
 
 G. Logic sinh question cần tùy biến cho từng preset, thay vì sinh sẵn câu hỏi từ bên extension. Logic sinh câu hỏi này cần được setting (trong SettingsTab), không phải ai cũng được generate câu hỏi, default là Owner được generate câu hỏi. 
 -> Khi generate xong, mọi người tham gia cần show ngay (near-realtime), thay vì phải refresh trang
