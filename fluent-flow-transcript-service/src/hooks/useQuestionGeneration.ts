@@ -20,12 +20,18 @@ interface GenerateQuestionParams {
   loop: LoopData
   groupId: string
   sessionId: string
+  customCount?: number // Optional custom count for preset-based generation
 }
 
 interface GenerateAllQuestionsParams {
   loop: LoopData
   groupId: string
   sessionId: string
+  presetCounts?: {
+    easy: number
+    medium: number
+    hard: number
+  } // Optional preset counts for intelligent generation
 }
 
 interface QuestionGenerationResult {
@@ -43,8 +49,8 @@ interface UseQuestionGenerationOptions {
 
 export function useQuestionGeneration(options?: UseQuestionGenerationOptions) {
   return useMutation({
-    mutationFn: async ({ difficulty, loop, groupId, sessionId }: GenerateQuestionParams) => {
-      console.log(`Generating ${difficulty} questions for loop:`, loop)
+    mutationFn: async ({ difficulty, loop, groupId, sessionId, customCount }: GenerateQuestionParams) => {
+      console.log(`Generating ${difficulty} questions for loop:`, loop, customCount ? `(${customCount} questions)` : '')
 
       if (!loop) {
         throw new Error('No loop data available')
@@ -69,7 +75,8 @@ export function useQuestionGeneration(options?: UseQuestionGenerationOptions) {
           difficulty: difficulty,
           saveToDatabase: true,
           groupId: groupId,
-          sessionId: sessionId
+          sessionId: sessionId,
+          customCount: customCount // Pass custom count to API for preset-based generation
         })
       })
 
@@ -87,7 +94,7 @@ export function useQuestionGeneration(options?: UseQuestionGenerationOptions) {
       }
     },
     onSuccess: (data) => {
-      toast.success(`Successfully generated ${data.difficulty} questions!`)
+      toast.success(`Successfully generated ${data.count} ${data.difficulty} questions!`)
       options?.onSuccess?.(data)
     },
     onError: (error: any, variables) => {
@@ -111,18 +118,20 @@ interface UseGenerateAllQuestionsOptions {
 
 export function useGenerateAllQuestions(options?: UseGenerateAllQuestionsOptions) {
   return useMutation({
-    mutationFn: async ({ loop, groupId, sessionId }: GenerateAllQuestionsParams) => {
-      console.log('Generating all questions for loop:', loop?.id)
+    mutationFn: async ({ loop, groupId, sessionId, presetCounts }: GenerateAllQuestionsParams) => {
+      console.log('Generating all questions for loop:', loop?.id, presetCounts ? 'with preset counts' : '')
 
       if (!loop) {
         throw new Error('No loop data available')
       }
 
-      // Generate all difficulty levels in parallel
+      // Use preset counts if provided, otherwise use default generation
       const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard']
-
+      
       const promises = difficulties.map(async difficulty => {
         const headers = await getAuthHeaders()
+        const customCount = presetCounts?.[difficulty]
+        
         const response = await fetch('/api/questions/generate', {
           method: 'POST',
           headers: {
@@ -141,7 +150,8 @@ export function useGenerateAllQuestions(options?: UseGenerateAllQuestionsOptions
             difficulty: difficulty,
             saveToDatabase: true,
             groupId: groupId,
-            sessionId: sessionId
+            sessionId: sessionId,
+            customCount: customCount // Pass preset count for this difficulty
           })
         })
 

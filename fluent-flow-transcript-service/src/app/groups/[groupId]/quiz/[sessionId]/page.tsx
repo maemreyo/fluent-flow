@@ -38,7 +38,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     setGeneratedCounts,
     setShareTokens,
     handleGenerateQuestions: generateQuestions,
-    handleGenerateAllQuestions: generateAllQuestions
+    handleGenerateAllQuestions: generateAllQuestions,
+    handleGenerateFromPreset: generateFromPreset
   } = useGroupQuestionGeneration(groupId, sessionId)
 
   const {
@@ -109,6 +110,10 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
   const handleGenerateAllQuestions = async () => {
     await generateAllQuestions(loopData)
+  }
+
+  const handleGenerateFromPreset = async (distribution: { easy: number; medium: number; hard: number }) => {
+    await generateFromPreset(loopData, distribution)
   }
 
   // Simplified loading condition - only depend on appState
@@ -199,6 +204,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           onlineParticipants={onlineParticipants}
                           onGenerateQuestions={handleGenerateQuestions}
                           onGenerateAllQuestions={handleGenerateAllQuestions}
+                          onGenerateFromPreset={handleGenerateFromPreset}
                           generatingState={generatingState}
                           generatedCounts={generatedCounts}
                           shareTokens={shareTokens}

@@ -36,14 +36,14 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
 
   const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
 
-  // Single difficulty question generation mutation
+  // Single difficulty question generation mutation with custom count support
   const generateQuestionsMutation = useQuestionGeneration({
     onSuccess: data => {
       console.log(`Successfully generated ${data.count} ${data.difficulty} questions`)
 
       setGeneratedCounts(prev => ({
         ...prev,
-        [data.difficulty]: data.count
+        [data.difficulty]: prev[data.difficulty as keyof GeneratedCounts] + data.count
       }))
 
       if (data.shareToken) {
@@ -63,7 +63,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     }
   })
 
-  // Generate all questions mutation
+  // Generate all questions mutation with preset support
   const generateAllQuestionsMutation = useGenerateAllQuestions({
     onSuccess: results => {
       console.log('Successfully generated all questions:', results)
@@ -78,7 +78,11 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         }
       })
 
-      setGeneratedCounts(newCounts)
+      setGeneratedCounts(prev => ({
+        easy: prev.easy + newCounts.easy,
+        medium: prev.medium + newCounts.medium,
+        hard: prev.hard + newCounts.hard
+      }))
       setShareTokens(prev => ({ ...prev, ...newShareTokens }))
       setGeneratingState(prev => ({ ...prev, all: false }))
     },
@@ -87,7 +91,11 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     }
   })
 
-  const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard', loopData: any) => {
+  const handleGenerateQuestions = async (
+    difficulty: 'easy' | 'medium' | 'hard', 
+    loopData: any, 
+    customCount?: number
+  ) => {
     if (!loopData) {
       toast.error('No loop data available for question generation')
       return
@@ -103,10 +111,16 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     }
 
     setGeneratingState(prev => ({ ...prev, [difficulty]: true }))
-    await generateQuestionsMutation.mutateAsync({ difficulty, loop, groupId, sessionId })
+    
+    // Use custom count if provided, otherwise default generation
+    const generationParams = customCount 
+      ? { difficulty, loop, groupId, sessionId, customCount }
+      : { difficulty, loop, groupId, sessionId }
+      
+    await generateQuestionsMutation.mutateAsync(generationParams)
   }
 
-  const handleGenerateAllQuestions = async (loopData: any) => {
+  const handleGenerateAllQuestions = async (loopData: any, presetCounts?: GeneratedCounts) => {
     if (!loopData) {
       toast.error('No loop data available for question generation')
       return
@@ -122,7 +136,68 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     }
 
     setGeneratingState(prev => ({ ...prev, all: true }))
-    await generateAllQuestionsMutation.mutateAsync({ loop, groupId, sessionId })
+    
+    // Use preset counts if provided
+    const generationParams = presetCounts 
+      ? { loop, groupId, sessionId, presetCounts }
+      : { loop, groupId, sessionId }
+      
+    await generateAllQuestionsMutation.mutateAsync(generationParams)
+  }
+
+  // New method for generating questions based on preset distribution
+  const handleGenerateFromPreset = async (
+    loopData: any, 
+    distribution: { easy: number; medium: number; hard: number }
+  ) => {
+    if (!loopData) {
+      toast.error('No loop data available for question generation')
+      return
+    }
+
+    const { easy, medium, hard } = distribution
+    const promises = []
+
+    try {
+      setGeneratingState(prev => ({ ...prev, all: true }))
+
+      // Generate questions for each difficulty based on preset distribution
+      // Break down larger counts into smaller batches for quality (5-8 questions per batch)
+      const MAX_BATCH_SIZE = 6
+
+      if (easy > 0) {
+        const batches = Math.ceil(easy / MAX_BATCH_SIZE)
+        for (let i = 0; i < batches; i++) {
+          const batchSize = Math.min(MAX_BATCH_SIZE, easy - (i * MAX_BATCH_SIZE))
+          promises.push(handleGenerateQuestions('easy', loopData, batchSize))
+        }
+      }
+
+      if (medium > 0) {
+        const batches = Math.ceil(medium / MAX_BATCH_SIZE)
+        for (let i = 0; i < batches; i++) {
+          const batchSize = Math.min(MAX_BATCH_SIZE, medium - (i * MAX_BATCH_SIZE))
+          promises.push(handleGenerateQuestions('medium', loopData, batchSize))
+        }
+      }
+
+      if (hard > 0) {
+        const batches = Math.ceil(hard / MAX_BATCH_SIZE)
+        for (let i = 0; i < batches; i++) {
+          const batchSize = Math.min(MAX_BATCH_SIZE, hard - (i * MAX_BATCH_SIZE))
+          promises.push(handleGenerateQuestions('hard', loopData, batchSize))
+        }
+      }
+
+      await Promise.all(promises)
+      setGeneratingState(prev => ({ ...prev, all: false }))
+      
+      toast.success(`Successfully generated ${easy + medium + hard} questions from preset!`)
+    } catch (error) {
+      console.error('Failed to generate questions from preset:', error)
+      setGeneratingState(prev => ({ ...prev, all: false }))
+      toast.error('Failed to generate questions from preset')
+    }
   }
 
   return {
@@ -132,6 +207,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     setGeneratedCounts,
     setShareTokens,
     handleGenerateQuestions,
-    handleGenerateAllQuestions
+    handleGenerateAllQuestions,
+    handleGenerateFromPreset
   }
 }

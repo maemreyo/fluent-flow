@@ -29,6 +29,7 @@ const generateRequestSchema = z.object({
     })
     .optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
+  customCount: z.number().min(1).max(8).optional(), // Support for preset-based custom counts
   aiProvider: z.enum(['openai', 'anthropic', 'google']).optional(),
   saveToDatabase: z.boolean().default(false),
   groupId: z.string().optional(),
@@ -53,6 +54,7 @@ export async function POST(request: NextRequest) {
       segments,
       preset,
       difficulty,
+      customCount,
       aiProvider,
       saveToDatabase,
       groupId,
@@ -62,30 +64,32 @@ export async function POST(request: NextRequest) {
     // Initialize AI service
     const aiService = createAIService(aiProvider ? { provider: aiProvider } : undefined)
     console.log('aiService', aiService)
-    // Handle difficulty-based generation (max 6 questions per level)
+    // Handle difficulty-based generation with support for custom counts from presets
     let finalPreset: DifficultyPreset
     if (difficulty) {
-      // Generate maximum 6 questions for specified difficulty
+      // Generate questions for specified difficulty with custom count support (5-8 for quality)
+      const questionCount = customCount || 6 // Use custom count from preset if provided
       finalPreset = {
-        easy: difficulty === 'easy' ? 6 : 0,
-        medium: difficulty === 'medium' ? 6 : 0,
-        hard: difficulty === 'hard' ? 6 : 0
+        easy: difficulty === 'easy' ? questionCount : 0,
+        medium: difficulty === 'medium' ? questionCount : 0,
+        hard: difficulty === 'hard' ? questionCount : 0
       }
     } else if (preset) {
-      // Use provided preset but cap at 6 per difficulty
+      // Use provided preset but cap at 8 per difficulty for quality assurance
       finalPreset = {
-        easy: Math.min(preset.easy || 0, 6),
-        medium: Math.min(preset.medium || 0, 6),
-        hard: Math.min(preset.hard || 0, 6)
+        easy: Math.min(preset.easy || 0, 8),
+        medium: Math.min(preset.medium || 0, 8),
+        hard: Math.min(preset.hard || 0, 8)
       }
     } else {
-      // Default preset
+      // Default preset - balanced for quality
       finalPreset = { easy: 3, medium: 2, hard: 1 }
     }
 
     // Generate questions with segments for enhanced AI context
     console.log(
-      `Generating questions for loop ${loop.id} with ${transcript.length} chars transcript and ${segments?.length || 0} segments`
+      `Generating questions for loop ${loop.id} with ${transcript.length} chars transcript and ${segments?.length || 0} segments`,
+      customCount ? `(preset-based: ${customCount} questions)` : ''
     )
 
     const startTime = Date.now()
@@ -153,7 +157,9 @@ export async function POST(request: NextRequest) {
             generatedAt: new Date().toISOString(),
             segmentsCount: segments?.length || 0,
             difficulty: difficulty || 'mixed',
-            usedSegments: !!segments
+            usedSegments: !!segments,
+            customCount: customCount, // Track preset-based custom counts
+            isPresetBased: !!customCount
           }
         })
 
@@ -179,6 +185,8 @@ export async function POST(request: NextRequest) {
           difficulty: difficulty || 'mixed',
           usedSegments: !!segments,
           segmentsCount: segments?.length || 0,
+          customCount: customCount, // Track preset-based custom counts
+          isPresetBased: !!customCount,
           transcript: {
             length: transcript.length,
             wordCount: transcript.split(/\s+/).length

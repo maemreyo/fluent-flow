@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { toast } from 'sonner'
 import {
   ArrowLeft,
   Brain,
@@ -19,6 +21,11 @@ interface GroupPresetSelectionViewProps {
   onlineParticipants: Array<{ user_id: string; user_email: string; is_online: boolean }>
   onGenerateQuestions?: (difficulty: 'easy' | 'medium' | 'hard') => Promise<void>
   onGenerateAllQuestions?: () => Promise<void>
+  onGenerateFromPreset?: (distribution: {
+    easy: number
+    medium: number
+    hard: number
+  }) => Promise<void>
   generatingState?: {
     easy: boolean
     medium: boolean
@@ -39,12 +46,116 @@ export function GroupPresetSelectionView({
   onlineParticipants,
   onGenerateQuestions,
   onGenerateAllQuestions,
+  onGenerateFromPreset,
   generatingState = { easy: false, medium: false, hard: false, all: false },
   generatedCounts = { easy: 0, medium: 0, hard: 0 },
   shareTokens = {},
   onStartQuiz
 }: GroupPresetSelectionViewProps) {
-  // Predefined difficulty levels for question generation
+  // Intelligent presets for group quiz sessions (5-8 questions per difficulty for quality)
+  const intelligentPresets = [
+    {
+      id: 'beginner-friendly',
+      name: 'Beginner Friendly',
+      description: 'Perfect for newcomers to the subject',
+      distribution: { easy: 8, medium: 3, hard: 1 },
+      totalQuestions: 12,
+      icon: Zap,
+      color: 'emerald',
+      bgGradient: 'from-emerald-50 to-green-50',
+      borderColor: 'border-emerald-200',
+      textColor: 'text-emerald-700',
+      hoverBg: 'hover:bg-emerald-50',
+      badge: 'Beginner',
+      estimatedTime: '6 min',
+      difficulty: 'Easy Focus'
+    },
+    {
+      id: 'balanced-learning',
+      name: 'Balanced Learning',
+      description: 'Equal mix for comprehensive understanding',
+      distribution: { easy: 5, medium: 6, hard: 5 },
+      totalQuestions: 16,
+      icon: Target,
+      color: 'blue',
+      bgGradient: 'from-blue-50 to-indigo-50',
+      borderColor: 'border-blue-200',
+      textColor: 'text-blue-700',
+      hoverBg: 'hover:bg-blue-50',
+      badge: 'Balanced',
+      estimatedTime: '8 min',
+      difficulty: 'Mixed Level'
+    },
+    {
+      id: 'challenge-mode',
+      name: 'Challenge Mode',
+      description: 'Intensive practice for advanced learners',
+      distribution: { easy: 2, medium: 5, hard: 7 },
+      totalQuestions: 14,
+      icon: Brain,
+      color: 'purple',
+      bgGradient: 'from-purple-50 to-indigo-50',
+      borderColor: 'border-purple-200',
+      textColor: 'text-purple-700',
+      hoverBg: 'hover:bg-purple-50',
+      badge: 'Advanced',
+      estimatedTime: '8 min',
+      difficulty: 'Hard Focus'
+    },
+    {
+      id: 'quick-review',
+      name: 'Quick Review',
+      description: 'Short focused session for busy schedules',
+      distribution: { easy: 3, medium: 4, hard: 2 },
+      totalQuestions: 9,
+      icon: Zap,
+      color: 'amber',
+      bgGradient: 'from-amber-50 to-yellow-50',
+      borderColor: 'border-amber-200',
+      textColor: 'text-amber-700',
+      hoverBg: 'hover:bg-amber-50',
+      badge: 'Quick',
+      estimatedTime: '4 min',
+      difficulty: 'Rapid'
+    },
+    {
+      id: 'comprehensive',
+      name: 'Comprehensive',
+      description: 'Thorough coverage of all difficulty levels',
+      distribution: { easy: 6, medium: 8, hard: 6 },
+      totalQuestions: 20,
+      icon: Trophy,
+      color: 'rose',
+      bgGradient: 'from-rose-50 to-pink-50',
+      borderColor: 'border-rose-200',
+      textColor: 'text-rose-700',
+      hoverBg: 'hover:bg-rose-50',
+      badge: 'Complete',
+      estimatedTime: '10 min',
+      difficulty: 'Full Coverage'
+    },
+    {
+      id: 'custom',
+      name: 'Custom Generation',
+      description: 'Generate questions manually by difficulty',
+      distribution: generatedCounts,
+      totalQuestions: generatedCounts.easy + generatedCounts.medium + generatedCounts.hard,
+      icon: RefreshCw,
+      color: 'gray',
+      bgGradient: 'from-gray-50 to-slate-50',
+      borderColor: 'border-gray-200',
+      textColor: 'text-gray-700',
+      hoverBg: 'hover:bg-gray-50',
+      badge: 'Custom',
+      estimatedTime: `${Math.ceil((generatedCounts.easy + generatedCounts.medium + generatedCounts.hard) * 0.5)} min`,
+      difficulty: 'Custom Mix'
+    }
+  ]
+
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
+  const [showCustomGeneration, setShowCustomGeneration] = useState(false)
+
+  // Predefined difficulty levels for custom generation
   const difficultyLevels = [
     {
       id: 'easy',
@@ -81,13 +192,35 @@ export function GroupPresetSelectionView({
     }
   ] as const
 
-  const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
+  const handlePresetSelection = async (preset: any) => {
+    setSelectedPreset(preset.id)
+
+    if (preset.id === 'custom') {
+      setShowCustomGeneration(true)
+      return
+    }
+
+    try {
+      // Use the preset-based generation method
+      if (onGenerateFromPreset) {
+        await onGenerateFromPreset(preset.distribution)
+        console.log('Questions generated successfully for preset:', preset.name)
+      } else {
+        console.error('onGenerateFromPreset not available')
+        toast.error('Unable to generate questions. Please try refreshing the page.')
+      }
+    } catch (error) {
+      console.error('Failed to generate questions for preset:', error)
+    }
+  }
+
+  const handleCustomGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
     if (onGenerateQuestions) {
       await onGenerateQuestions(difficulty)
     }
   }
 
-  const handleGenerateAllQuestions = async () => {
+  const handleCustomGenerateAll = async () => {
     if (onGenerateAllQuestions) {
       await onGenerateAllQuestions()
     }
@@ -101,40 +234,56 @@ export function GroupPresetSelectionView({
     }
   }
 
-  return (
-    <div className="space-y-8">
-      {/* Header Section */}
-      <div className="flex items-center justify-between">
-        <div>
+  const handleStartWithCustom = () => {
+    if (onStartQuiz && totalGenerated > 0) {
+      onStartQuiz(shareTokens)
+    } else if (totalGenerated > 0) {
+      const customPreset: QuestionPreset = {
+        id: 'custom-generated',
+        name: 'Custom Generated Questions',
+        description: 'Manually generated questions',
+        icon: RefreshCw,
+        distribution: generatedCounts,
+        totalQuestions: totalGenerated
+      }
+      onPresetSelect(customPreset)
+    }
+  }
+
+  if (showCustomGeneration) {
+    return (
+      <div className="space-y-8">
+        {/* Custom Generation Header */}
+        <div className="flex items-center justify-between">
           <button
-            onClick={handleGoBack}
+            onClick={() => {
+              setShowCustomGeneration(false)
+              setSelectedPreset(null)
+            }}
             className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
           >
             <ArrowLeft className="h-3 w-3" />
-            Back to Group
+            Back to Presets
           </button>
-        </div>
 
-        <div className="flex items-center gap-3">
-          {totalGenerated > 0 && (
-            <div className="text-center">
-              <div className="text-lg font-bold text-indigo-600">{totalGenerated}</div>
-              <div className="text-xs text-gray-500">generated</div>
-            </div>
-          )}
-        </div>
+          <div className="flex items-center gap-3">
+            {totalGenerated > 0 && (
+              <div className="text-center">
+                <div className="text-lg font-bold text-indigo-600">{totalGenerated}</div>
+                <div className="text-xs text-gray-500">generated</div>
+              </div>
+            )}
+          </div>
 
-        {/* Generate All Button */}
-        <div className="flex justify-center">
           <Button
-            onClick={handleGenerateAllQuestions}
+            onClick={handleCustomGenerateAll}
             disabled={generatingState.all}
             className="rounded-lg bg-indigo-600 px-8 py-4 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
           >
             {generatingState.all ? (
               <>
                 <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
-                Generating All Questions...
+                Generating All...
               </>
             ) : (
               <>
@@ -144,45 +293,204 @@ export function GroupPresetSelectionView({
             )}
           </Button>
         </div>
+
+        {/* Difficulty Level Cards for Custom Generation */}
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {difficultyLevels.map(level => {
+            const IconComponent = level.icon
+            const isGenerating = generatingState[level.id as keyof typeof generatingState]
+            const questionCount = generatedCounts[level.id as keyof typeof generatedCounts]
+
+            return (
+              <Card
+                key={level.id}
+                className={`border-2 transition-all duration-200 ${level.borderColor} ${level.bgColor} ${level.hoverColor}`}
+              >
+                <CardContent className="p-6">
+                  <div className="space-y-4 text-center">
+                    <div className="flex flex-col items-center space-y-2">
+                      <div
+                        className={`rounded-full p-3 ${level.bgColor} border ${level.borderColor}`}
+                      >
+                        <IconComponent className={`h-6 w-6 ${level.textColor}`} />
+                      </div>
+                      <h3 className={`text-xl font-bold ${level.textColor}`}>{level.name}</h3>
+                      <p className="text-sm text-gray-600">{level.description}</p>
+                    </div>
+
+                    <div className="py-3">
+                      <div className={`text-2xl font-bold ${level.textColor}`}>{questionCount}</div>
+                      <div className="text-xs text-gray-500">questions generated</div>
+                    </div>
+
+                    <Button
+                      onClick={() =>
+                        handleCustomGenerateQuestions(level.id as 'easy' | 'medium' | 'hard')
+                      }
+                      disabled={isGenerating || generatingState.all}
+                      variant="outline"
+                      className={`w-full ${level.borderColor} ${level.textColor} ${level.hoverColor} disabled:opacity-50`}
+                    >
+                      {isGenerating ? (
+                        <>
+                          <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                          Generating...
+                        </>
+                      ) : (
+                        <>
+                          <RefreshCw className="mr-2 h-4 w-4" />
+                          Generate {level.name} (5-8 questions)
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+
+        {/* Start Quiz Section for Custom */}
+        {totalGenerated > 0 && (
+          <div className="border-t border-gray-200 pt-8">
+            <div className="space-y-4 text-center">
+              <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+                <div className="flex items-center justify-center gap-2 text-green-700">
+                  <Trophy className="h-5 w-5" />
+                  <span className="font-medium">
+                    Ready to start! You have {totalGenerated} questions generated.
+                  </span>
+                </div>
+              </div>
+
+              <Button
+                onClick={handleStartWithCustom}
+                className="rounded-lg bg-green-600 px-12 py-4 font-semibold text-white hover:bg-green-700"
+              >
+                Start Quiz with Custom Questions
+              </Button>
+            </div>
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Header Section */}
+      <div className="flex items-center justify-between">
+        <button
+          onClick={handleGoBack}
+          className="flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+        >
+          <ArrowLeft className="h-3 w-3" />
+          Back to Group
+        </button>
+        <div className="text-center">
+          <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent">
+            Choose Quiz Preset
+          </h1>
+          <p className="mt-1 text-sm text-gray-600">
+            Select an intelligent preset for your group session
+          </p>
+        </div>
+        <div className="w-24" /> {/* Spacer for alignment */}
       </div>
 
-      {/* Difficulty Level Cards */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {difficultyLevels.map(level => {
-          const IconComponent = level.icon
-          const isGenerating = generatingState[level.id as keyof typeof generatingState]
-          const questionCount = generatedCounts[level.id as keyof typeof generatedCounts]
+      {/* Intelligent Presets Grid */}
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {intelligentPresets.map((preset) => {
+          const IconComponent = preset.icon
+          const isSelected = selectedPreset === preset.id
+          const isGenerating =
+            generatingState.all ||
+            generatingState.easy ||
+            generatingState.medium ||
+            generatingState.hard
 
           return (
             <Card
-              key={level.id}
-              className={`border-2 transition-all duration-200 ${level.borderColor} ${level.bgColor} ${level.hoverColor}`}
+              key={preset.id}
+              className={`transform cursor-pointer border-2 transition-all duration-300 hover:scale-105 ${
+                isSelected
+                  ? `${preset.borderColor} bg-gradient-to-br ${preset.bgGradient} scale-105 shadow-lg`
+                  : `border-gray-200 bg-white ${preset.hoverBg} hover:shadow-md`
+              }`}
+              onClick={() => !isGenerating && handlePresetSelection(preset)}
             >
               <CardContent className="p-6">
-                <div className="space-y-4 text-center">
-                  {/* Icon and Title */}
-                  <div className="flex flex-col items-center space-y-2">
+                <div className="space-y-4">
+                  {/* Header with badge */}
+                  <div className="flex items-center justify-between">
                     <div
-                      className={`rounded-full p-3 ${level.bgColor} border ${level.borderColor}`}
+                      className={`rounded-full bg-gradient-to-r px-3 py-1 text-xs font-medium ${preset.bgGradient} ${preset.textColor}`}
                     >
-                      <IconComponent className={`h-6 w-6 ${level.textColor}`} />
+                      {preset.badge}
                     </div>
-                    <h3 className={`text-xl font-bold ${level.textColor}`}>{level.name}</h3>
-                    <p className="text-sm text-gray-600">{level.description}</p>
+                    <div className={`rounded-full bg-gradient-to-r p-2 ${preset.bgGradient}`}>
+                      <IconComponent className={`h-5 w-5 ${preset.textColor}`} />
+                    </div>
                   </div>
 
-                  {/* Question Count */}
-                  <div className="py-3">
-                    <div className={`text-2xl font-bold ${level.textColor}`}>{questionCount}</div>
-                    <div className="text-xs text-gray-500">questions generated</div>
+                  {/* Title and Description */}
+                  <div className="text-center">
+                    <h3 className={`text-lg font-bold ${preset.textColor}`}>{preset.name}</h3>
+                    <p className="mt-1 text-sm text-gray-600">{preset.description}</p>
                   </div>
 
-                  {/* Generate Button */}
+                  {/* Distribution Preview */}
+                  <div className="space-y-2">
+                    <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
+                      Question Mix
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-green-600">
+                          {preset.distribution.easy}
+                        </div>
+                        <div className="text-xs text-gray-500">Easy</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-yellow-600">
+                          {preset.distribution.medium}
+                        </div>
+                        <div className="text-xs text-gray-500">Medium</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-sm font-bold text-red-600">
+                          {preset.distribution.hard}
+                        </div>
+                        <div className="text-xs text-gray-500">Hard</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center justify-between border-t border-gray-200 pt-2">
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${preset.textColor}`}>
+                        {preset.totalQuestions}
+                      </div>
+                      <div className="text-xs text-gray-500">questions</div>
+                    </div>
+                    <div className="text-center">
+                      <div className={`text-lg font-bold ${preset.textColor}`}>
+                        {preset.estimatedTime}
+                      </div>
+                      <div className="text-xs text-gray-500">estimated</div>
+                    </div>
+                  </div>
+
+                  {/* Action Button */}
                   <Button
-                    onClick={() => handleGenerateQuestions(level.id as 'easy' | 'medium' | 'hard')}
-                    disabled={isGenerating || generatingState.all}
-                    variant="outline"
-                    className={`w-full ${level.borderColor} ${level.textColor} ${level.hoverColor} disabled:opacity-50`}
+                    className={`w-full ${
+                      isSelected
+                        ? `bg-gradient-to-r from-indigo-600 to-purple-600 text-white`
+                        : `bg-gradient-to-r ${preset.bgGradient} ${preset.textColor} border ${preset.borderColor}`
+                    } disabled:opacity-50`}
+                    disabled={isGenerating}
+                    variant={isSelected ? 'default' : 'outline'}
                   >
                     {isGenerating ? (
                       <>
@@ -191,8 +499,17 @@ export function GroupPresetSelectionView({
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Generate {level.name}
+                        {preset.id === 'custom' ? (
+                          <>
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            Custom Generate
+                          </>
+                        ) : (
+                          <>
+                            <Sparkles className="mr-2 h-4 w-4" />
+                            Select & Generate
+                          </>
+                        )}
                       </>
                     )}
                   </Button>
@@ -203,7 +520,7 @@ export function GroupPresetSelectionView({
         })}
       </div>
 
-      {/* Start Quiz Section */}
+      {/* Start Quiz Section - Show after generation */}
       {totalGenerated > 0 && (
         <div className="border-t border-gray-200 pt-8">
           <div className="space-y-4 text-center">
@@ -219,19 +536,10 @@ export function GroupPresetSelectionView({
             <Button
               onClick={() => {
                 if (onStartQuiz) {
-                  // Use real shareTokens to load actual questions
                   onStartQuiz(shareTokens)
                 } else {
-                  // Fallback to old method with mock preset
-                  const mockPreset: QuestionPreset = {
-                    id: 'generated',
-                    name: 'Generated Questions',
-                    description: 'AI Generated Questions',
-                    icon: Sparkles,
-                    distribution: generatedCounts,
-                    totalQuestions: totalGenerated
-                  }
-                  onPresetSelect(mockPreset)
+                  console.error('onStartQuiz not available')
+                  toast.error('Unable to start quiz. Please try refreshing the page.')
                 }
               }}
               className="rounded-lg bg-green-600 px-12 py-4 font-semibold text-white hover:bg-green-700"
@@ -241,6 +549,20 @@ export function GroupPresetSelectionView({
           </div>
         </div>
       )}
+
+      {/* Preset Info Footer */}
+      <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-6 border border-blue-200">
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center gap-2 text-blue-700">
+            <Trophy className="h-5 w-5" />
+            <span className="font-medium">Intelligent Preset System</span>
+          </div>
+          <p className="text-sm text-blue-600">
+            Each preset generates 5-8 questions per difficulty level to ensure quality and optimal
+            learning experience. Choose based on your group's skill level and available time.
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
