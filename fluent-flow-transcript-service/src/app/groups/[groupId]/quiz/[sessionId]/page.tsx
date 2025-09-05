@@ -1,21 +1,24 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
-import { Bot } from 'lucide-react'
-import { toast } from 'sonner'
+import { use } from 'react'
 import { AuthPrompt } from '../../../../../components/auth/AuthPrompt'
 import { CompactProgressSidebar } from '../../../../../components/groups/progress/CompactProgressSidebar'
 import { CheckingResultsModal } from '../../../../../components/groups/quiz/CheckingResultsModal'
 import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
 import { useLoop, useSessionQuestions } from '../../../../../hooks/useLoops'
-import { useQuestionGeneration, useGenerateAllQuestions } from '../../../../../hooks/useQuestionGeneration'
 import { ErrorView } from '../../../../questions/[token]/components/ErrorView'
 import { LoadingView } from '../../../../questions/[token]/components/LoadingView'
 import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
 import { GroupQuizResults } from './components/GroupQuizResults'
 import { QuestionInfoCard } from '../../../../../components/groups/quiz/QuestionInfoCard'
+import { GroupQuizSessionHeader } from './components/GroupQuizSessionHeader'
+import { ExpiredSessionView } from './components/ExpiredSessionView'
+import { NotJoinedView } from './components/NotJoinedView'
+import { FallbackParticipantsSidebar } from './components/FallbackParticipantsSidebar'
 import { useGroupQuizWithProgress } from './hooks/useGroupQuizWithProgress'
+import { useGroupQuestionGeneration } from './hooks/useQuestionGeneration'
+import { useQuizStartup } from './hooks/useQuizStartup'
 
 interface GroupQuizPageProps {
   params: Promise<{
@@ -27,78 +30,16 @@ interface GroupQuizPageProps {
 export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   const { groupId, sessionId } = use(params)
 
-  // Question generation state
-  const [generatingState, setGeneratingState] = useState({
-    easy: false,
-    medium: false,
-    hard: false,
-    all: false
-  })
-
-  const [generatedCounts, setGeneratedCounts] = useState({
-    easy: 0,
-    medium: 0,
-    hard: 0
-  })
-
-  // Store shareTokens for each difficulty to load questions later
-  const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
-
-  // Single difficulty question generation mutation
-  const generateQuestionsMutation = useQuestionGeneration({
-    onSuccess: (data) => {
-      console.log(`Successfully generated ${data.count} ${data.difficulty} questions`)
-      
-      // Update generated counts
-      setGeneratedCounts(prev => ({
-        ...prev,
-        [data.difficulty]: data.count
-      }))
-
-      // Store shareToken for later loading
-      if (data.shareToken) {
-        setShareTokens(prev => ({
-          ...prev,
-          [data.difficulty]: data.shareToken
-        }) as any)
-      }
-
-      // Clear loading state
-      setGeneratingState(prev => ({ ...prev, [data.difficulty]: false }))
-    },
-    onError: (error, difficulty) => {
-      // Clear loading state
-      setGeneratingState(prev => ({ ...prev, [difficulty]: false }))
-    }
-  })
-
-  // Generate all questions mutation
-  const generateAllQuestionsMutation = useGenerateAllQuestions({
-    onSuccess: (results) => {
-      console.log('Successfully generated all questions:', results)
-
-      // Update all generated counts and shareTokens
-      const newCounts = { easy: 0, medium: 0, hard: 0 }
-      const newShareTokens: Record<string, string> = {}
-      
-      results.forEach((result: any) => {
-        newCounts[result.difficulty as keyof typeof newCounts] = result.count
-        if (result.shareToken) {
-          newShareTokens[result.difficulty] = result.shareToken
-        }
-      })
-      
-      setGeneratedCounts(newCounts)
-      setShareTokens(prev => ({ ...prev, ...newShareTokens }))
-
-      // Clear loading state
-      setGeneratingState(prev => ({ ...prev, all: false }))
-    },
-    onError: () => {
-      // Clear loading state
-      setGeneratingState(prev => ({ ...prev, all: false }))
-    }
-  })
+  // Question generation hook
+  const {
+    generatingState,
+    generatedCounts,
+    shareTokens,
+    setGeneratedCounts,
+    setShareTokens,
+    handleGenerateQuestions: generateQuestions,
+    handleGenerateAllQuestions: generateAllQuestions
+  } = useGroupQuestionGeneration(groupId, sessionId)
 
   const {
     // Quiz state
@@ -152,127 +93,22 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   // Load existing questions for this session
   const { data: sessionQuestions } = useSessionQuestions(groupId, sessionId)
 
-  // Load existing questions into state on mount
-  useEffect(() => {
-    if (sessionQuestions?.questionsByDifficulty) {
-      const counts = { easy: 0, medium: 0, hard: 0 }
-      const tokens: Record<string, string> = {}
+  // Quiz startup hook
+  const { handleStartQuiz } = useQuizStartup({
+    sessionQuestions,
+    setGeneratedCounts,
+    setShareTokens,
+    handlePresetSelect,
+    generatedCounts
+  })
 
-      // Handle both individual difficulty questions and mixed questions
-      Object.entries(sessionQuestions.questionsByDifficulty).forEach(([difficulty, data]: [string, any]) => {
-        if (difficulty === 'mixed') {
-          // For mixed difficulty, we might need to parse the questions to count by difficulty
-          counts.easy = data.count || 0
-          counts.medium = data.count || 0 
-          counts.hard = data.count || 0
-        } else if (['easy', 'medium', 'hard'].includes(difficulty)) {
-          counts[difficulty as 'easy' | 'medium' | 'hard'] = data.count || 0
-          tokens[difficulty] = data.shareToken
-        }
-      })
-
-      setGeneratedCounts(counts)
-      setShareTokens(tokens)
-    }
-  }, [sessionQuestions])
-
-  // Question generation handlers
+  // Question generation handlers with loop data
   const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
-    if (!loopData) {
-      toast.error('No loop data available for question generation')
-      return
-    }
-
-    // Transform loopData to the format expected by the API
-    const loop = {
-      id: loopData.id,
-      videoTitle: loopData.videoTitle || 'Practice Session',
-      startTime: loopData.startTime || 0,
-      endTime: loopData.endTime || 300,
-      transcript: loopData.transcript || '',
-      segments: loopData.segments || []
-    }
-
-    // Set loading state for specific difficulty
-    setGeneratingState(prev => ({ ...prev, [difficulty]: true }))
-    await generateQuestionsMutation.mutateAsync({ difficulty, loop, groupId, sessionId })
+    await generateQuestions(difficulty, loopData)
   }
 
   const handleGenerateAllQuestions = async () => {
-    if (!loopData) {
-      toast.error('No loop data available for question generation')
-      return
-    }
-
-    // Transform loopData to the format expected by the API
-    const loop = {
-      id: loopData.id,
-      videoTitle: loopData.videoTitle || 'Practice Session',
-      startTime: loopData.startTime || 0,
-      endTime: loopData.endTime || 300,
-      transcript: loopData.transcript || '',
-      segments: loopData.segments || []
-    }
-
-    // Set loading state for all
-    setGeneratingState(prev => ({ ...prev, all: true }))
-    await generateAllQuestionsMutation.mutateAsync({ loop, groupId, sessionId })
-  }
-
-  // Handle starting quiz with generated questions
-  const handleStartQuiz = async (shareTokensForQuiz: Record<string, string>) => {
-    console.log('Starting quiz with shareTokens:', shareTokensForQuiz)
-    
-    // Validate shareTokens
-    const availableTokens = Object.entries(shareTokensForQuiz).filter(([_, token]) => token)
-    if (availableTokens.length === 0) {
-      toast.error('No questions available to start quiz')
-      return
-    }
-
-    try {
-      // Create a preset that matches the generated questions
-      const generatedPreset = {
-        id: 'generated',
-        name: 'Generated Questions',
-        description: 'AI Generated Questions',
-        icon: Bot,
-        distribution: generatedCounts,
-        totalQuestions: Object.values(generatedCounts).reduce((sum, count) => sum + count, 0)
-      }
-
-      handlePresetSelect(generatedPreset, shareTokensForQuiz)
-
-    } catch (error) {
-      console.error('Failed to start quiz with generated questions:', error)
-      toast.error('Failed to start quiz. Please try again.')
-    }
-  }
-
-  // Helper functions for participant display
-  const getInitials = (email?: string | null, username?: string | null) => {
-    if (username && username.trim()) {
-      return username
-        .split(' ')
-        .map(word => word[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    }
-    if (email && email.includes('@')) {
-      return email.split('@')[0].slice(0, 2).toUpperCase()
-    }
-    return '??'
-  }
-
-  const getDisplayName = (email?: string | null, username?: string | null) => {
-    if (username && username.trim()) {
-      return username.trim()
-    }
-    if (email && email.includes('@')) {
-      return email.split('@')[0]
-    }
-    return 'Unknown User'
+    await generateAllQuestions(loopData)
   }
 
   // Simplified loading condition - only depend on appState
@@ -281,53 +117,10 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   }
 
   if (appState === 'error') {
-    // Check if it's an expired session error
     const isExpiredSession = (error as any)?.isExpired
 
     if (isExpiredSession) {
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-          <div className="max-w-md rounded-2xl border border-white/20 bg-white/80 p-8 text-center shadow-lg backdrop-blur-sm">
-            <div className="mb-6">
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                <svg
-                  className="h-8 w-8 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={1.5}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"
-                  />
-                </svg>
-              </div>
-              <h1 className="mb-2 text-2xl font-bold text-gray-800">Quiz Session Expired</h1>
-              <p className="leading-relaxed text-gray-600">
-                This quiz session has expired and is no longer available. Please request a new
-                session from the group organizer.
-              </p>
-            </div>
-
-            <div className="flex flex-col gap-3">
-              <button
-                onClick={() => (window.location.href = `/groups/${groupId}`)}
-                className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-700"
-              >
-                Back to Group
-              </button>
-              <button
-                onClick={() => (window.location.href = '/groups')}
-                className="rounded-xl border border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50"
-              >
-                All Groups
-              </button>
-            </div>
-          </div>
-        </div>
-      )
+      return <ExpiredSessionView groupId={groupId} />
     }
 
     return (
@@ -339,22 +132,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   }
 
   if (!isUserJoined) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="rounded-2xl border border-white/20 bg-white/80 p-8 text-center shadow-lg backdrop-blur-sm">
-          <h1 className="mb-4 text-2xl font-bold text-gray-800">Group Quiz Session</h1>
-          <p className="mb-6 text-gray-600">
-            You need to join the quiz room first to participate in this group session.
-          </p>
-          <button
-            onClick={() => window.history.back()}
-            className="rounded-xl bg-indigo-600 px-6 py-3 font-semibold text-white transition-colors hover:bg-indigo-700"
-          >
-            Go Back to Quiz Room
-          </button>
-        </div>
-      </div>
-    )
+    return <NotJoinedView />
   }
 
   return (
@@ -392,103 +170,22 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
               currentUserId={user?.id}
             />
           ) : (
-            // Fallback sidebar for non-active states
-            <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
-              <div className="border-b border-white/20 bg-white/60 p-4">
-                <h2 className="flex items-center gap-2 font-semibold text-gray-800">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-                  Participants
-                </h2>
-                <div className="mt-1 text-sm text-gray-600">
-                  {onlineParticipants.length} online • {participants.length} total
-                </div>
-              </div>
-
-              <div className="space-y-3 p-4">
-                {onlineParticipants.map(participant => (
-                  <div
-                    key={participant.user_id}
-                    className={`rounded-lg border p-3 transition-all ${
-                      participant.user_id === user?.id
-                        ? 'border-indigo-200 bg-indigo-50 shadow-sm'
-                        : 'border-white/40 bg-white/60 hover:bg-white/80'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 text-sm font-semibold text-white">
-                        {getInitials(participant.user_email, participant.username)}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium text-gray-800">
-                          {getDisplayName(participant.user_email, participant.username)}
-                          {participant.user_id === user?.id && (
-                            <span className="ml-1 text-xs text-indigo-600">(You)</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-
-                {participants
-                  .filter(p => !p.is_online)
-                  .map(participant => (
-                    <div
-                      key={participant.user_id}
-                      className="rounded-lg border border-gray-200/40 bg-gray-50/60 p-3"
-                    >
-                      <div className="flex items-center gap-2 opacity-60">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-300 text-sm font-semibold text-white">
-                          {getInitials(participant.user_email, participant.username)}
-                        </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium text-gray-600">
-                            {getDisplayName(participant.user_email, participant.username)}
-                          </div>
-                          <div className="mt-1 flex items-center gap-2">
-                            <div className="h-1.5 w-1.5 rounded-full bg-gray-400"></div>
-                            <span className="text-xs text-gray-400">Offline</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-              </div>
-            </div>
+            <FallbackParticipantsSidebar
+              participants={participants}
+              onlineParticipants={onlineParticipants}
+              user={user}
+            />
           )}
 
           {/* Main Content - Quiz */}
           <div className="flex flex-1 flex-col overflow-hidden">
             {/* Session Header */}
-            <div className="border-b border-white/20 bg-white/60 p-6 backdrop-blur-sm">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h1 className="mb-1 text-xl font-bold text-gray-800">
-                    {session?.quiz_title || 'Group Quiz Session'}
-                  </h1>
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
-                    <span className="flex items-center gap-1">
-                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                      Live Session
-                    </span>
-                    <span>{participants.length} participants</span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  {user && (
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-800">{user.email || 'You'}</div>
-                      <div className="text-xs text-gray-500">
-                        {isAuthenticated ? 'Authenticated' : 'Guest'}
-                      </div>
-                    </div>
-                  )}
-                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 font-semibold text-white">
-                    {(user?.email || 'U')[0].toUpperCase()}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <GroupQuizSessionHeader
+              session={session}
+              participants={participants}
+              user={user}
+              isAuthenticated={isAuthenticated}
+            />
 
             {/* Quiz Content */}
             <div className="flex-1 overflow-y-auto p-6">
