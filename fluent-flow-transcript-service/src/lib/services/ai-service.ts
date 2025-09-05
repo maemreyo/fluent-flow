@@ -323,7 +323,8 @@ export class AIService {
   async generateConversationQuestions(
     loop: SavedLoop, 
     transcript: string, 
-    preset?: DifficultyPreset
+    preset?: DifficultyPreset,
+    options?: { segments?: Array<{ text: string; start: number; duration: number }> }
   ): Promise<GeneratedQuestions> {
     // Import AI prompts dynamically to avoid circular dependencies
     const { prompts, PromptManager } = await import('./ai-prompts')
@@ -334,7 +335,13 @@ export class AIService {
     const actualPreset = preset || defaultPreset
     const totalQuestions = actualPreset.easy + actualPreset.medium + actualPreset.hard
 
-    const messages = PromptManager.buildMessages(template, { loop, transcript, preset: actualPreset })
+    // Use segments if provided, otherwise fallback to transcript
+    // This avoids duplication since segments contain timeframe-specific content
+    const promptData = options?.segments && options.segments.length > 0 
+      ? { loop, segments: options.segments, preset: actualPreset }
+      : { loop, transcript, preset: actualPreset }
+
+    const messages = PromptManager.buildMessages(template, promptData)
     const config = PromptManager.getConfig(template)
 
     try {

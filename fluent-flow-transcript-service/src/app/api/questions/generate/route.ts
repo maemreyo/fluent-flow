@@ -12,11 +12,17 @@ const generateRequestSchema = z.object({
     startTime: z.number(),
     endTime: z.number()
   }),
+  segments: z.array(z.object({
+    text: z.string(),
+    start: z.number(),
+    duration: z.number()
+  })).optional(),
   preset: z.object({
-    easy: z.number().min(0).max(20),
-    medium: z.number().min(0).max(20), 
-    hard: z.number().min(0).max(20)
+    easy: z.number().min(0).max(6),
+    medium: z.number().min(0).max(6), 
+    hard: z.number().min(0).max(6)
   }).optional(),
+  difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
   aiProvider: z.enum(['openai', 'anthropic', 'google']).optional(),
   saveToDatabase: z.boolean().default(false),
   groupId: z.string().optional(),
@@ -34,19 +40,41 @@ export async function POST(request: NextRequest) {
     // Parse and validate request
     const body = await request.json()
     const validatedData = generateRequestSchema.parse(body)
-    const { transcript, loop, preset, aiProvider, saveToDatabase, groupId, sessionId } = validatedData
+    const { transcript, loop, segments, preset, difficulty, aiProvider, saveToDatabase, groupId, sessionId } = validatedData
 
     // Initialize AI service
     const aiService = createAIService(aiProvider ? { provider: aiProvider } : undefined)
 
-    // Generate questions
-    console.log(`Generating questions for loop ${loop.id} with ${transcript.length} chars transcript`)
+    // Handle difficulty-based generation (max 6 questions per level)
+    let finalPreset: DifficultyPreset
+    if (difficulty) {
+      // Generate maximum 6 questions for specified difficulty
+      finalPreset = {
+        easy: difficulty === 'easy' ? 6 : 0,
+        medium: difficulty === 'medium' ? 6 : 0,
+        hard: difficulty === 'hard' ? 6 : 0
+      }
+    } else if (preset) {
+      // Use provided preset but cap at 6 per difficulty
+      finalPreset = {
+        easy: Math.min(preset.easy || 0, 6),
+        medium: Math.min(preset.medium || 0, 6),
+        hard: Math.min(preset.hard || 0, 6)
+      }
+    } else {
+      // Default preset
+      finalPreset = { easy: 3, medium: 2, hard: 1 }
+    }
+
+    // Generate questions with segments for enhanced AI context
+    console.log(`Generating questions for loop ${loop.id} with ${transcript.length} chars transcript and ${segments?.length || 0} segments`)
     
     const startTime = Date.now()
     const generatedQuestions = await aiService.generateConversationQuestions(
       loop as SavedLoop,
       transcript,
-      preset as DifficultyPreset
+      finalPreset,
+      { segments } // Pass segments to AI for timeframe references
     )
     const processingTime = Date.now() - startTime
 
@@ -87,7 +115,10 @@ export async function POST(request: NextRequest) {
             actualDistribution: generatedQuestions.actualDistribution,
             aiProvider: aiProvider || process.env.AI_PROVIDER,
             processingTimeMs: processingTime,
-            generatedAt: new Date().toISOString()
+            generatedAt: new Date().toISOString(),
+            segmentsCount: segments?.length || 0,
+            difficulty: difficulty || 'mixed',
+            usedSegments: !!segments
           }
         })
 
@@ -110,6 +141,9 @@ export async function POST(request: NextRequest) {
           totalQuestions: generatedQuestions.questions.length,
           processingTimeMs: processingTime,
           aiProvider: aiProvider || process.env.AI_PROVIDER,
+          difficulty: difficulty || 'mixed',
+          usedSegments: !!segments,
+          segmentsCount: segments?.length || 0,
           transcript: {
             length: transcript.length,
             wordCount: transcript.split(/\s+/).length
@@ -176,7 +210,7 @@ export async function POST(request: NextRequest) {
  * GET /api/questions/generate
  * Get generation status and capabilities
  */
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const aiService = createAIService()
     const capabilities = await aiService.getCapabilities()

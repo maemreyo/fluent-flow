@@ -28,6 +28,68 @@ export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps)
     }
   }
 
+  const handlePracticeLoop = async (loop: any) => {
+    try {
+      console.log('Starting practice session with segments for loop:', loop.id)
+      
+      // Check if loop has segments and transcript
+      if (!loop.segments?.length || !loop.transcript?.trim()) {
+        console.warn('No segments or transcript available for loop:', loop.id)
+        // Still proceed with original behavior
+        if (onCreateSession) {
+          onCreateSession()
+        }
+        return
+      }
+
+      console.log('Sending segments to question generation API:', {
+        segmentsCount: loop.segments.length,
+        transcriptLength: loop.transcript.length
+      })
+
+      // Call the questions generation API with segments
+      const response = await fetch('/api/questions/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          transcript: loop.transcript,
+          loop: {
+            id: loop.id,
+            videoTitle: loop.videoTitle,
+            startTime: loop.startTime,
+            endTime: loop.endTime
+          },
+          segments: loop.segments, // Use segments directly from loop
+          preset: { easy: 3, medium: 2, hard: 1 }, // Default preset for now
+          saveToDatabase: true,
+          groupId: groupId
+        })
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to generate questions')
+      }
+
+      console.log('Questions generated successfully:', result.data.metadata)
+
+      // Navigate to quiz screen or trigger original behavior
+      if (onCreateSession) {
+        onCreateSession()
+      }
+      
+    } catch (error) {
+      console.error('Failed to start practice session:', error)
+      // Fallback to original behavior
+      if (onCreateSession) {
+        onCreateSession()
+      }
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -98,7 +160,7 @@ export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps)
               loop={loop}
               canManage={canManage}
               onDelete={() => handleDeleteLoop(loop.id)}
-              onCreateSession={onCreateSession}
+              onCreateSession={() => handlePracticeLoop(loop)}
             />
           ))}
         </div>
