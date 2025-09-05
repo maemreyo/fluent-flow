@@ -6,6 +6,7 @@ import { useGroupSessions } from '../../hooks/useGroupSessions'
 import EditSessionModal from '../groups/EditSessionModal'
 import { FullscreenModal } from '../ui/dialog'
 import { SessionDetailsModal } from './SessionDetailsModal'
+import { GlobalSessionListener } from '../groups/quiz/GlobalSessionListener'
 
 interface SessionsTabProps {
   groupId: string
@@ -207,8 +208,18 @@ export default function SessionsTab({
     )
   }
 
+  // Get currently active session for global listening
+  const activeSession = sessions.find((session: any) => session.status === 'active')
+  
   return (
     <div className="space-y-6">
+      {/* Global Session Listener - listens for quiz starts when user is not in room */}
+      <GlobalSessionListener 
+        groupId={groupId}
+        activeSessionId={activeSession?.id}
+        isInQuizRoom={!!quizRoomSession}
+      />
+      
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-800">Quiz Sessions</h2>

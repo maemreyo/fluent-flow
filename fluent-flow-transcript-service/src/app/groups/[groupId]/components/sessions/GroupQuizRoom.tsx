@@ -9,6 +9,7 @@ import { useSessionParticipants } from './hooks/useSessionParticipants'
 import { QuizRoomHeader } from './components/QuizRoomHeader'
 import { QuizRoomParticipants } from './components/QuizRoomParticipants'
 import { QuizRoomActions } from './components/QuizRoomActions'
+import { useSessionSynchronization } from '../../quiz/[sessionId]/hooks/useSessionSynchronization'
 
 interface GroupQuizRoomProps {
   sessionId: string
@@ -55,6 +56,32 @@ export function GroupQuizRoom({
     userId: user?.id
   })
 
+  // Use session synchronization for real-time coordination
+  const {
+    sessionState,
+    autoStartCountdown,
+    isConnected,
+    broadcastSessionStart
+  } = useSessionSynchronization({
+    groupId,
+    sessionId,
+    isInRoom: isUserJoined, // User is in room if they've joined the session
+    enabled: true,
+    onJoinQuiz // Pass the callback for modal state management
+  })
+
+  // Debug logging for session synchronization
+  useEffect(() => {
+    console.log('🏠 GroupQuizRoom state update:', {
+      isUserJoined,
+      autoStartCountdown,
+      sessionState,
+      isConnected,
+      sessionId,
+      groupId
+    })
+  }, [isUserJoined, autoStartCountdown, sessionState, isConnected, sessionId, groupId])
+
   // Calculate time until session starts
   useEffect(() => {
     if (session.scheduled_at && session.status === 'scheduled') {
@@ -92,10 +119,12 @@ export function GroupQuizRoom({
     onLeaveRoom()
   }
 
-  const handleStartQuiz = () => {
-    const quizUrl = `/groups/${groupId}/quiz/${sessionId}`
-    onJoinQuiz()
-    router.push(quizUrl)
+  const handleStartQuiz = async () => {
+    // Broadcast quiz start to all participants (including self)
+    await broadcastSessionStart()
+    
+    // The countdown and navigation will be handled by the session synchronization hook
+    // when it receives the broadcast message
   }
 
   const canStartQuiz =
@@ -117,6 +146,17 @@ export function GroupQuizRoom({
       {/* Countdown Timer */}
       {countdown !== null && countdown > 0 && (
         <SessionCountdown seconds={countdown} onComplete={() => window.location.reload()} />
+      )}
+
+      {/* Auto-Start Countdown */}
+      {autoStartCountdown !== null && autoStartCountdown > 0 && (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-green-800">Quiz Starting!</h3>
+            <div className="text-3xl font-bold text-green-600">{autoStartCountdown}</div>
+            <p className="text-sm text-green-700">Get ready - you'll be redirected automatically</p>
+          </div>
+        </div>
       )}
 
       {/* Quiz Room Main Content */}
