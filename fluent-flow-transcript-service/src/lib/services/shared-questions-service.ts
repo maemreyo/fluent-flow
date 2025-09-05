@@ -188,6 +188,47 @@ export class SharedQuestionsService {
     return data?.length || 0
   }
 
+  /**
+   * Delete all question sets for a specific session
+   */
+  async deleteSessionQuestions(groupId: string, sessionId: string): Promise<number> {
+    const supabase = this.request ? getSupabaseServer(this.request) : null
+    if (!supabase) {
+      throw new Error('Database not configured')
+    }
+
+    // Verify user has permission to delete (must be authenticated and member of group)
+    const user = this.request ? await getCurrentUserServer(supabase) : null
+    if (!user) {
+      throw new Error('Authentication required')
+    }
+
+    // Check if user is member of the group
+    const { data: membership, error: memberError } = await supabase
+      .from('study_group_members')
+      .select('role')
+      .eq('group_id', groupId)
+      .eq('user_id', user.id)
+      .single()
+
+    if (memberError || !membership) {
+      throw new Error('Access denied - not a group member')
+    }
+
+    const { data, error } = await supabase
+      .from('shared_question_sets')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('session_id', sessionId)
+      .select('id')
+
+    if (error) {
+      throw new Error(`Failed to delete session questions: ${error.message}`)
+    }
+
+    return data?.length || 0
+  }
+
   // Helper method to generate share URL
   generateShareUrl(shareToken: string, baseUrl?: string, groupId?: string, sessionId?: string): string {
     const url = new URL(`/questions/${shareToken}`, baseUrl || process.env.NEXTAUTH_URL || 'http://localhost:3838')

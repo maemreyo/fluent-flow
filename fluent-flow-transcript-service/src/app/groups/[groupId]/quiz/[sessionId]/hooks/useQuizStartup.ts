@@ -10,6 +10,12 @@ interface UseQuizStartupProps {
   setShareTokens: (tokens: any) => void
   handlePresetSelect: (preset: any, shareTokens: Record<string, string>) => void
   generatedCounts: { easy: number; medium: number; hard: number }
+  currentPreset?: {
+    id: string
+    name: string
+    distribution: { easy: number; medium: number; hard: number }
+    createdAt: Date
+  } | null
 }
 
 export function useQuizStartup({
@@ -17,7 +23,8 @@ export function useQuizStartup({
   setGeneratedCounts,
   setShareTokens,
   handlePresetSelect,
-  generatedCounts
+  generatedCounts,
+  currentPreset
 }: UseQuizStartupProps) {
   // Load existing questions into state on mount
   useEffect(() => {
@@ -51,7 +58,15 @@ export function useQuizStartup({
     }
 
     try {
-      const generatedPreset = {
+      // Use current preset if available, otherwise create generic preset
+      const presetToUse = currentPreset ? {
+        id: currentPreset.id,
+        name: currentPreset.name,
+        description: `${currentPreset.name} Preset`,
+        icon: Bot,
+        distribution: currentPreset.distribution,
+        totalQuestions: Object.values(currentPreset.distribution).reduce((sum, count) => sum + count, 0)
+      } : {
         id: 'generated',
         name: 'Generated Questions',
         description: 'AI Generated Questions',
@@ -60,7 +75,8 @@ export function useQuizStartup({
         totalQuestions: Object.values(generatedCounts).reduce((sum, count) => sum + count, 0)
       }
 
-      handlePresetSelect(generatedPreset, shareTokensForQuiz)
+      console.log('Starting quiz with preset:', presetToUse.name)
+      handlePresetSelect(presetToUse, shareTokensForQuiz)
     } catch (error) {
       console.error('Failed to start quiz with generated questions:', error)
       toast.error('Failed to start quiz. Please try again.')

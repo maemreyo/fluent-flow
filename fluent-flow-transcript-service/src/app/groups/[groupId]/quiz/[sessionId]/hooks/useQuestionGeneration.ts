@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import {
   useGenerateAllQuestions,
   useQuestionGeneration
 } from '../../../../../../hooks/useQuestionGeneration'
+import { getAuthHeaders } from '../../../../../../lib/supabase/auth-utils'
 
 interface GeneratingState {
   easy: boolean
@@ -35,6 +36,67 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
   })
 
   const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
+
+  // New: Track current preset state
+  const [currentPreset, setCurrentPreset] = useState<{
+    id: string
+    name: string
+    distribution: GeneratedCounts
+    createdAt: Date
+  } | null>(null)
+
+  // Load current preset from database on mount
+  useEffect(() => {
+    const loadCurrentPreset = async () => {
+      try {
+        const headers = await getAuthHeaders()
+        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/preset`, {
+          headers,
+          credentials: 'include'
+        })
+        if (response.ok) {
+          const data = await response.json()
+          if (data.currentPreset) {
+            setCurrentPreset({
+              ...data.currentPreset,
+              createdAt: new Date(data.currentPreset.createdAt)
+            })
+            console.log('Loaded current preset from database:', data.currentPreset.name)
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load current preset:', error)
+      }
+    }
+
+    loadCurrentPreset()
+  }, [groupId, sessionId])
+
+  // Function to save current preset to database
+  const saveCurrentPreset = async (preset: {
+    id: string
+    name: string
+    distribution: GeneratedCounts
+    createdAt: Date
+  } | null) => {
+    try {
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/preset`, {
+        method: 'PUT',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify({ preset }),
+      })
+      
+      if (response.ok) {
+        console.log('Saved current preset to database')
+      } else {
+        console.warn('Failed to save preset to database')
+      }
+    } catch (error) {
+      console.warn('Error saving preset to database:', error)
+    }
+  }
 
   // Single difficulty question generation mutation with custom count support
   const generateQuestionsMutation = useQuestionGeneration({
@@ -91,6 +153,57 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     }
   })
 
+  // New: Clear existing questions and reset state
+  const clearExistingQuestions = async () => {
+    console.log('Clearing existing questions and preset state')
+    
+    // Clear local state immediately for responsive UI
+    setGeneratedCounts({ easy: 0, medium: 0, hard: 0 })
+    setShareTokens({})
+    setCurrentPreset(null)
+    
+    // Clear database questions and preset state in the background
+    const promises = []
+    
+    // Clear questions from database
+    promises.push(
+      (async () => {
+        const headers = await getAuthHeaders()
+        return fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
+          method: 'DELETE',
+          headers,
+          credentials: 'include',
+        })
+      })().then(response => {
+        if (response.ok) {
+          return response.json().then(result => {
+            console.log(`Successfully deleted ${result.deletedCount} question set(s) from database`)
+          })
+        } else {
+          console.warn('Failed to delete questions from database:', response.statusText)
+        }
+      }).catch(error => {
+        console.warn('Error deleting questions from database:', error)
+      })
+    )
+    
+    // Clear preset state from database
+    promises.push(saveCurrentPreset(null))
+    
+    // Wait for all operations but don't throw on error
+    try {
+      await Promise.all(promises)
+    } catch (error) {
+      console.warn('Some cleanup operations failed:', error)
+      // Don't throw - we don't want to break the UI flow
+    }
+  }
+
+  // New: Check if preset replacement is needed
+  const needsPresetReplacement = (presetId: string): boolean => {
+    return currentPreset ? currentPreset.id !== presetId : false
+  }
+
   const handleGenerateQuestions = async (
     difficulty: 'easy' | 'medium' | 'hard', 
     loopData: any, 
@@ -145,15 +258,34 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     await generateAllQuestionsMutation.mutateAsync(generationParams)
   }
 
-  // New method for generating questions based on preset distribution
+  // Enhanced method for generating questions based on preset distribution with cleanup
   const handleGenerateFromPreset = async (
     loopData: any, 
-    distribution: { easy: number; medium: number; hard: number }
+    distribution: { easy: number; medium: number; hard: number },
+    presetInfo: { id: string; name: string }
   ) => {
     if (!loopData) {
       toast.error('No loop data available for question generation')
       return
     }
+
+    // Check if trying to generate same preset
+    if (currentPreset && currentPreset.id === presetInfo.id) {
+      console.log(`Preset ${presetInfo.name} is already selected and generated`)
+      toast.info(`${presetInfo.name} preset is already active`)
+      return
+    }
+
+    // Prevent duplicate generation while in progress
+    if (generatingState.all) {
+      console.log('Generation already in progress, skipping duplicate request')
+      toast.info('Question generation is already in progress')
+      return
+    }
+
+    // Clear existing questions before generating new ones
+    console.log(`Generating questions for preset: ${presetInfo.name}`)
+    await clearExistingQuestions()
 
     const { easy, medium, hard } = distribution
     const promises = []
@@ -163,7 +295,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
 
       // Generate questions for each difficulty based on preset distribution
       // Break down larger counts into smaller batches for quality (5-8 questions per batch)
-      const MAX_BATCH_SIZE = 6
+      const MAX_BATCH_SIZE = 8
 
       if (easy > 0) {
         const batches = Math.ceil(easy / MAX_BATCH_SIZE)
@@ -190,13 +322,28 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
       }
 
       await Promise.all(promises)
+
+      // Set current preset after successful generation
+      const newPreset = {
+        id: presetInfo.id,
+        name: presetInfo.name,
+        distribution,
+        createdAt: new Date()
+      }
+      setCurrentPreset(newPreset)
+      
+      // Save to database
+      await saveCurrentPreset(newPreset)
+
       setGeneratingState(prev => ({ ...prev, all: false }))
       
-      toast.success(`Successfully generated ${easy + medium + hard} questions from preset!`)
+      toast.success(`Successfully generated ${easy + medium + hard} questions from ${presetInfo.name} preset!`)
     } catch (error) {
       console.error('Failed to generate questions from preset:', error)
       setGeneratingState(prev => ({ ...prev, all: false }))
       toast.error('Failed to generate questions from preset')
+      // Reset state on failure
+      await clearExistingQuestions()
     }
   }
 
@@ -204,10 +351,13 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     generatingState,
     generatedCounts,
     shareTokens,
+    currentPreset,
     setGeneratedCounts,
     setShareTokens,
     handleGenerateQuestions,
     handleGenerateAllQuestions,
-    handleGenerateFromPreset
+    handleGenerateFromPreset,
+    clearExistingQuestions,
+    needsPresetReplacement
   }
 }

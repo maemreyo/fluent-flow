@@ -15,17 +15,17 @@ import {
 import type { QuestionPreset } from '../../../../../../components/questions/PresetSelector'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
+import { PresetConfirmationDialog } from '../../../../../../components/groups/quiz/PresetConfirmationDialog'
 
 interface GroupPresetSelectionViewProps {
   onPresetSelect: (preset: QuestionPreset) => void
   onlineParticipants: Array<{ user_id: string; user_email: string; is_online: boolean }>
   onGenerateQuestions?: (difficulty: 'easy' | 'medium' | 'hard') => Promise<void>
   onGenerateAllQuestions?: () => Promise<void>
-  onGenerateFromPreset?: (distribution: {
-    easy: number
-    medium: number
-    hard: number
-  }) => Promise<void>
+  onGenerateFromPreset?: (
+    distribution: { easy: number; medium: number; hard: number },
+    presetInfo: { id: string; name: string }
+  ) => Promise<void>
   generatingState?: {
     easy: boolean
     medium: boolean
@@ -39,6 +39,13 @@ interface GroupPresetSelectionViewProps {
   }
   shareTokens?: Record<string, string>
   onStartQuiz?: (shareTokens: Record<string, string>) => void
+  currentPreset?: {
+    id: string
+    name: string
+    distribution: { easy: number; medium: number; hard: number }
+    createdAt: Date
+  } | null
+  needsPresetReplacement?: (presetId: string) => boolean
 }
 
 export function GroupPresetSelectionView({
@@ -50,7 +57,9 @@ export function GroupPresetSelectionView({
   generatingState = { easy: false, medium: false, hard: false, all: false },
   generatedCounts = { easy: 0, medium: 0, hard: 0 },
   shareTokens = {},
-  onStartQuiz
+  onStartQuiz,
+  currentPreset,
+  needsPresetReplacement
 }: GroupPresetSelectionViewProps) {
   // Intelligent presets for group quiz sessions (5-8 questions per difficulty for quality)
   const intelligentPresets = [
@@ -154,6 +163,8 @@ export function GroupPresetSelectionView({
 
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
   const [showCustomGeneration, setShowCustomGeneration] = useState(false)
+  const [showConfirmationDialog, setShowConfirmationDialog] = useState(false)
+  const [pendingPreset, setPendingPreset] = useState<any>(null)
 
   // Predefined difficulty levels for custom generation
   const difficultyLevels = [
@@ -200,10 +211,22 @@ export function GroupPresetSelectionView({
       return
     }
 
+    // Check if we need to replace existing preset
+    if (needsPresetReplacement && needsPresetReplacement(preset.id)) {
+      setPendingPreset(preset)
+      setShowConfirmationDialog(true)
+      return
+    }
+
+    // Proceed with generation
+    await executePresetGeneration(preset)
+  }
+
+  const executePresetGeneration = async (preset: any) => {
     try {
       // Use the preset-based generation method
       if (onGenerateFromPreset) {
-        await onGenerateFromPreset(preset.distribution)
+        await onGenerateFromPreset(preset.distribution, { id: preset.id, name: preset.name })
         console.log('Questions generated successfully for preset:', preset.name)
       } else {
         console.error('onGenerateFromPreset not available')
@@ -212,6 +235,20 @@ export function GroupPresetSelectionView({
     } catch (error) {
       console.error('Failed to generate questions for preset:', error)
     }
+  }
+
+  const handleConfirmReplacement = async () => {
+    setShowConfirmationDialog(false)
+    if (pendingPreset) {
+      await executePresetGeneration(pendingPreset)
+      setPendingPreset(null)
+    }
+  }
+
+  const handleCancelReplacement = () => {
+    setShowConfirmationDialog(false)
+    setPendingPreset(null)
+    setSelectedPreset(null)
   }
 
   const handleCustomGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
@@ -309,9 +346,7 @@ export function GroupPresetSelectionView({
                 <CardContent className="p-6">
                   <div className="space-y-4 text-center">
                     <div className="flex flex-col items-center space-y-2">
-                      <div
-                        className={`rounded-full p-3 ${level.bgColor} border ${level.borderColor}`}
-                      >
+                      <div className={`rounded-full p-3 ${level.bgColor} border ${level.borderColor}`}>
                         <IconComponent className={`h-6 w-6 ${level.textColor}`} />
                       </div>
                       <h3 className={`text-xl font-bold ${level.textColor}`}>{level.name}</h3>
@@ -324,9 +359,7 @@ export function GroupPresetSelectionView({
                     </div>
 
                     <Button
-                      onClick={() =>
-                        handleCustomGenerateQuestions(level.id as 'easy' | 'medium' | 'hard')
-                      }
+                      onClick={() => handleCustomGenerateQuestions(level.id as 'easy' | 'medium' | 'hard')}
                       disabled={isGenerating || generatingState.all}
                       variant="outline"
                       className={`w-full ${level.borderColor} ${level.textColor} ${level.hoverColor} disabled:opacity-50`}
@@ -378,6 +411,17 @@ export function GroupPresetSelectionView({
 
   return (
     <div className="space-y-8">
+      {/* Confirmation Dialog */}
+      {showConfirmationDialog && currentPreset && pendingPreset && (
+        <PresetConfirmationDialog
+          isOpen={showConfirmationDialog}
+          currentPreset={currentPreset}
+          newPreset={pendingPreset}
+          onConfirm={handleConfirmReplacement}
+          onCancel={handleCancelReplacement}
+        />
+      )}
+
       {/* Header Section */}
       <div className="flex items-center justify-between">
         <button
@@ -387,14 +431,45 @@ export function GroupPresetSelectionView({
           <ArrowLeft className="h-3 w-3" />
           Back to Group
         </button>
+
         <div className="text-center">
-          <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-2xl font-bold text-transparent">
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
             Choose Quiz Preset
           </h1>
-          <p className="mt-1 text-sm text-gray-600">
-            Select an intelligent preset for your group session
-          </p>
+          <p className="text-sm text-gray-600 mt-1">Select an intelligent preset for your group session</p>
+          {/* Show current preset status */}
+          {currentPreset && (
+            <div className="mt-4">
+              <div className="inline-flex flex-col items-center gap-2 rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 px-4 py-3 text-sm">
+                <div className="flex items-center gap-2 font-medium text-blue-700">
+                  <Target className="h-4 w-4" />
+                  Current Preset: {currentPreset.name}
+                </div>
+                <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    Easy: {currentPreset.distribution.easy}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-yellow-500"></div>
+                    Medium: {currentPreset.distribution.medium}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-red-500"></div>
+                    Hard: {currentPreset.distribution.hard}
+                  </span>
+                  <span className="font-medium text-blue-600">
+                    Total: {currentPreset.distribution.easy + currentPreset.distribution.medium + currentPreset.distribution.hard}
+                  </span>
+                </div>
+                <div className="text-xs text-gray-500">
+                  Generated {Math.floor((Date.now() - currentPreset.createdAt.getTime()) / (1000 * 60))}m ago
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+
         <div className="w-24" /> {/* Spacer for alignment */}
       </div>
 
@@ -402,19 +477,15 @@ export function GroupPresetSelectionView({
       <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {intelligentPresets.map((preset) => {
           const IconComponent = preset.icon
-          const isSelected = selectedPreset === preset.id
-          const isGenerating =
-            generatingState.all ||
-            generatingState.easy ||
-            generatingState.medium ||
-            generatingState.hard
+          const isSelected = selectedPreset === preset.id || currentPreset?.id === preset.id
+          const isGenerating = generatingState.all || generatingState.easy || generatingState.medium || generatingState.hard
 
           return (
             <Card
               key={preset.id}
-              className={`transform cursor-pointer border-2 transition-all duration-300 hover:scale-105 ${
+              className={`border-2 transition-all duration-300 cursor-pointer transform hover:scale-105 ${
                 isSelected
-                  ? `${preset.borderColor} bg-gradient-to-br ${preset.bgGradient} scale-105 shadow-lg`
+                  ? `${preset.borderColor} bg-gradient-to-br ${preset.bgGradient} shadow-lg scale-105`
                   : `border-gray-200 bg-white ${preset.hoverBg} hover:shadow-md`
               }`}
               onClick={() => !isGenerating && handlePresetSelection(preset)}
@@ -423,12 +494,10 @@ export function GroupPresetSelectionView({
                 <div className="space-y-4">
                   {/* Header with badge */}
                   <div className="flex items-center justify-between">
-                    <div
-                      className={`rounded-full bg-gradient-to-r px-3 py-1 text-xs font-medium ${preset.bgGradient} ${preset.textColor}`}
-                    >
+                    <div className={`rounded-full px-3 py-1 text-xs font-medium bg-gradient-to-r ${preset.bgGradient} ${preset.textColor}`}>
                       {preset.badge}
                     </div>
-                    <div className={`rounded-full bg-gradient-to-r p-2 ${preset.bgGradient}`}>
+                    <div className={`rounded-full p-2 bg-gradient-to-r ${preset.bgGradient}`}>
                       <IconComponent className={`h-5 w-5 ${preset.textColor}`} />
                     </div>
                   </div>
@@ -436,48 +505,36 @@ export function GroupPresetSelectionView({
                   {/* Title and Description */}
                   <div className="text-center">
                     <h3 className={`text-lg font-bold ${preset.textColor}`}>{preset.name}</h3>
-                    <p className="mt-1 text-sm text-gray-600">{preset.description}</p>
+                    <p className="text-sm text-gray-600 mt-1">{preset.description}</p>
                   </div>
 
                   {/* Distribution Preview */}
                   <div className="space-y-2">
-                    <div className="text-xs font-medium uppercase tracking-wide text-gray-500">
-                      Question Mix
-                    </div>
-                    <div className="flex items-center justify-between">
+                    <div className="text-xs font-medium text-gray-500 uppercase tracking-wide">Question Mix</div>
+                    <div className="flex justify-between items-center">
                       <div className="text-center">
-                        <div className="text-sm font-bold text-green-600">
-                          {preset.distribution.easy}
-                        </div>
+                        <div className="text-sm font-bold text-green-600">{preset.distribution.easy}</div>
                         <div className="text-xs text-gray-500">Easy</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm font-bold text-yellow-600">
-                          {preset.distribution.medium}
-                        </div>
+                        <div className="text-sm font-bold text-yellow-600">{preset.distribution.medium}</div>
                         <div className="text-xs text-gray-500">Medium</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-sm font-bold text-red-600">
-                          {preset.distribution.hard}
-                        </div>
+                        <div className="text-sm font-bold text-red-600">{preset.distribution.hard}</div>
                         <div className="text-xs text-gray-500">Hard</div>
                       </div>
                     </div>
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center justify-between border-t border-gray-200 pt-2">
+                  <div className="flex justify-between items-center pt-2 border-t border-gray-200">
                     <div className="text-center">
-                      <div className={`text-lg font-bold ${preset.textColor}`}>
-                        {preset.totalQuestions}
-                      </div>
+                      <div className={`text-lg font-bold ${preset.textColor}`}>{preset.totalQuestions}</div>
                       <div className="text-xs text-gray-500">questions</div>
                     </div>
                     <div className="text-center">
-                      <div className={`text-lg font-bold ${preset.textColor}`}>
-                        {preset.estimatedTime}
-                      </div>
+                      <div className={`text-lg font-bold ${preset.textColor}`}>{preset.estimatedTime}</div>
                       <div className="text-xs text-gray-500">estimated</div>
                     </div>
                   </div>
@@ -503,6 +560,11 @@ export function GroupPresetSelectionView({
                           <>
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Custom Generate
+                          </>
+                        ) : currentPreset?.id === preset.id ? (
+                          <>
+                            <Target className="mr-2 h-4 w-4" />
+                            Current Preset
                           </>
                         ) : (
                           <>
