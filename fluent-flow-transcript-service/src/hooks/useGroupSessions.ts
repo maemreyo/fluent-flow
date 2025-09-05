@@ -276,9 +276,41 @@ export function useGroupSessions(groupId: string) {
     [deleteSessionMutation]
   )
 
-  const checkExpiredSessions = useCallback(async () => {
-    return await checkExpiredSessionsMutation.mutateAsync()
-  }, [checkExpiredSessionsMutation])
+  // Check single session expired mutation
+  const checkSingleSessionExpiredMutation = useMutation({
+    mutationFn: async (sessionId: string) => {
+      if (!isAuthenticated) return
+
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/check-expired`, {
+        method: 'POST',
+        headers
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to check session expired status')
+      }
+
+      const result = await response.json()
+      return result
+    },
+    onSuccess: result => {
+      if (result?.wasUpdated) {
+        // Invalidate sessions cache if session was updated
+        queryClient.invalidateQueries({ queryKey: ['group-sessions', groupId] })
+      }
+    },
+    onError: error => {
+      console.error('Error checking single session expired:', error)
+    }
+  })
+
+  const checkSingleSessionExpired = useCallback(
+    async (sessionId: string) => {
+      return await checkSingleSessionExpiredMutation.mutateAsync(sessionId)
+    },
+    [checkSingleSessionExpiredMutation]
+  )
 
   // // Check expired sessions on mount and visibility change
   // useEffect(() => {
@@ -315,12 +347,13 @@ export function useGroupSessions(groupId: string) {
     getSessionDetails,
     updateSession,
     deleteSession,
-    checkExpiredSessions,
+    checkSingleSessionExpired,
     refetch,
     // Expose loading states for mutations
     isCreating: createSessionMutation.isPending,
     isUpdating: updateSessionMutation.isPending,
     isDeleting: deleteSessionMutation.isPending,
-    isCheckingExpired: checkExpiredSessionsMutation.isPending
+    isCheckingExpired: checkExpiredSessionsMutation.isPending,
+    isCheckingSingleExpired: checkSingleSessionExpiredMutation.isPending
   }
 }

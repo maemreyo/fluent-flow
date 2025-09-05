@@ -57,6 +57,7 @@ export async function GET(
         created_by,
         session_type,
         share_token,
+        quiz_token,
         created_at
       `
       )
@@ -89,7 +90,28 @@ export async function GET(
         return acc
       }, {}) || {}
 
-    // Format sessions with participant counts
+    // Helper function to check if session is likely expired
+    const isLikelyExpired = (session: any) => {
+      // Only check active/scheduled sessions
+      if (!['scheduled', 'active'].includes(session.status)) return false
+      
+      const now = new Date()
+      const twentyFourHoursAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000))
+      
+      if (session.session_type === 'instant') {
+        // For instant sessions: expired after 24h from creation time
+        if (!session.created_at) return false
+        const createdTime = new Date(session.created_at)
+        return createdTime < twentyFourHoursAgo
+      } else {
+        // For scheduled sessions: expired after 24h from scheduled time
+        if (!session.scheduled_at) return false
+        const scheduledTime = new Date(session.scheduled_at)
+        return scheduledTime < twentyFourHoursAgo
+      }
+    }
+
+    // Format sessions with participant counts and expired status
     const formattedSessions =
       sessions?.map(session => ({
         id: session.id,
@@ -103,8 +125,10 @@ export async function GET(
         created_by: session.created_by,
         created_at: session.created_at,
         share_token: session.share_token,
+        quiz_token: session.quiz_token,
         participant_count: participantCountMap[session.id] || 0,
-        questions_count: 0 // Can be populated from questions_data if needed
+        questions_count: 0, // Can be populated from questions_data if needed
+        is_likely_expired: isLikelyExpired(session) // Add expired status
       })) || []
 
     return corsResponse({

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Calendar, Clock, Edit, Play, Plus, Trash2 } from 'lucide-react'
-import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
 import { GroupQuizResultsModal } from '../../app/groups/[groupId]/components/GroupQuizResultsModal'
+import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
 import EditSessionModal from '../groups/EditSessionModal'
 import { FullscreenModal } from '../ui/dialog'
@@ -24,7 +24,7 @@ export default function SessionsTab({
   onCreateSession,
   highlightSessionId
 }: SessionsTabProps) {
-  const { sessions, loading, error, deleteSession, checkExpiredSessions } =
+  const { sessions, loading, error, deleteSession, checkSingleSessionExpired, refetch } =
     useGroupSessions(groupId)
   const [filters, setFilters] = useState<SessionFilters>({ status: 'all' })
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -88,7 +88,7 @@ export default function SessionsTab({
 
   const filteredSessions = sessions.filter((session: any) => {
     if (filters.status === 'all') return true
-    if (filters.status === 'expired') return isLikelyExpired(session)
+    if (filters.status === 'expired') return session.is_likely_expired
     return session.status === filters.status
   })
 
@@ -105,7 +105,15 @@ export default function SessionsTab({
     setJoiningSession(session.id)
 
     try {
-      await checkExpiredSessions()
+      // Only check expired status for this specific session if it's likely expired
+      if (session.is_likely_expired) {
+        const result = await checkSingleSessionExpired(session.id)
+        if (result?.isExpired) {
+          // Session is expired, don't open quiz room
+          console.log('Session is expired and has been updated')
+          return
+        }
+      }
       setQuizRoomSession(session)
     } catch (error) {
       console.error('Failed to validate session:', error)
@@ -133,31 +141,18 @@ export default function SessionsTab({
 
   // Helper function to determine if session should have View Results button
   const shouldShowViewResults = (session: any) => {
-    return session.status === 'completed' || 
-           (session.status === 'active' && session.result_count > 0)
+    return (
+      session.status === 'completed' || (session.status === 'active' && session.result_count > 0)
+    )
   }
 
-  // Helper function to check if session might be expired based on scheduled time
-  const isLikelyExpired = (session: any) => {
-    if (session.status !== 'scheduled') return false
-    if (!session.scheduled_at) return false
-    
-    const scheduledTime = new Date(session.scheduled_at)
-    const now = new Date()
-    // Consider sessions expired if they're more than 2 hours past scheduled time
-    const twoHoursAgo = new Date(now.getTime() - (2 * 60 * 60 * 1000))
-    
-    return scheduledTime < twoHoursAgo
-  }
 
   // Enhanced refresh function with user feedback
   const handleRefreshSessions = async () => {
     try {
-      const result = await checkExpiredSessions()
-      if (result?.expiredSessionIds?.length > 0) {
-        // Could show toast notification here in the future
-        console.log(`Updated ${result.expiredSessionIds.length} expired sessions`)
-      }
+      // Simply refetch sessions - the API will return updated expired status
+      await refetch()
+      console.log('Sessions refreshed successfully')
     } catch (error) {
       console.error('Failed to refresh sessions:', error)
       // Could show error toast here
@@ -243,25 +238,29 @@ export default function SessionsTab({
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {(['all', 'scheduled', 'active', 'completed', 'cancelled', 'expired'] as const).map(status => (
-          <button
-            key={status}
-            onClick={() => setFilters({ status })}
-            className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
-              filters.status === status
-                ? 'bg-indigo-600 text-white'
-                : 'bg-white/60 text-gray-700 hover:bg-white/80'
-            }`}
-          >
-            {status === 'all' ? 'All Sessions' : 
-             status === 'expired' ? 'Likely Expired' :
-             status.charAt(0).toUpperCase() + status.slice(1)}
-          </button>
-        ))}
+        {(['all', 'scheduled', 'active', 'completed', 'cancelled', 'expired'] as const).map(
+          status => (
+            <button
+              key={status}
+              onClick={() => setFilters({ status })}
+              className={`rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                filters.status === status
+                  ? 'bg-indigo-600 text-white'
+                  : 'bg-white/60 text-gray-700 hover:bg-white/80'
+              }`}
+            >
+              {status === 'all'
+                ? 'All Sessions'
+                : status === 'expired'
+                  ? 'Likely Expired'
+                  : status.charAt(0).toUpperCase() + status.slice(1)}
+            </button>
+          )
+        )}
       </div>
 
       {/* Expired Sessions Warning */}
-      {filteredSessions.some(isLikelyExpired) && (
+      {filteredSessions.some((session: any) => session.is_likely_expired) && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -271,7 +270,8 @@ export default function SessionsTab({
               <div>
                 <p className="font-medium text-orange-800">Some sessions may be expired</p>
                 <p className="text-sm text-orange-600">
-                  {filteredSessions.filter(isLikelyExpired).length} session(s) appear to be past their scheduled time.
+                  {filteredSessions.filter((session: any) => session.is_likely_expired).length} session(s) appear to be past
+                  their scheduled time.
                 </p>
               </div>
             </div>
@@ -304,10 +304,10 @@ export default function SessionsTab({
           </div>
         ) : (
           filteredSessions.map((session: any) => (
-            <div 
-              key={session.id} 
+            <div
+              key={session.id}
               className={getSessionClassName(session.id)}
-              onClick={() => setDetailsSession(session)}
+              // onClick={() => setDetailsSession(session)}
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
@@ -319,7 +319,7 @@ export default function SessionsTab({
                     >
                       {session.status}
                     </span>
-                    {isLikelyExpired(session) && (
+                    {session.is_likely_expired && (
                       <span className="rounded-full border border-orange-200 bg-orange-100 px-2 py-1 text-xs font-medium text-orange-700">
                         ⚠️ Likely Expired
                       </span>
@@ -340,9 +340,7 @@ export default function SessionsTab({
                     {session.scheduled_at && (
                       <span>Scheduled for {formatDate(session.scheduled_at)}</span>
                     )}
-                    {session.result_count > 0 && (
-                      <span>{session.result_count} participants</span>
-                    )}
+                    {session.result_count > 0 && <span>{session.result_count} participants</span>}
                   </div>
                 </div>
 
@@ -463,15 +461,15 @@ export default function SessionsTab({
           session={detailsSession}
           groupId={groupId}
           canManage={canManage}
-          onEdit={(session) => {
+          onEdit={session => {
             setDetailsSession(null)
             setEditingSession(session)
           }}
-          onJoin={(session) => {
+          onJoin={session => {
             setDetailsSession(null)
             handleJoinSession(session)
           }}
-          onViewResults={(session) => {
+          onViewResults={session => {
             setDetailsSession(null)
             setSelectedSession(session)
           }}
