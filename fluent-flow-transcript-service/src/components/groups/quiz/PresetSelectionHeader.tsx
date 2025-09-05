@@ -1,9 +1,16 @@
 'use client'
 
-import { ArrowLeft, Home, Users, Brain } from 'lucide-react'
-import { CurrentPresetStatus } from './CurrentPresetStatus'
+import { ArrowLeft, Brain, Home, Users } from 'lucide-react'
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+  BreadcrumbPage,
+  BreadcrumbSeparator
+} from '../../ui/breadcrumb'
 import { Button } from '../../ui/button'
-import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbPage, BreadcrumbSeparator } from '../../ui/breadcrumb'
+import { CurrentPresetStatus } from './CurrentPresetStatus'
 
 interface PresetSelectionHeaderProps {
   onGoBack: () => void
@@ -45,20 +52,15 @@ export function PresetSelectionHeader({ onGoBack, currentPreset }: PresetSelecti
           </BreadcrumbList>
         </Breadcrumb>
 
-        <Button 
-          onClick={onGoBack}
-          variant="outline"
-          size="sm"
-          className="gap-2"
-        >
+        <Button onClick={onGoBack} variant="outline" size="sm" className="gap-2">
           <ArrowLeft className="h-3 w-3" />
           Back to Group
         </Button>
       </div>
-      
+
       {/* Header Content */}
-      <div className="text-center space-y-4">
-        <div>
+      <div className="space-y-4 text-center">
+        {/* <div>
           <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-3xl font-bold text-transparent">
             Choose Quiz Preset
           </h1>
@@ -66,12 +68,10 @@ export function PresetSelectionHeader({ onGoBack, currentPreset }: PresetSelecti
             Select an intelligent preset tailored to your group's learning goals. Each preset is optimized 
             for different skill levels and time constraints.
           </p>
-        </div>
-        
+        </div> */}
+
         {/* Current Preset Status */}
-        {currentPreset && (
-          <CurrentPresetStatus currentPreset={currentPreset} />
-        )}
+        {currentPreset && <CurrentPresetStatus currentPreset={currentPreset} />}
       </div>
     </div>
   )
