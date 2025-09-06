@@ -14,6 +14,8 @@ import { LearningSettingsForm } from './settings/LearningSettingsForm'
 import { PrivacySettingsForm } from './settings/PrivacySettingsForm'
 import { TagsForm } from './settings/TagsForm'
 import { DangerZone } from './settings/DangerZone'
+import { RoleManagementForm } from './settings/RoleManagementForm'
+import { SessionControlForm } from './settings/SessionControlForm'
 
 interface SettingsTabProps {
   group: {
@@ -28,7 +30,26 @@ interface SettingsTabProps {
     groupCode?: string
     user_role?: string
     settings?: {
+      // Role Management Settings
+      allowMemberInvitations?: boolean
+      requireApprovalForJoining?: boolean
+      maxAdminCount?: number
+      adminCanManageMembers?: boolean
+      adminCanDeleteSessions?: boolean
+      
+      // Session Control Settings
+      onlyAdminsCanCreateSessions?: boolean
+      maxConcurrentSessions?: number
+      requireSessionApproval?: boolean
+      allowQuizRetakes?: boolean
+      
+      // Enhanced Quiz Settings
       shuffleQuestions?: boolean
+      shuffleAnswers?: boolean
+      showCorrectAnswers?: boolean
+      defaultQuizTimeLimit?: number
+      enforceQuizTimeLimit?: boolean
+      allowSkippingQuestions?: boolean
     }
   } | null
 }
@@ -43,6 +64,7 @@ export function SettingsTab({ group }: SettingsTabProps) {
   
   // Form state
   const [formData, setFormData] = useState({
+    // Basic Info
     name: group?.name || '',
     description: group?.description || '',
     language: group?.language || 'English',
@@ -50,7 +72,27 @@ export function SettingsTab({ group }: SettingsTabProps) {
     isPrivate: group?.isPrivate || false,
     maxMembers: group?.maxMembers || 20,
     tags: group?.tags || [],
-    shuffleQuestions: group?.settings?.shuffleQuestions || false
+    
+    // Role Management Settings
+    allowMemberInvitations: group?.settings?.allowMemberInvitations || false,
+    requireApprovalForJoining: group?.settings?.requireApprovalForJoining || false,
+    maxAdminCount: group?.settings?.maxAdminCount || 3,
+    adminCanManageMembers: group?.settings?.adminCanManageMembers !== false, // Default true
+    adminCanDeleteSessions: group?.settings?.adminCanDeleteSessions !== false, // Default true
+    
+    // Session Control Settings
+    onlyAdminsCanCreateSessions: group?.settings?.onlyAdminsCanCreateSessions || false,
+    maxConcurrentSessions: group?.settings?.maxConcurrentSessions || 5,
+    requireSessionApproval: group?.settings?.requireSessionApproval || false,
+    allowQuizRetakes: group?.settings?.allowQuizRetakes !== false, // Default true
+    
+    // Enhanced Quiz Settings
+    shuffleQuestions: group?.settings?.shuffleQuestions || false,
+    shuffleAnswers: group?.settings?.shuffleAnswers || false,
+    showCorrectAnswers: group?.settings?.showCorrectAnswers !== false, // Default true
+    defaultQuizTimeLimit: group?.settings?.defaultQuizTimeLimit || 30,
+    enforceQuizTimeLimit: group?.settings?.enforceQuizTimeLimit || false,
+    allowSkippingQuestions: group?.settings?.allowSkippingQuestions || false
   })
 
   if (!group) {
@@ -92,12 +134,30 @@ export function SettingsTab({ group }: SettingsTabProps) {
           description: formData.description,
           is_private: formData.isPrivate,
           max_members: formData.maxMembers,
-          // Note: language, level, and tags might need separate API endpoints
           language: formData.language,
           level: formData.level,
           tags: formData.tags,
           settings: {
-            shuffleQuestions: formData.shuffleQuestions
+            // Role Management Settings
+            allowMemberInvitations: formData.allowMemberInvitations,
+            requireApprovalForJoining: formData.requireApprovalForJoining,
+            maxAdminCount: formData.maxAdminCount,
+            adminCanManageMembers: formData.adminCanManageMembers,
+            adminCanDeleteSessions: formData.adminCanDeleteSessions,
+            
+            // Session Control Settings
+            onlyAdminsCanCreateSessions: formData.onlyAdminsCanCreateSessions,
+            maxConcurrentSessions: formData.maxConcurrentSessions,
+            requireSessionApproval: formData.requireSessionApproval,
+            allowQuizRetakes: formData.allowQuizRetakes,
+            
+            // Enhanced Quiz Settings
+            shuffleQuestions: formData.shuffleQuestions,
+            shuffleAnswers: formData.shuffleAnswers,
+            showCorrectAnswers: formData.showCorrectAnswers,
+            defaultQuizTimeLimit: formData.defaultQuizTimeLimit,
+            enforceQuizTimeLimit: formData.enforceQuizTimeLimit,
+            allowSkippingQuestions: formData.allowSkippingQuestions
           }
         })
       })
@@ -143,7 +203,24 @@ export function SettingsTab({ group }: SettingsTabProps) {
     isPrivate: group.isPrivate,
     maxMembers: group.maxMembers,
     tags: group.tags,
-    shuffleQuestions: group.settings?.shuffleQuestions || false
+    // Role Management Settings
+    allowMemberInvitations: group.settings?.allowMemberInvitations || false,
+    requireApprovalForJoining: group.settings?.requireApprovalForJoining || false,
+    maxAdminCount: group.settings?.maxAdminCount || 3,
+    adminCanManageMembers: group.settings?.adminCanManageMembers !== false,
+    adminCanDeleteSessions: group.settings?.adminCanDeleteSessions !== false,
+    // Session Control Settings
+    onlyAdminsCanCreateSessions: group.settings?.onlyAdminsCanCreateSessions || false,
+    maxConcurrentSessions: group.settings?.maxConcurrentSessions || 5,
+    requireSessionApproval: group.settings?.requireSessionApproval || false,
+    allowQuizRetakes: group.settings?.allowQuizRetakes !== false,
+    // Enhanced Quiz Settings
+    shuffleQuestions: group.settings?.shuffleQuestions || false,
+    shuffleAnswers: group.settings?.shuffleAnswers || false,
+    showCorrectAnswers: group.settings?.showCorrectAnswers !== false,
+    defaultQuizTimeLimit: group.settings?.defaultQuizTimeLimit || 30,
+    enforceQuizTimeLimit: group.settings?.enforceQuizTimeLimit || false,
+    allowSkippingQuestions: group.settings?.allowSkippingQuestions || false
   })
 
   return (
@@ -168,9 +245,43 @@ export function SettingsTab({ group }: SettingsTabProps) {
           language={formData.language}
           level={formData.level}
           shuffleQuestions={formData.shuffleQuestions}
+          shuffleAnswers={formData.shuffleAnswers}
+          showCorrectAnswers={formData.showCorrectAnswers}
+          defaultQuizTimeLimit={formData.defaultQuizTimeLimit}
+          enforceQuizTimeLimit={formData.enforceQuizTimeLimit}
+          allowSkippingQuestions={formData.allowSkippingQuestions}
           onLanguageChange={(language) => setFormData(prev => ({ ...prev, language }))}
           onLevelChange={(level) => setFormData(prev => ({ ...prev, level }))}
           onShuffleQuestionsChange={(shuffleQuestions) => setFormData(prev => ({ ...prev, shuffleQuestions }))}
+          onShuffleAnswersChange={(shuffleAnswers) => setFormData(prev => ({ ...prev, shuffleAnswers }))}
+          onShowCorrectAnswersChange={(showCorrectAnswers) => setFormData(prev => ({ ...prev, showCorrectAnswers }))}
+          onDefaultQuizTimeLimitChange={(defaultQuizTimeLimit) => setFormData(prev => ({ ...prev, defaultQuizTimeLimit }))}
+          onEnforceQuizTimeLimitChange={(enforceQuizTimeLimit) => setFormData(prev => ({ ...prev, enforceQuizTimeLimit }))}
+          onAllowSkippingQuestionsChange={(allowSkippingQuestions) => setFormData(prev => ({ ...prev, allowSkippingQuestions }))}
+        />
+
+        <RoleManagementForm
+          allowMemberInvitations={formData.allowMemberInvitations}
+          requireApprovalForJoining={formData.requireApprovalForJoining}
+          maxAdminCount={formData.maxAdminCount}
+          adminCanManageMembers={formData.adminCanManageMembers}
+          adminCanDeleteSessions={formData.adminCanDeleteSessions}
+          onAllowMemberInvitationsChange={(allowMemberInvitations) => setFormData(prev => ({ ...prev, allowMemberInvitations }))}
+          onRequireApprovalChange={(requireApprovalForJoining) => setFormData(prev => ({ ...prev, requireApprovalForJoining }))}
+          onMaxAdminCountChange={(maxAdminCount) => setFormData(prev => ({ ...prev, maxAdminCount }))}
+          onAdminCanManageMembersChange={(adminCanManageMembers) => setFormData(prev => ({ ...prev, adminCanManageMembers }))}
+          onAdminCanDeleteSessionsChange={(adminCanDeleteSessions) => setFormData(prev => ({ ...prev, adminCanDeleteSessions }))}
+        />
+
+        <SessionControlForm
+          onlyAdminsCanCreateSessions={formData.onlyAdminsCanCreateSessions}
+          maxConcurrentSessions={formData.maxConcurrentSessions}
+          requireSessionApproval={formData.requireSessionApproval}
+          allowQuizRetakes={formData.allowQuizRetakes}
+          onOnlyAdminsCanCreateSessionsChange={(onlyAdminsCanCreateSessions) => setFormData(prev => ({ ...prev, onlyAdminsCanCreateSessions }))}
+          onMaxConcurrentSessionsChange={(maxConcurrentSessions) => setFormData(prev => ({ ...prev, maxConcurrentSessions }))}
+          onRequireSessionApprovalChange={(requireSessionApproval) => setFormData(prev => ({ ...prev, requireSessionApproval }))}
+          onAllowQuizRetakesChange={(allowQuizRetakes) => setFormData(prev => ({ ...prev, allowQuizRetakes }))}
         />
 
         <PrivacySettingsForm
@@ -198,6 +309,7 @@ export function SettingsTab({ group }: SettingsTabProps) {
         <Button 
           variant="outline" 
           onClick={() => setFormData({
+            // Basic Info
             name: group.name,
             description: group.description || '',
             language: group.language,
@@ -205,7 +317,27 @@ export function SettingsTab({ group }: SettingsTabProps) {
             isPrivate: group.isPrivate,
             maxMembers: group.maxMembers || 20,
             tags: group.tags || [],
-            shuffleQuestions: group.settings?.shuffleQuestions || false
+            
+            // Role Management Settings
+            allowMemberInvitations: group.settings?.allowMemberInvitations || false,
+            requireApprovalForJoining: group.settings?.requireApprovalForJoining || false,
+            maxAdminCount: group.settings?.maxAdminCount || 3,
+            adminCanManageMembers: group.settings?.adminCanManageMembers !== false,
+            adminCanDeleteSessions: group.settings?.adminCanDeleteSessions !== false,
+            
+            // Session Control Settings
+            onlyAdminsCanCreateSessions: group.settings?.onlyAdminsCanCreateSessions || false,
+            maxConcurrentSessions: group.settings?.maxConcurrentSessions || 5,
+            requireSessionApproval: group.settings?.requireSessionApproval || false,
+            allowQuizRetakes: group.settings?.allowQuizRetakes !== false,
+            
+            // Enhanced Quiz Settings
+            shuffleQuestions: group.settings?.shuffleQuestions || false,
+            shuffleAnswers: group.settings?.shuffleAnswers || false,
+            showCorrectAnswers: group.settings?.showCorrectAnswers !== false,
+            defaultQuizTimeLimit: group.settings?.defaultQuizTimeLimit || 30,
+            enforceQuizTimeLimit: group.settings?.enforceQuizTimeLimit || false,
+            allowSkippingQuestions: group.settings?.allowSkippingQuestions || false
           })}
           disabled={!hasChanges}
         >

@@ -1366,6 +1366,7 @@ export type Database = {
           level: string
           max_members: number | null
           name: string
+          settings: Json | null
           stats: Json | null
           tags: string[] | null
           updated_at: string | null
@@ -1383,6 +1384,7 @@ export type Database = {
           level: string
           max_members?: number | null
           name: string
+          settings?: Json | null
           stats?: Json | null
           tags?: string[] | null
           updated_at?: string | null
@@ -1400,6 +1402,7 @@ export type Database = {
           level?: string
           max_members?: number | null
           name?: string
+          settings?: Json | null
           stats?: Json | null
           tags?: string[] | null
           updated_at?: string | null

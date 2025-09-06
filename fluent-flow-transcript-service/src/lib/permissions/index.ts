@@ -24,6 +24,28 @@ interface Session {
 interface Group {
   user_role?: string
   created_by?: string
+  settings?: {
+    // Role Management Settings
+    allowMemberInvitations?: boolean
+    requireApprovalForJoining?: boolean
+    maxAdminCount?: number
+    adminCanManageMembers?: boolean
+    adminCanDeleteSessions?: boolean
+    
+    // Session Control Settings
+    onlyAdminsCanCreateSessions?: boolean
+    maxConcurrentSessions?: number
+    requireSessionApproval?: boolean
+    allowQuizRetakes?: boolean
+    
+    // Enhanced Quiz Settings
+    shuffleQuestions?: boolean
+    shuffleAnswers?: boolean
+    showCorrectAnswers?: boolean
+    defaultQuizTimeLimit?: number
+    allowSkippingQuestions?: boolean
+    enforceQuizTimeLimit?: boolean
+  }
 }
 
 // Permission definitions
@@ -112,10 +134,6 @@ export class PermissionManager {
     return this.hasPermission('quiz.generate')
   }
 
-  canInviteMembers(): boolean {
-    return this.hasPermission('group.invite')
-  }
-
   canDeleteSession(): boolean {
     return this.hasPermission('session.delete')
   }
@@ -168,5 +186,76 @@ export class PermissionManager {
     }
 
     return rolePermissions
+  }
+
+  // ============ NEW: Settings-based Permission Methods ============
+
+  // Role Management Permissions
+  canInviteMembers(): boolean {
+    if (!this.group?.settings?.allowMemberInvitations) {
+      return this.hasPermission('group.invite') // Only admins/owners by default
+    }
+    return this.hasPermission('group.invite') || this.isMember() // Members can invite if setting enabled
+  }
+
+  canManageMembers(): boolean {
+    if (!this.isAdmin() && !this.isOwner()) return false
+    if (this.isAdmin()) {
+      return this.group?.settings?.adminCanManageMembers !== false // Default true
+    }
+    return true // Owners always can
+  }
+
+  canDeleteSessions(): boolean {
+    if (this.isOwner()) return true
+    if (this.isAdmin()) {
+      return this.group?.settings?.adminCanDeleteSessions !== false // Default true
+    }
+    return this.isSessionCreator()
+  }
+
+  // Session Control Permissions
+  canCreateSessions(): boolean {
+    if (this.group?.settings?.onlyAdminsCanCreateSessions) {
+      return this.isOwner() || this.isAdmin()
+    }
+    return this.hasPermission('session.create') || this.isMember() // Members can create by default
+  }
+
+  canStartQuizWithoutApproval(): boolean {
+    if (this.group?.settings?.requireSessionApproval) {
+      return this.isOwner() || this.isAdmin()
+    }
+    return this.canStartQuiz() // Normal permission check
+  }
+
+  // Enhanced Quiz Settings Access
+  getQuizSettings(): {
+    shuffleQuestions: boolean
+    shuffleAnswers: boolean
+    showCorrectAnswers: boolean
+    timeLimit: number | null
+    allowSkipping: boolean
+  } {
+    const settings = this.group?.settings
+    return {
+      shuffleQuestions: settings?.shuffleQuestions || false,
+      shuffleAnswers: settings?.shuffleAnswers || false,
+      showCorrectAnswers: settings?.showCorrectAnswers !== false, // Default true
+      timeLimit: settings?.enforceQuizTimeLimit ? (settings?.defaultQuizTimeLimit || 30) : null,
+      allowSkipping: settings?.allowSkippingQuestions || false
+    }
+  }
+
+  canRetakeQuiz(): boolean {
+    return this.group?.settings?.allowQuizRetakes !== false // Default true
+  }
+
+  // Validation Methods
+  canPromoteToAdmin(): boolean {
+    if (!this.canManageMembers()) return false
+    const maxAdmins = this.group?.settings?.maxAdminCount || 3
+    // TODO: Check current admin count in implementation
+    return true
   }
 }
