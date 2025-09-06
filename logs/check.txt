@@ -1,0 +1,31 @@
+
+useQuizPreparationSync.ts:116 ⚠️ Quiz preparation sync disabled: {enabled: true, supabase: true, user: false}
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useQuizPreparationSync.ts:120 🔌 Setting up quiz preparation synchronization... {sessionId: 'c93f95ee-eb91-4384-a03d-39504de5a7c3', canManage: false, userId: '6f512c5b-7f7a-4b04-a5c6-ce1b0c60151e'}
+AuthContext.tsx:82 Auth Context: Auth state changed: INITIAL_SESSION
+useQuizPreparationSync.ts:187 Disconnecting from preparation sync channel: c93f95ee-eb91-4384-a03d-39504de5a7c3
+useQuizPreparationSync.ts:120 🔌 Setting up quiz preparation synchronization... {sessionId: 'c93f95ee-eb91-4384-a03d-39504de5a7c3', canManage: false, userId: '6f512c5b-7f7a-4b04-a5c6-ce1b0c60151e'}
+useRealtimeSession.ts:109 Connected to realtime channel: group-quiz-c93f95ee-eb91-4384-a03d-39504de5a7c3
+useQuizPreparationSync.ts:170 Connected to preparation sync channel: c93f95ee-eb91-4384-a03d-39504de5a7c3
+useQuizPreparationSync.ts:125 📡 Preparation sync established
+useQuizPreparationSync.ts:125 📡 Preparation sync established
+useQuizPreparationSync.ts:125 📡 Preparation sync established
+useRealtimeSession.ts:49 New users joined: [{…}]
+useRealtimeSession.ts:45 Syncing presence state
+useRealtimeSession.ts:49 New users joined: [{…}]
+useRealtimeSession.ts:45 Syncing presence state
+useQuestionGeneration.ts:64 Loaded current preset from database: Quick Review
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/68dd15e0-f086-47ed-8cdc-28af434c93e7 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+await in useLoop.useQuery
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/68dd15e0-f086-47ed-8cdc-28af434c93e7 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+await in useLoop.useQuery
+useQuizPreparationSync.ts:132 🎯 Received preparation state change: {type: 'preparation_update', step: 'question-generation', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', canManage: false, currentUserId: '6f512c5b-7f7a-4b04-a5c6-ce1b0c60151e'}
+useQuizPreparationSync.ts:132 🎯 Received preparation state change: {type: 'preparation_update', step: 'question-generation', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', canManage: false, currentUserId: '6f512c5b-7f7a-4b04-a5c6-ce1b0c60151e'}
+useQuizPreparationSync.ts:132 🎯 Received preparation state change: {type: 'preparation_update', step: 'ready-to-start', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', canManage: false, currentUserId: '6f512c5b-7f7a-4b04-a5c6-ce1b0c60151e'}
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/68dd15e0-f086-47ed-8cdc-28af434c93e7 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+await in useLoop.useQuery
+
+

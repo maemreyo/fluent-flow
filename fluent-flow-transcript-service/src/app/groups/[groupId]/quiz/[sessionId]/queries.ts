@@ -26,6 +26,8 @@ export interface Group {
   is_private: boolean
   max_members?: number
   member_count: number
+  user_role?: string
+  is_member?: boolean
 }
 
 export interface GroupQuizResult {

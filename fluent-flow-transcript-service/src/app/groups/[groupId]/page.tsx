@@ -15,6 +15,7 @@ import { SettingsTab } from './components/SettingsTab'
 import { StatCards } from './components/StatCards'
 import { GroupTab, TabNavigation } from './components/TabNavigation'
 import { useGroupDetail } from './hooks/useGroupDetail'
+import { useGlobalQuizSessionListener } from './hooks/useGlobalQuizSessionListener'
 
 export default function GroupPage({ 
   params, 
@@ -46,6 +47,12 @@ export default function GroupPage({
   } = useGroupDetail({
     groupId,
     isAuthenticated
+  })
+
+  // Global quiz session listener for notifications
+  const { isConnected: globalListenerConnected } = useGlobalQuizSessionListener({
+    groupId,
+    enabled: isAuthenticated && !!group
   })
 
   // Update tab based on URL parameters
@@ -208,7 +215,6 @@ export default function GroupPage({
             {activeTab === 'settings' && canManage && (
               <SettingsTab 
                 group={group as any} 
-                isOwner={!!(group as any).user_role && (group as any).user_role === 'owner'} 
               />
             )}
           </div>

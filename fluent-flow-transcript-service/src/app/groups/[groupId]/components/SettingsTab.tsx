@@ -6,6 +6,8 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useAuth } from '../../../../contexts/AuthContext'
+import { PermissionManager } from '../../../../lib/permissions'
 
 import { BasicInfoForm } from './settings/BasicInfoForm'
 import { LearningSettingsForm } from './settings/LearningSettingsForm'
@@ -24,16 +26,20 @@ interface SettingsTabProps {
     maxMembers?: number
     tags?: string[]
     groupCode?: string
+    user_role?: string
     settings?: {
       shuffleQuestions?: boolean
     }
   } | null
-  isOwner: boolean
 }
 
-export function SettingsTab({ group, isOwner }: SettingsTabProps) {
+export function SettingsTab({ group }: SettingsTabProps) {
   const router = useRouter()
+  const { user } = useAuth()
   const [isSaving, setIsSaving] = useState(false)
+  
+  // Centralized permission management
+  const permissions = new PermissionManager(user, group, null)
   
   // Form state
   const [formData, setFormData] = useState({
@@ -57,7 +63,7 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
     )
   }
 
-  if (!isOwner) {
+  if (!permissions.canManageGroup()) {
     return (
       <div className="space-y-6">
         <div className="space-y-2">
@@ -68,7 +74,7 @@ export function SettingsTab({ group, isOwner }: SettingsTabProps) {
         </div>
         <Alert>
           <AlertDescription>
-            Only group owners can access and modify settings.
+            Only group {permissions.isOwner() ? 'owners' : 'owners and admins'} can access and modify settings.
           </AlertDescription>
         </Alert>
       </div>
