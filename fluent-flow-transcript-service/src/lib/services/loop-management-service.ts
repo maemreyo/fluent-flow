@@ -268,7 +268,39 @@ export class LoopManagementService {
         throw new Error(`Failed to fetch loops: ${error.message}`)
       }
 
-      // Transform to Loop format with stats
+      // Get session IDs for stats calculation
+      const sessionIds = sessions.map(s => s.id)
+
+      // Get practice session counts (from shared_question_sets)
+      const { data: practiceStats } = await supabase!
+        .from('shared_question_sets')
+        .select('session_id')
+        .in('session_id', sessionIds)
+        .not('session_id', 'is', null)
+
+      // Get question counts from shared_question_sets
+      const { data: questionStats } = await supabase!
+        .from('shared_question_sets')
+        .select('session_id, questions')
+        .in('session_id', sessionIds)
+        .not('session_id', 'is', null)
+
+      // Create stats maps
+      const practiceCountMap = new Map<string, number>()
+      practiceStats?.forEach((stat: any) => {
+        const count = practiceCountMap.get(stat.session_id) || 0
+        practiceCountMap.set(stat.session_id, count + 1)
+      })
+
+      const questionCountMap = new Map<string, number>()
+      questionStats?.forEach((stat: any) => {
+        if (stat.questions && Array.isArray(stat.questions)) {
+          const existingCount = questionCountMap.get(stat.session_id) || 0
+          questionCountMap.set(stat.session_id, Math.max(existingCount, stat.questions.length))
+        }
+      })
+
+      // Transform to Loop format with real stats
       const loops: LoopWithStats[] = sessions.map(session => {
         const segment = session.loop_segments[0]
         const transcript = Array.isArray(segment?.transcripts)
@@ -294,9 +326,8 @@ export class LoopManagementService {
             segmentId: segment?.id,
             ...session.metadata
           },
-          // TODO: Add real stats from related tables
-          practiceSessionsCount: 0,
-          questionsCount: 0
+          practiceSessionsCount: practiceCountMap.get(session.id) || 0,
+          questionsCount: questionCountMap.get(session.id) || 0
         }
       })
 

@@ -98,8 +98,10 @@ export async function GET(
     // Add group context if provided
     let groupContext = null
     if (groupId && sessionId) {
-      // Get session settings for per-member shuffle
+      // Get session settings and participant count
       let sessionSettings = null
+      let participantCount = 0
+      
       try {
         const { data: sessionData, error: sessionError } = await supabase
           .from('group_quiz_sessions')
@@ -122,15 +124,24 @@ export async function GET(
             )
           }
         }
+
+        // Get participant count from session participants
+        const { count: participantCountResult } = await supabase
+          .from('group_session_participants')
+          .select('*', { count: 'exact' })
+          .eq('session_id', sessionId)
+
+        participantCount = participantCountResult || 0
+        
       } catch (error) {
-        console.log('Failed to get session settings:', error)
+        console.log('Failed to get session data:', error)
       }
 
       groupContext = {
         groupId,
         sessionId,
         isGroupSession: true,
-        participantCount: 0, // TODO: Get real participant count from database
+        participantCount,
         canSeeOthersProgress: false, // Future feature
         settings: sessionSettings || {}
       }

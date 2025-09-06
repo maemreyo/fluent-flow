@@ -252,10 +252,16 @@ export class PermissionManager {
   }
 
   // Validation Methods
-  canPromoteToAdmin(): boolean {
+  canPromoteToAdmin(currentAdminCount?: number): boolean {
     if (!this.canManageMembers()) return false
     const maxAdmins = this.group?.settings?.maxAdminCount || 3
-    // TODO: Check current admin count in implementation
+    
+    // If current admin count is provided, check against limit
+    if (typeof currentAdminCount === 'number') {
+      return currentAdminCount < maxAdmins
+    }
+    
+    // If no count provided, assume we can promote (API will do the actual check)
     return true
   }
 }

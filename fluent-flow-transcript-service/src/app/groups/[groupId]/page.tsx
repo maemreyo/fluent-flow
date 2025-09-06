@@ -203,6 +203,9 @@ export default function GroupPage({
                 groupName={(group as any).name || 'Group'}
                 groupCode={(group as any).group_code || ''}
                 onRefreshMembers={invalidateGroup}
+                currentUserId={user?.id}
+                currentUserRole={(group as any).user_role}
+                groupSettings={(group as any).settings}
               />
             )}
             {activeTab === 'sessions' && (

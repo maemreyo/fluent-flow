@@ -145,9 +145,35 @@ export async function POST(request: NextRequest) {
       sessionId
     )
 
-    // TODO: Send notifications to group members if requested
+    // Send notifications to group members if requested
     if (options.notifyMembers) {
-      console.log(`Notifications requested for group session ${sessionId}`)
+      try {
+        const { notificationService } = await import('../../../../lib/services/notification-service')
+        
+        // Get all group members' emails
+        const { data: groupMembers } = await supabase
+          .from('study_group_members')
+          .select(`
+            users!inner(email)
+          `)
+          .eq('group_id', groupId)
+
+        const memberEmails = groupMembers?.map(member => (member.users as any).email).filter(email => email) || []
+        
+        if (memberEmails.length > 0) {
+          await notificationService.sendSessionNotification({
+            recipientEmails: memberEmails,
+            groupName: (group as any).name || 'Study Group',
+            sessionTitle: `${loop.videoTitle} - Group Session`,
+            sessionUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/questions/${sharedQuestionSet.share_token}?groupId=${groupId}&sessionId=${sessionId}`,
+            scheduledAt: undefined // Extension sessions are usually instant
+          })
+          console.log(`✅ Sent session notifications to ${memberEmails.length} members`)
+        }
+      } catch (notificationError) {
+        console.error('Failed to send session notifications:', notificationError)
+        // Don't fail the request if notifications fail
+      }
     }
 
     return corsResponse({

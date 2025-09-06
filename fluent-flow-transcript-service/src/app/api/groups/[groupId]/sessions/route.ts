@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid'
 import { corsHeaders, corsResponse } from '../../../../../lib/cors'
 import { getCurrentUserServer, getSupabaseServer } from '../../../../../lib/supabase/server'
 import { PermissionManager } from '../../../../../lib/permissions'
+import { notificationService } from '../../../../../lib/services/notification-service'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -162,7 +163,6 @@ export async function POST(
     const body = await request.json()
     const {
       title,
-      description,
       scheduledAt,
       questions,
       shareToken,
@@ -315,9 +315,35 @@ export async function POST(
       return corsResponse({ error: 'Failed to create group session' }, 500)
     }
 
-    // TODO: Send notifications if requested
+    // Send notifications if requested
     if (notifyMembers) {
-      console.log(`Notifications requested for group session ${sessionId}`)
+      try {
+        // Get all group members' emails
+        const { data: groupMembers } = await supabase
+          .from('study_group_members')
+          .select(`
+            users!inner(email)
+          `)
+          .eq('group_id', groupId)
+
+        const memberEmails = groupMembers?.map(member => (member.users as any).email).filter(email => email) || []
+        
+        if (memberEmails.length > 0) {
+          await notificationService.sendSessionNotification({
+            recipientEmails: memberEmails,
+            groupName: (groupData as any).name || 'Study Group',
+            sessionTitle: title || 'Group Quiz Session',
+            sessionUrl: finalShareToken
+              ? `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/questions/${finalShareToken}?groupId=${groupId}&sessionId=${sessionId}`
+              : `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/groups/${groupId}`,
+            scheduledAt: scheduledAt
+          })
+          console.log(`✅ Sent session notifications to ${memberEmails.length} members`)
+        }
+      } catch (notificationError) {
+        console.error('Failed to send session notifications:', notificationError)
+        // Don't fail the request if notifications fail
+      }
     }
 
     const message = requiresApproval 

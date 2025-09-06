@@ -3,6 +3,7 @@ import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supa
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
 import { v4 as uuidv4 } from 'uuid'
 import { PermissionManager } from '../../../../../lib/permissions'
+import { notificationService } from '../../../../../lib/services/notification-service'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -152,13 +153,25 @@ export async function POST(
       }
     }
 
-    // TODO: Send actual emails here
-    // For now, we'll just log the invitations that would be sent
-    console.log('Invitations to send:', invitations.map(inv => ({
-      email: inv.email,
-      inviteUrl: inv.inviteUrl,
-      groupName: inv.groupName
-    })))
+    // Send invitation notifications
+    try {
+      const inviterName = user.user_metadata?.full_name || user.email?.split('@')[0] || 'FluentFlow User'
+      
+      for (const invitation of invitations) {
+        await notificationService.sendGroupInvitation({
+          recipientEmail: invitation.email,
+          groupName: invitation.groupName,
+          inviterName,
+          inviteCode: (groupInfo as any).group_code,
+          inviteUrl: invitation.inviteUrl,
+          message
+        })
+      }
+      console.log(`✅ Sent ${invitations.length} invitation notification(s)`)
+    } catch (notificationError) {
+      console.error('Failed to send invitation notifications:', notificationError)
+      // Don't fail the request if notifications fail - the invitations were still created
+    }
 
     const response = {
       success: true,
