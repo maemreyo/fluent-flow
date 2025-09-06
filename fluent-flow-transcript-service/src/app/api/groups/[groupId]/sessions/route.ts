@@ -203,6 +203,26 @@ export async function POST(
       return corsResponse({ error: 'You do not have permission to create sessions in this group' }, 403)
     }
 
+    // Check maxConcurrentSessions limit
+    const maxConcurrentSessions = (group as any).settings?.maxConcurrentSessions || 5
+    const { count: activeSessions } = await supabase
+      .from('group_quiz_sessions')
+      .select('*', { count: 'exact' })
+      .eq('group_id', groupId)
+      .in('status', ['scheduled', 'active'])
+
+    if (activeSessions && activeSessions >= maxConcurrentSessions) {
+      return corsResponse({ 
+        error: `Maximum concurrent sessions limit reached (${maxConcurrentSessions}). Please complete or cancel existing sessions before creating new ones.` 
+      }, 400)
+    }
+
+    // Check if session approval is required
+    const requiresApproval = (group as any).settings?.requireSessionApproval || false
+    const initialStatus = requiresApproval 
+      ? 'pending'
+      : (scheduledAt ? 'scheduled' : 'active')
+
     // Use group data from membership query
     const groupData = group
 
@@ -281,7 +301,7 @@ export async function POST(
         video_title: _loopData?.videoTitle || null,
         scheduled_at: scheduledAt || new Date().toISOString(),
         created_by: user.id,
-        status: scheduledAt ? 'scheduled' : 'active',
+        status: initialStatus,
         session_type: sessionType,
         share_token: finalShareToken,
         questions_data: questionsData,
@@ -300,8 +320,13 @@ export async function POST(
       console.log(`Notifications requested for group session ${sessionId}`)
     }
 
+    const message = requiresApproval 
+      ? 'Group session created successfully and is pending approval from administrators.'
+      : 'Group session created successfully'
+
     return corsResponse({
-      message: 'Group session created successfully',
+      message,
+      requiresApproval,
       session: {
         id: session.id,
         title: session.quiz_title,
