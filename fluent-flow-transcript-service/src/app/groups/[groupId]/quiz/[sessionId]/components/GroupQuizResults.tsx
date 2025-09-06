@@ -16,6 +16,8 @@ interface GroupQuizResultsProps {
   sessionId: string
   onRestart: () => void
   participants: SessionParticipant[]
+  showCorrectAnswers?: boolean
+  canRetakeQuiz?: boolean
 }
 
 export function GroupQuizResults({
@@ -23,7 +25,9 @@ export function GroupQuizResults({
   groupId,
   sessionId,
   onRestart,
-  participants
+  participants,
+  showCorrectAnswers = true,
+  canRetakeQuiz = true
 }: GroupQuizResultsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'leaderboard'>('personal')
 
@@ -70,7 +74,10 @@ export function GroupQuizResults({
 
           {/* Question Review */}
           {results.results && results.results.length > 0 && (
-            <QuestionReviewList results={results} />
+            <QuestionReviewList 
+              results={results} 
+              showCorrectAnswers={showCorrectAnswers}
+            />
           )}
         </div>
       )}
@@ -90,6 +97,7 @@ export function GroupQuizResults({
         groupId={groupId}
         onRestart={onRestart}
         userScore={results?.score}
+        canRetakeQuiz={canRetakeQuiz}
       />
     </div>
   )

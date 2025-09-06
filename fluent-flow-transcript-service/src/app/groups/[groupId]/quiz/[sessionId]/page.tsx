@@ -104,6 +104,9 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   // Role-based permissions
   const permissions = new PermissionManager(user, group, session)
 
+  // Group settings
+  const groupSettings = (group as any)?.settings || {}
+
   // Simplified quiz synchronization
   const {
     syncState,
@@ -344,6 +347,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           totalSets={difficultyGroups.length}
                           participants={participants}
                           onlineParticipants={onlineParticipants}
+                          timeLimit={groupSettings.enforceQuizTimeLimit ? (groupSettings.defaultQuizTimeLimit || 30) : null}
+                          allowQuestionSkipping={groupSettings.allowSkippingQuestions ?? false}
                         />
                       </div>
                     )
@@ -357,6 +362,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           sessionId={sessionId}
                           onRestart={handleRestart}
                           participants={participants}
+                          showCorrectAnswers={groupSettings.showCorrectAnswers ?? true}
+                          canRetakeQuiz={permissions.canRetakeQuiz()}
                         />
                       </div>
                     )

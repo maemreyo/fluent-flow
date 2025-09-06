@@ -8,10 +8,11 @@ import { StudyGroup } from '../types'
 interface GroupHeaderProps {
   group: StudyGroup
   canManage: boolean
+  canCreateSessions?: boolean
   onNewSession: () => void
 }
 
-export function GroupHeader({ group, canManage, onNewSession }: GroupHeaderProps) {
+export function GroupHeader({ group, canManage, canCreateSessions, onNewSession }: GroupHeaderProps) {
   const router = useRouter()
   const [copiedCode, setCopiedCode] = useState(false)
 
@@ -68,7 +69,7 @@ export function GroupHeader({ group, canManage, onNewSession }: GroupHeaderProps
           </button>
         </div>
 
-        {canManage && (
+        {(canCreateSessions ?? canManage) && (
           <button
             onClick={onNewSession}
             className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:from-indigo-700 hover:to-purple-700 transition-all hover:scale-105 shadow-lg"

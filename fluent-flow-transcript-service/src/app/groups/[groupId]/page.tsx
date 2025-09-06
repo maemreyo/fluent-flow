@@ -7,6 +7,7 @@ import { AuthPrompt } from '../../../components/auth/AuthPrompt'
 import CreateSessionModal from '../../../components/sessions/CreateSessionModal'
 import SessionsTab from '../../../components/sessions/SessionsTab'
 import { useAuth } from '../../../contexts/AuthContext'
+import { PermissionManager } from '../../../lib/permissions'
 import { GroupHeader } from './components/GroupHeader'
 import { LoopsTab } from './components/LoopsTab'
 import { MembersTab } from './components/MembersTab'
@@ -36,7 +37,7 @@ export default function GroupPage({
   const [showCreateSession, setShowCreateSession] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
-  const { isAuthenticated, isLoading: authLoading } = useAuth()
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth()
 
   const {
     group,
@@ -152,7 +153,12 @@ export default function GroupPage({
     )
   }
 
-  const canManage = (group as any).user_role && ['owner', 'admin'].includes((group as any).user_role)
+  // Use PermissionManager for granular permissions
+  const permissions = new PermissionManager(user, group as any, null)
+  const canManage = permissions.canManageGroup()
+  const canCreateSessions = permissions.canCreateSessions()
+  const canInviteMembers = permissions.canInviteMembers()
+  const canDeleteSessions = permissions.canDeleteSessions()
 
   console.log(`Rendering with activeTab: ${activeTab}, initialTab: ${initialTab}`)
 
@@ -168,6 +174,7 @@ export default function GroupPage({
           <GroupHeader
             group={group as any}
             canManage={!!canManage}
+            canCreateSessions={!!canCreateSessions}
             onNewSession={() => setShowCreateSession(true)}
           />
           <StatCards group={group as any} />
@@ -191,6 +198,7 @@ export default function GroupPage({
                 members={(group as any).members || []}
                 memberCount={(group as any).member_count || 0}
                 canManage={!!canManage}
+                canInviteMembers={!!canInviteMembers}
                 groupId={groupId}
                 groupName={(group as any).name || 'Group'}
                 groupCode={(group as any).group_code || ''}
@@ -201,6 +209,7 @@ export default function GroupPage({
               <SessionsTab
                 groupId={groupId}
                 canManage={!!canManage}
+                canDeleteSessions={!!canDeleteSessions}
                 onCreateSession={() => setShowCreateSession(true)}
                 highlightSessionId={highlightSessionId}
               />

@@ -52,6 +52,19 @@ export async function POST(request: NextRequest) {
       return corsResponse({ error: 'You are already a member of this group' }, 400)
     }
 
+    // Check if there's already a pending join request
+    const { data: existingRequest } = await supabase
+      .from('group_join_requests')
+      .select('id, status')
+      .eq('group_id', group.id)
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .maybeSingle()
+
+    if (existingRequest) {
+      return corsResponse({ error: 'You already have a pending join request for this group' }, 400)
+    }
+
     // Check if group is full
     const { count: memberCount } = await supabase
       .from('study_group_members')
@@ -62,12 +75,45 @@ export async function POST(request: NextRequest) {
       return corsResponse({ error: 'Group is full' }, 400)
     }
 
-    // Add user to group
+    // Check if approval is required for joining
+    const requiresApproval = group.settings?.requireApprovalForJoining || false
+
+    if (requiresApproval) {
+      // Create a join request for approval
+      const { error: requestError } = await supabase
+        .from('group_join_requests')
+        .insert({
+          group_id: group.id,
+          user_id: user.id,
+          user_email: user.email,
+          username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+          status: 'pending',
+          requested_at: new Date().toISOString()
+        })
+
+      if (requestError) {
+        console.error('Error creating join request:', requestError)
+        return corsResponse({ error: 'Failed to create join request' }, 500)
+      }
+
+      return corsResponse({ 
+        message: 'Join request submitted successfully. Please wait for approval from group administrators.',
+        requiresApproval: true,
+        group: {
+          id: group.id,
+          name: group.name,
+          description: group.description
+        }
+      })
+    }
+
+    // Direct join without approval
     const { error: joinError } = await supabase
       .from('study_group_members')
       .insert({
         group_id: group.id,
         user_id: user.id,
+        user_email: user.email,
         username: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
         role: 'member'
       })
@@ -79,6 +125,7 @@ export async function POST(request: NextRequest) {
 
     return corsResponse({ 
       message: 'Successfully joined group',
+      requiresApproval: false,
       group: {
         id: group.id,
         name: group.name,

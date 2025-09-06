@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { v4 as uuidv4 } from 'uuid'
 import { corsHeaders, corsResponse } from '../../../../../lib/cors'
 import { getCurrentUserServer, getSupabaseServer } from '../../../../../lib/supabase/server'
+import { PermissionManager } from '../../../../../lib/permissions'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -170,28 +171,40 @@ export async function POST(
       sessionType = 'scheduled'
     } = body
 
-    // Check if user can create sessions (owner/admin by default)
-    const { data: membership, error: membershipError } = await supabase
+    // Get user membership and group settings for permission checking
+    const { data: membershipData, error: membershipError } = await supabase
       .from('study_group_members')
-      .select('role')
+      .select(`
+        role,
+        study_groups!inner(
+          id,
+          name,
+          user_role:role,
+          created_by,
+          settings
+        )
+      `)
       .eq('group_id', groupId)
       .eq('user_id', user.id)
       .single()
 
-    if (membershipError || !membership || !['owner', 'admin'].includes(membership.role)) {
+    if (membershipError || !membershipData) {
       return corsResponse({ error: 'Access denied' }, 403)
     }
 
-    // Get group info for context
-    const { data: group, error: groupError } = await supabase
-      .from('study_groups')
-      .select('name')
-      .eq('id', groupId)
-      .single()
-
-    if (groupError) {
-      return corsResponse({ error: 'Group not found' }, 404)
+    // Use PermissionManager to check session creation permission
+    const group = {
+      ...membershipData.study_groups,
+      user_role: membershipData.role
     }
+    const permissions = new PermissionManager(user, group, null)
+
+    if (!permissions.canCreateSessions()) {
+      return corsResponse({ error: 'You do not have permission to create sessions in this group' }, 403)
+    }
+
+    // Use group data from membership query
+    const groupData = group
 
     const sessionId = uuidv4()
     let finalShareToken = shareToken
@@ -227,7 +240,7 @@ export async function POST(
         groupContext: {
           groupId,
           sessionId,
-          groupName: group.name,
+          groupName: (groupData as any).name,
           isGroupSession: true,
           createdBy: user.id
         }

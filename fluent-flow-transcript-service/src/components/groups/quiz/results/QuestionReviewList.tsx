@@ -24,9 +24,10 @@ interface QuestionReviewListProps {
     results: QuestionResult[]
     totalQuestions: number
   }
+  showCorrectAnswers?: boolean
 }
 
-export function QuestionReviewList({ results }: QuestionReviewListProps) {
+export function QuestionReviewList({ results, showCorrectAnswers = true }: QuestionReviewListProps) {
   // Format video timestamp for display
   const formatVideoTimestamp = (seconds?: number) => {
     if (!seconds) return null
@@ -175,8 +176,8 @@ export function QuestionReviewList({ results }: QuestionReviewListProps) {
                           </p>
                         </div>
 
-                        {/* Correct Answer (only show if user was wrong) */}
-                        {!result.isCorrect && (
+                        {/* Correct Answer (only show if user was wrong AND showCorrectAnswers is true) */}
+                        {!result.isCorrect && showCorrectAnswers && (
                           <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                             <div className="flex items-center gap-2 mb-1">
                               <span className="text-xs font-medium text-gray-600">Correct Answer:</span>
@@ -190,7 +191,7 @@ export function QuestionReviewList({ results }: QuestionReviewListProps) {
                       </div>
 
                       {/* Explanation */}
-                      {result.explanation && (
+                      {result.explanation && showCorrectAnswers && (
                         <Alert className="border-blue-200 bg-blue-50">
                           <AlertDescription className="text-blue-800">
                             <div className="space-y-1">

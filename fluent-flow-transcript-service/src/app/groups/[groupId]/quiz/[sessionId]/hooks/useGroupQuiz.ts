@@ -191,22 +191,56 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       const result: DifficultyGroup[] = []
       const difficulties: ('easy' | 'medium' | 'hard')[] = ['easy', 'medium', 'hard']
 
+      // Get group quiz settings
+      const groupSettings = (group as any)?.settings || {}
+      const shouldShuffleQuestions = groupSettings.shuffleQuestions || false
+
       difficulties.forEach(difficulty => {
         const questionCount = preset.distribution[difficulty]
         if (questionCount > 0) {
           const availableQuestions = categorizedQuestions[difficulty]
-          const shuffled = [...availableQuestions].sort(() => Math.random() - 0.5)
-          const selectedQuestions = shuffled.slice(0, questionCount)
+          
+          // Apply question shuffling based on group settings
+          const questionsToSelect = shouldShuffleQuestions 
+            ? [...availableQuestions].sort(() => Math.random() - 0.5)
+            : availableQuestions
+            
+          const selectedQuestions = questionsToSelect.slice(0, questionCount)
+          
+          // Apply answer shuffling to individual questions if enabled
+          const questionsWithShuffledAnswers = selectedQuestions.map(question => {
+            if (!groupSettings.shuffleAnswers) {
+              return question
+            }
+            
+            // Shuffle answers while preserving correct answer mapping
+            const originalOptions = question.options
+            const correctIndex = question.options.findIndex(
+              (_, index) => ['A', 'B', 'C', 'D'][index] === question.correctAnswer
+            )
+            const correctOption = originalOptions[correctIndex]
+            
+            const shuffledOptions = [...originalOptions].sort(() => Math.random() - 0.5)
+            const newCorrectIndex = shuffledOptions.indexOf(correctOption)
+            const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex]
+            
+            return {
+              ...question,
+              options: shuffledOptions,
+              correctAnswer: newCorrectAnswer
+            }
+          })
+          
           result.push({
             difficulty,
-            questions: selectedQuestions,
+            questions: questionsWithShuffledAnswers,
             completed: false
           })
         }
       })
       return result
     },
-    []
+    [(group as any)?.settings]
   )
 
   const handlePresetSelect = useCallback(

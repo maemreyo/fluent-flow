@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Calendar, Clock, Edit, Play, Plus, Trash2 } from 'lucide-react'
+import { Calendar, Clock, Edit, Play, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { GroupQuizResultsModal } from '../../app/groups/[groupId]/components/GroupQuizResultsModal'
 import { GroupQuizRoomModal } from '../../app/groups/[groupId]/components/sessions/GroupQuizRoomModal'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
@@ -11,17 +11,19 @@ import { GlobalSessionListener } from '../groups/quiz/GlobalSessionListener'
 interface SessionsTabProps {
   groupId: string
   canManage: boolean
+  canDeleteSessions?: boolean
   onCreateSession: () => void
   highlightSessionId?: string
 }
 
 interface SessionFilters {
-  status: 'all' | 'scheduled' | 'active' | 'completed' | 'cancelled' | 'expired'
+  status: 'all' | 'pending' | 'scheduled' | 'active' | 'completed' | 'cancelled' | 'expired'
 }
 
 export default function SessionsTab({
   groupId,
   canManage,
+  canDeleteSessions,
   onCreateSession,
   highlightSessionId
 }: SessionsTabProps) {
@@ -53,6 +55,8 @@ export default function SessionsTab({
         return 'bg-green-100 text-green-800 border-green-200'
       case 'scheduled':
         return 'bg-blue-100 text-blue-800 border-blue-200'
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200'
       case 'completed':
         return 'bg-gray-100 text-gray-800 border-gray-200'
       case 'cancelled':
@@ -99,6 +103,47 @@ export default function SessionsTab({
       setDeleteConfirm(null)
     } catch (err) {
       console.error('Failed to delete session:', err)
+    }
+  }
+
+  const handleApproveSession = async (sessionId: string) => {
+    try {
+      // Update session status to 'scheduled' or 'active' based on timing
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/approve`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to approve session')
+      }
+
+      // Refresh sessions list
+      await refetch()
+    } catch (err) {
+      console.error('Failed to approve session:', err)
+    }
+  }
+
+  const handleRejectSession = async (sessionId: string) => {
+    try {
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/reject`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to reject session')
+      }
+
+      // Refresh sessions list
+      await refetch()
+    } catch (err) {
+      console.error('Failed to reject session:', err)
     }
   }
 
@@ -249,7 +294,7 @@ export default function SessionsTab({
 
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
-        {(['all', 'scheduled', 'active', 'completed', 'cancelled', 'expired'] as const).map(
+        {(['all', 'pending', 'scheduled', 'active', 'completed', 'cancelled', 'expired'] as const).map(
           status => (
             <button
               key={status}
@@ -269,6 +314,31 @@ export default function SessionsTab({
           )
         )}
       </div>
+
+      {/* Pending Sessions Notification */}
+      {canManage && filteredSessions.some((session: any) => session.status === 'pending') && (
+        <div className="rounded-xl border border-yellow-200 bg-yellow-50 p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-yellow-200 p-1">
+                <Clock className="h-4 w-4 text-yellow-600" />
+              </div>
+              <div>
+                <p className="font-medium text-yellow-800">Sessions awaiting approval</p>
+                <p className="text-sm text-yellow-600">
+                  {filteredSessions.filter((session: any) => session.status === 'pending').length} session(s) need your approval to start.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setFilters({ status: 'pending' })}
+              className="rounded-lg bg-yellow-600 px-3 py-1 text-sm text-white transition-colors hover:bg-yellow-700"
+            >
+              Review
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Expired Sessions Warning */}
       {filteredSessions.some((session: any) => session.is_likely_expired) && (
@@ -388,21 +458,41 @@ export default function SessionsTab({
                     </button>
                   )}
 
-                  {canManage && (
+                  {/* Session Approval buttons - only for pending sessions and if user can manage */}
+                  {session.status === 'pending' && canManage && (
                     <>
                       <button
-                        onClick={() => setEditingSession(session)}
-                        className="rounded-lg p-2 text-gray-500 transition-all hover:bg-white/80 hover:text-indigo-600"
+                        onClick={() => handleApproveSession(session.id)}
+                        className="flex items-center gap-1 rounded-lg bg-green-600 px-3 py-1 text-sm text-white transition-colors hover:bg-green-700"
                       >
-                        <Edit className="h-4 w-4" />
+                        <CheckCircle className="h-3 w-3" />
+                        Approve
                       </button>
                       <button
-                        onClick={() => setDeleteConfirm(session.id)}
-                        className="rounded-lg p-2 text-gray-500 transition-all hover:bg-white/80 hover:text-red-600"
+                        onClick={() => handleRejectSession(session.id)}
+                        className="flex items-center gap-1 rounded-lg bg-red-600 px-3 py-1 text-sm text-white transition-colors hover:bg-red-700"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <XCircle className="h-3 w-3" />
+                        Reject
                       </button>
                     </>
+                  )}
+
+                  {canManage && (
+                    <button
+                      onClick={() => setEditingSession(session)}
+                      className="rounded-lg p-2 text-gray-500 transition-all hover:bg-white/80 hover:text-indigo-600"
+                    >
+                      <Edit className="h-4 w-4" />
+                    </button>
+                  )}
+                  {(canDeleteSessions ?? canManage) && (
+                    <button
+                      onClick={() => setDeleteConfirm(session.id)}
+                      className="rounded-lg p-2 text-gray-500 transition-all hover:bg-white/80 hover:text-red-600"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
                   )}
                 </div>
               </div>

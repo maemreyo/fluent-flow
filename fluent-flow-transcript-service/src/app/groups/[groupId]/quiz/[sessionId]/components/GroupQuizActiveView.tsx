@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
+import { Clock } from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
@@ -23,6 +24,8 @@ interface GroupQuizActiveViewProps {
   totalSets: number
   participants: Array<{ user_id: string; user_email: string; is_online: boolean }>
   onlineParticipants: Array<{ user_id: string; user_email: string; is_online: boolean }>
+  timeLimit?: number | null
+  allowQuestionSkipping?: boolean
 }
 
 export function GroupQuizActiveView({
@@ -38,15 +41,67 @@ export function GroupQuizActiveView({
   currentSetIndex,
   totalSets,
   participants,
-  onlineParticipants
+  onlineParticipants,
+  timeLimit,
+  allowQuestionSkipping = false
 }: GroupQuizActiveViewProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('')
   const [setSubmitted, setSetSubmitted] = useState(false)
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(timeLimit ? timeLimit * 60 : null)
+  const [timerStarted, setTimerStarted] = useState(false)
+  const timerRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Start timer when component mounts
+  useEffect(() => {
+    if (timeLimit && timeLimit > 0 && !timerStarted) {
+      setTimeRemaining(timeLimit * 60) // Convert minutes to seconds
+      setTimerStarted(true)
+    }
+  }, [timeLimit, timerStarted])
+
+  // Timer countdown effect
+  useEffect(() => {
+    if (timeRemaining !== null && timeRemaining > 0 && timerStarted && !setSubmitted) {
+      timerRef.current = setTimeout(() => {
+        setTimeRemaining(prev => prev !== null ? prev - 1 : null)
+      }, 1000)
+    } else if (timeRemaining === 0 && !setSubmitted) {
+      // Time's up - auto submit
+      handleNext()
+    }
+
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [timeRemaining, timerStarted, setSubmitted])
 
   // Reset selectedAnswer when question changes
   useEffect(() => {
     setSelectedAnswer('')
   }, [currentQuestion?.questionIndex])
+
+  // Cleanup timer on unmount
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+    }
+  }, [])
+
+  const formatTime = (seconds: number): string => {
+    const mins = Math.floor(seconds / 60)
+    const secs = seconds % 60
+    return `${mins}:${secs.toString().padStart(2, '0')}`
+  }
+
+  const getTimerColor = (seconds: number): string => {
+    if (seconds > 300) return 'text-green-600' // > 5 minutes
+    if (seconds > 60) return 'text-yellow-600'  // > 1 minute
+    return 'text-red-600' // ≤ 1 minute
+  }
 
   const handleAnswerClick = (optionLetter: string) => {
     setSelectedAnswer(optionLetter)
@@ -57,6 +112,11 @@ export function GroupQuizActiveView({
     if (isLastQuestion) {
       onSubmitSet()
       setSetSubmitted(true)
+      
+      // Stop timer when submitting
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
 
       // If this is the last set, automatically calculate final results after a brief delay
       const isLastSet = currentSetIndex >= totalSets - 1
@@ -70,9 +130,19 @@ export function GroupQuizActiveView({
     }
   }
 
+  const handleSkip = () => {
+    // Skip without selecting an answer - move to next question
+    onNextQuestion()
+  }
+
   const handleContinueToNextSet = () => {
     onMoveToNextSet()
     setSetSubmitted(false) // Reset for next set
+    // Reset timer for next set
+    if (timeLimit && timeLimit > 0) {
+      setTimeRemaining(timeLimit * 60)
+      setTimerStarted(true)
+    }
   }
 
   const handleGoBack = () => {
@@ -171,8 +241,11 @@ export function GroupQuizActiveView({
               <div
                 className="h-2 rounded-full bg-green-500 transition-all duration-300"
                 style={{ width: `${((currentSetIndex + 1) / totalSets) * 100}%` }}
-              ></div>
+              />
             </div>
+            <span className="text-gray-500">
+              {Math.round(((currentSetIndex + 1) / totalSets) * 100)}%
+            </span>
           </div>
         </div>
       </div>
@@ -184,7 +257,7 @@ export function GroupQuizActiveView({
 
   return (
     <div className="space-y-6">
-      {/* Back Navigation */}
+      {/* Header with Timer */}
       <div className="flex items-center justify-between">
         <button
           onClick={handleGoBack}
@@ -192,83 +265,75 @@ export function GroupQuizActiveView({
         >
           ← Back to Group
         </button>
-        <div className="text-sm text-gray-500">Question {questionIndex + 1}</div>
+
+        {/* Timer Display */}
+        {timeRemaining !== null && (
+          <div className={`flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm border ${
+            timeRemaining <= 60 ? 'border-red-200 bg-red-50' : 
+            timeRemaining <= 300 ? 'border-yellow-200 bg-yellow-50' : 
+            'border-green-200 bg-green-50'
+          }`}>
+            <Clock className={`h-4 w-4 ${getTimerColor(timeRemaining)}`} />
+            <span className={`font-mono font-semibold ${getTimerColor(timeRemaining)}`}>
+              {formatTime(timeRemaining)}
+            </span>
+            {timeRemaining <= 60 && (
+              <span className="text-xs text-red-600 font-medium">Time's almost up!</span>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Progress Header */}
+      {/* Progress indicator */}
       <div className="rounded-xl border border-white/40 bg-white/60 p-4">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-800">
-              Set {currentSetIndex + 1} of {totalSets}
-            </h2>
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Badge variant="secondary" className="bg-indigo-100 text-indigo-700">
-                {currentQuestion.groupData.difficulty}
-              </Badge>
-              <span>Question {questionIndex + 1}</span>
-            </div>
-          </div>
+        <div className="mb-2 flex items-center justify-between text-sm">
+          <span className="font-medium text-gray-700">
+            Set {currentSetIndex + 1} of {totalSets}
+          </span>
+          <span className="text-gray-500">
+            Question {(questionIndex % 10) + 1} of {question?.totalInSet || 'unknown'}
+          </span>
+        </div>
+        <div className="h-2 rounded-full bg-gray-200">
+          <div className="h-2 rounded-full bg-indigo-500 transition-all duration-300" style={{ width: '30%' }} />
         </div>
       </div>
 
       {/* Question Card */}
       <Card className="border-white/40 bg-white/80 shadow-lg">
-        <CardContent>
-          {/* Question Text */}
-          <div className="mb-6">
-            <h3 className="mb-4 text-2xl font-bold leading-relaxed text-gray-800">
-              {question.question}
-            </h3>
+        <CardContent className="p-8">
+          <h2 className="mb-6 text-xl font-semibold leading-relaxed text-gray-800">
+            {question?.question}
+          </h2>
 
-            {/* Audio Player if available */}
-            {question.audio_url && (
-              <div className="mb-6">
-                <audio controls className="w-full" src={question.audio_url}>
-                  Your browser does not support the audio element.
-                </audio>
-              </div>
-            )}
-
-            {/* Context if available */}
-            {question.context && (
-              <div className="mb-4 rounded-lg bg-gray-50 p-4">
-                <p className="italic text-gray-700">{question.context}</p>
-              </div>
-            )}
-          </div>
-
-          {/* Answer Options */}
-          <div className="space-y-4">
-            {question.options?.map((option: any, index: number) => {
-              const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
-              const isSelected = currentResponse?.answer === optionLetter
-              const wasSelected = selectedAnswer === optionLetter
+          <div className="space-y-3">
+            {question?.options?.map((option: string, index: number) => {
+              const optionLetter = ['A', 'B', 'C', 'D'][index]
+              const isSelected = selectedAnswer === optionLetter || currentResponse?.answer === optionLetter
 
               return (
                 <button
                   key={index}
                   onClick={() => handleAnswerClick(optionLetter)}
-                  disabled={submitting}
-                  className={`w-full rounded-xl border-2 p-4 text-left transition-all duration-200 ${
-                    isSelected || wasSelected
+                  className={`w-full rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
+                    isSelected
                       ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                      : 'hover:bg-indigo-25 border-gray-200 bg-white hover:border-indigo-300'
-                  } ${submitting ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
+                      : 'border-gray-200 bg-white hover:border-gray-300'
+                  }`}
                 >
-                  <div className="flex items-start gap-4">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full text-sm font-semibold ${
-                        isSelected || wasSelected
-                          ? 'bg-indigo-500 text-white'
-                          : 'bg-gray-100 text-gray-600'
+                      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 font-bold ${
+                        isSelected
+                          ? 'border-indigo-500 bg-indigo-500 text-white'
+                          : 'border-gray-300 text-gray-600'
                       }`}
                     >
                       {optionLetter}
                     </div>
-                    <div className="flex-1">
-                      <p className="text-lg text-gray-800">{option}</p>
-                    </div>
+                    <span className={isSelected ? 'font-medium text-indigo-900' : 'text-gray-700'}>
+                      {option}
+                    </span>
                   </div>
                 </button>
               )
@@ -277,38 +342,32 @@ export function GroupQuizActiveView({
         </CardContent>
       </Card>
 
-      {/* Action Buttons */}
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-600">
-          {currentResponse ? (
-            <span className="flex items-center gap-1 text-green-600">
-              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-              Answer selected
-            </span>
-          ) : (
-            <span>Select an answer to continue</span>
-          )}
-        </div>
-
-        <div className="flex items-center gap-3">
-          {!isLastQuestion ? (
+      {/* Action buttons */}
+      <div className="flex justify-between">
+        <div className="flex gap-3">
+          {allowQuestionSkipping && !isLastQuestion && (
             <Button
-              onClick={handleNext}
-              disabled={!currentResponse || submitting}
-              className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700"
+              onClick={handleSkip}
+              variant="outline"
+              className="rounded-xl border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50"
             >
-              {submitting ? 'Processing...' : 'Next Question →'}
-            </Button>
-          ) : (
-            <Button
-              onClick={handleNext}
-              disabled={!allAnswered || submitting}
-              className="rounded-xl bg-green-600 px-8 py-3 font-semibold text-white hover:bg-green-700"
-            >
-              {submitting ? 'Submitting...' : 'Submit Set ✓'}
+              Skip Question
             </Button>
           )}
         </div>
+        <Button
+          onClick={handleNext}
+          disabled={!selectedAnswer && !currentResponse}
+          className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
+        >
+          {submitting ? (
+            'Processing...'
+          ) : isLastQuestion ? (
+            allAnswered ? 'Submit Set' : 'Submit Set (Incomplete)'
+          ) : (
+            'Next Question →'
+          )}
+        </Button>
       </div>
     </div>
   )

@@ -518,6 +518,53 @@ export type Database = {
           },
         ]
       }
+      group_join_requests: {
+        Row: {
+          group_id: string
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          rejection_reason: string | null
+          requested_at: string
+          status: string
+          user_email: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+          user_email: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+          user_email?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_quiz_progress: {
         Row: {
           completed: boolean | null

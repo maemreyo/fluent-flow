@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getSupabaseServer, getCurrentUserServer } from '../../../../../lib/supabase/server'
 import { corsResponse, corsHeaders } from '../../../../../lib/cors'
 import { v4 as uuidv4 } from 'uuid'
+import { PermissionManager } from '../../../../../lib/permissions'
 
 export async function OPTIONS() {
   return new NextResponse(null, {
@@ -34,28 +35,42 @@ export async function POST(
       return corsResponse({ error: 'Emails are required' }, 400)
     }
 
-    // Verify user can invite (owner/admin only)
-    const { data: membership, error: membershipError } = await supabase
+    // Get user membership and group settings for permission checking
+    const { data: membershipData, error: membershipError } = await supabase
       .from('study_group_members')
-      .select('role')
+      .select(`
+        role,
+        study_groups!inner(
+          id,
+          name,
+          group_code,
+          is_private,
+          user_role:role,
+          created_by,
+          settings
+        )
+      `)
       .eq('group_id', groupId)
       .eq('user_id', user.id)
       .single()
 
-    if (membershipError || !membership || !['owner', 'admin'].includes(membership.role)) {
-      return corsResponse({ error: 'Access denied. Only owners and admins can invite members.' }, 403)
+    if (membershipError || !membershipData) {
+      return corsResponse({ error: 'Access denied' }, 403)
     }
 
-    // Get group info
-    const { data: group, error: groupError } = await supabase
-      .from('study_groups')
-      .select('name, group_code, is_private')
-      .eq('id', groupId)
-      .single()
-
-    if (groupError) {
-      return corsResponse({ error: 'Group not found' }, 404)
+    // Use PermissionManager to check invitation permission
+    const group = {
+      ...membershipData.study_groups,
+      user_role: membershipData.role
     }
+    const permissions = new PermissionManager(user, group, null)
+
+    if (!permissions.canInviteMembers()) {
+      return corsResponse({ error: 'You do not have permission to invite members to this group' }, 403)
+    }
+
+    // Use group data from membership query
+    const groupInfo = group
 
     // Create invitations for each email
     const invitations = []
@@ -112,7 +127,7 @@ export async function POST(
             email: email,
             invited_by: user.id,
             invite_token: inviteToken,
-            message: message || `You've been invited to join "${group.name}" study group!`,
+            message: message || `You've been invited to join "${(groupInfo as any).name}" study group!`,
             status: 'pending',
             expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
           })
@@ -129,7 +144,7 @@ export async function POST(
           invitationId: invitation.id,
           inviteToken,
           inviteUrl: `${process.env.NEXTAUTH_URL || 'http://localhost:3838'}/groups/join?token=${inviteToken}`,
-          groupName: group.name
+          groupName: (groupInfo as any).name
         })
 
       } catch (error) {

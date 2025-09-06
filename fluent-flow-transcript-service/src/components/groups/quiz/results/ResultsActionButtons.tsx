@@ -7,9 +7,10 @@ interface ResultsActionButtonsProps {
   groupId: string
   onRestart: () => void
   userScore?: number
+  canRetakeQuiz?: boolean
 }
 
-export function ResultsActionButtons({ groupId, onRestart, userScore }: ResultsActionButtonsProps) {
+export function ResultsActionButtons({ groupId, onRestart, userScore, canRetakeQuiz = true }: ResultsActionButtonsProps) {
   const handleShare = () => {
     // Share results functionality
     if (navigator.share) {
@@ -39,10 +40,12 @@ export function ResultsActionButtons({ groupId, onRestart, userScore }: ResultsA
           Back to Group
         </Button>
 
-        <Button onClick={onRestart} className="flex items-center gap-2">
-          <RotateCcw className="h-4 w-4" />
-          Try Again
-        </Button>
+        {canRetakeQuiz && (
+          <Button onClick={onRestart} className="flex items-center gap-2">
+            <RotateCcw className="h-4 w-4" />
+            Try Again
+          </Button>
+        )}
       </div>
 
       {/* Secondary Actions */}

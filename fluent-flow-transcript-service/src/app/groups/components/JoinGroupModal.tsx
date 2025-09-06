@@ -37,7 +37,11 @@ export function JoinGroupModal({ onClose, onSuccess }: JoinGroupModalProps) {
       const data = await response.json()
 
       if (response.ok) {
-        alert(`Successfully joined "${data.group.name}"!`)
+        if (data.requiresApproval) {
+          alert(`Join request submitted successfully! Your request to join "${data.group.name}" is pending approval from group administrators.`)
+        } else {
+          alert(`Successfully joined "${data.group.name}"!`)
+        }
         onSuccess()
         onClose()
       } else {
