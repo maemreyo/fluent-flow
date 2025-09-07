@@ -73,8 +73,13 @@ export function UserDropdown({ user, checkingAuth, onSignOut }: UserDropdownProp
         
         <DropdownMenuItem
           onClick={() => {
-            // TODO: Navigate to profile settings
-            console.log('Navigate to profile settings')
+            // Open Chrome extension options/settings page
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+              chrome.runtime.openOptionsPage()
+            } else {
+              // Fallback for non-Chrome environments
+              console.log('Navigate to profile settings - Chrome API not available')
+            }
           }}
           className="flex items-center gap-2"
         >

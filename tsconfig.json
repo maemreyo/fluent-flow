@@ -3,6 +3,7 @@
   "exclude": ["node_modules", "api-proxy", "fluent-flow-transcript-service"],
   "include": [".plasmo/index.d.ts", "./**/*.ts", "./**/*.tsx"],
   "compilerOptions": {
+    "ignoreDeprecations": "6.0",
     "paths": {
       "~*": ["./*"],
       "@/*": ["./*"]
