@@ -55,6 +55,83 @@ export function QuestionReviewList({ results, showCorrectAnswers = true }: Quest
     return videoUrl
   }
 
+  // TODO: Future enhancement - add dedicated timeframe fields to question response
+  // Extract timeframe references from explanation text (temporary solution)
+  const extractTimeframeReferences = (explanation: string) => {
+    // Match patterns like (0:24-0:28), (1:30-1:45), etc.
+    const timeframeRegex = /\((\d+):(\d+)-(\d+):(\d+)\)/g
+    const timeframes: Array<{
+      text: string
+      startTime: number
+      endTime: number
+      originalText: string
+    }> = []
+    
+    let match
+    while ((match = timeframeRegex.exec(explanation)) !== null) {
+      const [fullMatch, startMin, startSec, endMin, endSec] = match
+      const startTime = parseInt(startMin) * 60 + parseInt(startSec)
+      const endTime = parseInt(endMin) * 60 + parseInt(endSec)
+      
+      timeframes.push({
+        text: fullMatch,
+        startTime,
+        endTime,
+        originalText: fullMatch
+      })
+    }
+    
+    return timeframes
+  }
+
+  // Render explanation with clickable timeframe references
+  const renderExplanationWithTimeframes = (explanation: string, videoUrl?: string) => {
+    const timeframes = extractTimeframeReferences(explanation)
+    
+    if (timeframes.length === 0) {
+      return <p className="text-sm">{explanation}</p>
+    }
+
+    // Split explanation by timeframes and create clickable segments
+    let lastIndex = 0
+    const segments: React.ReactNode[] = []
+    
+    timeframes.forEach((timeframe, index) => {
+      const beforeText = explanation.slice(lastIndex, explanation.indexOf(timeframe.originalText, lastIndex))
+      if (beforeText) {
+        segments.push(beforeText)
+      }
+      
+      // Create clickable timeframe
+      const videoLink = getVideoLink(videoUrl, timeframe.startTime)
+      segments.push(
+        <button
+          key={`timeframe-${index}`}
+          className="inline-flex items-center gap-1 rounded bg-blue-100 px-2 py-1 text-xs font-medium text-blue-700 hover:bg-blue-200 transition-colors"
+          onClick={() => {
+            if (videoLink) {
+              window.open(videoLink, '_blank')
+            }
+          }}
+          title={`Jump to ${formatVideoTimestamp(timeframe.startTime)} - ${formatVideoTimestamp(timeframe.endTime)}`}
+        >
+          <Play className="h-3 w-3" />
+          {timeframe.originalText}
+        </button>
+      )
+      
+      lastIndex = explanation.indexOf(timeframe.originalText, lastIndex) + timeframe.originalText.length
+    })
+    
+    // Add remaining text after last timeframe
+    const remainingText = explanation.slice(lastIndex)
+    if (remainingText) {
+      segments.push(remainingText)
+    }
+    
+    return <p className="text-sm">{segments}</p>
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -190,13 +267,13 @@ export function QuestionReviewList({ results, showCorrectAnswers = true }: Quest
                         )}
                       </div>
 
-                      {/* Explanation */}
+                      {/* Explanation with clickable timeframe references */}
                       {result.explanation && showCorrectAnswers && (
                         <Alert className="border-blue-200 bg-blue-50">
                           <AlertDescription className="text-blue-800">
                             <div className="space-y-1">
                               <p className="text-xs font-medium text-blue-700">Explanation:</p>
-                              <p className="text-sm">{result.explanation}</p>
+                              {renderExplanationWithTimeframes(result.explanation, result.videoUrl)}
                             </div>
                           </AlertDescription>
                         </Alert>
@@ -212,3 +289,4 @@ export function QuestionReviewList({ results, showCorrectAnswers = true }: Quest
     </Card>
   )
 }
+         

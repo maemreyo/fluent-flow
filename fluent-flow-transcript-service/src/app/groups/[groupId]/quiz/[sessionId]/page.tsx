@@ -5,23 +5,23 @@ import { AuthPrompt } from '../../../../../components/auth/AuthPrompt'
 import { CompactProgressSidebar } from '../../../../../components/groups/progress/CompactProgressSidebar'
 import { CheckingResultsModal } from '../../../../../components/groups/quiz/CheckingResultsModal'
 import { ExistingResultsModal } from '../../../../../components/groups/quiz/ExistingResultsModal'
+import { QuestionInfoCard } from '../../../../../components/groups/quiz/QuestionInfoCard'
 import { useLoop, useSessionQuestions } from '../../../../../hooks/useLoops'
+import { PermissionManager } from '../../../../../lib/permissions'
 import { ErrorView } from '../../../../questions/[token]/components/ErrorView'
 import { LoadingView } from '../../../../questions/[token]/components/LoadingView'
+import { ExpiredSessionView } from './components/ExpiredSessionView'
+import { FallbackParticipantsSidebar } from './components/FallbackParticipantsSidebar'
 import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
 import { GroupQuizResults } from './components/GroupQuizResults'
-import { QuestionInfoCard } from '../../../../../components/groups/quiz/QuestionInfoCard'
 import { GroupQuizSessionHeader } from './components/GroupQuizSessionHeader'
-import { ExpiredSessionView } from './components/ExpiredSessionView'
-import { NotJoinedView } from './components/NotJoinedView'
-import { FallbackParticipantsSidebar } from './components/FallbackParticipantsSidebar'
 import { MemberWaitingView } from './components/MemberWaitingView'
+import { NotJoinedView } from './components/NotJoinedView'
 import { useGroupQuizWithProgress } from './hooks/useGroupQuizWithProgress'
 import { useGroupQuestionGeneration } from './hooks/useQuestionGeneration'
 import { useQuizStartup } from './hooks/useQuizStartup'
 import { useQuizSync } from './hooks/useQuizSync'
-import { PermissionManager } from '../../../../../lib/permissions'
 
 interface GroupQuizPageProps {
   params: Promise<{
@@ -77,6 +77,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     submitting,
     handleRestart,
     currentSetIndex,
+    currentQuestionIndex, // Add this line
     difficultyGroups,
     results,
     user,
@@ -97,17 +98,17 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
   const loopId = (session as any)?.loop_data?.id
   const { data: loopData } = useLoop(groupId, loopId)
-  
-  // Debug logging for session and loop data
-  console.log('🔍 Session debug:', {
-    sessionExists: !!session,
-    sessionId: session?.id,
-    hasLoopData: !!(session as any)?.loop_data,
-    loopId: loopId,
-    loopDataExists: !!loopData,
-    loopDataId: loopData?.id
-  })
-  
+
+  // // Debug logging for session and loop data
+  // console.log('🔍 Session debug:', {
+  //   sessionExists: !!session,
+  //   sessionId: session?.id,
+  //   hasLoopData: !!(session as any)?.loop_data,
+  //   loopId: loopId,
+  //   loopDataExists: !!loopData,
+  //   loopDataId: loopData?.id
+  // })
+
   // Load existing questions for this session
   const { data: sessionQuestions } = useSessionQuestions(groupId, sessionId)
 
@@ -141,26 +142,29 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   })
 
   // Enhanced handleStartQuiz that includes session synchronization
-  const handleStartQuiz = useCallback(async (shareTokens: Record<string, string>) => {
-    console.log('🚀 Enhanced quiz session start initiated')
-    
-    // First call the original startup logic
-    await originalHandleStartQuiz(shareTokens)
-    
-    // Then broadcast session start to all participants
-    if (permissions.canManageQuiz()) {
-      const success = await broadcastQuizSessionStart()
-      if (success) {
-        console.log('✅ Quiz session start broadcasted to all participants')
-        
-        // Redirect owner after a short delay to allow broadcast
-        setTimeout(() => {
-          console.log('🎯 Owner redirecting to quiz')
-          // The router.push will be handled by the original handleStartQuiz
-        }, 1000)
+  const handleStartQuiz = useCallback(
+    async (shareTokens: Record<string, string>) => {
+      console.log('🚀 Enhanced quiz session start initiated')
+
+      // First call the original startup logic
+      await originalHandleStartQuiz(shareTokens)
+
+      // Then broadcast session start to all participants
+      if (permissions.canManageQuiz()) {
+        const success = await broadcastQuizSessionStart()
+        if (success) {
+          console.log('✅ Quiz session start broadcasted to all participants')
+
+          // Redirect owner after a short delay to allow broadcast
+          setTimeout(() => {
+            console.log('🎯 Owner redirecting to quiz')
+            // The router.push will be handled by the original handleStartQuiz
+          }, 1000)
+        }
       }
-    }
-  }, [originalHandleStartQuiz, permissions.canManageQuiz(), broadcastQuizSessionStart])
+    },
+    [originalHandleStartQuiz, permissions.canManageQuiz(), broadcastQuizSessionStart]
+  )
 
   // Simplified question generation handlers
   const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
@@ -176,7 +180,12 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
     // Check if ready and broadcast
     const newCounts = { ...generatedCounts, [difficulty]: generatedCounts[difficulty] + 1 }
-    if (permissions.canManageQuiz() && newCounts.easy > 0 && newCounts.medium > 0 && newCounts.hard > 0) {
+    if (
+      permissions.canManageQuiz() &&
+      newCounts.easy > 0 &&
+      newCounts.medium > 0 &&
+      newCounts.hard > 0
+    ) {
       broadcastPreparationUpdate('ready-to-start', { questionsReady: true })
     }
   }
@@ -310,7 +319,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                       return (
                         <MemberWaitingView
                           onlineParticipants={onlineParticipants}
-                          sessionTitle={session?.quiz_title || "Group Quiz Session"}
+                          sessionTitle={session?.quiz_title || 'Group Quiz Session'}
                           currentStep={syncState.currentStep}
                         />
                       )
@@ -364,15 +373,20 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           totalSets={difficultyGroups.length}
                           participants={participants}
                           onlineParticipants={onlineParticipants}
-                          timeLimit={groupSettings.enforceQuizTimeLimit ? (groupSettings.defaultQuizTimeLimit || 30) : null}
+                          timeLimit={
+                            groupSettings.enforceQuizTimeLimit
+                              ? groupSettings.defaultQuizTimeLimit || 30
+                              : null
+                          }
                           allowQuestionSkipping={groupSettings.allowSkippingQuestions ?? false}
+                          currentQuestionIndex={currentQuestionIndex} // Add this line
                         />
                       </div>
                     )
 
                   case 'quiz-results':
                     return (
-                      <div className="mx-auto max-w-2xl">
+                      <div className="mx-auto max-w-6xl">
                         <GroupQuizResults
                           results={results}
                           groupId={groupId}
@@ -387,8 +401,11 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
                   default:
                     return (
-                      <div className="flex h-64 items-center justify-center">
-                        <LoadingView message="Initializing quiz..." />
+                      <div className="flex items-center justify-center py-12">
+                        <div className="text-center">
+                          <h3 className="text-lg font-medium text-gray-800">Loading quiz...</h3>
+                          <p className="mt-2 text-gray-600">Please wait while we prepare your session</p>
+                        </div>
                       </div>
                     )
                 }
@@ -400,3 +417,4 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     </>
   )
 }
+    

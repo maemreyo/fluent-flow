@@ -133,12 +133,24 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   // Group results submission
   const submitGroupResultsMutation = useMutation({
-    mutationFn: (resultsData: any) => {
-      // Use the submit-set API instead of group-specific API
-      if (!session?.share_token) {
-        throw new Error('Share token not available')
+    mutationFn: async (resultsData: any) => {
+      // Use auth-utils for proper authentication headers
+      const { getAuthHeaders } = await import('@/lib/supabase/auth-utils')
+      const headers = await getAuthHeaders()
+
+      // Use group-specific submit API instead of share token submit
+      const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/submit`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(resultsData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Failed to submit: ${response.status} ${errorData}`)
       }
-      return submitSet(session.share_token, resultsData)
+
+      return await response.json()
     },
     onSuccess: () => {
       // Just confirm submission success - don't auto-advance
@@ -407,18 +419,9 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     // Submit final results to group leaderboard with proper authentication
     if (isAuthenticated && user?.id) {
       try {
-        // Get the current session for authentication
-        const {
-          data: { session: authSession }
-        } = await supabase!.auth.getSession()
-
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json'
-        }
-
-        if (authSession?.access_token) {
-          headers['Authorization'] = `Bearer ${authSession.access_token}`
-        }
+        // Use auth-utils for proper authentication headers
+        const { getAuthHeaders } = await import('@/lib/supabase/auth-utils')
+        const headers = await getAuthHeaders()
 
         const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/results`, {
           method: 'POST',

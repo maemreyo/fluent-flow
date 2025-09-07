@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Clock } from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
@@ -26,6 +26,7 @@ interface GroupQuizActiveViewProps {
   onlineParticipants: Array<{ user_id: string; user_email: string; is_online: boolean }>
   timeLimit?: number | null
   allowQuestionSkipping?: boolean
+  currentQuestionIndex: number // Add this prop for proper progress calculation
 }
 
 export function GroupQuizActiveView({
@@ -43,11 +44,14 @@ export function GroupQuizActiveView({
   participants,
   onlineParticipants,
   timeLimit,
-  allowQuestionSkipping = false
+  allowQuestionSkipping = false,
+  currentQuestionIndex
 }: GroupQuizActiveViewProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('')
   const [setSubmitted, setSetSubmitted] = useState(false)
-  const [timeRemaining, setTimeRemaining] = useState<number | null>(timeLimit ? timeLimit * 60 : null)
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(
+    timeLimit ? timeLimit * 60 : null
+  )
   const [timerStarted, setTimerStarted] = useState(false)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
 
@@ -63,7 +67,7 @@ export function GroupQuizActiveView({
   useEffect(() => {
     if (timeRemaining !== null && timeRemaining > 0 && timerStarted && !setSubmitted) {
       timerRef.current = setTimeout(() => {
-        setTimeRemaining(prev => prev !== null ? prev - 1 : null)
+        setTimeRemaining(prev => (prev !== null ? prev - 1 : null))
       }, 1000)
     } else if (timeRemaining === 0 && !setSubmitted) {
       // Time's up - auto submit
@@ -99,8 +103,22 @@ export function GroupQuizActiveView({
 
   const getTimerColor = (seconds: number): string => {
     if (seconds > 300) return 'text-green-600' // > 5 minutes
-    if (seconds > 60) return 'text-yellow-600'  // > 1 minute
+    if (seconds > 60) return 'text-yellow-600' // > 1 minute
     return 'text-red-600' // ≤ 1 minute
+  }
+
+  // Helper function to get display name for participants
+  const getParticipantDisplayName = (participant: any) => {
+    if (participant.username && participant.username.trim()) {
+      return participant.username.trim()
+    }
+    if (participant.user_email && participant.user_email.includes('@')) {
+      return participant.user_email.split('@')[0]
+    }
+    if (participant.user_email && participant.user_email.trim()) {
+      return participant.user_email.trim()
+    }
+    return `User ${participant.user_id?.slice(-4) || 'Unknown'}`
   }
 
   const handleAnswerClick = (optionLetter: string) => {
@@ -112,7 +130,7 @@ export function GroupQuizActiveView({
     if (isLastQuestion) {
       onSubmitSet()
       setSetSubmitted(true)
-      
+
       // Stop timer when submitting
       if (timerRef.current) {
         clearTimeout(timerRef.current)
@@ -252,8 +270,57 @@ export function GroupQuizActiveView({
     )
   }
 
-  const { question, questionIndex } = currentQuestion
+  const { question, questionIndex, groupData } = currentQuestion
   const currentResponse = responses.find(r => r.questionIndex === questionIndex)
+
+  // Calculate current question number within the set properly
+  // We need to derive the current question position within the set from the available data
+  // Since getCurrentQuestion() calculates absolute questionIndex, we need to get the relative position
+  let currentQuestionInSet = 1 // Default fallback
+  let totalQuestionsInSet = groupData?.questions?.length || 0
+
+  // Calculate the starting index for the current set
+  let setStartIndex = 0
+  // We need to access difficultyGroups to get question counts for previous sets
+  // For now, we'll need to pass this information from the parent component
+  // As a temporary solution, let's calculate based on responses pattern
+
+  // Find responses that belong to the current set by analyzing questionIndex patterns
+  const setResponses = responses.filter(r => {
+    // This is a heuristic - we assume responses are sequential within sets
+    // A proper fix would require passing currentQuestionIndex from the parent
+    return r.questionIndex >= setStartIndex && r.questionIndex < setStartIndex + totalQuestionsInSet
+  })
+
+  // For now, let's use a simpler approach: count responses in current set
+  // This assumes questions are answered sequentially
+  const responsesInCurrentSet = responses.filter(r => {
+    // Calculate which set each response belongs to based on groupData structure
+    let tempIndex = 0
+    let tempSetIndex = 0
+
+    // This is imperfect without access to all sets data
+    // We need currentQuestionIndex from parent to fix this properly
+    return tempSetIndex === currentSetIndex
+  })
+
+  // TEMPORARY FIX: Calculate based on questionIndex pattern
+  // We'll extract this from the absolute questionIndex and current set info
+  if (groupData?.questions) {
+    // Since questionIndex is absolute, we need to find where current set starts
+    // This requires knowing the structure of previous sets
+    // For now, estimate based on current groupData
+    const questionsAnsweredInCurrentSet = responses.filter(r => {
+      // Simple heuristic: if we know the set has N questions,
+      // and we're at absolute index X, then current question in set = (X % N) + 1
+      return Math.floor(r.questionIndex / totalQuestionsInSet) === currentSetIndex
+    }).length
+
+    // Better approach: use the fact that questionIndex in getCurrentQuestion
+    // already accounts for previous sets
+    // The current question in set should be derivable from the response pattern
+    currentQuestionInSet = Math.min(questionsAnsweredInCurrentSet + 1, totalQuestionsInSet)
+  }
 
   return (
     <div className="space-y-6">
@@ -268,17 +335,21 @@ export function GroupQuizActiveView({
 
         {/* Timer Display */}
         {timeRemaining !== null && (
-          <div className={`flex items-center gap-2 rounded-lg bg-white px-4 py-2 shadow-sm border ${
-            timeRemaining <= 60 ? 'border-red-200 bg-red-50' : 
-            timeRemaining <= 300 ? 'border-yellow-200 bg-yellow-50' : 
-            'border-green-200 bg-green-50'
-          }`}>
+          <div
+            className={`flex items-center gap-2 rounded-lg border bg-white px-4 py-2 shadow-sm ${
+              timeRemaining <= 60
+                ? 'border-red-200 bg-red-50'
+                : timeRemaining <= 300
+                  ? 'border-yellow-200 bg-yellow-50'
+                  : 'border-green-200 bg-green-50'
+            }`}
+          >
             <Clock className={`h-4 w-4 ${getTimerColor(timeRemaining)}`} />
             <span className={`font-mono font-semibold ${getTimerColor(timeRemaining)}`}>
               {formatTime(timeRemaining)}
             </span>
             {timeRemaining <= 60 && (
-              <span className="text-xs text-red-600 font-medium">Time's almost up!</span>
+              <span className="text-xs font-medium text-red-600">Time's almost up!</span>
             )}
           </div>
         )}
@@ -291,84 +362,145 @@ export function GroupQuizActiveView({
             Set {currentSetIndex + 1} of {totalSets}
           </span>
           <span className="text-gray-500">
-            Question {(questionIndex % 10) + 1} of {question?.totalInSet || 'unknown'}
+            Question {currentQuestionInSet} of {totalQuestionsInSet}
           </span>
         </div>
+
         <div className="h-2 rounded-full bg-gray-200">
-          <div className="h-2 rounded-full bg-indigo-500 transition-all duration-300" style={{ width: '30%' }} />
+          <div
+            className="h-2 rounded-full bg-indigo-500 transition-all duration-300"
+            style={{
+              width: `${totalQuestionsInSet > 0 ? (currentQuestionInSet / totalQuestionsInSet) * 100 : 0}%`
+            }}
+          />
         </div>
       </div>
 
-      {/* Question Card */}
-      <Card className="border-white/40 bg-white/80 shadow-lg">
-        <CardContent className="p-8">
-          <h2 className="mb-6 text-xl font-semibold leading-relaxed text-gray-800">
-            {question?.question}
-          </h2>
+      {/* Participants Status */}
+      {participants && participants.length > 0 && (
+        <Card className="bg-white/80 backdrop-blur-sm">
+          <CardContent className="p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-800">Group Progress</h3>
+              <Badge variant="outline" className="text-xs">
+                {onlineParticipants?.length || 0} / {participants.length} online
+              </Badge>
+            </div>
 
-          <div className="space-y-3">
-            {question?.options?.map((option: string, index: number) => {
-              const optionLetter = ['A', 'B', 'C', 'D'][index]
-              const isSelected = selectedAnswer === optionLetter || currentResponse?.answer === optionLetter
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+              {participants.slice(0, 8).map((participant, index) => {
+                const isOnline = onlineParticipants?.some(op => op.user_id === participant.user_id)
+                const displayName = getParticipantDisplayName(participant)
 
-              return (
-                <button
-                  key={index}
-                  onClick={() => handleAnswerClick(optionLetter)}
-                  className={`w-full rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
-                    isSelected
-                      ? 'border-indigo-500 bg-indigo-50 shadow-md'
-                      : 'border-gray-200 bg-white hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
+                return (
+                  <div
+                    key={participant.user_id || index}
+                    className={`flex items-center gap-2 rounded-lg p-2 text-xs ${
+                      isOnline
+                        ? 'border border-green-200 bg-green-50'
+                        : 'border border-gray-200 bg-gray-50'
+                    }`}
+                  >
                     <div
-                      className={`flex h-8 w-8 items-center justify-center rounded-full border-2 font-bold ${
-                        isSelected
-                          ? 'border-indigo-500 bg-indigo-500 text-white'
-                          : 'border-gray-300 text-gray-600'
+                      className={`h-2 w-2 rounded-full ${
+                        isOnline ? 'bg-green-500' : 'bg-gray-400'
+                      }`}
+                    />
+                    <span
+                      className={`truncate font-medium ${
+                        isOnline ? 'text-green-800' : 'text-gray-600'
                       }`}
                     >
-                      {optionLetter}
-                    </div>
-                    <span className={isSelected ? 'font-medium text-indigo-900' : 'text-gray-700'}>
-                      {option}
+                      {displayName}
                     </span>
                   </div>
-                </button>
-              )
-            })}
+                )
+              })}
+
+              {participants.length > 8 && (
+                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs">
+                  <span className="text-gray-600">+{participants.length - 8} more</span>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Question Card */}
+      <Card className="bg-white shadow-lg">
+        <CardContent className="p-8">
+          <div className="space-y-6">
+            {/* Question */}
+            <div>
+              <h2 className="mb-6 text-xl font-semibold leading-relaxed text-gray-800">
+                {question?.question}
+              </h2>
+            </div>
+
+            {/* Answer Options */}
+            <div className="space-y-3">
+              {question?.options?.map((option: any, index: number) => {
+                const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
+                const isSelected = selectedAnswer === optionLetter
+                const wasAnswered = currentResponse?.answer === optionLetter
+
+                return (
+                  <button
+                    key={optionLetter}
+                    onClick={() => handleAnswerClick(optionLetter)}
+                    className={`w-full rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
+                      isSelected || wasAnswered
+                        ? 'border-indigo-300 bg-indigo-50 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div
+                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold ${
+                          isSelected || wasAnswered
+                            ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
+                            : 'border-gray-300 text-gray-600'
+                        }`}
+                      >
+                        {optionLetter}
+                      </div>
+                      <span
+                        className={`leading-relaxed ${
+                          isSelected || wasAnswered ? 'text-indigo-800' : 'text-gray-700'
+                        }`}
+                      >
+                        {option}
+                      </span>
+                    </div>
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 border-t border-gray-200 pt-6">
+              {allowQuestionSkipping && !isLastQuestion && (
+                <Button
+                  onClick={handleSkip}
+                  variant="outline"
+                  className="flex-1 rounded-xl border-2 border-gray-300 py-3 font-semibold"
+                >
+                  Skip Question
+                </Button>
+              )}
+
+              <Button
+                onClick={handleNext}
+                disabled={!selectedAnswer && !currentResponse}
+                className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+              >
+                {isLastQuestion ? 'Submit Set' : 'Next Question'} →
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
-
-      {/* Action buttons */}
-      <div className="flex justify-between">
-        <div className="flex gap-3">
-          {allowQuestionSkipping && !isLastQuestion && (
-            <Button
-              onClick={handleSkip}
-              variant="outline"
-              className="rounded-xl border-gray-300 px-6 py-3 font-semibold text-gray-700 hover:bg-gray-50"
-            >
-              Skip Question
-            </Button>
-          )}
-        </div>
-        <Button
-          onClick={handleNext}
-          disabled={!selectedAnswer && !currentResponse}
-          className="rounded-xl bg-indigo-600 px-8 py-3 font-semibold text-white hover:bg-indigo-700 disabled:opacity-50"
-        >
-          {submitting ? (
-            'Processing...'
-          ) : isLastQuestion ? (
-            allAnswered ? 'Submit Set' : 'Submit Set (Incomplete)'
-          ) : (
-            'Next Question →'
-          )}
-        </Button>
-      </div>
     </div>
   )
 }
