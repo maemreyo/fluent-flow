@@ -11,6 +11,46 @@ export interface Group {
   member_count: number
   role: string
   created_at: string
+  language?: string
+  level?: string
+  max_members?: number
+  tags?: string[]
+  settings?: GroupSettings
+}
+
+export interface GroupSettings {
+  // Role Management Settings
+  allowMemberInvitations?: boolean
+  requireApprovalForJoining?: boolean
+  maxAdminCount?: number
+  adminCanManageMembers?: boolean
+  adminCanDeleteSessions?: boolean
+  
+  // Session Control Settings
+  onlyAdminsCanCreateSessions?: boolean
+  onlyAdminsCanStartQuiz?: boolean
+  maxConcurrentSessions?: number
+  requireSessionApproval?: boolean
+  allowQuizRetakes?: boolean
+  
+  // Enhanced Quiz Settings
+  shuffleQuestions?: boolean
+  shuffleAnswers?: boolean
+  showCorrectAnswers?: boolean
+  defaultQuizTimeLimit?: number
+  enforceQuizTimeLimit?: boolean
+  allowSkippingQuestions?: boolean
+}
+
+export interface UpdateGroupData {
+  name?: string
+  description?: string
+  is_private?: boolean
+  max_members?: number
+  language?: string
+  level?: string
+  tags?: string[]
+  settings?: GroupSettings
 }
 
 export interface GroupInvitation {
@@ -346,6 +386,75 @@ export class GroupsService {
       share_token: updatedSession.share_token,
       participant_count: 0,
       questions_count: 0
+    }
+  }
+
+  async getGroup(groupId: string): Promise<Group> {
+    const response = await fetch(`${this.baseUrl}/api/groups/${groupId}`, {
+      headers: await getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      if (response.status === 404) {
+        throw new Error('Group not found')
+      }
+      if (response.status === 403) {
+        throw new Error('Access denied')
+      }
+      throw new Error(error.error || `Failed to fetch group (${response.status})`)
+    }
+
+    const data = await response.json()
+    return data.group
+  }
+
+  async updateGroup(groupId: string, updates: UpdateGroupData): Promise<Group> {
+    const response = await fetch(`${this.baseUrl}/api/groups/${groupId}`, {
+      method: 'PUT',
+      headers: {
+        ...await getAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updates)
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      if (response.status === 401) {
+        throw new Error('Authentication required')
+      }
+      if (response.status === 403) {
+        throw new Error('You do not have permission to modify this group')
+      }
+      if (response.status === 404) {
+        throw new Error('Group not found')
+      }
+      throw new Error(error.error || `Failed to update group (${response.status})`)
+    }
+
+    const data = await response.json()
+    return data.group
+  }
+
+  async deleteGroup(groupId: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/api/groups/${groupId}`, {
+      method: 'DELETE',
+      headers: await getAuthHeaders()
+    })
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}))
+      if (response.status === 401) {
+        throw new Error('Authentication required')
+      }
+      if (response.status === 403) {
+        throw new Error('Only group owners can delete groups')
+      }
+      if (response.status === 404) {
+        throw new Error('Group not found')
+      }
+      throw new Error(error.error || `Failed to delete group (${response.status})`)
     }
   }
 }

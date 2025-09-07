@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { BookOpen, Calendar, Clock, X } from 'lucide-react'
 import { useLoops } from '@/hooks/useLoops'
 import { useGroupSessions } from '../../hooks/useGroupSessions'
@@ -7,6 +7,7 @@ interface CreateSessionModalProps {
   groupId: string
   onClose: () => void
   onSuccess?: () => void
+  selectedLoopId?: string // Optional pre-selected loop from LoopsTab
 }
 
 interface SessionFormData {
@@ -23,7 +24,8 @@ interface SessionFormData {
 export default function CreateSessionModal({
   groupId,
   onClose,
-  onSuccess
+  onSuccess,
+  selectedLoopId
 }: CreateSessionModalProps) {
   const { createSession } = useGroupSessions(groupId)
   const [loading, setLoading] = useState(false)
@@ -39,9 +41,24 @@ export default function CreateSessionModal({
     sessionType: 'instant',
     notifyMembers: true,
     shareToken: '',
-    importMethod: 'none',
-    selectedLoop: undefined
+    importMethod: selectedLoopId ? 'loop' : 'none',
+    selectedLoop: selectedLoopId
   })
+
+  // Auto-fill title when selectedLoopId is provided and loops are loaded
+  useEffect(() => {
+    if (selectedLoopId && loops.length > 0) {
+      const selectedLoop = loops.find((loop: any) => loop.id === selectedLoopId)
+      if (selectedLoop && !formData.title) {
+        setFormData(prev => ({
+          ...prev,
+          title: `${selectedLoop.videoTitle} - Practice Session`,
+          description: `Practice session for ${selectedLoop.videoTitle}`
+        }))
+        console.log('🎯 Auto-filled session title from selected loop:', selectedLoop.videoTitle)
+      }
+    }
+  }, [selectedLoopId, loops, formData.title])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -90,8 +107,16 @@ export default function CreateSessionModal({
               videoTitle: selectedLoopData.videoTitle,
               videoUrl: selectedLoopData.videoUrl,
               startTime: selectedLoopData.startTime,
-              endTime: selectedLoopData.endTime
+              endTime: selectedLoopData.endTime,
+              transcript: selectedLoopData.transcript || '',
+              segments: selectedLoopData.segments || []
             }
+            console.log('🎬 Creating session with loop data:', {
+              loopId: selectedLoopData.id,
+              hasTranscript: !!selectedLoopData.transcript,
+              transcriptLength: selectedLoopData.transcript?.length || 0,
+              segmentsCount: selectedLoopData.segments?.length || 0
+            })
             // }
           } catch (questionError) {
             console.error('Failed to generate questions from loop:', questionError)
@@ -299,25 +324,53 @@ export default function CreateSessionModal({
           {formData.importMethod === 'loop' && (
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Select Practice Loop *
+                Practice Loop {selectedLoopId ? '(Pre-selected)' : '*'}
               </label>
-              <select
-                required
-                value={formData.selectedLoop || ''}
-                onChange={e => setFormData(prev => ({ ...prev, selectedLoop: e.target.value }))}
-                className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 transition-all focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
-              >
-                <option value="">Choose a practice loop...</option>
-                {loops.map((loop: any) => (
-                  <option key={loop.id} value={loop.id}>
-                    {loop.videoTitle} ({Math.floor((loop.endTime - loop.startTime) / 60)}m{' '}
-                    {((loop.endTime - loop.startTime) % 60).toFixed(0)}s)
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1 text-xs text-gray-500">
-                Questions will be automatically generated from the selected loop transcript
-              </p>
+              {selectedLoopId ? (
+                // Show selected loop info (read-only)
+                <div className="rounded-xl border-2 border-indigo-200 bg-indigo-50 px-4 py-3">
+                  <div className="flex items-center gap-2 text-indigo-800">
+                    <BookOpen className="h-4 w-4" />
+                    <span className="font-medium">
+                      {loops.find((loop: any) => loop.id === selectedLoopId)?.videoTitle || 'Selected Loop'}
+                    </span>
+                  </div>
+                  {(() => {
+                    const loop = loops.find((loop: any) => loop.id === selectedLoopId)
+                    if (loop) {
+                      const duration = Math.floor((loop.endTime - loop.startTime) / 60)
+                      const seconds = ((loop.endTime - loop.startTime) % 60).toFixed(0)
+                      return (
+                        <p className="mt-1 text-sm text-indigo-600">
+                          Duration: {duration}m {seconds}s • Auto-selected from loops tab
+                        </p>
+                      )
+                    }
+                    return null
+                  })()}
+                </div>
+              ) : (
+                // Show dropdown for manual selection
+                <>
+                  <select
+                    required
+                    value={formData.selectedLoop || ''}
+                    onChange={e => setFormData(prev => ({ ...prev, selectedLoop: e.target.value }))}
+                    className="w-full rounded-xl border-2 border-gray-200 px-4 py-3 transition-all focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+                  >
+                    <option value="">Choose a practice loop...</option>
+                    {loops.map((loop: any) => (
+                      <option key={loop.id} value={loop.id}>
+                        {loop.videoTitle} ({Math.floor((loop.endTime - loop.startTime) / 60)}m{' '}
+                        {((loop.endTime - loop.startTime) % 60).toFixed(0)}s)
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1 text-xs text-gray-500">
+                    Questions will be automatically generated from the selected loop transcript
+                  </p>
+                </>
+              )}
             </div>
           )}
 

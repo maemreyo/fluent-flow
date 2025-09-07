@@ -109,7 +109,7 @@ export async function PUT(
 
     const { groupId } = await params
     const body = await request.json()
-    const { name, description, is_private, max_members, language, level, tags } = body
+    const { name, description, is_private, max_members, language, level, tags, settings } = body
 
     // Check if user is owner/admin
     const { data: membership, error: memberError } = await supabase
@@ -135,6 +135,7 @@ export async function PUT(
     if (language !== undefined) updateData.language = language
     if (level !== undefined) updateData.level = level
     if (tags !== undefined) updateData.tags = tags
+    if (settings !== undefined) updateData.settings = settings
 
     // Update group
     const { data: updatedGroup, error: updateError } = await supabase

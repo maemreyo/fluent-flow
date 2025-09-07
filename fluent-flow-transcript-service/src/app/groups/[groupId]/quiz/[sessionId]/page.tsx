@@ -98,6 +98,16 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   const loopId = (session as any)?.loop_data?.id
   const { data: loopData } = useLoop(groupId, loopId)
   
+  // Debug logging for session and loop data
+  console.log('🔍 Session debug:', {
+    sessionExists: !!session,
+    sessionId: session?.id,
+    hasLoopData: !!(session as any)?.loop_data,
+    loopId: loopId,
+    loopDataExists: !!loopData,
+    loopDataId: loopData?.id
+  })
+  
   // Load existing questions for this session
   const { data: sessionQuestions } = useSessionQuestions(groupId, sessionId)
 
@@ -189,6 +199,13 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     distribution: { easy: number; medium: number; hard: number },
     presetInfo: { id: string; name: string }
   ) => {
+    console.log('📋 Page handleGenerateFromPreset called with:', {
+      distribution,
+      presetInfo,
+      loopDataExists: !!loopData,
+      loopDataId: loopData?.id
+    })
+
     // Broadcast preset selection and generation start
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('question-generation', {

@@ -264,7 +264,14 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     distribution: { easy: number; medium: number; hard: number },
     presetInfo: { id: string; name: string }
   ) => {
+    console.log('🎯 handleGenerateFromPreset called with:', {
+      loopData: loopData ? `Loop ID: ${loopData.id}, hasTranscript: ${!!loopData.transcript}` : 'NULL/UNDEFINED',
+      distribution,
+      presetInfo
+    })
+
     if (!loopData) {
+      console.error('❌ No loop data available for question generation')
       toast.error('No loop data available for question generation')
       return
     }
@@ -321,6 +328,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         }
       }
 
+      console.log(`🚀 Starting ${promises.length} question generation batches`)
       await Promise.all(promises)
 
       // Set current preset after successful generation

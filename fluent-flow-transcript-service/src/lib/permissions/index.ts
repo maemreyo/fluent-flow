@@ -75,6 +75,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'preset.select'
   ],
   member: [
+    'session.create', // Members can create sessions by default
     'quiz.start',
     'preset.select'
   ],

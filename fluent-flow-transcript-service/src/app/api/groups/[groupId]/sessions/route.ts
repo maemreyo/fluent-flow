@@ -179,7 +179,6 @@ export async function POST(
         study_groups!inner(
           id,
           name,
-          user_role:role,
           created_by,
           settings
         )
@@ -195,7 +194,7 @@ export async function POST(
     // Use PermissionManager to check session creation permission
     const group = {
       ...membershipData.study_groups,
-      user_role: membershipData.role
+      user_role: membershipData.role  // This is the user's role from study_group_members
     }
     const permissions = new PermissionManager(user, group, null)
 

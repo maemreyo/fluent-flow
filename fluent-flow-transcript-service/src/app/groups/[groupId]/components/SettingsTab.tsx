@@ -4,10 +4,10 @@ import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Separator } from '@/components/ui/separator'
-import { useRouter } from 'next/navigation'
-import { toast } from 'sonner'
 import { useAuth } from '../../../../contexts/AuthContext'
 import { PermissionManager } from '../../../../lib/permissions'
+import { useGroupSettings } from '../../../../hooks/useGroupSettings'
+import { UpdateGroupData } from '../../../../lib/services/groups-service'
 
 import { BasicInfoForm } from './settings/BasicInfoForm'
 import { LearningSettingsForm } from './settings/LearningSettingsForm'
@@ -56,9 +56,8 @@ interface SettingsTabProps {
 }
 
 export function SettingsTab({ group }: SettingsTabProps) {
-  const router = useRouter()
   const { user } = useAuth()
-  const [isSaving, setIsSaving] = useState(false)
+  const { saveGroupSettings, deleteGroup, isSaving, isDeleting } = useGroupSettings()
   
   // Centralized permission management
   const permissions = new PermissionManager(user, group, null)
@@ -126,75 +125,47 @@ export function SettingsTab({ group }: SettingsTabProps) {
   }
 
   const handleSave = async () => {
-    setIsSaving(true)
-    try {
-      const response = await fetch(`/api/groups/${group.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name,
-          description: formData.description,
-          is_private: formData.isPrivate,
-          max_members: formData.maxMembers,
-          language: formData.language,
-          level: formData.level,
-          tags: formData.tags,
-          settings: {
-            // Role Management Settings
-            allowMemberInvitations: formData.allowMemberInvitations,
-            requireApprovalForJoining: formData.requireApprovalForJoining,
-            maxAdminCount: formData.maxAdminCount,
-            adminCanManageMembers: formData.adminCanManageMembers,
-            adminCanDeleteSessions: formData.adminCanDeleteSessions,
-            
-            // Session Control Settings
-            onlyAdminsCanCreateSessions: formData.onlyAdminsCanCreateSessions,
-            maxConcurrentSessions: formData.maxConcurrentSessions,
-            requireSessionApproval: formData.requireSessionApproval,
-            allowQuizRetakes: formData.allowQuizRetakes,
-            
-            // Enhanced Quiz Settings
-            shuffleQuestions: formData.shuffleQuestions,
-            shuffleAnswers: formData.shuffleAnswers,
-            showCorrectAnswers: formData.showCorrectAnswers,
-            defaultQuizTimeLimit: formData.defaultQuizTimeLimit,
-            enforceQuizTimeLimit: formData.enforceQuizTimeLimit,
-            allowSkippingQuestions: formData.allowSkippingQuestions
-          }
-        })
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to save settings')
+    if (!group) return
+
+    const updateData: UpdateGroupData = {
+      name: formData.name,
+      description: formData.description,
+      is_private: formData.isPrivate,
+      max_members: formData.maxMembers,
+      language: formData.language,
+      level: formData.level,
+      tags: formData.tags,
+      settings: {
+        // Role Management Settings
+        allowMemberInvitations: formData.allowMemberInvitations,
+        requireApprovalForJoining: formData.requireApprovalForJoining,
+        maxAdminCount: formData.maxAdminCount,
+        adminCanManageMembers: formData.adminCanManageMembers,
+        adminCanDeleteSessions: formData.adminCanDeleteSessions,
+        
+        // Session Control Settings
+        onlyAdminsCanCreateSessions: formData.onlyAdminsCanCreateSessions,
+        onlyAdminsCanStartQuiz: formData.onlyAdminsCanStartQuiz,
+        maxConcurrentSessions: formData.maxConcurrentSessions,
+        requireSessionApproval: formData.requireSessionApproval,
+        allowQuizRetakes: formData.allowQuizRetakes,
+        
+        // Enhanced Quiz Settings
+        shuffleQuestions: formData.shuffleQuestions,
+        shuffleAnswers: formData.shuffleAnswers,
+        showCorrectAnswers: formData.showCorrectAnswers,
+        defaultQuizTimeLimit: formData.defaultQuizTimeLimit,
+        enforceQuizTimeLimit: formData.enforceQuizTimeLimit,
+        allowSkippingQuestions: formData.allowSkippingQuestions
       }
-      
-      toast.success('Group settings updated successfully')
-    } catch (error) {
-      toast.error('Failed to save settings. Please try again.')
-      console.error('Error saving group settings:', error)
-    } finally {
-      setIsSaving(false)
     }
+
+    await saveGroupSettings(group.id, updateData)
   }
 
   const handleDeleteGroup = async () => {
-    try {
-      const response = await fetch(`/api/groups/${group.id}`, {
-        method: 'DELETE'
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to delete group')
-      }
-      
-      toast.success('Group deleted successfully')
-      router.push('/groups')
-    } catch (error) {
-      toast.error('Failed to delete group. Please try again.')
-      console.error('Error deleting group:', error)
-    }
+    if (!group) return
+    await deleteGroup(group.id)
   }
 
   const hasChanges = JSON.stringify(formData) !== JSON.stringify({

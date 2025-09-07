@@ -8,6 +8,7 @@ import CreateSessionModal from '../../../components/sessions/CreateSessionModal'
 import SessionsTab from '../../../components/sessions/SessionsTab'
 import { useAuth } from '../../../contexts/AuthContext'
 import { PermissionManager } from '../../../lib/permissions'
+import { SessionRedirectManager } from '../../../lib/supabase/auth-utils'
 import { GroupHeader } from './components/GroupHeader'
 import { LoopsTab } from './components/LoopsTab'
 import { MembersTab } from './components/MembersTab'
@@ -35,6 +36,7 @@ export default function GroupPage({
     (initialTab as GroupTab) || 'overview'
   )
   const [showCreateSession, setShowCreateSession] = useState(false)
+  const [selectedLoopId, setSelectedLoopId] = useState<string | undefined>(undefined)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
   const { user, isAuthenticated, isLoading: authLoading } = useAuth()
@@ -81,9 +83,36 @@ export default function GroupPage({
     window.history.replaceState(null, '', `/groups/${groupId}${query}`)
   }
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = async () => {
     setShowAuthPrompt(false)
-    invalidateGroup()
+    
+    // Check for stored session redirect destination
+    const destination = SessionRedirectManager.getAndClearIntendedDestination()
+    
+    if (destination?.type === 'session' && destination.groupId === groupId) {
+      try {
+        // Auto-join the group first
+        const joinResult = await SessionRedirectManager.autoJoinGroupById(groupId)
+        
+        if (joinResult.success || joinResult.error?.includes('Already a member')) {
+          // Redirect to the intended session after successful join/already member
+          setTimeout(() => {
+            router.push(`/groups/${destination.groupId}/quiz/${destination.sessionId}`)
+          }, 500) // Small delay to ensure join is processed
+          return
+        } else {
+          console.warn('Auto-join failed:', joinResult.error)
+          // Still invalidate group to refresh membership status
+          invalidateGroup()
+        }
+      } catch (error) {
+        console.error('Error in seamless auth flow:', error)
+        invalidateGroup()
+      }
+    } else {
+      // Normal flow - just refresh group data
+      invalidateGroup()
+    }
   }
 
   const handleCloseAuthPrompt = () => {
@@ -91,8 +120,15 @@ export default function GroupPage({
     router.push('/groups')
   }
 
+  const handleCreateSession = (loopId?: string) => {
+    console.log('🚀 Opening create session modal with loop:', loopId)
+    setSelectedLoopId(loopId)
+    setShowCreateSession(true)
+  }
+
   const handleCreateSessionSuccess = () => {
     setShowCreateSession(false)
+    setSelectedLoopId(undefined) // Reset selected loop
     invalidateGroup()
   }
 
@@ -175,7 +211,7 @@ export default function GroupPage({
             group={group as any}
             canManage={!!canManage}
             canCreateSessions={!!canCreateSessions}
-            onNewSession={() => setShowCreateSession(true)}
+            onNewSession={() => handleCreateSession()}
           />
           <StatCards group={group as any} />
           <TabNavigation
@@ -189,7 +225,7 @@ export default function GroupPage({
               <OverviewTab
                 sessions={(group as any).recent_sessions || []}
                 canManage={!!canManage}
-                onNewSession={() => setShowCreateSession(true)}
+                onNewSession={() => handleCreateSession()}
                 groupId={groupId}
               />
             )}
@@ -213,7 +249,7 @@ export default function GroupPage({
                 groupId={groupId}
                 canManage={!!canManage}
                 canDeleteSessions={!!canDeleteSessions}
-                onCreateSession={() => setShowCreateSession(true)}
+                onCreateSession={handleCreateSession}
                 highlightSessionId={highlightSessionId}
               />
             )}
@@ -221,7 +257,7 @@ export default function GroupPage({
               <LoopsTab
                 groupId={groupId}
                 canManage={!!canManage}
-                onCreateSession={() => setShowCreateSession(true)}
+                onCreateSession={handleCreateSession}
               />
             )}
             {activeTab === 'settings' && canManage && (
@@ -237,6 +273,7 @@ export default function GroupPage({
             groupId={groupId}
             onClose={() => setShowCreateSession(false)}
             onSuccess={handleCreateSessionSuccess}
+            selectedLoopId={selectedLoopId}
           />
         )}
       </div>

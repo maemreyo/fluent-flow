@@ -9,7 +9,7 @@ import { LoopCard } from '@/components/loops/LoopCard'
 interface LoopsTabProps {
   groupId: string
   canManage: boolean
-  onCreateSession?: () => void
+  onCreateSession?: (selectedLoopId?: string) => void
 }
 
 export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps) {
@@ -30,12 +30,11 @@ export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps)
 
   const handlePracticeLoop = async (loop: any) => {
     try {
-      console.log('Starting practice session for loop:', loop.id)
+      console.log('🎬 Starting practice session for loop:', loop.id, loop.videoTitle)
       
-      // Just create session and navigate - don't generate questions here
-      // Questions will be generated later when owner decides to in the session
+      // Pass the selected loop ID to auto-populate the session modal
       if (onCreateSession) {
-        onCreateSession()
+        onCreateSession(loop.id)
       }
       
     } catch (error) {
