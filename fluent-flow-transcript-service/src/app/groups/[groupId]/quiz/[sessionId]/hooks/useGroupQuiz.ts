@@ -19,6 +19,7 @@ type AppState =
   | 'loading'
   | 'preset-selection'
   | 'question-info'
+  | 'question-preview' // Add this new state
   | 'quiz-active'
   | 'quiz-results'
   | 'error'
@@ -305,7 +306,15 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   )
 
   const handleQuestionInfoStart = () => {
+    setAppState('question-preview')
+  }
+
+  const handleStartQuizFromPreview = () => {
     setAppState('quiz-active')
+  }
+
+  const handleGoBackFromPreview = () => {
+    setAppState('question-info')
   }
 
   const submitCurrentSet = async () => {
@@ -559,6 +568,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     handlePresetSelect,
     getAvailableQuestionCounts,
     handleQuestionInfoStart,
+    handleStartQuizFromPreview,
+    handleGoBackFromPreview,
     getCurrentQuestion,
     responses,
     handleAnswerSelect,
@@ -574,6 +585,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     showTranscript,
     setShowTranscript,
     currentSetIndex,
+    currentQuestionIndex,
     difficultyGroups,
     results,
     authLoading,

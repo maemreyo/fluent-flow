@@ -107,20 +107,6 @@ export function GroupQuizActiveView({
     return 'text-red-600' // ≤ 1 minute
   }
 
-  // Helper function to get display name for participants
-  const getParticipantDisplayName = (participant: any) => {
-    if (participant.username && participant.username.trim()) {
-      return participant.username.trim()
-    }
-    if (participant.user_email && participant.user_email.includes('@')) {
-      return participant.user_email.split('@')[0]
-    }
-    if (participant.user_email && participant.user_email.trim()) {
-      return participant.user_email.trim()
-    }
-    return `User ${participant.user_id?.slice(-4) || 'Unknown'}`
-  }
-
   const handleAnswerClick = (optionLetter: string) => {
     setSelectedAnswer(optionLetter)
     onAnswerSelect(currentQuestion?.questionIndex || 0, optionLetter)
@@ -274,53 +260,9 @@ export function GroupQuizActiveView({
   const currentResponse = responses.find(r => r.questionIndex === questionIndex)
 
   // Calculate current question number within the set properly
-  // We need to derive the current question position within the set from the available data
-  // Since getCurrentQuestion() calculates absolute questionIndex, we need to get the relative position
-  let currentQuestionInSet = 1 // Default fallback
-  let totalQuestionsInSet = groupData?.questions?.length || 0
-
-  // Calculate the starting index for the current set
-  let setStartIndex = 0
-  // We need to access difficultyGroups to get question counts for previous sets
-  // For now, we'll need to pass this information from the parent component
-  // As a temporary solution, let's calculate based on responses pattern
-
-  // Find responses that belong to the current set by analyzing questionIndex patterns
-  const setResponses = responses.filter(r => {
-    // This is a heuristic - we assume responses are sequential within sets
-    // A proper fix would require passing currentQuestionIndex from the parent
-    return r.questionIndex >= setStartIndex && r.questionIndex < setStartIndex + totalQuestionsInSet
-  })
-
-  // For now, let's use a simpler approach: count responses in current set
-  // This assumes questions are answered sequentially
-  const responsesInCurrentSet = responses.filter(r => {
-    // Calculate which set each response belongs to based on groupData structure
-    let tempIndex = 0
-    let tempSetIndex = 0
-
-    // This is imperfect without access to all sets data
-    // We need currentQuestionIndex from parent to fix this properly
-    return tempSetIndex === currentSetIndex
-  })
-
-  // TEMPORARY FIX: Calculate based on questionIndex pattern
-  // We'll extract this from the absolute questionIndex and current set info
-  if (groupData?.questions) {
-    // Since questionIndex is absolute, we need to find where current set starts
-    // This requires knowing the structure of previous sets
-    // For now, estimate based on current groupData
-    const questionsAnsweredInCurrentSet = responses.filter(r => {
-      // Simple heuristic: if we know the set has N questions,
-      // and we're at absolute index X, then current question in set = (X % N) + 1
-      return Math.floor(r.questionIndex / totalQuestionsInSet) === currentSetIndex
-    }).length
-
-    // Better approach: use the fact that questionIndex in getCurrentQuestion
-    // already accounts for previous sets
-    // The current question in set should be derivable from the response pattern
-    currentQuestionInSet = Math.min(questionsAnsweredInCurrentSet + 1, totalQuestionsInSet)
-  }
+  // currentQuestionIndex is 0-based within the current set, so add 1 for display
+  const currentQuestionInSet = currentQuestionIndex + 1
+  const totalQuestionsInSet = groupData?.questions?.length || 0
 
   return (
     <div className="space-y-6">
@@ -375,57 +317,6 @@ export function GroupQuizActiveView({
           />
         </div>
       </div>
-
-      {/* Participants Status */}
-      {participants && participants.length > 0 && (
-        <Card className="bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-800">Group Progress</h3>
-              <Badge variant="outline" className="text-xs">
-                {onlineParticipants?.length || 0} / {participants.length} online
-              </Badge>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
-              {participants.slice(0, 8).map((participant, index) => {
-                const isOnline = onlineParticipants?.some(op => op.user_id === participant.user_id)
-                const displayName = getParticipantDisplayName(participant)
-
-                return (
-                  <div
-                    key={participant.user_id || index}
-                    className={`flex items-center gap-2 rounded-lg p-2 text-xs ${
-                      isOnline
-                        ? 'border border-green-200 bg-green-50'
-                        : 'border border-gray-200 bg-gray-50'
-                    }`}
-                  >
-                    <div
-                      className={`h-2 w-2 rounded-full ${
-                        isOnline ? 'bg-green-500' : 'bg-gray-400'
-                      }`}
-                    />
-                    <span
-                      className={`truncate font-medium ${
-                        isOnline ? 'text-green-800' : 'text-gray-600'
-                      }`}
-                    >
-                      {displayName}
-                    </span>
-                  </div>
-                )
-              })}
-
-              {participants.length > 8 && (
-                <div className="flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 p-2 text-xs">
-                  <span className="text-gray-600">+{participants.length - 8} more</span>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Question Card */}
       <Card className="bg-white shadow-lg">
@@ -504,3 +395,4 @@ export function GroupQuizActiveView({
     </div>
   )
 }
+        

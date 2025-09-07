@@ -14,6 +14,7 @@ import { ExpiredSessionView } from './components/ExpiredSessionView'
 import { FallbackParticipantsSidebar } from './components/FallbackParticipantsSidebar'
 import { GroupPresetSelectionView } from './components/GroupPresetSelectionView'
 import { GroupQuizActiveView } from './components/GroupQuizActiveView'
+import { GroupQuizPreview } from './components/GroupQuizPreview'
 import { GroupQuizResults } from './components/GroupQuizResults'
 import { GroupQuizSessionHeader } from './components/GroupQuizSessionHeader'
 import { MemberWaitingView } from './components/MemberWaitingView'
@@ -66,6 +67,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     handleCloseAuthPrompt,
     handlePresetSelect,
     handleQuestionInfoStart,
+    handleStartQuizFromPreview,
+    handleGoBackFromPreview,
     getCurrentQuestion,
     responses,
     handleAnswerSelect,
@@ -353,6 +356,19 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           sessionTitle={session?.title || 'Group Session'}
                         />
                         <CheckingResultsModal isOpen={isCheckingExistingResults} />
+                      </div>
+                    )
+
+                  case 'question-preview':
+                    return (
+                      <div className="mx-auto max-w-8xl">
+                        <GroupQuizPreview
+                          difficultyGroups={difficultyGroups}
+                          onStartQuiz={handleStartQuizFromPreview}
+                          onGoBack={handleGoBackFromPreview}
+                          canShowAnswers={permissions.canManageQuiz()}
+                          sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}
+                        />
                       </div>
                     )
 
