@@ -1,11 +1,26 @@
 'use client'
 
 import { useState } from 'react'
-import { Separator } from '@radix-ui/react-separator'
-import { ArrowLeft, BookOpen, Eye, EyeOff } from 'lucide-react'
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  FileQuestion,
+  HelpCircle,
+  ListTodo
+} from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '../../../../../../components/ui/card'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger
+} from '../../../../../../components/ui/tabs'
 
 interface Question {
   id: string
@@ -31,9 +46,18 @@ interface GroupQuizPreviewProps {
 }
 
 const DIFFICULTY_COLORS = {
-  easy: 'bg-green-100 text-green-800 border-green-200',
-  medium: 'bg-yellow-100 text-yellow-800 border-yellow-200',
-  hard: 'bg-red-100 text-red-800 border-red-200'
+  easy: 'bg-green-100 text-green-800',
+  medium: 'bg-yellow-100 text-yellow-800',
+  hard: 'bg-red-100 text-red-800'
+}
+
+const TAB_TRIGGER_CLASSES = {
+  easy:
+    'data-[state=active]:bg-green-100 data-[state=active]:text-green-800 data-[state=active]:shadow-inner',
+  medium:
+    'data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-800 data-[state=active]:shadow-inner',
+  hard:
+    'data-[state=active]:bg-red-100 data-[state=active]:text-red-800 data-[state=active]:shadow-inner'
 }
 
 export function GroupQuizPreview({
@@ -44,166 +68,156 @@ export function GroupQuizPreview({
   sessionTitle
 }: GroupQuizPreviewProps) {
   const [showAnswers, setShowAnswers] = useState(false)
-  const [expandedSets, setExpandedSets] = useState<Set<number>>(new Set([0])) // First set expanded by default
-
-  const toggleSetExpansion = (setIndex: number) => {
-    const newExpanded = new Set(expandedSets)
-    if (newExpanded.has(setIndex)) {
-      newExpanded.delete(setIndex)
-    } else {
-      newExpanded.add(setIndex)
-    }
-    setExpandedSets(newExpanded)
-  }
 
   const totalQuestions = difficultyGroups.reduce((sum, group) => sum + group.questions.length, 0)
+  const easyQuestions = difficultyGroups
+    .filter(g => g.difficulty === 'easy')
+    .reduce((sum, g) => sum + g.questions.length, 0)
+  const mediumQuestions = difficultyGroups
+    .filter(g => g.difficulty === 'medium')
+    .reduce((sum, g) => sum + g.questions.length, 0)
+  const hardQuestions = difficultyGroups
+    .filter(g => g.difficulty === 'hard')
+    .reduce((sum, g) => sum + g.questions.length, 0)
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button onClick={onGoBack} variant="outline" className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Question Preview</h1>
-            {sessionTitle && <p className="mt-1 text-gray-600">{sessionTitle}</p>}
+    <div className="min-h-screen bg-gray-50">
+      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-4">
+            <Button onClick={onGoBack} variant="outline" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Back
+            </Button>
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">Question Preview</h1>
+              {sessionTitle && <p className="mt-1 text-gray-500">{sessionTitle}</p>}
+            </div>
+          </div>
+
+          <div className="flex w-full flex-shrink-0 items-center justify-end gap-3 sm:w-auto">
+            {canShowAnswers && (
+              <Button
+                onClick={() => setShowAnswers(!showAnswers)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                {showAnswers ? (
+                  <>
+                    <EyeOff className="h-4 w-4" />
+                    <span>Hide Answers</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-4 w-4" />
+                    <span>Show Answers</span>
+                  </>
+                )}
+              </Button>
+            )}
+
+            <Button
+              onClick={onStartQuiz}
+              className="flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 sm:flex-none"
+            >
+              Start Quiz
+            </Button>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          {canShowAnswers && (
-            <Button
-              onClick={() => setShowAnswers(!showAnswers)}
-              variant="outline"
-              className="flex items-center gap-2"
-            >
-              {showAnswers ? (
-                <>
-                  <EyeOff className="h-4 w-4" />
-                  Hide Answers
-                </>
-              ) : (
-                <>
-                  <Eye className="h-4 w-4" />
-                  Show Answers
-                </>
-              )}
-            </Button>
-          )}
-
-          <Button
-            onClick={onStartQuiz}
-            className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-          >
-            Start Quiz
-          </Button>
-        </div>
-      </div>
-
-      {/* Summary Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{totalQuestions}</div>
-            <div className="text-sm text-gray-600">Total Questions</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-gray-900">{difficultyGroups.length}</div>
-            <div className="text-sm text-gray-600">Sets</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {difficultyGroups
-                .filter(g => g.difficulty === 'easy')
-                .reduce((sum, g) => sum + g.questions.length, 0)}
-            </div>
-            <div className="text-sm text-gray-600">Easy</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {difficultyGroups
-                .filter(g => g.difficulty === 'hard')
-                .reduce((sum, g) => sum + g.questions.length, 0)}
-            </div>
-            <div className="text-sm text-gray-600">Hard</div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Question Sets */}
-      <div className="space-y-4">
-        {difficultyGroups.map((group, setIndex) => {
-          const isExpanded = expandedSets.has(setIndex)
-
-          return (
-            <Card key={setIndex} className="overflow-hidden">
-              <CardHeader
-                className="cursor-pointer transition-colors hover:bg-gray-50"
-                onClick={() => toggleSetExpansion(setIndex)}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <CardTitle className="text-lg">Set {setIndex + 1}</CardTitle>
-                    <Badge className={DIFFICULTY_COLORS[group.difficulty]}>
-                      {group.difficulty.toUpperCase()}
-                    </Badge>
-                    <span className="text-sm text-gray-600">
-                      {group.questions.length} questions
-                    </span>
-                  </div>
-                  <BookOpen
-                    className={`h-5 w-5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                  />
+        {/* Main Content */}
+        <div>
+          {/* Compact Stats */}
+          <div className="mb-8 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+            <div className="flex flex-wrap items-center justify-around gap-x-6 gap-y-4">
+              <div className="flex items-center gap-3 text-gray-700">
+                <FileQuestion className="h-5 w-5 text-gray-400" />
+                <div>
+                  <span className="font-bold text-lg text-gray-900">{totalQuestions}</span>
+                  <span className="ml-2 text-sm">Total Questions</span>
                 </div>
-              </CardHeader>
+              </div>
+              <div className="flex items-center gap-3 text-gray-700">
+                <ListTodo className="h-5 w-5 text-gray-400" />
+                <div>
+                  <span className="font-bold text-lg text-gray-900">{difficultyGroups.length}</span>
+                  <span className="ml-2 text-sm">Sets</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-green-600">
+                <CheckCircle className="h-5 w-5" />
+                <div>
+                  <span className="font-bold text-lg">{easyQuestions}</span>
+                  <span className="ml-2 text-sm">Easy</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-yellow-600">
+                <HelpCircle className="h-5 w-5" />
+                <div>
+                  <span className="font-bold text-lg">{mediumQuestions}</span>
+                  <span className="ml-2 text-sm">Medium</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 text-red-600">
+                <AlertCircle className="h-5 w-5" />
+                <div>
+                  <span className="font-bold text-lg">{hardQuestions}</span>
+                  <span className="ml-2 text-sm">Hard</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-              {isExpanded && (
-                <CardContent className="pt-0">
-                  <Separator className="mb-4" />
-                  <div className="space-y-4">
-                    {group.questions.map((question, questionIndex) => (
-                      <div
-                        key={question.id || questionIndex}
-                        className="rounded-lg border border-gray-200 bg-gray-50 p-4"
-                      >
-                        {/* Question Header */}
-                        <div className="mb-3 flex items-start justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-indigo-100 text-sm font-semibold text-indigo-700">
-                              {questionIndex + 1}
-                            </span>
-                            <Badge variant="outline" className="text-xs">
-                              {question.difficulty}
-                            </Badge>
-                          </div>
-                        </div>
+          {/* Question Sets in Tabs */}
+          <Tabs defaultValue="set-0" className="w-full">
+            <TabsList className="mb-4 grid h-auto w-full grid-cols-3 rounded-lg bg-gray-200/75 p-1">
+              {difficultyGroups.map((group, setIndex) => (
+                <TabsTrigger
+                  key={setIndex}
+                  value={`set-${setIndex}`}
+                  className={`h-11 text-sm font-semibold capitalize transition-colors duration-300 ${TAB_TRIGGER_CLASSES[group.difficulty]}`}
+                >
+                  {group.difficulty}
+                </TabsTrigger>
+              ))}
+            </TabsList>
+            {difficultyGroups.map((group, setIndex) => (
+              <TabsContent key={setIndex} value={`set-${setIndex}`}>
+                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                  {group.questions.map((question, questionIndex) => (
+                    <div
+                      key={question.id || questionIndex}
+                      className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm transition-shadow duration-300 hover:shadow-md"
+                    >
+                      <div className="flex items-center justify-between border-b border-gray-200 bg-gray-50 px-4 py-2">
+                        <p className="font-semibold text-indigo-700">
+                          Question {questionIndex + 1}
+                        </p>
+                        <Badge
+                          className={`border-none text-xs font-bold capitalize ${
+                            DIFFICULTY_COLORS[question.difficulty]
+                          }`}
+                        >
+                          {question.difficulty}
+                        </Badge>
+                      </div>
 
-                        {/* Question Text */}
-                        <h3 className="mb-3 font-medium leading-relaxed text-gray-900">
-                          {question.question}
-                        </h3>
+                      <div className="p-4">
+                        <p className="mb-4 text-base text-gray-800">{question.question}</p>
 
-                        {/* Options */}
                         <div className="space-y-2">
                           {question.options.map((option, optionIndex) => {
                             const optionLetter = String.fromCharCode(65 + optionIndex)
-                            const isCorrect = showAnswers && optionLetter === question.correctAnswer
+                            const isCorrect =
+                              showAnswers && optionLetter === question.correctAnswer
 
                             return (
                               <div
                                 key={optionIndex}
-                                className={`rounded-lg border p-3 transition-colors ${
+                                className={`flex items-center justify-between rounded-md border p-3 transition-colors ${
                                   isCorrect
-                                    ? 'border-green-300 bg-green-50'
+                                    ? 'border-green-300 bg-green-50/70'
                                     : 'border-gray-200 bg-white'
                                 }`}
                               >
@@ -218,44 +232,37 @@ export function GroupQuizPreview({
                                     {optionLetter}
                                   </span>
                                   <span
-                                    className={`text-sm ${isCorrect ? 'font-medium text-green-800' : 'text-gray-700'}`}
+                                    className={`flex-1 text-sm ${
+                                      isCorrect
+                                        ? 'font-semibold text-green-900'
+                                        : 'text-gray-700'
+                                    }`}
                                   >
                                     {option}
                                   </span>
                                 </div>
+                                {isCorrect && <Check className="h-5 w-5 text-green-600" />}
                               </div>
                             )
                           })}
                         </div>
 
-                        {/* Explanation (only show if answers are visible) */}
                         {showAnswers && question.explanation && (
-                          <div className="mt-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
-                            <div className="mb-1 text-xs font-medium text-blue-700">
-                              Explanation:
-                            </div>
-                            <p className="text-sm text-blue-800">{question.explanation}</p>
+                          <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
+                            <p className="text-sm font-semibold text-blue-800">Explanation</p>
+                            <p className="mt-1 text-sm text-blue-700">
+                              {question.explanation}
+                            </p>
                           </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                </CardContent>
-              )}
-            </Card>
-          )
-        })}
-      </div>
-
-      {/* Bottom Actions */}
-      <div className="flex justify-center border-t pt-6">
-        <Button
-          onClick={onStartQuiz}
-          size="lg"
-          className="bg-gradient-to-r from-indigo-600 to-purple-600 px-8 py-3 hover:from-indigo-700 hover:to-purple-700"
-        >
-          Start Quiz ({totalQuestions} Questions)
-        </Button>
+                    </div>
+                  ))}
+                </div>
+              </TabsContent>
+            ))}
+          </Tabs>
+        </div>
       </div>
     </div>
   )
