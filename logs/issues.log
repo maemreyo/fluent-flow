@@ -1,7 +1,0 @@
-A. Khi chia sẻ link vào thẳng session, user chưa login sẽ có 2 step họ phải làm như sau:
-1. -> Sign up -> confirm -> Sign in
-2. -> Join group
-Vậy làm thế nào để 1 flow này liền mạch
-
-
-C. Hiện tại, tất cả mọi người đều có thể Start Quiz -> Có thể nào thêm setting để chỉ Owner hoặc những người do Onwer set cho permission mới được Start Quiz không?
