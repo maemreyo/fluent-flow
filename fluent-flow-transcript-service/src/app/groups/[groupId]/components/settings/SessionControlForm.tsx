@@ -7,10 +7,12 @@ import { Switch } from '@/components/ui/switch'
 
 interface SessionControlFormProps {
   onlyAdminsCanCreateSessions: boolean
+  onlyAdminsCanStartQuiz: boolean
   maxConcurrentSessions: number
   requireSessionApproval: boolean
   allowQuizRetakes: boolean
   onOnlyAdminsCanCreateSessionsChange: (value: boolean) => void
+  onOnlyAdminsCanStartQuizChange: (value: boolean) => void
   onMaxConcurrentSessionsChange: (value: number) => void
   onRequireSessionApprovalChange: (value: boolean) => void
   onAllowQuizRetakesChange: (value: boolean) => void
@@ -18,10 +20,12 @@ interface SessionControlFormProps {
 
 export function SessionControlForm({
   onlyAdminsCanCreateSessions,
+  onlyAdminsCanStartQuiz,
   maxConcurrentSessions,
   requireSessionApproval,
   allowQuizRetakes,
   onOnlyAdminsCanCreateSessionsChange,
+  onOnlyAdminsCanStartQuizChange,
   onMaxConcurrentSessionsChange,
   onRequireSessionApprovalChange,
   onAllowQuizRetakesChange
@@ -46,6 +50,20 @@ export function SessionControlForm({
           <Switch
             checked={onlyAdminsCanCreateSessions}
             onCheckedChange={onOnlyAdminsCanCreateSessionsChange}
+          />
+        </div>
+
+        {/* Quiz Start Restrictions */}
+        <div className="flex items-center justify-between">
+          <div className="space-y-0.5">
+            <Label className="text-base font-medium">Only Admins Can Start Quiz</Label>
+            <CardDescription>
+              Restrict quiz starting to owners, administrators, and session creators only
+            </CardDescription>
+          </div>
+          <Switch
+            checked={onlyAdminsCanStartQuiz}
+            onCheckedChange={onOnlyAdminsCanStartQuizChange}
           />
         </div>
 

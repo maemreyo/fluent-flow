@@ -75,16 +75,11 @@ export function useQuiz() {
     }
   }, [questionSet])
 
-  const { data: isFavorited } = useQuery({
+  const { data: isFavoriteData } = useQuery({
     queryKey: ['isFavorited', token],
-    queryFn: (): Promise<boolean> => checkIsFavorited(token),
+    queryFn: (): Promise<boolean> => isFavorited(token),
     enabled: !!token && !!questionSet
   })
-  
-  const checkIsFavorited = async (token: string): Promise<boolean> => {
-    // Implementation would check if quiz is favorited
-    return false // placeholder
-  }
 
   const favoriteMutation = useMutation({
     mutationFn: async (isFavorited: boolean) => {
@@ -337,7 +332,7 @@ export function useQuiz() {
       setShowAuthPrompt(true)
       return
     }
-    favoriteMutation.mutate(!!isFavorited)
+    favoriteMutation.mutate(!!isFavoriteData)
   }
 
   const getCurrentQuestion = () => {
@@ -386,7 +381,7 @@ export function useQuiz() {
     submitting: submitSetMutation.isPending,
     showVocabulary,
     showTranscript,
-    isFavorited: !!isFavorited,
+    isFavorited: !!isFavoriteData,
     favoriteLoading: favoriteMutation.isPending,
     showAuthPrompt,
     user,

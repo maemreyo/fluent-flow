@@ -39,6 +39,7 @@ interface SettingsTabProps {
       
       // Session Control Settings
       onlyAdminsCanCreateSessions?: boolean
+      onlyAdminsCanStartQuiz?: boolean
       maxConcurrentSessions?: number
       requireSessionApproval?: boolean
       allowQuizRetakes?: boolean
@@ -82,6 +83,7 @@ export function SettingsTab({ group }: SettingsTabProps) {
     
     // Session Control Settings
     onlyAdminsCanCreateSessions: group?.settings?.onlyAdminsCanCreateSessions || false,
+    onlyAdminsCanStartQuiz: group?.settings?.onlyAdminsCanStartQuiz || false,
     maxConcurrentSessions: group?.settings?.maxConcurrentSessions || 5,
     requireSessionApproval: group?.settings?.requireSessionApproval || false,
     allowQuizRetakes: group?.settings?.allowQuizRetakes !== false, // Default true
@@ -211,6 +213,7 @@ export function SettingsTab({ group }: SettingsTabProps) {
     adminCanDeleteSessions: group.settings?.adminCanDeleteSessions !== false,
     // Session Control Settings
     onlyAdminsCanCreateSessions: group.settings?.onlyAdminsCanCreateSessions || false,
+    onlyAdminsCanStartQuiz: group.settings?.onlyAdminsCanStartQuiz || false,
     maxConcurrentSessions: group.settings?.maxConcurrentSessions || 5,
     requireSessionApproval: group.settings?.requireSessionApproval || false,
     allowQuizRetakes: group.settings?.allowQuizRetakes !== false,
@@ -275,10 +278,12 @@ export function SettingsTab({ group }: SettingsTabProps) {
 
         <SessionControlForm
           onlyAdminsCanCreateSessions={formData.onlyAdminsCanCreateSessions}
+          onlyAdminsCanStartQuiz={formData.onlyAdminsCanStartQuiz}
           maxConcurrentSessions={formData.maxConcurrentSessions}
           requireSessionApproval={formData.requireSessionApproval}
           allowQuizRetakes={formData.allowQuizRetakes}
           onOnlyAdminsCanCreateSessionsChange={(onlyAdminsCanCreateSessions) => setFormData(prev => ({ ...prev, onlyAdminsCanCreateSessions }))}
+          onOnlyAdminsCanStartQuizChange={(onlyAdminsCanStartQuiz) => setFormData(prev => ({ ...prev, onlyAdminsCanStartQuiz }))}
           onMaxConcurrentSessionsChange={(maxConcurrentSessions) => setFormData(prev => ({ ...prev, maxConcurrentSessions }))}
           onRequireSessionApprovalChange={(requireSessionApproval) => setFormData(prev => ({ ...prev, requireSessionApproval }))}
           onAllowQuizRetakesChange={(allowQuizRetakes) => setFormData(prev => ({ ...prev, allowQuizRetakes }))}
@@ -327,6 +332,7 @@ export function SettingsTab({ group }: SettingsTabProps) {
             
             // Session Control Settings
             onlyAdminsCanCreateSessions: group.settings?.onlyAdminsCanCreateSessions || false,
+            onlyAdminsCanStartQuiz: group.settings?.onlyAdminsCanStartQuiz || false,
             maxConcurrentSessions: group.settings?.maxConcurrentSessions || 5,
             requireSessionApproval: group.settings?.requireSessionApproval || false,
             allowQuizRetakes: group.settings?.allowQuizRetakes !== false,

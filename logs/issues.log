@@ -5,7 +5,3 @@ Vậy làm thế nào để 1 flow này liền mạch
 
 
 C. Hiện tại, tất cả mọi người đều có thể Start Quiz -> Có thể nào thêm setting để chỉ Owner hoặc những người do Onwer set cho permission mới được Start Quiz không?
-
-G. Logic sinh question cần tùy biến cho từng preset, thay vì sinh sẵn câu hỏi từ bên extension. Logic sinh câu hỏi này cần được setting (trong SettingsTab), không phải ai cũng được generate câu hỏi, default là Owner được generate câu hỏi. 
--> Khi generate xong, mọi người tham gia cần show ngay (near-realtime), thay vì phải refresh trang
-

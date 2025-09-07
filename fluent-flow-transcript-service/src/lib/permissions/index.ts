@@ -34,6 +34,7 @@ interface Group {
     
     // Session Control Settings
     onlyAdminsCanCreateSessions?: boolean
+    onlyAdminsCanStartQuiz?: boolean
     maxConcurrentSessions?: number
     requireSessionApproval?: boolean
     allowQuizRetakes?: boolean
@@ -73,7 +74,10 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'quiz.generate',
     'preset.select'
   ],
-  member: [],
+  member: [
+    'quiz.start',
+    'preset.select'
+  ],
   guest: []
 }
 
@@ -123,7 +127,11 @@ export class PermissionManager {
   }
 
   canStartQuiz(): boolean {
-    return this.hasPermission('quiz.start')
+    // Check if only admins/owners can start quiz based on group settings
+    if (this.group?.settings?.onlyAdminsCanStartQuiz) {
+      return this.isOwner() || this.isAdmin() || this.isSessionCreator()
+    }
+    return this.hasPermission('quiz.start') || this.isMember()
   }
 
   canSelectPresets(): boolean {
