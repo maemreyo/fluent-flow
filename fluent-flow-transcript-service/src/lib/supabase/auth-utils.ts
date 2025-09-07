@@ -18,6 +18,64 @@ export async function getAuthHeaders(): Promise<HeadersInit> {
   return headers
 }
 
+// Session redirection utilities for seamless auth flow
+export const SessionRedirectManager = {
+  // Store intended destination in localStorage  
+  storeIntendedDestination(groupId: string, sessionId: string) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('auth_redirect_destination', JSON.stringify({
+        type: 'session',
+        groupId,
+        sessionId,
+        timestamp: Date.now()
+      }))
+    }
+  },
+
+  // Retrieve and clear stored destination
+  getAndClearIntendedDestination(): { type: 'session', groupId: string, sessionId: string } | null {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('auth_redirect_destination')
+      if (stored) {
+        localStorage.removeItem('auth_redirect_destination')
+        try {
+          const data = JSON.parse(stored)
+          // Check if stored destination is not too old (max 30 minutes)
+          if (data.timestamp && Date.now() - data.timestamp < 30 * 60 * 1000) {
+            return data
+          }
+        } catch (error) {
+          console.error('Error parsing stored auth destination:', error)
+        }
+      }
+    }
+    return null
+  },
+
+  // Auto-join group by ID (for authenticated users)
+  async autoJoinGroupById(groupId: string): Promise<{ success: boolean, error?: string }> {
+    try {
+      const headers = await getAuthHeaders()
+      const response = await fetch('/api/groups/auto-join', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ groupId })
+      })
+
+      const result = await response.json()
+      
+      if (!response.ok) {
+        return { success: false, error: result.error || 'Failed to join group' }
+      }
+
+      return { success: true }
+    } catch (error) {
+      console.error('Auto-join error:', error)
+      return { success: false, error: 'Network error' }
+    }
+  }
+}
+
 /**
  * Check if user has a valid authentication session
  */

@@ -6,6 +6,7 @@ import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { Card, CardContent } from '../ui/card'
 import { supabase } from '../../lib/supabase/client'
+import { SessionRedirectManager } from '../../lib/supabase/auth-utils'
 
 interface AuthPromptProps {
   onClose: () => void
@@ -20,6 +21,52 @@ export function AuthPrompt({ onClose, onAuthSuccess, title, subtitle }: AuthProm
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  const getAndClearIntendedDestination = () => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('auth_redirect_destination')
+      if (stored) {
+        localStorage.removeItem('auth_redirect_destination')
+        try {
+          const data = JSON.parse(stored)
+          // Check if stored destination is not too old (max 30 minutes)
+          if (data.timestamp && Date.now() - data.timestamp < 30 * 60 * 1000) {
+            return data
+          }
+        } catch (error) {
+          console.error('Error parsing stored auth destination:', error)
+        }
+      }
+    }
+    return null
+  }
+
+  const handleAuthSuccess = async (user: any) => {
+    // Check for intended destination and handle auto-join + redirect
+    const destination = getAndClearIntendedDestination()
+    
+    if (destination?.type === 'session') {
+      try {
+        // Auto-join the group first
+        const joinResult = await SessionRedirectManager.autoJoinGroupById(destination.groupId)
+        
+        if (joinResult.success) {
+          // Redirect to the intended session
+          setTimeout(() => {
+            window.location.href = `/groups/${destination.groupId}/quiz/${destination.sessionId}`
+          }, 500) // Small delay to ensure join is processed
+          return
+        } else {
+          console.warn('Auto-join failed:', joinResult.error)
+        }
+      } catch (error) {
+        console.error('Error in seamless auth flow:', error)
+      }
+    }
+    
+    // Fallback to original onAuthSuccess behavior
+    onAuthSuccess(user)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -42,7 +89,7 @@ export function AuthPrompt({ onClose, onAuthSuccess, title, subtitle }: AuthProm
         if (error) throw error
         
         if (data.user) {
-          onAuthSuccess(data.user)
+          handleAuthSuccess(data.user)
         }
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -58,7 +105,7 @@ export function AuthPrompt({ onClose, onAuthSuccess, title, subtitle }: AuthProm
         if (error) throw error
         
         if (data.user) {
-          onAuthSuccess(data.user)
+          handleAuthSuccess(data.user)
         }
       }
     } catch (error: any) {

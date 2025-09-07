@@ -227,7 +227,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   }
 
   if (!isUserJoined) {
-    return <NotJoinedView />
+    return <NotJoinedView groupId={groupId} sessionId={sessionId} />
   }
 
   return (
