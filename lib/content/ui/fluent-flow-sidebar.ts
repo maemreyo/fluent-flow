@@ -560,25 +560,28 @@ export class FluentFlowSidebar {
 
     // Create groups
     Object.entries(groups).forEach(([groupName, buttons]) => {
-      console.log(`FluentFlow: Processing group ${groupName} with ${buttons.length} buttons`)
+      // FIXME: Remove other groups
+      if (groupName === 'loop') {
+        console.log(`FluentFlow: Processing group ${groupName} with ${buttons.length} buttons`)
 
-      if (buttons.length === 0) return
+        if (buttons.length === 0) return
 
-      const groupDiv = document.createElement('div')
-      groupDiv.className = 'fluent-flow-sidebar-group'
+        const groupDiv = document.createElement('div')
+        groupDiv.className = 'fluent-flow-sidebar-group'
 
-      const title = document.createElement('h3')
-      title.className = 'fluent-flow-sidebar-group-title'
-      title.textContent = this.getGroupTitle(groupName)
-      groupDiv.appendChild(title)
+        const title = document.createElement('h3')
+        title.className = 'fluent-flow-sidebar-group-title'
+        title.textContent = this.getGroupTitle(groupName)
+        groupDiv.appendChild(title)
 
-      buttons.forEach(button => {
-        console.log('FluentFlow: Creating button element for:', button.title)
-        const buttonElement = this.createButtonElement(button)
-        groupDiv.appendChild(buttonElement)
-      })
+        buttons.forEach(button => {
+          console.log('FluentFlow: Creating button element for:', button.title)
+          const buttonElement = this.createButtonElement(button)
+          groupDiv.appendChild(buttonElement)
+        })
 
-      content.appendChild(groupDiv)
+        content.appendChild(groupDiv)
+      }
     })
 
     // Add footer with info
@@ -604,6 +607,7 @@ export class FluentFlowSidebar {
   private groupButtons(): Record<string, SidebarButton[]> {
     const groups: Record<string, SidebarButton[]> = {
       loop: [],
+      // FIXME: Disable for now
       recording: [],
       notes: [],
       other: []

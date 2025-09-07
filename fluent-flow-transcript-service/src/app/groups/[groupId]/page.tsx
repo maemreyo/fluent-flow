@@ -249,6 +249,7 @@ export default function GroupPage({
                 groupId={groupId}
                 canManage={!!canManage}
                 canDeleteSessions={!!canDeleteSessions}
+                canManageQuiz={permissions.canManageQuiz()}
                 onCreateSession={handleCreateSession}
                 highlightSessionId={highlightSessionId}
               />

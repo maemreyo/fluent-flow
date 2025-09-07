@@ -20,6 +20,7 @@ interface GroupQuizRoomModalProps {
     created_by: string
     questions_data?: any
   }
+  canManageQuiz?: boolean // Add permission prop
 }
 
 export function GroupQuizRoomModal({
@@ -27,7 +28,8 @@ export function GroupQuizRoomModal({
   onClose,
   sessionId,
   groupId,
-  session
+  session,
+  canManageQuiz = false
 }: GroupQuizRoomModalProps) {
   const [isQuizStarting, setIsQuizStarting] = useState(false)
 
@@ -83,6 +85,7 @@ export function GroupQuizRoomModal({
             session={session}
             onJoinQuiz={handleJoinQuiz}
             onLeaveRoom={handleLeaveRoom}
+            canManageQuiz={canManageQuiz}
           />
         </div>
       </div>

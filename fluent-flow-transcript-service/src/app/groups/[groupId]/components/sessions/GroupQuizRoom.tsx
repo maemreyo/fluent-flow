@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '../../../../../contexts/AuthContext'
 import { QuizRoomLobby } from './QuizRoomLobby'
 import { SessionCountdown } from './SessionCountdown'
@@ -27,6 +26,7 @@ interface GroupQuizRoomProps {
   }
   onJoinQuiz: () => void
   onLeaveRoom: () => void
+  canManageQuiz?: boolean // Add permission prop
 }
 
 export function GroupQuizRoom({
@@ -34,10 +34,10 @@ export function GroupQuizRoom({
   groupId,
   session,
   onJoinQuiz,
-  onLeaveRoom
+  onLeaveRoom,
+  canManageQuiz = false
 }: GroupQuizRoomProps) {
   const { user } = useAuth()
-  const router = useRouter()
   const [countdown, setCountdown] = useState<number | null>(null)
 
   // Use the custom hook for participants management
@@ -127,8 +127,9 @@ export function GroupQuizRoom({
     // when it receives the broadcast message
   }
 
-  const canStartQuiz =
-    session.status === 'active' || (session.status === 'scheduled' && countdown === 0)
+  // Only allow quiz start if session is ready AND user has management permissions
+  const canStartQuiz = canManageQuiz && 
+    (session.status === 'active' || (session.status === 'scheduled' && countdown === 0))
 
   if (isLoading) {
     return (

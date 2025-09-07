@@ -240,6 +240,20 @@ export class ConversationLoopIntegrationService {
           )
           // Continue even if saving transcript fails
         }
+
+        // 🚀 NEW: Auto-sync transcript to existing loops for this video
+        try {
+          console.log(`🔄 FluentFlow: Starting auto-sync transcript to existing loops for video ${loop.videoId}`)
+          await this.loopService.batchSyncTranscriptToLoopsForVideo(loop.videoId, {
+            transcript: transcriptResult.fullText,
+            segments: transcriptResult.segments,
+            language: transcriptResult.language || 'en'
+          })
+          console.log(`✅ FluentFlow: Auto-sync transcript completed for video ${loop.videoId}`)
+        } catch (syncError) {
+          console.error(`❌ FluentFlow: Auto-sync transcript failed for video ${loop.videoId}:`, syncError)
+          // Don't throw - sync failure shouldn't break question generation
+        }
       }
 
       if (!transcriptResult.fullText || transcriptResult.fullText.trim().length === 0) {
@@ -432,6 +446,20 @@ export class ConversationLoopIntegrationService {
 
       console.log(`FluentFlow: Successfully fetched and cached transcript for video ${videoId}`)
 
+      // 🚀 NEW: Auto-sync transcript to existing loops for this video
+      try {
+        console.log(`🔄 FluentFlow: Starting auto-sync transcript to existing loops for video ${videoId}`)
+        await this.loopService.batchSyncTranscriptToLoopsForVideo(videoId, {
+          transcript: transcriptResult.fullText,
+          segments: transcriptResult.segments,
+          language: transcriptResult.language || 'en'
+        })
+        console.log(`✅ FluentFlow: Auto-sync transcript completed for video ${videoId}`)
+      } catch (syncError) {
+        console.error(`❌ FluentFlow: Auto-sync transcript failed for video ${videoId}:`, syncError)
+        // Don't throw - sync failure shouldn't break transcript fetching
+      }
+
       return {
         id: savedTranscript?.id,
         segments: transcriptResult.segments,
@@ -449,7 +477,7 @@ export class ConversationLoopIntegrationService {
       }
 
       throw new Error(
-        `Transcript fetching failed for video ${videoId}: ${error instanceof Error ? error.message : 'Unknown error'}`
+        error instanceof Error ? error.message : 'Unknown error occurred while fetching transcript'
       )
     }
   }

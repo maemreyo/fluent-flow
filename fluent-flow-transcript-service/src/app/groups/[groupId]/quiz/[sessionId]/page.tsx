@@ -100,7 +100,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   } = useGroupQuizWithProgress({ groupId, sessionId })
 
   const loopId = (session as any)?.loop_data?.id
-  const { data: loopData } = useLoop(groupId, loopId)
+  const { data: loopData, error: loopError } = useLoop(groupId, loopId)
 
   // // Debug logging for session and loop data
   // console.log('🔍 Session debug:', {
@@ -124,7 +124,6 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   // Simplified quiz synchronization
   const {
     syncState,
-    isConnected: syncConnected,
     broadcastQuizSessionStart,
     broadcastPreparationUpdate
   } = useQuizSync({
@@ -171,6 +170,17 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
   // Simplified question generation handlers
   const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
+    // Check if loop data is available
+    if (!loopData || loopError) {
+      console.error('❌ Cannot generate questions: Loop data not available', {
+        loopId,
+        loopError: loopError?.message,
+        difficulty
+      })
+      alert('Cannot generate questions: The practice loop associated with this session is not available.')
+      return
+    }
+
     // Broadcast generation start
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('question-generation', {
@@ -194,6 +204,16 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   }
 
   const handleGenerateAllQuestions = async () => {
+    // Check if loop data is available
+    if (!loopData || loopError) {
+      console.error('❌ Cannot generate questions: Loop data not available', {
+        loopId,
+        loopError: loopError?.message
+      })
+      alert('Cannot generate questions: The practice loop associated with this session is not available.')
+      return
+    }
+
     // Broadcast generation start
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('question-generation', { all: true, completed: false })
@@ -215,8 +235,20 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
       distribution,
       presetInfo,
       loopDataExists: !!loopData,
-      loopDataId: loopData?.id
+      loopDataId: loopData?.id,
+      loopError: loopError?.message
     })
+
+    // Check if loop data is available
+    if (!loopData || loopError) {
+      console.error('❌ Cannot generate questions: Loop data not available', {
+        loopId,
+        loopError: loopError?.message,
+        sessionLoopData: (session as any)?.loop_data
+      })
+      alert('Cannot generate questions: The practice loop associated with this session is not available. Please check if the loop was deleted or contact your group admin.')
+      return
+    }
 
     // Broadcast preset selection and generation start
     if (permissions.canManageQuiz()) {

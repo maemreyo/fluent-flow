@@ -12,6 +12,7 @@ interface SessionsTabProps {
   groupId: string
   canManage: boolean
   canDeleteSessions?: boolean
+  canManageQuiz?: boolean // Add quiz management permission
   onCreateSession: () => void
   highlightSessionId?: string
 }
@@ -24,6 +25,7 @@ export default function SessionsTab({
   groupId,
   canManage,
   canDeleteSessions,
+  canManageQuiz = false,
   onCreateSession,
   highlightSessionId
 }: SessionsTabProps) {
@@ -520,6 +522,7 @@ export default function SessionsTab({
           sessionId={quizRoomSession.id}
           groupId={groupId}
           session={quizRoomSession}
+          canManageQuiz={canManageQuiz}
         />
       )}
 

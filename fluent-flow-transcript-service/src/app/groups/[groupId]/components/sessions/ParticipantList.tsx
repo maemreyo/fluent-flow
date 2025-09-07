@@ -39,14 +39,23 @@ export function ParticipantList({ participants, currentUserId }: ParticipantList
   }
 
   const getInitials = (email: string, username?: string) => {
-    if (username) {
-      return username.split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
+    if (username && username.trim()) {
+      return username.trim().split(' ').map(word => word[0]).join('').toUpperCase().slice(0, 2)
     }
-    return email.split('@')[0].slice(0, 2).toUpperCase()
+    if (email && email.includes('@')) {
+      return email.split('@')[0].slice(0, 2).toUpperCase()
+    }
+    return '??'
   }
 
   const getDisplayName = (participant: SessionParticipant) => {
-    return participant.username || participant.user_email.split('@')[0]
+    if (participant.username && participant.username.trim()) {
+      return participant.username.trim()
+    }
+    if (participant.user_email && participant.user_email.includes('@')) {
+      return participant.user_email.split('@')[0]
+    }
+    return `User ${participant.user_id?.slice(-4) || 'Unknown'}`
   }
 
   // Sort participants: current user first, then online users, then offline

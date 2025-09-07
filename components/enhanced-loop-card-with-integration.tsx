@@ -7,7 +7,6 @@ import {
   Clock,
   FileText,
   Loader2,
-  Monitor,
   Play,
   RotateCcw,
   Target,
@@ -609,9 +608,9 @@ export function EnhancedLoopCardWithIntegration({
 
         {/* Enhanced sections with React Query */}
         {showTranscript && renderTranscriptSection()}
-        {showSummary && renderSummarySection()}
-        {showVocabulary && renderVocabularySection()}
-        {renderQuestionsSection()}
+        {/* {showSummary && renderSummarySection()} */}
+        {/* {showVocabulary && renderVocabularySection()} */}
+        {/* {renderQuestionsSection()} */}
 
         {/* Action buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -642,7 +641,7 @@ export function EnhancedLoopCardWithIntegration({
           </Button>
 
           {/* Show Overlay Button */}
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={handleShowOverlay}
@@ -660,8 +659,7 @@ export function EnhancedLoopCardWithIntegration({
             ) : (
               <Monitor className="h-4 w-4" />
             )}
-            {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
-          </Button>
+          </Button> */}
 
           {/* <Button
             variant="outline"

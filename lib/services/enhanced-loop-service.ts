@@ -11,6 +11,13 @@ export interface CreateLoopData {
   startTime: number
   endTime: number
   description?: string
+  transcript?: string
+  segments?: Array<{
+    text: string
+    start: number
+    duration: number
+  }>
+  language?: string
 }
 
 export class EnhancedLoopService {
@@ -57,8 +64,12 @@ export class EnhancedLoopService {
       description: loopData.description,
       createdAt: new Date(),
       updatedAt: new Date(),
-      // Initialize transcript fields
-      hasTranscript: false,
+      // Set transcript and segments if provided
+      transcript: loopData.transcript || '',
+      segments: loopData.segments || [],
+      language: loopData.language || 'auto',
+      // Set transcript status based on whether data is provided
+      hasTranscript: !!(loopData.transcript && loopData.transcript.trim()),
       questionsGenerated: false
     }
 
@@ -154,6 +165,139 @@ export class EnhancedLoopService {
     } catch (error) {
       console.error('Failed to update loop transcript data:', error)
       throw new Error(`Failed to update loop transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Sync transcript data to existing loops (for sidepanel transcript loading)
+   */
+  async syncLoopWithTranscript(
+    loopId: string,
+    transcriptData: {
+      transcript: string
+      segments: Array<{
+        text: string
+        start: number
+        duration: number
+      }>
+      language: string
+    }
+  ): Promise<void> {
+    if (!loopId || typeof loopId !== 'string') {
+      throw new Error('Valid loop ID is required')
+    }
+
+    if (!transcriptData || typeof transcriptData !== 'object') {
+      throw new Error('Valid transcript data is required')
+    }
+
+    try {
+      const loop = await this.getLoop(loopId)
+      if (!loop) {
+        throw new Error('Loop not found')
+      }
+
+      // Update loop with actual transcript data (not just metadata)
+      loop.transcript = transcriptData.transcript || ''
+      loop.segments = transcriptData.segments || []
+      loop.language = transcriptData.language || 'auto'
+      loop.hasTranscript = !!(transcriptData.transcript && transcriptData.transcript.trim())
+      loop.updatedAt = new Date()
+
+      // Also update transcriptMetadata for consistency
+      if (loop.hasTranscript) {
+        loop.transcriptMetadata = {
+          text: transcriptData.transcript,
+          language: transcriptData.language || 'en',
+          segmentCount: transcriptData.segments?.length || 0,
+          lastAnalyzed: new Date().toISOString()
+        }
+      }
+
+      await this.storageService.saveLoop(loop)
+      
+      console.log(`FluentFlow: Synced transcript data to loop ${loopId}:`, {
+        hasTranscript: loop.hasTranscript,
+        segmentCount: loop.segments?.length || 0,
+        transcriptLength: loop.transcript?.length || 0,
+        language: loop.language
+      })
+    } catch (error) {
+      console.error('Failed to sync transcript data to loop:', error)
+      throw new Error(`Failed to sync transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Batch sync transcript data to multiple loops for the same video
+   */
+  async batchSyncTranscriptToLoopsForVideo(
+    videoId: string,
+    fullTranscript: {
+      transcript: string
+      segments: Array<{
+        text: string
+        start: number
+        duration: number
+      }>
+      language: string
+    }
+  ): Promise<void> {
+    try {
+      console.log(`FluentFlow: Starting batch transcript sync for video ${videoId}`)
+      
+      // Get all loops for this video that don't have transcript
+      const allLoops = await this.storageService.getAllUserLoops()
+      const videoLoops = allLoops.filter((loop: SavedLoop) => 
+        loop.videoId === videoId && !loop.hasTranscript
+      )
+      
+      console.log(`FluentFlow: Found ${videoLoops.length} loops without transcript for video ${videoId}`)
+
+      if (videoLoops.length === 0) {
+        console.log(`FluentFlow: No loops need transcript sync for video ${videoId}`)
+        return
+      }
+
+      // Process each loop to extract transcript for its time range
+      for (const loop of videoLoops) {
+        try {
+          console.log(`FluentFlow: Syncing transcript for loop "${loop.title}" (${loop.startTime}s - ${loop.endTime}s)`)
+          
+          // Filter segments for this loop's time range
+          const loopSegments = fullTranscript.segments.filter(segment => {
+            const segmentStart = segment.start
+            const segmentEnd = segment.start + segment.duration
+            
+            return (
+              (segmentStart >= loop.startTime && segmentStart <= loop.endTime) ||
+              (segmentEnd >= loop.startTime && segmentEnd <= loop.endTime) ||
+              (segmentStart <= loop.startTime && segmentEnd >= loop.endTime)
+            )
+          })
+          
+          const loopTranscript = loopSegments.map(segment => segment.text).join(' ')
+          
+          if (loopTranscript.trim()) {
+            await this.syncLoopWithTranscript(loop.id, {
+              transcript: loopTranscript,
+              segments: loopSegments,
+              language: fullTranscript.language
+            })
+            console.log(`✅ FluentFlow: Successfully synced transcript to loop "${loop.title}"`)
+          } else {
+            console.log(`⚠️ FluentFlow: No transcript segments found for loop "${loop.title}" time range`)
+          }
+        } catch (error) {
+          console.error(`❌ FluentFlow: Failed to sync transcript for loop "${loop.title}":`, error)
+          // Continue with other loops
+        }
+      }
+      
+      console.log(`🎉 FluentFlow: Batch transcript sync completed for video ${videoId}`)
+    } catch (error) {
+      console.error('Failed to batch sync transcript:', error)
+      throw new Error(`Failed to batch sync transcript: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
 

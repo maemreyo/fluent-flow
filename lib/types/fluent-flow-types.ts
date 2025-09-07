@@ -20,6 +20,15 @@ export interface SavedLoop {
   createdAt: Date
   updatedAt: Date
 
+  // Transcript data
+  transcript?: string
+  segments?: Array<{
+    text: string
+    start: number
+    duration: number
+  }>
+  language?: string
+
   // Question generation fields
   questionsGenerated?: boolean
   questionsGeneratedAt?: Date

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { AlertCircle, CheckCircle, Clock, Loader2, Monitor, Play, Trash2 } from 'lucide-react'
+import { CheckCircle, Clock, Loader2, Play, Trash2 } from 'lucide-react'
 import { useGenerateQuestionsMutation, useQuestionsQuery } from '../../lib/hooks/use-question-query'
 import { useTranscriptQuery } from '../../lib/hooks/use-transcript-query'
 import type {
@@ -14,13 +14,10 @@ import type {
   SavedLoop
 } from '../../lib/types/fluent-flow-types'
 import { ConversationQuestionsPanel } from '../conversation-questions-panel'
-import QuestionsSectionCollapsible from '../questions/questions-section-collapsible'
-import TranscriptSummaryComponent from '../summary/transcript-summary'
 import TranscriptSection from '../transcript/transcript-section'
 import { Badge } from '../ui/badge'
 import { Button } from '../ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../ui/card'
-import VocabularySectionCollapsible from '../vocabulary/vocabulary-section-collapsible'
 
 interface LoopCardProps {
   loop: SavedLoop
@@ -354,7 +351,7 @@ export function LoopCard({
           </div>
         )}
 
-        {showVocabulary && (
+        {/* {showVocabulary && (
           <div className="mt-4">
             <VocabularySectionCollapsible
               analysis={vocabularyAnalysis}
@@ -364,10 +361,10 @@ export function LoopCard({
               defaultExpanded={false}
             />
           </div>
-        )}
+        )} */}
 
         {/* Questions section - always visible */}
-        <div className="mt-4">
+        {/* <div className="mt-4">
           <QuestionsSectionCollapsible
             questions={cachedQuestions}
             isLoading={questionsLoading || generateQuestionsMutation.isPending}
@@ -378,9 +375,9 @@ export function LoopCard({
             loop={loop}
             defaultExpanded={false}
           />
-        </div>
+        </div> */}
 
-        {showSummary && (
+        {/* {showSummary && (
           <div className="mt-4">
             <TranscriptSummaryComponent
               summary={transcriptSummary}
@@ -388,7 +385,7 @@ export function LoopCard({
               defaultExpanded={false}
             />
           </div>
-        )}
+        )} */}
         {/* Action buttons */}
         <div className="mt-4 flex flex-wrap gap-2">
           <Button
@@ -408,7 +405,7 @@ export function LoopCard({
           </Button>
 
           {/* Show Overlay Button */}
-          <Button
+          {/* <Button
             variant="outline"
             size="sm"
             onClick={handleShowOverlay}
@@ -426,8 +423,7 @@ export function LoopCard({
             ) : (
               <Monitor className="h-4 w-4" />
             )}
-            {/* {cachedQuestions || activeQuestions ? 'Overlay' : 'Gen & Show'} */}
-          </Button>
+          </Button> */}
 
           {/* <Button
             variant="outline"
@@ -467,7 +463,7 @@ export function LoopCard({
         </div>
 
         {/* Status indicators */}
-        <div className="mt-3 flex items-center gap-3 border-t pt-3">
+        {/* <div className="mt-3 flex items-center gap-3 border-t pt-3">
           <div className="flex items-center gap-1 text-xs text-gray-500">
             {transcriptData ? (
               <CheckCircle className="h-3 w-3 text-green-500" />
@@ -478,7 +474,7 @@ export function LoopCard({
             )}
             <span>Transcript</span>
           </div>
-        </div>
+        </div> */}
 
         {/* Show completion results */}
         {questionsCompleted && lastScore !== null && (

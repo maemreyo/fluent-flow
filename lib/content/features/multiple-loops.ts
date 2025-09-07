@@ -3,6 +3,7 @@
 
 import type { SavedLoop } from '../../types/fluent-flow-types'
 import { v4 as uuidv4 } from 'uuid'
+import { YouTubeTranscriptService } from '../../services/youtube-transcript-service'
 
 export interface ActiveLoop {
   id: string
@@ -240,29 +241,132 @@ export class MultipleLoopsFeature {
     return [...this.activeLoops]
   }
 
-  public exportCurrentLoops(): SavedLoop[] {
-    console.log('FluentFlow: Exporting current loops. Active loops count:', this.activeLoops.length)
-    console.log('FluentFlow: Active loops:', this.activeLoops.map(l => ({ id: l.id, title: l.title })))
+  public async exportCurrentLoops(): Promise<SavedLoop[]> {
+    console.log('🔄 FluentFlow: Starting loop export process...')
+    console.log('📊 FluentFlow: Active loops count:', this.activeLoops.length)
+    console.log('📋 FluentFlow: Active loops:', this.activeLoops.map(l => ({ id: l.id, title: l.title, startTime: l.startTime, endTime: l.endTime })))
+    
+    if (this.activeLoops.length === 0) {
+      console.log('⚠️ FluentFlow: No active loops to export')
+      return []
+    }
     
     const videoInfo = this.player.getVideoInfo()
+    console.log('🎥 FluentFlow: Video info:', { id: videoInfo.id, title: videoInfo.title, url: videoInfo.url })
     
-    // Generate NEW IDs for each export to ensure each Control+E creates NEW loops
-    const exported = this.activeLoops.map(loop => ({
-      id: uuidv4(), // 🔥 NEW ID for each export - this prevents updating existing loops
-      title: loop.title,
-      videoId: videoInfo.id,
-      videoTitle: videoInfo.title,
-      videoUrl: videoInfo.url || window.location.href,
-      startTime: loop.startTime,
-      endTime: loop.endTime,
-      description: loop.description,
-      createdAt: new Date(), // New creation time for each export
-      updatedAt: new Date()
-    }))
-    
-    console.log('FluentFlow: Exported loops with NEW IDs:', exported.length, exported.map(l => ({ id: l.id, title: l.title })))
-    return exported
+    try {
+      // Create transcript service instance (using static import)
+      console.log('🔧 FluentFlow: Creating YouTubeTranscriptService instance...')
+      const transcriptService = new YouTubeTranscriptService()
+      console.log('✅ FluentFlow: YouTubeTranscriptService instance created')
+      
+      // Generate NEW IDs for each export to ensure each Control+E creates NEW loops
+      console.log('🔄 FluentFlow: Processing loops with transcript extraction...')
+      const exported = await Promise.all(this.activeLoops.map(async (loop, index) => {
+        console.log(`\n🔍 FluentFlow: Processing loop ${index + 1}/${this.activeLoops.length}: "${loop.title}"`)
+        console.log(`⏱️ FluentFlow: Time range: ${loop.startTime}s - ${loop.endTime}s`)
+        
+        let transcript = ''
+        let segments: Array<{ text: string; start: number; duration: number }> = []
+        let language = 'auto'
+        
+        // Try to extract transcript for this loop's time range
+        try {
+          console.log(`📝 FluentFlow: Extracting transcript for loop "${loop.title}" (${loop.startTime}s - ${loop.endTime}s)`)
+          console.log(`🎯 FluentFlow: Using video ID: ${videoInfo.id}`)
+          
+          const transcriptResult = await transcriptService.getTranscriptSegment(
+            videoInfo.id,
+            loop.startTime,
+            loop.endTime,
+            'en' // Default to English, could be made configurable
+          )
+          
+          console.log('🔍 FluentFlow: Transcript service response:', {
+            hasResult: !!transcriptResult,
+            segmentCount: transcriptResult?.segments?.length || 0,
+            textLength: transcriptResult?.fullText?.length || 0,
+            language: transcriptResult?.language
+          })
+          
+          if (transcriptResult && transcriptResult.segments.length > 0) {
+            transcript = transcriptResult.fullText
+            segments = transcriptResult.segments
+            language = transcriptResult.language
+            console.log(`✅ FluentFlow: Successfully extracted transcript for "${loop.title}":`)
+            console.log(`   📊 Segments: ${segments.length}`)
+            console.log(`   📝 Characters: ${transcript.length}`)
+            console.log(`   🌍 Language: ${language}`)
+            console.log(`   📄 Sample text: "${transcript.substring(0, 100)}${transcript.length > 100 ? '...' : ''}"`)
+          } else {
+            console.log(`⚠️ FluentFlow: No transcript segments found for "${loop.title}"`)
+          }
+        } catch (error) {
+          console.error(`❌ FluentFlow: Failed to extract transcript for loop "${loop.title}":`, {
+            error: error instanceof Error ? error.message : error,
+            stack: error instanceof Error ? error.stack : undefined,
+            videoId: videoInfo.id,
+            timeRange: `${loop.startTime}s - ${loop.endTime}s`
+          })
+          // Continue without transcript - not a blocking error
+        }
+        
+        const loopData = {
+          id: uuidv4(), // 🔥 NEW ID for each export - this prevents updating existing loops
+          title: loop.title,
+          videoId: videoInfo.id,
+          videoTitle: videoInfo.title,
+          videoUrl: videoInfo.url || window.location.href,
+          startTime: loop.startTime,
+          endTime: loop.endTime,
+          description: loop.description,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          // Include transcript data
+          transcript,
+          segments,
+          language,
+          hasTranscript: !!(transcript && transcript.trim())
+        }
+        
+        console.log(`✅ FluentFlow: Created loop data for "${loop.title}":`, {
+          id: loopData.id,
+          hasTranscript: loopData.hasTranscript,
+          segmentCount: loopData.segments.length,
+          transcriptLength: loopData.transcript.length
+        })
+        
+        return loopData
+      }))
+      
+      console.log('🎉 FluentFlow: Successfully processed all loops!')
+      console.log('📊 FluentFlow: Export summary:', {
+        totalLoops: exported.length,
+        loopsWithTranscript: exported.filter(l => l.hasTranscript).length,
+        loopsWithoutTranscript: exported.filter(l => !l.hasTranscript).length
+      })
+      
+      console.log('📋 FluentFlow: Exported loops details:', exported.map(l => ({
+        id: l.id,
+        title: l.title,
+        hasTranscript: l.hasTranscript,
+        segmentCount: l.segments.length,
+        transcriptLength: l.transcript.length
+      })))
+      
+      return exported
+      
+    } catch (error) {
+      console.error('💥 FluentFlow: Critical error during loop export:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined,
+        activeLoopsCount: this.activeLoops.length,
+        videoId: videoInfo.id
+      })
+      throw error
+    }
   }
+
 
   public importLoops(savedLoops: SavedLoop[]): void {
     const videoInfo = this.player.getVideoInfo()

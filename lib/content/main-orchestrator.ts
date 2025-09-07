@@ -128,8 +128,8 @@ export class FluentFlowOrchestrator {
         id: 'fluent-flow-loop-export',
         title: 'Export Current Loops',
         icon: this.uiUtilities.getExportIcon(),
-        action: () => this.exportCurrentLoops(),
-        rightClick: () => this.exportCurrentLoopsWithPrompt(),
+        action: async () => await this.exportCurrentLoops(),
+        rightClick: async () => await this.exportCurrentLoopsWithPrompt(),
         group: 'loop'
       },
 
@@ -279,7 +279,9 @@ export class FluentFlowOrchestrator {
             event.preventDefault()
             event.stopPropagation()
             console.log('FluentFlow: Export loops with prompt')
-            this.exportCurrentLoopsWithPrompt()
+            this.exportCurrentLoopsWithPrompt().catch(error => {
+              console.error('FluentFlow: Export with prompt failed:', error)
+            })
             break
         }
       }
@@ -610,52 +612,125 @@ export class FluentFlowOrchestrator {
     this.uiUtilities.toggleSidebar()
   }
 
-  private exportCurrentLoops(): void {
-    const exported = this.multipleLoopsFeature.exportCurrentLoops()
-    if (exported && exported.length > 0) {
-      // Save exported loops to storage
-      chrome.runtime.sendMessage({
-        type: 'SAVE_LOOPS',
-        loops: exported
+  private async exportCurrentLoops(): Promise<void> {
+    console.log('🚀 FluentFlow: Export button clicked - starting export process...')
+    
+    try {
+      console.log('🔄 FluentFlow: Calling multipleLoopsFeature.exportCurrentLoops()...')
+      const exported = await this.multipleLoopsFeature.exportCurrentLoops()
+      console.log('✅ FluentFlow: Export completed, received loops:', exported?.length || 0)
+      
+      if (exported && exported.length > 0) {
+        console.log('💾 FluentFlow: Sending loops to background script for storage...')
+        console.log('📦 FluentFlow: Message payload:', {
+          type: 'SAVE_LOOPS',
+          loopCount: exported.length,
+          loops: exported.map(l => ({ id: l.id, title: l.title, hasTranscript: l.hasTranscript }))
+        })
+        
+        // Save exported loops to storage
+        chrome.runtime.sendMessage({
+          type: 'SAVE_LOOPS',
+          loops: exported
+        }, (response) => {
+          console.log('📬 FluentFlow: Background script response:', response)
+          if (chrome.runtime.lastError) {
+            console.error('❌ FluentFlow: Chrome runtime error:', chrome.runtime.lastError)
+          }
+        })
+        
+        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+        this.uiUtilities.showToast(`Exported ${exported.length} loop(s)`)
+        console.log(`🎉 FluentFlow: Successfully exported ${exported.length} loop(s)`)
+        
+        setTimeout(() => {
+          this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
+        }, 2000)
+      } else {
+        console.log('⚠️ FluentFlow: No loops to export')
+        this.uiUtilities.showToast('No loops to export')
+      }
+    } catch (error) {
+      console.error('💥 FluentFlow: Export failed with error:', {
+        error: error instanceof Error ? error.message : error,
+        stack: error instanceof Error ? error.stack : undefined
       })
-      this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
-      this.uiUtilities.showToast(`Exported ${exported.length} loop(s)`)
-      setTimeout(() => {
-        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
-      }, 2000)
-    } else {
-      this.uiUtilities.showToast('No loops to export')
+      this.uiUtilities.showToast('Export failed - check console for details')
     }
   }
 
-  private exportCurrentLoopsWithPrompt(): void {
+  private async exportCurrentLoopsWithPrompt(): Promise<void> {
+    console.log('🚀 FluentFlow: Export with prompt triggered...')
+    
     const loops = this.multipleLoopsFeature.getActiveLoops()
+    console.log('📊 FluentFlow: Active loops for export:', loops.length)
+    
     if (loops.length === 0) {
+      console.log('⚠️ FluentFlow: No loops to export')
       this.uiUtilities.showToast('No loops to export')
       return
     }
 
+    console.log('💬 FluentFlow: Prompting user for description...')
     const description = prompt(`Export ${loops.length} loop(s)? Enter optional description:`)
+    console.log('📝 FluentFlow: User description input:', description !== null ? `"${description}"` : 'cancelled')
+    
     if (description !== null) {
-      const exported = this.multipleLoopsFeature.exportCurrentLoops()
-      if (exported && exported.length > 0) {
-        // Add description to all loops if provided
-        if (description.trim()) {
-          exported.forEach(loop => {
-            loop.description = description.trim()
-          })
-        }
+      try {
+        console.log('🔄 FluentFlow: Calling multipleLoopsFeature.exportCurrentLoops()...')
+        const exported = await this.multipleLoopsFeature.exportCurrentLoops()
+        console.log('✅ FluentFlow: Export completed, received loops:', exported?.length || 0)
+        
+        if (exported && exported.length > 0) {
+          // Add description to all loops if provided
+          if (description.trim()) {
+            console.log('📝 FluentFlow: Adding description to all loops:', description.trim())
+            exported.forEach(loop => {
+              loop.description = description.trim()
+            })
+          }
 
-        chrome.runtime.sendMessage({
-          type: 'SAVE_LOOPS',
-          loops: exported
+          console.log('💾 FluentFlow: Sending loops to background script for storage...')
+          console.log('📦 FluentFlow: Message payload:', {
+            type: 'SAVE_LOOPS',
+            loopCount: exported.length,
+            loops: exported.map(l => ({ 
+              id: l.id, 
+              title: l.title, 
+              description: l.description,
+              hasTranscript: l.hasTranscript 
+            }))
+          })
+
+          chrome.runtime.sendMessage({
+            type: 'SAVE_LOOPS',
+            loops: exported
+          }, (response) => {
+            console.log('📬 FluentFlow: Background script response:', response)
+            if (chrome.runtime.lastError) {
+              console.error('❌ FluentFlow: Chrome runtime error:', chrome.runtime.lastError)
+            }
+          })
+          
+          this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
+          this.uiUtilities.showToast(`Exported ${exported.length} loop(s) with description`)
+          console.log(`🎉 FluentFlow: Successfully exported ${exported.length} loop(s) with description`)
+          
+          setTimeout(() => {
+            this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
+          }, 2000)
+        } else {
+          console.log('⚠️ FluentFlow: No loops received from export')
+        }
+      } catch (error) {
+        console.error('💥 FluentFlow: Export with prompt failed:', {
+          error: error instanceof Error ? error.message : error,
+          stack: error instanceof Error ? error.stack : undefined
         })
-        this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
-        this.uiUtilities.showToast(`Exported ${exported.length} loop(s) with description`)
-        setTimeout(() => {
-          this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'inactive')
-        }, 2000)
+        this.uiUtilities.showToast('Export failed - check console for details')
       }
+    } else {
+      console.log('❌ FluentFlow: Export cancelled by user')
     }
   }
 

@@ -82,7 +82,7 @@ export function GroupQuizPreview({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8 sm:px-6 lg:px-8">
+      <div className="container mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
@@ -171,7 +171,10 @@ export function GroupQuizPreview({
 
           {/* Question Sets in Tabs */}
           <Tabs defaultValue="set-0" className="w-full">
-            <TabsList className="mb-4 grid h-auto w-full grid-cols-3 rounded-lg bg-gray-200/75 p-1">
+            <TabsList className={`mb-4 grid h-auto w-full rounded-lg bg-gray-200/75 p-1 ${
+              difficultyGroups.length === 1 ? 'grid-cols-1' :
+              difficultyGroups.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+            }`}>
               {difficultyGroups.map((group, setIndex) => (
                 <TabsTrigger
                   key={setIndex}
@@ -184,7 +187,7 @@ export function GroupQuizPreview({
             </TabsList>
             {difficultyGroups.map((group, setIndex) => (
               <TabsContent key={setIndex} value={`set-${setIndex}`}>
-                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                   {group.questions.map((question, questionIndex) => (
                     <div
                       key={question.id || questionIndex}
