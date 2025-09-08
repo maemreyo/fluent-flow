@@ -1,6 +1,6 @@
 'use client'
 
-import { use } from 'react'
+import { use, useEffect } from 'react'
 import { GroupQuizActiveView } from '../components/GroupQuizActiveView'
 import { useQuizFlow } from '../shared/hooks/useQuizFlow'
 
@@ -34,8 +34,18 @@ export default function ActivePage({ params }: ActivePageProps) {
     difficultyGroups,
     handleNavigateToQuestion,
     handleNavigatePrevious,
-    handleNavigateNext
+    handleNavigateNext,
+    navigateToResults,
+    appState
   } = useQuizFlow({ groupId, sessionId })
+
+  // Auto-navigate to results when quiz is completed
+  useEffect(() => {
+    if (appState === 'quiz-results') {
+      console.log('🎯 Quiz completed, navigating to results page')
+      navigateToResults()
+    }
+  }, [appState, navigateToResults])
 
   // Group settings
   const groupSettings = (group as any)?.settings || {}

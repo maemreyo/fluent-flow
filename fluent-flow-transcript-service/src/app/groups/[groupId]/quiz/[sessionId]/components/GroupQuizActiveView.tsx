@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Clock } from 'lucide-react'
-import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
 import {
@@ -139,10 +138,17 @@ export function GroupQuizActiveView({
     }
   }, [timeRemaining, timerStarted, setSubmitted, handleNext])
 
-  // Reset selectedAnswer when question or set changes
+  // Reset selectedAnswer when question or set changes - IMPORTANT FIX
   useEffect(() => {
-    setSelectedAnswer('')
-  }, [currentQuestion?.questionIndex, currentSetIndex])
+    const currentResponse = responses.find(r => r.questionIndex === currentQuestion?.questionIndex)
+    if (currentResponse) {
+      // If there's already a response for this question, show it
+      setSelectedAnswer(currentResponse.answer)
+    } else {
+      // No response yet - clear selection
+      setSelectedAnswer('')
+    }
+  }, [currentQuestion?.questionIndex, currentSetIndex, responses])
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -411,14 +417,14 @@ export function GroupQuizActiveView({
               {question?.options?.map((option: any, index: number) => {
                 const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
                 const isSelected = selectedAnswer === optionLetter
-                const wasAnswered = currentResponse?.answer === optionLetter
+                // Remove wasAnswered logic - only use isSelected
 
                 return (
                   <button
                     key={optionLetter}
                     onClick={() => handleAnswerClick(optionLetter)}
                     className={`w-full rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
-                      isSelected || wasAnswered
+                      isSelected
                         ? 'border-indigo-300 bg-indigo-50 shadow-sm'
                         : 'border-gray-200 hover:border-gray-300'
                     }`}
@@ -426,7 +432,7 @@ export function GroupQuizActiveView({
                     <div className="flex items-start gap-4">
                       <div
                         className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold ${
-                          isSelected || wasAnswered
+                          isSelected
                             ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
                             : 'border-gray-300 text-gray-600'
                         }`}
@@ -435,7 +441,7 @@ export function GroupQuizActiveView({
                       </div>
                       <span
                         className={`leading-relaxed ${
-                          isSelected || wasAnswered ? 'text-indigo-800' : 'text-gray-700'
+                          isSelected ? 'text-indigo-800' : 'text-gray-700'
                         }`}
                       >
                         {option}

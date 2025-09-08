@@ -1,0 +1,5 @@
+Cần xử lý 1 vài vấn đề như sau:
+1. Xử lý việc query, hiện tại query cho từng loại câu hỏi khi vào từng màn hình là quá nhiều, có cách nào caching không? React query có thể sử dụng được không?
+2. Khi tôi hit `View Result` ở màn /active thì không có gì xảy ra
+3. Các ô questions không reset khi chuyển set, nó vẫn hiển thị là answer
+4. Cần xử lý việc user back lại từ trình duyệt thế nào? hoặc user vào từ 1 link mà không phải từ đầu flow. setup -> info -> active ...
