@@ -896,8 +896,64 @@ const supabaseService = {
       throw error
     }
 
-    return data.id
-  },
+    const transcriptId = data.id
+
+    // 🚀 NEW: Auto-link transcript with existing loop segments that match video_id and timeframe
+    try {
+      console.log(`🔄 FluentFlow: Linking transcript ${transcriptId} with matching loop segments for video ${videoId}`)
+      
+      const { data: matchingSegments, error: segmentError } = await supabase
+        .from('loop_segments')
+        .select('id, session_id')
+        .eq('transcript_id', null) // Only update segments that don't have transcript yet
+        .gte('start_time', startTime - 0.1) // Allow small tolerance for floating point precision
+        .lte('start_time', startTime + 0.1)
+        .gte('end_time', endTime - 0.1)
+        .lte('end_time', endTime + 0.1)
+        .in('session_id', 
+          supabase
+            .from('practice_sessions')
+            .select('id')
+            .eq('video_id', videoId)
+        )
+
+      if (segmentError) {
+        console.error('Error finding matching segments:', segmentError)
+      } else if (matchingSegments && matchingSegments.length > 0) {
+        console.log(`🔗 FluentFlow: Found ${matchingSegments.length} matching loop segments to link`)
+        
+        // Update all matching segments to link with this transcript
+        const segmentIds = matchingSegments.map(s => s.id)
+        const { error: updateError } = await supabase
+          .from('loop_segments')
+          .update({
+            transcript_id: transcriptId,
+            has_transcript: true,
+            transcript_metadata: {
+              language: language,
+              segmentCount: segments.length,
+              textLength: fullText.length,
+              lastUpdated: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .in('id', segmentIds)
+
+        if (updateError) {
+          console.error('Error linking transcript to segments:', updateError)
+        } else {
+          console.log(`✅ FluentFlow: Successfully linked transcript ${transcriptId} to ${segmentIds.length} loop segments`)
+        }
+      } else {
+        console.log(`ℹ️ FluentFlow: No matching loop segments found for transcript ${transcriptId}`)
+      }
+    } catch (linkError) {
+      console.error('Error during transcript linking:', linkError)
+      // Don't throw - transcript save succeeded, linking is bonus
+    }
+
+    return transcriptId
+  },,
 
   async updateLoopWithTranscript(
     segmentId: string,
