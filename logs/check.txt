@@ -1,0 +1,46 @@
+Investigation Report: Quiz Flow Redirect Issue
+
+## Problem
+
+When starting a quiz from the `/preview` screen, the user is taken to the `/active` screen and then immediately redirected to the `/setup` screen.
+
+## Root Cause
+
+The root cause is an overly aggressive state initialization `useEffect` within the `useGroupQuiz.ts` hook. This hook is the central piece of state management for the quiz.
+
+File: `fluent-flow-transcript-service/src/app/groups/[groupId]/quiz/[sessionId]/hooks/useGroupQuiz.ts`
+
+The problematic code is this `useEffect`:
+
+```typescript
+  useEffect(() => {
+    const isLoading = sessionLoading || groupLoading || participantsLoading
+
+    if (isLoading) {
+      setAppState('loading')
+    } else if (sessionError || groupError) {
+      setAppState('error')
+    } else if (session && group) {
+      // This line is the problem. It always resets the state.
+      setAppState('preset-selection')
+    }
+  }, [
+    sessionLoading,
+    groupLoading,
+    participantsLoading,
+    sessionError,
+    groupError,
+    session,
+    group
+  ])
+```
+
+## Detailed Flow Analysis
+
+1.  **On `/preview` page:** The user has selected questions, and the application state (`appState`) is `'question-preview'`.
+2.  **Click "Start Quiz":** The `handleStartQuizFromPreview` function is called, which correctly sets `appState` to `'quiz-active'`.
+3.  **Navigation to `/active`:** A wrapper hook (`useQuizFlow`) observes the `appState` change and navigates the user to the `/active` page.
+4.  **`/active` Page Mounts:** The component for the `/active` page mounts, which re-initializes the entire chain of quiz hooks, including `useGroupQuiz`.
+5.  **State Reset:** As `useGroupQuiz` initializes, its queries for `session` and `group` data resolve (often from a cache). This triggers the problematic `useEffect`.
+6.  **The Flaw:** The `useEffect` runs and, because `session` and `group` data exist, it unconditionally executes `setAppState('preset-selection')`. This overwrites the correct `'quiz-active'` state that was just set.
+7.  **Incorrect Redirect:** The `useQuizFlow` hook, also running on the `/active` page, now sees that the URL corresponds to the `'active'` step, but the `appState` from `useGroupQuiz` corresponds to the `'setup'` step. To correct this discrepancy, it redirects the user to the `/setup` page.

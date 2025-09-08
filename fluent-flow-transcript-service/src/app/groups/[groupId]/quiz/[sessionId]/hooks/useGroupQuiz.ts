@@ -230,12 +230,17 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         state: (session as any).state,
         quiz_title: session.quiz_title,
         created_by: session.created_by,
-        started_at: session.started_at
+        started_at: session.started_at,
+        currentAppState: appState
       })
       
-      // Show preset selection first - questions will be generated manually by owner
-      console.log('📝 Setting appState to: preset-selection')
-      setAppState('preset-selection')
+      // CRITICAL FIX: Only initialize state if currently in loading/error, preserve advanced states
+      if (appState === 'loading' || appState === 'error') {
+        console.log('📝 Initializing appState to: preset-selection')
+        setAppState('preset-selection')
+      } else {
+        console.log(`📝 Preserving existing appState: ${appState} (not overriding with preset-selection)`)
+      }
     } else {
       console.log('⚠️ No state match, staying in current state')
     }

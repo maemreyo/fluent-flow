@@ -1,0 +1,279 @@
+page.tsx:48 🚀 Starting quiz from preview with shareTokens: {medium: 'c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753', hard: '5f936968-8ba3-49bc-9662-41367c28470a', easy: 'b8f4c405-3a2f-45ac-ab3e-998a9f29eae9'}easy: "b8f4c405-3a2f-45ac-ab3e-998a9f29eae9"hard: "5f936968-8ba3-49bc-9662-41367c28470a"medium: "c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753"[[Prototype]]: Object
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: quiz-active
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '102s ago', …}
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: quiz-active
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '102s ago', …}
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: quiz-active
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/preview', expectedStep: 'active', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/active', appState: 'quiz-active'}
+useQuizFlow.ts:143 ✅ Step mismatch allowed: preview -> active
+useQuizBroadcast.ts:28 🚀 Broadcasting quiz session start... {sessionId: '6e9f5219-bfcf-43ca-be77-3f3905082796', userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useQuizBroadcast.ts:58 ✅ Quiz session start broadcasted successfully
+page.tsx:57 ✅ Quiz session start broadcasted from preview, navigating to active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: quiz-active
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: quiz-active
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useRealtimeSession.ts:130 Disconnecting from realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useQuizSync.ts:157 📡 Disconnecting from quiz sync: 6e9f5219-bfcf-43ca-be77-3f3905082796
+useGroupQuiz.ts:208 🔍 useGroupQuiz state management: {isLoading: false, sessionLoading: false, groupLoading: false, participantsLoading: false, sessionError: null, …}
+useGroupQuiz.ts:227 📊 Session data: {id: '6e9f5219-bfcf-43ca-be77-3f3905082796', status: 'active', state: undefined, quiz_title: undefined, created_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useGroupQuiz.ts:239 📝 Initializing appState to: preset-selection
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/active', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'loading'}
+useQuizFlow.ts:132 ⚠️ User on active page but no questions ready, redirecting to setup
+useRealtimeSession.ts:130 Disconnecting from realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useGroupQuiz.ts:208 🔍 useGroupQuiz state management: {isLoading: false, sessionLoading: false, groupLoading: false, participantsLoading: false, sessionError: null, …}
+useGroupQuiz.ts:227 📊 Session data: {id: '6e9f5219-bfcf-43ca-be77-3f3905082796', status: 'active', state: undefined, quiz_title: undefined, created_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useGroupQuiz.ts:239 📝 Initializing appState to: preset-selection
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/active', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'loading'}
+useQuizFlow.ts:132 ⚠️ User on active page but no questions ready, redirecting to setup
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useGroupQuiz.ts:267 🔄 Checking for existing questions...
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/active', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'preset-selection'}
+useQuizFlow.ts:132 ⚠️ User on active page but no questions ready, redirecting to setup
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: question-info
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: question-info
+useQuizFlow.ts:48 📊 Session status: active
+FallbackParticipantsSidebar.tsx:17 🧑‍🤝‍🧑 FallbackParticipantsSidebar debug: {participants: Array(2), onlineParticipants: Array(2)}
+FallbackParticipantsSidebar.tsx:17 🧑‍🤝‍🧑 FallbackParticipantsSidebar debug: {participants: Array(2), onlineParticipants: Array(2)}
+useRealtimeSession.ts:116 Connected to realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 0, shareTokens: {…}, hasQuestions: false, availableTokensCount: 0}
+StartQuizSection.tsx:31 ❌ StartQuizSection hidden - no questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 0, shareTokens: {…}, hasQuestions: false, availableTokensCount: 0}
+StartQuizSection.tsx:31 ❌ StartQuizSection hidden - no questions available
+useRealtimeSession.ts:130 Disconnecting from realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useGroupQuiz.ts:208 🔍 useGroupQuiz state management: {isLoading: false, sessionLoading: false, groupLoading: false, participantsLoading: false, sessionError: null, …}
+useGroupQuiz.ts:227 📊 Session data: {id: '6e9f5219-bfcf-43ca-be77-3f3905082796', status: 'active', state: undefined, quiz_title: undefined, created_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useGroupQuiz.ts:239 📝 Initializing appState to: preset-selection
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'loading'}
+useQuizFlow.ts:146 ✅ Navigation correct: on setup as expected
+useQuestionGeneration.ts:60 🔄 [useGroupQuestionGeneration] Syncing from cache: {cachedShareTokens: {…}, cachedCounts: {…}}
+useQuizSync.ts:73 🔌 Setting up quiz sync... {sessionId: '6e9f5219-bfcf-43ca-be77-3f3905082796', canManage: true, userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useRealtimeSession.ts:130 Disconnecting from realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useQuizSync.ts:157 📡 Disconnecting from quiz sync: 6e9f5219-bfcf-43ca-be77-3f3905082796
+useGroupQuiz.ts:208 🔍 useGroupQuiz state management: {isLoading: false, sessionLoading: false, groupLoading: false, participantsLoading: false, sessionError: null, …}
+useGroupQuiz.ts:227 📊 Session data: {id: '6e9f5219-bfcf-43ca-be77-3f3905082796', status: 'active', state: undefined, quiz_title: undefined, created_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useGroupQuiz.ts:239 📝 Initializing appState to: preset-selection
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: loading
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'loading'}
+useQuizFlow.ts:146 ✅ Navigation correct: on setup as expected
+useQuestionGeneration.ts:60 🔄 [useGroupQuestionGeneration] Syncing from cache: {cachedShareTokens: {…}, cachedCounts: {…}}
+useQuizSync.ts:73 🔌 Setting up quiz sync... {sessionId: '6e9f5219-bfcf-43ca-be77-3f3905082796', canManage: true, userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+useGroupQuiz.ts:267 🔄 Checking for existing questions...
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useQuizFlow.ts:96 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', expectedStep: 'setup', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', appState: 'preset-selection'}
+useQuizFlow.ts:146 ✅ Navigation correct: on setup as expected
+useQuizSync.ts:78 📡 Quiz sync established
+useRealtimeSession.ts:116 Connected to realtime channel: group-quiz-6e9f5219-bfcf-43ca-be77-3f3905082796
+useQuizSync.ts:142 📡 Connected to quiz sync: 6e9f5219-bfcf-43ca-be77-3f3905082796
+useQuizSync.ts:78 📡 Quiz sync established
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '103s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+useQuizSync.ts:78 📡 Quiz sync established
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useRealtimeSession.ts:52 Syncing presence state
+useRealtimeSession.ts:56 New users joined: [{…}]
+useRealtimeSession.ts:52 Syncing presence state
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '104s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+useQuestionGeneration.ts:87 📦 Loaded current preset from database: Quick Review
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '105s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+useQuizFlow.ts:47 🎯 getCurrentStep - appState: preset-selection
+useQuizFlow.ts:48 📊 Session status: active
+useSharedQuestions.ts:94 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '105s ago', …}
+page.tsx:50 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+page.tsx:186 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+page.tsx:207 👑 Showing Owner preset selection view
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+StartQuizSection.tsx:23 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+StartQuizSection.tsx:35 ✅ StartQuizSection showing - questions available
+useGroupQuiz.ts:278 📦 Found existing questions: {success: true, data: {…}}
+useGroupQuiz.ts:294 🎯 Loading questions from existing shareTokens: {medium: 'c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753', hard: '5f936968-8ba3-49bc-9662-41367c28470a', easy: 'b8f4c405-3a2f-45ac-ab3e-998a9f29eae9'}
+useGroupQuiz.ts:114 🔄 [loadQuestionsFromShareTokens] Loading questions with React Query caching: {medium: 'c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753', hard: '5f936968-8ba3-49bc-9662-41367c28470a', easy: 'b8f4c405-3a2f-45ac-ab3e-998a9f29eae9'}
+useGroupQuiz.ts:122 ✅ [loadQuestionsFromShareTokens] Using cached medium questions
+useGroupQuiz.ts:122 ✅ [loadQuestionsFromShareTokens] Using cached hard questions
+useGroupQuiz.ts:122 ✅ [loadQuestionsFromShareTokens] Using cached easy questions
+useGroupQuiz.ts:161 📚 Setting difficultyGroups from loaded questions: (3) ['medium: 6', 'hard: 6', 'easy: 6']
+ 📦 Loaded current preset from database: Quick Review
+ 🎯 getCurrentStep - appState: preset-selection
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎯 getCurrentStep - appState: preset-selection
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
+ 📦 Found existing questions: {success: true, data: {…}}
+ 🎯 Loading questions from existing shareTokens: {medium: 'c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753', hard: '5f936968-8ba3-49bc-9662-41367c28470a', easy: 'b8f4c405-3a2f-45ac-ab3e-998a9f29eae9'}
+ 🔄 [loadQuestionsFromShareTokens] Loading questions with React Query caching: {medium: 'c92fc64d-4dc5-45f1-8fe8-2cbcb8f83753', hard: '5f936968-8ba3-49bc-9662-41367c28470a', easy: 'b8f4c405-3a2f-45ac-ab3e-998a9f29eae9'}
+ ✅ [loadQuestionsFromShareTokens] Using cached medium questions
+ ✅ [loadQuestionsFromShareTokens] Using cached hard questions
+ ✅ [loadQuestionsFromShareTokens] Using cached easy questions
+ 📚 Setting difficultyGroups from loaded questions: (3) ['medium: 6', 'hard: 6', 'easy: 6']
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🧭 Navigation check: {currentPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/setup', expectedStep: 'info', expectedPath: '/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/6e9f5219-bfcf-43ca-be77-3f3905082796/info', appState: 'question-info'}
+ ✅ Step mismatch allowed: setup -> info
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🧑‍🤝‍🧑 FallbackParticipantsSidebar debug: {participants: Array(2), onlineParticipants: Array(2)}
+ 🧑‍🤝‍🧑 FallbackParticipantsSidebar debug: {participants: Array(2), onlineParticipants: Array(2)}
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎯 getCurrentStep - appState: question-info
+ 📊 Session status: active
+ 🔍 [useSharedQuestions] Cache status: {hasData: true, isLoading: false, isFetching: false, isStale: false, dataAge: '106s ago', …}
+ 🔍 Permission Debug: {user: {…}, group: {…}, session: {…}, canManageQuiz: true, isOwner: true, …}
+ 🔐 Setup page permission check: {canManageQuiz: true, isOwner: true, isAdmin: false, isSessionCreator: true, userRole: 'owner'}
+ 👑 Showing Owner preset selection view
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
+ 🎮 StartQuizSection debug: {totalGenerated: 18, shareTokens: {…}, hasQuestions: true, availableTokensCount: 3}
+ ✅ StartQuizSection showing - questions available
