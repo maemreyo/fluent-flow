@@ -1,14 +1,35 @@
-Investigated why videoUrl is undefined in QuestionReviewList.tsx.
-
-1. Traced data flow from QuestionReviewList.tsx backwards.
-2. Identified that `results` prop comes from `useGroupQuizWithProgress` hook, which wraps `useGroupQuiz` hook.
-3. Found that `useGroupQuiz`'s `calculateFinalResults` function constructs the `results` object.
-4. The `videoUrl` was missing from the question result objects created in `calculateFinalResults`.
-5. The `videoUrl` is available in the `QuestionSet` but was not being stored.
-
-Fix implemented:
-
-1. In `useGroupQuiz.ts`, added a state variable `videoUrl`.
-2. In `useGroupQuiz.ts`, modified `handlePresetSelect` to extract and store `videoUrl` from the loaded `questionSet`.
-3. In `useGroupQuiz.ts`, updated `calculateFinalResults` to include the stored `videoUrl` in each question's result object.
-4. Added logging in `useGroupQuiz.ts` and `QuestionReviewList.tsx` to monitor the data flow for verification.
+useQuestionGeneration.ts:64 Loaded current preset from database: Balanced Learning
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/5941bfdd-36c2-47b6-9dab-d0010d027c78 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+useRealtimeSession.ts:49 New users joined: [{…}]
+useRealtimeSession.ts:45 Syncing presence state
+useQuizSync.ts:75 📡 Quiz sync established
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/5941bfdd-36c2-47b6-9dab-d0010d027c78 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+await in useLoop.useQuery
+useQuizSync.ts:75 📡 Quiz sync established
+useLoops.ts:90  GET http://localhost:3838/api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/5941bfdd-36c2-47b6-9dab-d0010d027c78 404 (Not Found)
+useLoop.useQuery @ useLoops.ts:90
+await in useLoop.useQuery
+fetchFn @ query.ts:463
+useBaseQuery.useEffect @ useBaseQuery.ts:116
+useQuizSync.ts:83 🎯 Received preparation update: {step: 'preset-selection', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', data: {…}}
+useQuizSync.ts:84 🔄 Current syncState before update: {currentStep: 'preset-selection', questionsReady: false}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'preset-selection', questionsReady: false, selectedPreset: {…}, updated_at: '2025-09-08T06:40:38.285Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'preset-selection', questionsReady: false, selectedPreset: {…}, updated_at: '2025-09-08T06:40:38.285Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useQuizSync.ts:83 🎯 Received preparation update: {step: 'question-generation', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', data: {…}}
+useQuizSync.ts:84 🔄 Current syncState before update: {currentStep: 'preset-selection', questionsReady: false}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'question-generation', questionsReady: false, selectedPreset: {…}, updated_at: '2025-09-08T06:40:38.786Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'question-generation', questionsReady: false, selectedPreset: {…}, updated_at: '2025-09-08T06:40:38.786Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useQuizSync.ts:83 🎯 Received preparation update: {step: 'ready-to-start', updated_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', data: {…}}
+useQuizSync.ts:84 🔄 Current syncState before update: {currentStep: 'preset-selection', questionsReady: false}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'ready-to-start', questionsReady: true, selectedPreset: {…}, updated_at: '2025-09-08T06:40:48.434Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useQuizSync.ts:93 🔄 New syncState after update: {currentStep: 'ready-to-start', questionsReady: true, selectedPreset: {…}, updated_at: '2025-09-08T06:40:48.434Z', lastUpdatedBy: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', …}
+useQuizEventHandlers.ts:66 🎯 Received quiz session start: {started_by: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5', countdown: 5}
+useQuizEventHandlers.ts:76 🎯 Member transitioning to question-info state
+useGroupQuizWithProgress.ts:109 handleQuestionInfoStartWithCheck: Checking for existing results...
+useGroupQuizWithProgress.ts:47 useQuery: Actually calling checkExistingResults
+progress-tracking-service.ts:167 Found progress data: null
+useGroupQuizWithProgress.ts:62 Processing existing results: {hasResults: false}
+useGroupQuizWithProgress.ts:68 No existing results found, proceeding with quiz
+useGroupQuizWithProgress.ts:125 Progress reset for fresh quiz start (no existing results)

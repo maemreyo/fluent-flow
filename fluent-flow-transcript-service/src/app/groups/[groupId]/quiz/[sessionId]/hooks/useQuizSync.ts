@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
+import { toast } from 'sonner'
 import { useAuth } from '../../../../../../contexts/AuthContext'
 import { supabase } from '../../../../../../lib/supabase/client'
-import { toast } from 'sonner'
 import { useQuizBroadcast } from './useQuizBroadcast'
 import { useQuizEventHandlers } from './useQuizEventHandlers'
 
@@ -20,9 +20,18 @@ interface UseQuizSyncProps {
   sessionId: string
   canManage: boolean
   enabled?: boolean
+  onMemberStartQuizInfo?: () => void // Add callback for member state transition
+  onMemberResetToPresets?: () => void // Add callback for member reset
 }
 
-export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: UseQuizSyncProps) {
+export function useQuizSync({
+  groupId,
+  sessionId,
+  canManage,
+  enabled = true,
+  onMemberStartQuizInfo,
+  onMemberResetToPresets
+}: UseQuizSyncProps) {
   const { user } = useAuth()
   const [syncState, setSyncState] = useState<QuizSyncState>({
     currentStep: 'preset-selection',
@@ -32,13 +41,14 @@ export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: U
   const [channelRef, setChannelRef] = useState<any>(null)
 
   // Broadcasting functions
-  const { broadcastQuizSessionStart, broadcastPreparationUpdate } = useQuizBroadcast({
-    groupId,
-    sessionId,
-    channelRef,
-    canBroadcast: canManage,
-    userId: user?.id
-  })
+  const { broadcastQuizSessionStart, broadcastPreparationUpdate, broadcastSessionCancellation } =
+    useQuizBroadcast({
+      groupId,
+      sessionId,
+      channelRef,
+      canBroadcast: canManage,
+      userId: user?.id
+    })
 
   // Event handlers
   const { handleQuizSessionStartReceived } = useQuizEventHandlers({
@@ -46,7 +56,8 @@ export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: U
     sessionId,
     canManage,
     onBroadcastPreparationUpdate: broadcastPreparationUpdate,
-    onBroadcastQuizStart: broadcastQuizSessionStart
+    onBroadcastQuizStart: broadcastQuizSessionStart,
+    onMemberStartQuizInfo
   })
 
   // Setup real-time connection
@@ -65,18 +76,23 @@ export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: U
         setIsConnected(true)
       })
       // Listen for preparation updates
-      .on('broadcast', { event: 'quiz_preparation_change' }, (payload) => {
+      .on('broadcast', { event: 'quiz_preparation_change' }, payload => {
         const { type, step, updated_by, ...data } = payload.payload
 
         if (type === 'preparation_update' && updated_by !== user.id) {
-          console.log('🎯 Received preparation update:', { step, updated_by })
-          
-          setSyncState(prev => ({
-            ...prev,
-            currentStep: step,
-            ...data,
-            lastUpdatedBy: updated_by
-          }))
+          console.log('🎯 Received preparation update:', { step, updated_by, data })
+          console.log('🔄 Current syncState before update:', syncState)
+
+          setSyncState(prev => {
+            const newState = {
+              ...prev,
+              currentStep: step,
+              ...data,
+              lastUpdatedBy: updated_by
+            }
+            console.log('🔄 New syncState after update:', newState)
+            return newState
+          })
 
           // Show notifications for non-managing users
           if (!canManage) {
@@ -89,16 +105,36 @@ export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: U
         }
       })
       // Listen for quiz session starts
-      .on('broadcast', { event: 'quiz_session_start' }, (payload) => {
+      .on('broadcast', { event: 'quiz_session_start' }, payload => {
         const { type, started_by } = payload.payload
 
         if (type === 'quiz_session_starting' && started_by !== user.id) {
           handleQuizSessionStartReceived(payload.payload)
         }
       })
+      // Listen for session cancellations
+      .on('broadcast', { event: 'quiz_session_cancelled' }, payload => {
+        const { type, cancelled_by } = payload.payload
+
+        if (type === 'session_cancelled' && cancelled_by !== user.id) {
+          console.log('🛑 Received session cancellation from:', cancelled_by)
+
+          // Reset sync state
+          setSyncState({
+            currentStep: 'preset-selection',
+            questionsReady: false
+          })
+
+          // Reset member to preset selection if they're not the manager
+          if (!canManage && onMemberResetToPresets) {
+            toast.info('Session has been cancelled by organizer')
+            onMemberResetToPresets()
+          }
+        }
+      })
 
     // Subscribe
-    channel.subscribe(async (status) => {
+    channel.subscribe(async status => {
       if (status === 'SUBSCRIBED') {
         console.log(`📡 Connected to quiz sync: ${sessionId}`)
         setIsConnected(true)
@@ -120,12 +156,13 @@ export function useQuizSync({ groupId, sessionId, canManage, enabled = true }: U
       channel.unsubscribe()
       setIsConnected(false)
     }
-  }, [enabled, groupId, sessionId, user, canManage, handleQuizSessionStartReceived])
+  }, [enabled, groupId, sessionId, user, canManage])
 
   return {
     syncState,
     isConnected,
     broadcastQuizSessionStart,
-    broadcastPreparationUpdate
+    broadcastPreparationUpdate,
+    broadcastSessionCancellation
   }
 }

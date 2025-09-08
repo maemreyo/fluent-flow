@@ -130,12 +130,15 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   const {
     syncState,
     broadcastQuizSessionStart,
-    broadcastPreparationUpdate
+    broadcastPreparationUpdate,
+    broadcastSessionCancellation
   } = useQuizSync({
     groupId,
     sessionId,
     canManage: permissions.canManageQuiz(),
-    enabled: true
+    enabled: true,
+    onMemberStartQuizInfo: handleQuestionInfoStart, // Pass callback for member state transition
+    onMemberResetToPresets: handleGoBackToPresets // Pass callback for member reset
   })
 
   // Quiz startup hook
@@ -257,11 +260,19 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
 
     // Broadcast preset selection and generation start
     if (permissions.canManageQuiz()) {
-      broadcastPreparationUpdate('question-generation', {
-        selectedPreset: { ...presetInfo, distribution },
-        all: true,
-        completed: false
+      // First broadcast preset selection
+      broadcastPreparationUpdate('preset-selection', {
+        selectedPreset: { ...presetInfo, distribution }
       })
+      
+      // Then broadcast question generation start
+      setTimeout(() => {
+        broadcastPreparationUpdate('question-generation', {
+          selectedPreset: { ...presetInfo, distribution },
+          all: true,
+          completed: false
+        })
+      }, 500) // Small delay for smooth progression
     }
 
     await generateFromPreset(loopData, distribution, presetInfo)

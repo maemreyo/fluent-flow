@@ -10,6 +10,7 @@ interface UseQuizEventHandlersProps {
   canManage: boolean
   onBroadcastPreparationUpdate: (step: string, data: any) => void
   onBroadcastQuizStart: (title?: string) => Promise<boolean>
+  onMemberStartQuizInfo?: () => void // Add callback for member state transition
 }
 
 export function useQuizEventHandlers({
@@ -17,7 +18,8 @@ export function useQuizEventHandlers({
   sessionId,
   canManage,
   onBroadcastPreparationUpdate,
-  onBroadcastQuizStart
+  onBroadcastQuizStart,
+  onMemberStartQuizInfo
 }: UseQuizEventHandlersProps) {
   const router = useRouter()
 
@@ -63,17 +65,30 @@ export function useQuizEventHandlers({
     
     console.log('🎯 Received quiz session start:', { started_by, countdown })
     
-    // Show countdown and redirect
-    toast.success(`Quiz starting in ${countdown} seconds!`, {
-      duration: countdown * 1000
-    })
+    // For members: transition to question-info state instead of redirecting
+    if (!canManage && onMemberStartQuizInfo) {
+      toast.success(`Quiz starting! Transitioning to info screen...`, {
+        duration: 3000
+      })
+      
+      // Immediately transition member to question-info state  
+      setTimeout(() => {
+        console.log('🎯 Member transitioning to question-info state')
+        onMemberStartQuizInfo()
+      }, 1000) // 1 second delay for smooth transition
+      
+    } else if (canManage) {
+      // For owners/admins: show countdown and redirect (existing behavior)
+      toast.success(`Quiz starting in ${countdown} seconds!`, {
+        duration: countdown * 1000
+      })
 
-    // Auto-redirect after countdown
-    setTimeout(() => {
-      console.log('🎯 Auto-redirecting to quiz after countdown')
-      router.push(`/groups/${groupId}/quiz/${sessionId}`)
-    }, countdown * 1000)
-  }, [router, groupId, sessionId])
+      setTimeout(() => {
+        console.log('🎯 Owner auto-redirecting to quiz after countdown')
+        router.push(`/groups/${groupId}/quiz/${sessionId}`)
+      }, countdown * 1000)
+    }
+  }, [router, groupId, sessionId, canManage, onMemberStartQuizInfo])
 
   return {
     handlePresetSelected,

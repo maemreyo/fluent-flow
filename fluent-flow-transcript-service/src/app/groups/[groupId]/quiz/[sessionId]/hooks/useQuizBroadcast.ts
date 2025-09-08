@@ -63,7 +63,12 @@ export function useQuizBroadcast({
   }, [canBroadcast, channelRef, userId, sessionId, groupId])
 
   const broadcastPreparationUpdate = useCallback(async (step: string, data: any) => {
-    if (!canBroadcast || !channelRef || !userId) return
+    console.log('📡 Attempting to broadcast preparation update:', { step, data, canBroadcast, hasChannel: !!channelRef, userId })
+    
+    if (!canBroadcast || !channelRef || !userId) {
+      console.log('⚠️ Cannot broadcast preparation update:', { canBroadcast, hasChannel: !!channelRef, userId })
+      return
+    }
 
     try {
       const payload = {
@@ -73,6 +78,8 @@ export function useQuizBroadcast({
         updated_by: userId,
         updated_at: new Date().toISOString()
       }
+      
+      console.log('📡 Broadcasting payload:', payload)
 
       await channelRef.send({
         type: 'broadcast',
@@ -80,14 +87,46 @@ export function useQuizBroadcast({
         payload
       })
 
-      console.log('✅ Preparation update broadcasted:', step)
+      console.log('✅ Preparation update broadcasted successfully:', step)
     } catch (error) {
       console.error('❌ Failed to broadcast preparation update:', error)
     }
   }, [canBroadcast, channelRef, userId])
 
+  const broadcastSessionCancellation = useCallback(async () => {
+    if (!canBroadcast || !channelRef || !userId) {
+      console.log('⚠️ Cannot broadcast session cancellation')
+      return false
+    }
+
+    console.log('🛑 Broadcasting session cancellation...', { sessionId, userId })
+
+    try {
+      const payload = {
+        type: 'session_cancelled',
+        cancelled_by: userId,
+        cancelled_at: new Date().toISOString(),
+        sessionId
+      }
+
+      // Broadcast to session participants
+      await channelRef.send({
+        type: 'broadcast',
+        event: 'quiz_session_cancelled',
+        payload
+      })
+
+      console.log('✅ Session cancellation broadcasted successfully')
+      return true
+    } catch (error) {
+      console.error('❌ Failed to broadcast session cancellation:', error)
+      return false
+    }
+  }, [canBroadcast, channelRef, userId, sessionId])
+
   return {
     broadcastQuizSessionStart,
-    broadcastPreparationUpdate
+    broadcastPreparationUpdate,
+    broadcastSessionCancellation
   }
 }
