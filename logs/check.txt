@@ -1,5 +1,1 @@
-
-
-. Tính năng auto chuyển set câu hỏi đang bị lỗi, tôi làm xong set 1, chuyển tới màn hình complete set 1, nó đếm giây, rồi sang luôn complete set 2, mà tôi chưa làm set 2
-
-
+Tính năng auto chuyển set câu hỏi đang bị lỗi, tôi làm xong set 1, chuyển tới màn hình complete set 1, nó đếm giây, rồi sang luôn complete set 2, mà tôi chưa làm set 2.
