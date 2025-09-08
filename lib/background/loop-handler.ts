@@ -98,7 +98,13 @@ async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
               title: loop.title,
               description: loop.description,
               createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
-              updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString()
+              updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString(),
+              // 🔧 FIX: Include transcript data in metadata
+              hasTranscript: loop.hasTranscript || false,
+              transcriptMetadata: loop.transcriptMetadata || null,
+              transcript: loop.transcript || '',
+              segments: loop.segments || [],
+              language: loop.language || 'auto'
             }
           }
         }
@@ -159,8 +165,11 @@ async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
           throw new SaveError(segmentQueryError.message, 'server', true, 'Segment query failed')
         }
 
+        let segmentId: string
+
         if (existingSegments && existingSegments.length > 0) {
           // Update existing segment
+          segmentId = existingSegments[0].id
           const { error: segmentUpdateError } = await supabase
             .from('loop_segments')
             .update({
@@ -170,7 +179,7 @@ async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
               description: loop.description,
               updated_at: new Date().toISOString()
             })
-            .eq('id', existingSegments[0].id)
+            .eq('id', segmentId)
 
           if (segmentUpdateError) {
             console.error('FluentFlow: Segment update error:', segmentUpdateError)
@@ -178,7 +187,7 @@ async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
           }
         } else {
           // Create new segment
-          const { error: segmentCreateError } = await supabase
+          const { data: newSegment, error: segmentCreateError } = await supabase
             .from('loop_segments')
             .insert({
               session_id: sessionId,
@@ -187,10 +196,88 @@ async function saveLoop(loop: SavedLoop): Promise<SaveResponse> {
               label: loop.title,
               description: loop.description
             })
+            .select('id')
+            .single()
 
           if (segmentCreateError) {
             console.error('FluentFlow: Segment creation error:', segmentCreateError)
             throw new SaveError(segmentCreateError.message, 'server', true, 'Failed to create segment')
+          }
+          segmentId = newSegment.id
+        }
+
+        // 🚀 NEW: Save transcript data to transcripts table if available
+        if (loop.transcript && loop.transcript.trim() && loop.segments && loop.segments.length > 0) {
+          console.log(`🔄 FluentFlow: Saving transcript data to database for loop ${loop.id}`)
+          
+          try {
+            // Check if transcript already exists for this segment
+            const { data: existingTranscript } = await supabase
+              .from('transcripts')
+              .select('id')
+              .eq('video_id', loop.videoId)
+              .eq('start_time', loop.startTime)
+              .eq('end_time', loop.endTime)
+              .maybeSingle()
+
+            const transcriptData = {
+              video_id: loop.videoId,
+              start_time: loop.startTime,
+              end_time: loop.endTime,
+              segments: loop.segments,
+              full_text: loop.transcript,
+              language: loop.language || 'auto',
+              metadata: {
+                createdAt: new Date().toISOString(),
+                source: 'fluent-flow-extension',
+                loopId: loop.id
+              }
+            }
+
+            let transcriptId: string
+
+            if (existingTranscript) {
+              // Update existing transcript
+              await supabase
+                .from('transcripts')
+                .update({
+                  ...transcriptData,
+                  updated_at: new Date().toISOString()
+                })
+                .eq('id', existingTranscript.id)
+              transcriptId = existingTranscript.id
+            } else {
+              // Create new transcript
+              const { data: newTranscript, error: transcriptError } = await supabase
+                .from('transcripts')
+                .insert(transcriptData)
+                .select('id')
+                .single()
+
+              if (transcriptError) throw transcriptError
+              transcriptId = newTranscript.id
+            }
+
+            // Link transcript to loop segment
+            await supabase
+              .from('loop_segments')
+              .update({
+                transcript_id: transcriptId,
+                has_transcript: true,
+                transcript_metadata: {
+                  language: loop.language || 'auto',
+                  segmentCount: loop.segments.length,
+                  textLength: loop.transcript.length,
+                  lastUpdated: new Date().toISOString()
+                },
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', segmentId)
+
+            console.log(`✅ FluentFlow: Successfully saved transcript data to database for loop ${loop.id}`)
+          } catch (transcriptError) {
+            console.error(`❌ FluentFlow: Failed to save transcript data for loop ${loop.id}:`, transcriptError)
+            // Don't throw - loop save should still succeed even if transcript fails
           }
         }
 

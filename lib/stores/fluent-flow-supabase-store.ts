@@ -328,11 +328,11 @@ const supabaseService = {
 
   async getAllUserLoops(userId: string): Promise<SavedLoop[]> {
     console.log(`getAllUserLoops: Fetching loops for user ${userId}`)
-    
+
     // Add a small random timestamp to bust any potential caching
     const cacheBuster = Date.now()
     console.log(`getAllUserLoops: Cache buster timestamp: ${cacheBuster}`)
-    
+
     const { data: sessions, error } = await supabase
       .from('practice_sessions')
       .select(
@@ -375,8 +375,10 @@ const supabaseService = {
 
       if (loopMetadata?.savedLoop && segment) {
         // ✅ CACHE REMOVED: Questions now stored in conversation_questions table only
-        console.log(`getAllUserLoops: ✅ Processing loop ${loopMetadata.savedLoop.id} - cache removed, using database`)
-        
+        console.log(
+          `getAllUserLoops: ✅ Processing loop ${loopMetadata.savedLoop.id} - cache removed, using database`
+        )
+
         const savedLoop: SavedLoop = {
           id: loopMetadata.savedLoop.id,
           title: segment.label || loopMetadata.savedLoop.title || 'Untitled Loop',
@@ -388,7 +390,7 @@ const supabaseService = {
           description: segment.description || loopMetadata.savedLoop.description,
           createdAt: new Date(loopMetadata.savedLoop.createdAt || session.created_at),
           updatedAt: new Date(loopMetadata.savedLoop.updatedAt || session.updated_at),
-          
+
           // Questions removed from metadata - they are now stored in conversation_questions table
           questions: [], // Always empty - questions come from database
           questionsGenerated: false, // Reset - will be determined from database
@@ -396,8 +398,8 @@ const supabaseService = {
           lastQuestionGeneration: null,
           questionsGeneratedAt: undefined,
           totalQuestionsGenerated: 0,
-          
-          // Include transcript fields from metadata  
+
+          // Include transcript fields from metadata
           hasTranscript: loopMetadata.savedLoop.hasTranscript || false,
           transcriptMetadata: loopMetadata.savedLoop.transcriptMetadata || null
         }
@@ -487,7 +489,11 @@ const supabaseService = {
           updatedAt:
             typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString(),
           hasTranscript: loop.hasTranscript || false,
-          transcriptMetadata: loop.transcriptMetadata || null
+          transcriptMetadata: loop.transcriptMetadata || null,
+          // 🔧 FIX: Include transcript data in metadata for backward compatibility
+          transcript: loop.transcript || '',
+          segments: loop.segments || [],
+          language: loop.language || 'auto'
         }
       }
     }
@@ -530,8 +536,11 @@ const supabaseService = {
       .select('id')
       .eq('session_id', sessionId)
 
+    let segmentId: string
+
     if (existingSegments && existingSegments.length > 0) {
       // Update existing segment
+      segmentId = existingSegments[0].id
       await supabase
         .from('loop_segments')
         .update({
@@ -541,16 +550,103 @@ const supabaseService = {
           description: loop.description,
           updated_at: new Date().toISOString()
         })
-        .eq('id', existingSegments[0].id)
+        .eq('id', segmentId)
     } else {
       // Create new segment
-      await supabase.from('loop_segments').insert({
-        session_id: sessionId,
-        start_time: loop.startTime,
-        end_time: loop.endTime,
-        label: loop.title,
-        description: loop.description
-      })
+      const { data: newSegment, error: segmentError } = await supabase
+        .from('loop_segments')
+        .insert({
+          session_id: sessionId,
+          start_time: loop.startTime,
+          end_time: loop.endTime,
+          label: loop.title,
+          description: loop.description
+        })
+        .select('id')
+        .single()
+
+      if (segmentError) throw segmentError
+      segmentId = newSegment.id
+    }
+
+    // 🚀 NEW: Save transcript data to transcripts table if available
+    if (loop.transcript && loop.transcript.trim() && loop.segments && loop.segments.length > 0) {
+      console.log(`🔄 FluentFlow: Saving transcript data to database for loop ${loop.id}`)
+
+      try {
+        // Check if transcript already exists for this segment
+        const { data: existingTranscript } = await supabase
+          .from('transcripts')
+          .select('id')
+          .eq('video_id', loop.videoId)
+          .eq('start_time', loop.startTime)
+          .eq('end_time', loop.endTime)
+          .maybeSingle()
+
+        const transcriptData = {
+          video_id: loop.videoId,
+          start_time: loop.startTime,
+          end_time: loop.endTime,
+          segments: loop.segments,
+          full_text: loop.transcript,
+          language: loop.language || 'auto',
+          metadata: {
+            createdAt: new Date().toISOString(),
+            source: 'fluent-flow-extension',
+            loopId: loop.id
+          }
+        }
+
+        let transcriptId: string
+
+        if (existingTranscript) {
+          // Update existing transcript
+          await supabase
+            .from('transcripts')
+            .update({
+              ...transcriptData,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', existingTranscript.id)
+          transcriptId = existingTranscript.id
+        } else {
+          // Create new transcript
+          const { data: newTranscript, error: transcriptError } = await supabase
+            .from('transcripts')
+            .insert(transcriptData)
+            .select('id')
+            .single()
+
+          if (transcriptError) throw transcriptError
+          transcriptId = newTranscript.id
+        }
+
+        // Link transcript to loop segment
+        await supabase
+          .from('loop_segments')
+          .update({
+            transcript_id: transcriptId,
+            has_transcript: true,
+            transcript_metadata: {
+              language: loop.language || 'auto',
+              segmentCount: loop.segments.length,
+              textLength: loop.transcript.length,
+              lastUpdated: new Date().toISOString()
+            },
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', segmentId)
+
+        console.log(
+          `✅ FluentFlow: Successfully saved transcript data to database for loop ${loop.id}`
+        )
+      } catch (transcriptError) {
+        console.error(
+          `❌ FluentFlow: Failed to save transcript data for loop ${loop.id}:`,
+          transcriptError
+        )
+        // Don't throw - loop save should still succeed even if transcript fails
+      }
     }
 
     return sessionId
@@ -829,53 +925,51 @@ const supabaseService = {
     const user = await getCurrentUser()
     if (!user) return null
 
-    console.log(`getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment ${segmentId}`)
-    
-    // Always use the conversation_questions table - no more loop metadata caching  
+    console.log(
+      `getQuestions: ✅ CACHE REMOVED - Fetching questions from database for segment ${segmentId}`
+    )
+
+    // Always use the conversation_questions table - no more loop metadata caching
     // Try raw query to avoid 406 error
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('conversation_questions')
         .select('questions')
         .or(`loop_id.eq.${segmentId}`)
         .eq('user_id', user.id)
         .limit(1)
-        .maybeSingle() as any // Avoid deep type instantiation and allow null
-        
+        .maybeSingle()) as any // Avoid deep type instantiation and allow null
+
       if (error) {
         console.error('Error in raw query:', error)
         return null
       }
-      
+
       if (data) {
-        console.log(`getQuestions: Found ${Array.isArray(data.questions) ? data.questions.length : 0} questions for segment ${segmentId}`)
-        return Array.isArray(data.questions) ? data.questions as any[] : null
+        console.log(
+          `getQuestions: Found ${Array.isArray(data.questions) ? data.questions.length : 0} questions for segment ${segmentId}`
+        )
+        return Array.isArray(data.questions) ? (data.questions as any[]) : null
       }
-      
+
       console.log(`getQuestions: No questions found for segment ${segmentId}`)
       return null
-      
     } catch (queryError) {
       console.error('Query failed:', queryError)
       return null
     }
-
   },
 
-  async saveQuestions(
-    segmentId: string,
-    questions: any[],
-    metadata: any = {}
-  ): Promise<string> {
+  async saveQuestions(segmentId: string, questions: any[], metadata: any = {}): Promise<string> {
     const user = await getCurrentUser()
     if (!user) throw new Error('User not authenticated')
 
     console.log(`saveQuestions: Saving ${questions.length} questions for segment ${segmentId}`)
-    
+
     // Always save to conversation_questions table - no more loop metadata caching
     const questionData = {
-      loop_id: segmentId,  // Use loop_id for non-UUID identifiers
-      segment_id: null as string | null,  // Set segment_id to null since we're using loop_id
+      loop_id: segmentId, // Use loop_id for non-UUID identifiers
+      segment_id: null as string | null, // Set segment_id to null since we're using loop_id
       user_id: user.id,
       questions: questions as any, // Cast to any to satisfy Json type
       metadata: {
@@ -887,19 +981,20 @@ const supabaseService = {
 
     try {
       // First try to check if record exists using or query
-      const { data: existing, error: fetchError } = await supabase
+      const { data: existing, error: fetchError } = (await supabase
         .from('conversation_questions')
         .select('id')
         .or(`loop_id.eq.${segmentId}`)
         .eq('user_id', user.id)
         .limit(1)
-        .maybeSingle() as any // Avoid deep type instantiation
+        .maybeSingle()) as any // Avoid deep type instantiation
 
-      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows found
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 = no rows found
         console.error('Error checking existing questions:', fetchError)
       }
 
-      let result: { data: any; error: any };
+      let result: { data: any; error: any }
       if (existing) {
         console.log(`saveQuestions: Updating existing record for segment ${segmentId}`)
         // Update existing record
@@ -909,7 +1004,7 @@ const supabaseService = {
           .eq('id', existing.id)
           .select('id')
           .single()
-        
+
         result = { data, error }
       } else {
         console.log(`saveQuestions: Creating new record for segment ${segmentId}`)
@@ -919,7 +1014,7 @@ const supabaseService = {
           .insert(questionData)
           .select('id')
           .single()
-        
+
         result = { data, error }
       }
 
@@ -928,7 +1023,9 @@ const supabaseService = {
         throw result.error
       }
 
-      console.log(`saveQuestions: Successfully saved ${questions.length} questions for segment ${segmentId}`)
+      console.log(
+        `saveQuestions: Successfully saved ${questions.length} questions for segment ${segmentId}`
+      )
       return result.data.id
     } catch (error) {
       // If all else fails, just try a simple insert
@@ -958,11 +1055,11 @@ const supabaseService = {
 
     try {
       // Delete from conversation_questions table using or query
-      const { error } = await supabase
+      const { error } = (await supabase
         .from('conversation_questions')
         .delete()
         .or(`loop_id.eq.${segmentId}`)
-        .eq('user_id', user.id) as any // Avoid type instantiation
+        .eq('user_id', user.id)) as any // Avoid type instantiation
 
       if (error) {
         console.error('Error clearing questions:', error)
@@ -971,7 +1068,6 @@ const supabaseService = {
 
       console.log(`clearQuestions: Successfully cleared questions for segment ${segmentId}`)
       return true
-      
     } catch (error) {
       console.error(`clearQuestions: Error clearing questions for segment ${segmentId}:`, error)
       return false
