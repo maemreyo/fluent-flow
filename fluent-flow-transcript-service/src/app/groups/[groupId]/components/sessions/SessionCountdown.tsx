@@ -2,14 +2,16 @@
 
 import { useEffect, useState } from 'react'
 import { Progress } from '@/components/ui/progress'
-import { Clock, Zap, Rocket } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Clock, Zap, Rocket, X } from 'lucide-react'
 
 interface SessionCountdownProps {
   seconds: number
   onComplete: () => void
+  onCancel?: () => void
 }
 
-export function SessionCountdown({ seconds, onComplete }: SessionCountdownProps) {
+export function SessionCountdown({ seconds, onComplete, onCancel }: SessionCountdownProps) {
   const [timeLeft, setTimeLeft] = useState(seconds)
 
   useEffect(() => {
@@ -117,6 +119,21 @@ export function SessionCountdown({ seconds, onComplete }: SessionCountdownProps)
                'Any second now!'}
             </div>
           </div>
+
+          {/* Cancel Button */}
+          {onCancel && (
+            <div className="flex justify-center pt-4">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onCancel}
+                className={`bg-white/80 border-2 ${urgency.borderColor} ${urgency.textColor} hover:bg-white/90 hover:scale-105 transition-all duration-200 flex items-center gap-2`}
+              >
+                <X className="w-4 h-4" />
+                Cancel Countdown
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </div>

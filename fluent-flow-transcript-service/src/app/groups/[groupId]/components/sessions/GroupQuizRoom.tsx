@@ -61,7 +61,9 @@ export function GroupQuizRoom({
     sessionState,
     autoStartCountdown,
     isConnected,
-    broadcastSessionStart
+    broadcastSessionStart,
+    cancelCountdown,
+    isStartingQuiz
   } = useSessionSynchronization({
     groupId,
     sessionId,
@@ -151,13 +153,11 @@ export function GroupQuizRoom({
 
       {/* Auto-Start Countdown */}
       {autoStartCountdown !== null && autoStartCountdown > 0 && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-center">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-green-800">Quiz Starting!</h3>
-            <div className="text-3xl font-bold text-green-600">{autoStartCountdown}</div>
-            <p className="text-sm text-green-700">Get ready - you'll be redirected automatically</p>
-          </div>
-        </div>
+        <SessionCountdown 
+          seconds={autoStartCountdown} 
+          onComplete={() => {}} 
+          onCancel={cancelCountdown}
+        />
       )}
 
       {/* Quiz Room Main Content */}
@@ -175,6 +175,7 @@ export function GroupQuizRoom({
           canStartQuiz={canStartQuiz}
           isJoining={isJoining}
           isLeaving={isLeaving}
+          isStartingQuiz={isStartingQuiz}
           onJoinRoom={handleJoinRoom}
           onStartQuiz={handleStartQuiz}
           onLeaveRoom={handleLeaveRoom}

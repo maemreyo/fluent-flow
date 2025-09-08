@@ -96,7 +96,12 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     isCheckingExistingResults,
     handleGoBackToPresets,
     handleStartFresh,
-    handleCloseModal
+    handleCloseModal,
+
+    // Navigation handlers
+    handleNavigateToQuestion,
+    handleNavigatePrevious,
+    handleNavigateNext
   } = useGroupQuizWithProgress({ groupId, sessionId })
 
   const loopId = (session as any)?.loop_data?.id
@@ -267,6 +272,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     }
   }
 
+  // Navigation handlers are now provided by useGroupQuizWithProgress
+
   // Simplified loading condition - only depend on appState
   if (appState === 'loading') {
     return <LoadingView message="Loading group quiz..." />
@@ -400,6 +407,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                           onGoBack={handleGoBackFromPreview}
                           canShowAnswers={permissions.canManageQuiz()}
                           sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}
+                          quizSettings={groupSettings}
                         />
                       </div>
                     )
@@ -427,7 +435,12 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                               : null
                           }
                           allowQuestionSkipping={groupSettings.allowSkippingQuestions ?? false}
-                          currentQuestionIndex={currentQuestionIndex} // Add this line
+                          currentQuestionIndex={currentQuestionIndex}
+                          quizSettings={groupSettings}
+                          onNavigateToQuestion={handleNavigateToQuestion}
+                          onNavigatePrevious={handleNavigatePrevious}
+                          onNavigateNext={handleNavigateNext}
+                          totalQuestionsInCurrentSet={getCurrentQuestion()?.groupData?.questions?.length || 0}
                         />
                       </div>
                     )

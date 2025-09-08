@@ -42,6 +42,7 @@ export function useSessionSynchronization({
   const [autoStartCountdown, setAutoStartCountdown] = useState<number | null>(null)
   const [isConnected, setIsConnected] = useState(false)
   const [channelRef, setChannelRef] = useState<any>(null)
+  const [isStartingQuiz, setIsStartingQuiz] = useState(false)
 
   // Broadcast session state change (for owners/admins)
   const broadcastSessionStart = useCallback(async () => {
@@ -54,7 +55,15 @@ export function useSessionSynchronization({
       return
     }
 
+    // Prevent multiple start attempts
+    if (isStartingQuiz) {
+      console.log('⚠️ Quiz start already in progress, ignoring duplicate request')
+      toast.warning('Quiz is already starting...')
+      return
+    }
+
     console.log('🚀 Starting quiz broadcast...', { sessionId, userId: user.id })
+    setIsStartingQuiz(true)
     
     try {
       const payload = {
@@ -91,8 +100,14 @@ export function useSessionSynchronization({
       }
     } catch (error) {
       console.error('❌ Failed to broadcast quiz start:', error)
+      toast.error('Failed to start quiz. Please try again.')
+    } finally {
+      // Reset starting state after a delay to allow for successful completion
+      setTimeout(() => {
+        setIsStartingQuiz(false)
+      }, 6000) // Reset after 6 seconds (5s countdown + 1s buffer)
     }
-  }, [sessionId, user, channelRef, isInRoom])
+  }, [sessionId, user, channelRef, isInRoom, isStartingQuiz])
 
   // Handle quiz auto-start for room participants
   const handleAutoStart = useCallback(() => {
@@ -108,6 +123,18 @@ export function useSessionSynchronization({
       router.push(`/groups/${groupId}/quiz/${sessionId}`)
     }
   }, [isInRoom, autoStartCountdown, router, groupId, sessionId, onJoinQuiz])
+
+  // Cancel countdown function
+  const cancelCountdown = useCallback(() => {
+    console.log('🛑 Cancelling quiz countdown')
+    setAutoStartCountdown(null)
+    setIsStartingQuiz(false)
+    setSessionState(prev => ({
+      ...prev,
+      status: 'waiting'
+    }))
+    toast.info('Quiz start cancelled')
+  }, [])
 
   // Setup real-time listeners
   useEffect(() => {
@@ -264,6 +291,8 @@ export function useSessionSynchronization({
     sessionState,
     autoStartCountdown,
     isConnected,
-    broadcastSessionStart
+    broadcastSessionStart,
+    cancelCountdown,
+    isStartingQuiz
   }
 }

@@ -326,6 +326,19 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     return false
   }, [groupQuizData.isAuthenticated])
 
+  // Question navigation handlers - now using the base hook methods
+  const handleNavigateToQuestion = useCallback((questionIndex: number) => {
+    groupQuizData.navigateToQuestion(questionIndex)
+  }, [groupQuizData.navigateToQuestion])
+
+  const handleNavigatePrevious = useCallback(() => {
+    groupQuizData.navigateToPrevious()
+  }, [groupQuizData.navigateToPrevious])
+
+  const handleNavigateNext = useCallback(() => {
+    groupQuizData.navigateToNext()
+  }, [groupQuizData.navigateToNext])
+
   // // Debug logging
   // useEffect(() => {
   //   console.log('Debug state:', {
@@ -353,6 +366,10 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     checkAndHandleExistingResults, // Expose for manual testing if needed
     handleGoBackToPresets,
     handleStartFresh,
-    handleCloseModal
+    handleCloseModal,
+    // Navigation handlers
+    handleNavigateToQuestion,
+    handleNavigatePrevious,
+    handleNavigateNext
   }
 }

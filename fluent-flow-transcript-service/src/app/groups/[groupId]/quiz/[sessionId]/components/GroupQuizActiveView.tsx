@@ -1,10 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Clock } from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../../../components/ui/tooltip'
+import { QuizSettingsPanel } from './QuizSettingsPanel'
+import { QuestionNavigationBar } from './QuestionNavigationBar'
 
 interface GroupQuizActiveViewProps {
   currentQuestion: {
@@ -27,6 +30,18 @@ interface GroupQuizActiveViewProps {
   timeLimit?: number | null
   allowQuestionSkipping?: boolean
   currentQuestionIndex: number // Add this prop for proper progress calculation
+  quizSettings?: {
+    shuffleQuestions?: boolean
+    shuffleAnswers?: boolean
+    showCorrectAnswers?: boolean
+    defaultQuizTimeLimit?: number
+    enforceQuizTimeLimit?: boolean
+    allowSkippingQuestions?: boolean
+  }
+  onNavigateToQuestion?: (questionIndex: number) => void
+  onNavigatePrevious?: () => void
+  onNavigateNext?: () => void
+  totalQuestionsInCurrentSet?: number
 }
 
 export function GroupQuizActiveView({
@@ -45,7 +60,12 @@ export function GroupQuizActiveView({
   onlineParticipants,
   timeLimit,
   allowQuestionSkipping = false,
-  currentQuestionIndex
+  currentQuestionIndex,
+  quizSettings = {},
+  onNavigateToQuestion,
+  onNavigatePrevious,
+  onNavigateNext,
+  totalQuestionsInCurrentSet = 0
 }: GroupQuizActiveViewProps) {
   const [selectedAnswer, setSelectedAnswer] = useState<string>('')
   const [setSubmitted, setSetSubmitted] = useState(false)
@@ -53,7 +73,9 @@ export function GroupQuizActiveView({
     timeLimit ? timeLimit * 60 : null
   )
   const [timerStarted, setTimerStarted] = useState(false)
+  const [countdownSeconds, setCountdownSeconds] = useState<number>(3)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const countdownRef = useRef<NodeJS.Timeout | null>(null)
 
   // Start timer when component mounts
   useEffect(() => {
@@ -63,6 +85,49 @@ export function GroupQuizActiveView({
     }
   }, [timeLimit, timerStarted])
 
+  // Define handleNext before it's used
+  const handleNext = useCallback(() => {
+    if (isLastQuestion) {
+      onSubmitSet()
+      setSetSubmitted(true)
+
+      // Stop timer when submitting
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+
+      // Start countdown for auto-transition
+      const isLastSet = currentSetIndex >= totalSets - 1
+      if (!isLastSet) {
+        // Reset countdown and start countdown for next set
+        setCountdownSeconds(3)
+        const startCountdown = () => {
+          countdownRef.current = setInterval(() => {
+            setCountdownSeconds(prev => {
+              if (prev <= 1) {
+                if (countdownRef.current) {
+                  clearInterval(countdownRef.current)
+                }
+                onMoveToNextSet()
+                return 0
+              }
+              return prev - 1
+            })
+          }, 1000)
+        }
+        // Start countdown after a brief moment
+        setTimeout(startCountdown, 100)
+      } else {
+        // For last set, still show auto-transition after delay
+        setTimeout(() => {
+          onMoveToNextSet() // This will call calculateFinalResults()
+        }, 2000)
+      }
+    } else {
+      onNextQuestion()
+    }
+  }, [isLastQuestion, onSubmitSet, currentSetIndex, totalSets, onMoveToNextSet, onNextQuestion])
+
   // Timer countdown effect
   useEffect(() => {
     if (timeRemaining !== null && timeRemaining > 0 && timerStarted && !setSubmitted) {
@@ -70,8 +135,10 @@ export function GroupQuizActiveView({
         setTimeRemaining(prev => (prev !== null ? prev - 1 : null))
       }, 1000)
     } else if (timeRemaining === 0 && !setSubmitted) {
-      // Time's up - auto submit
-      handleNext()
+      // Time's up - auto submit (use setTimeout to avoid setState during render)
+      setTimeout(() => {
+        handleNext()
+      }, 0)
     }
 
     return () => {
@@ -79,18 +146,21 @@ export function GroupQuizActiveView({
         clearTimeout(timerRef.current)
       }
     }
-  }, [timeRemaining, timerStarted, setSubmitted])
+  }, [timeRemaining, timerStarted, setSubmitted, handleNext])
 
-  // Reset selectedAnswer when question changes
+  // Reset selectedAnswer when question or set changes
   useEffect(() => {
     setSelectedAnswer('')
-  }, [currentQuestion?.questionIndex])
+  }, [currentQuestion?.questionIndex, currentSetIndex])
 
-  // Cleanup timer on unmount
+  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (timerRef.current) {
         clearTimeout(timerRef.current)
+      }
+      if (countdownRef.current) {
+        clearInterval(countdownRef.current)
       }
     }
   }, [])
@@ -112,36 +182,20 @@ export function GroupQuizActiveView({
     onAnswerSelect(currentQuestion?.questionIndex || 0, optionLetter)
   }
 
-  const handleNext = () => {
-    if (isLastQuestion) {
-      onSubmitSet()
-      setSetSubmitted(true)
-
-      // Stop timer when submitting
-      if (timerRef.current) {
-        clearTimeout(timerRef.current)
-      }
-
-      // If this is the last set, automatically calculate final results after a brief delay
-      const isLastSet = currentSetIndex >= totalSets - 1
-      if (isLastSet) {
-        setTimeout(() => {
-          onMoveToNextSet() // This will call calculateFinalResults()
-        }, 2000) // 2 second delay to show completion message
-      }
-    } else {
-      onNextQuestion()
-    }
-  }
-
   const handleSkip = () => {
     // Skip without selecting an answer - move to next question
     onNextQuestion()
   }
 
   const handleContinueToNextSet = () => {
+    // Clear countdown if user manually continues
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current)
+    }
+    
     onMoveToNextSet()
     setSetSubmitted(false) // Reset for next set
+    setCountdownSeconds(3) // Reset countdown for next time
     // Reset timer for next set
     if (timeLimit && timeLimit > 0) {
       setTimeRemaining(timeLimit * 60)
@@ -200,7 +254,7 @@ export function GroupQuizActiveView({
               <p className="text-gray-600">
                 {isLastSet
                   ? "Congratulations! You've completed all sets. Your results are being processed."
-                  : 'Great job! Ready to continue with the next set?'}
+                  : `Great job! Moving to the next set in ${countdownSeconds} second${countdownSeconds !== 1 ? 's' : ''}...`}
               </p>
             </div>
 
@@ -263,6 +317,20 @@ export function GroupQuizActiveView({
   // currentQuestionIndex is 0-based within the current set, so add 1 for display
   const currentQuestionInSet = currentQuestionIndex + 1
   const totalQuestionsInSet = groupData?.questions?.length || 0
+  
+  // Calculate questions answered in current set for progress bar
+  // For now, we'll use a simpler approach - count responses that match questions in current set
+  // This assumes the question indices are structured predictably
+  const questionsInCurrentSet = groupData?.questions || []
+  const answeredQuestionsInSet = questionsInCurrentSet.filter((setQuestion, questionIdx) => {
+    // Try to find a response that matches this question
+    return responses.some(response => {
+      // Try to match by the question content or structure
+      const currentSetStartIndex = questionIndex - currentQuestionIndex
+      const expectedGlobalIndex = currentSetStartIndex + questionIdx
+      return response.questionIndex === expectedGlobalIndex
+    })
+  }).length
 
   return (
     <div className="space-y-6">
@@ -304,7 +372,7 @@ export function GroupQuizActiveView({
             Set {currentSetIndex + 1} of {totalSets}
           </span>
           <span className="text-gray-500">
-            Question {currentQuestionInSet} of {totalQuestionsInSet}
+            {answeredQuestionsInSet} of {totalQuestionsInSet} answered
           </span>
         </div>
 
@@ -312,11 +380,33 @@ export function GroupQuizActiveView({
           <div
             className="h-2 rounded-full bg-indigo-500 transition-all duration-300"
             style={{
-              width: `${totalQuestionsInSet > 0 ? (currentQuestionInSet / totalQuestionsInSet) * 100 : 0}%`
+              width: `${totalQuestionsInSet > 0 ? (answeredQuestionsInSet / totalQuestionsInSet) * 100 : 0}%`
             }}
           />
         </div>
+        
+        {/* Current question indicator */}
+        <div className="mt-2 text-xs text-gray-600">
+          Current: Question {currentQuestionInSet} of {totalQuestionsInSet}
+        </div>
       </div>
+
+      {/* Compact Quiz Settings */}
+      <QuizSettingsPanel settings={quizSettings} compact />
+
+      {/* Question Navigation */}
+      {onNavigateToQuestion && onNavigatePrevious && onNavigateNext && (
+        <QuestionNavigationBar
+          currentQuestionIndex={currentQuestionIndex}
+          totalQuestions={totalQuestionsInSet}
+          responses={responses}
+          onNavigateToQuestion={onNavigateToQuestion}
+          onPrevious={onNavigatePrevious}
+          onNext={onNavigateNext}
+          allowNavigation={quizSettings.allowSkippingQuestions ?? false}
+          disabled={submitting}
+        />
+      )}
 
       {/* Question Card */}
       <Card className="bg-white shadow-lg">
@@ -381,13 +471,34 @@ export function GroupQuizActiveView({
                 </Button>
               )}
 
-              <Button
-                onClick={handleNext}
-                disabled={!selectedAnswer && !currentResponse}
-                className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
-              >
-                {isLastQuestion ? 'Submit Set' : 'Next Question'} →
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={handleNext}
+                      disabled={(() => {
+                        if (isLastQuestion) {
+                          // For submit set button: require all questions to be answered
+                          return answeredQuestionsInSet < totalQuestionsInSet
+                        } else {
+                          // For next question button: just require current question to be answered
+                          return !selectedAnswer && !currentResponse
+                        }
+                      })()}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+                    >
+                      {isLastQuestion ? 'Submit Set' : 'Next Question'} →
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isLastQuestion && answeredQuestionsInSet < totalQuestionsInSet
+                      ? `Answer all questions to submit (${answeredQuestionsInSet}/${totalQuestionsInSet} answered)`
+                      : !selectedAnswer && !currentResponse && !isLastQuestion
+                        ? 'Select an answer to continue'
+                        : 'Ready to proceed'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </CardContent>

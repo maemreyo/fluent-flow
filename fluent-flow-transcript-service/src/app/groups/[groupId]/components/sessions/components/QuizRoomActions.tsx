@@ -7,6 +7,8 @@ interface QuizRoomActionsProps {
   canStartQuiz: boolean
   isJoining: boolean
   isLeaving: boolean
+  isStartingQuiz?: boolean
+  isLoadingParticipants?: boolean
   onJoinRoom: () => void
   onStartQuiz: () => void
   onLeaveRoom: () => void
@@ -17,6 +19,8 @@ export function QuizRoomActions({
   canStartQuiz,
   isJoining,
   isLeaving,
+  isStartingQuiz = false,
+  isLoadingParticipants = false,
   onJoinRoom,
   onStartQuiz,
   onLeaveRoom
@@ -32,6 +36,8 @@ export function QuizRoomActions({
           <JoinedRoomActions
             canStartQuiz={canStartQuiz}
             isLeaving={isLeaving}
+            isStartingQuiz={isStartingQuiz}
+            isLoadingParticipants={isLoadingParticipants}
             onStartQuiz={onStartQuiz}
             onLeaveRoom={onLeaveRoom}
           />
@@ -57,11 +63,15 @@ function JoinRoomButton({ isJoining, onJoin }: { isJoining: boolean; onJoin: () 
 function JoinedRoomActions({
   canStartQuiz,
   isLeaving,
+  isStartingQuiz,
+  isLoadingParticipants,
   onStartQuiz,
   onLeaveRoom
 }: {
   canStartQuiz: boolean
   isLeaving: boolean
+  isStartingQuiz?: boolean
+  isLoadingParticipants?: boolean
   onStartQuiz: () => void
   onLeaveRoom: () => void
 }) {
@@ -78,10 +88,19 @@ function JoinedRoomActions({
       {canStartQuiz ? (
         <button
           onClick={onStartQuiz}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-3 font-semibold text-white shadow-lg transition-all hover:scale-105 hover:from-green-700 hover:to-emerald-700"
+          disabled={isStartingQuiz || isLoadingParticipants}
+          className={`inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 font-semibold text-white shadow-lg transition-all ${
+            isStartingQuiz || isLoadingParticipants
+              ? 'cursor-not-allowed bg-gray-400'
+              : 'bg-gradient-to-r from-green-600 to-emerald-600 hover:scale-105 hover:from-green-700 hover:to-emerald-700'
+          }`}
         >
           <Play className="h-4 w-4" />
-          Start Quiz
+          {isStartingQuiz
+            ? 'Starting Quiz...'
+            : isLoadingParticipants
+              ? 'Loading Participants...'
+              : 'Start Quiz'}
         </button>
       ) : (
         <button
@@ -92,11 +111,22 @@ function JoinedRoomActions({
           Waiting for Session Start
         </button>
       )}
+      
+      {/* Loading Status Text */}
+      {(isStartingQuiz || isLoadingParticipants) && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 text-center">
+          <p className="text-sm font-medium text-blue-800">
+            {isStartingQuiz && 'Preparing quiz session...'}
+            {isLoadingParticipants && 'Syncing with participants...'}
+          </p>
+          <p className="text-xs text-blue-600 mt-1">Please wait</p>
+        </div>
+      )}
 
       {/* Leave Room Button */}
       <button
         onClick={onLeaveRoom}
-        disabled={isLeaving}
+        disabled={isLeaving || isStartingQuiz || isLoadingParticipants}
         className="inline-flex w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 px-6 py-3 font-semibold text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <UserX className="h-4 w-4" />

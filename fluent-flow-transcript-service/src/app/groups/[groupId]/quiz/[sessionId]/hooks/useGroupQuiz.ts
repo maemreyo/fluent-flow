@@ -553,6 +553,27 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const openGridView = () => setShowGridView(true)
   const closeGridView = () => setShowGridView(false)
 
+  // Navigation methods
+  const navigateToQuestion = useCallback((questionIndex: number) => {
+    const currentSet = difficultyGroups[currentSetIndex]
+    if (currentSet && questionIndex >= 0 && questionIndex < currentSet.questions.length) {
+      setCurrentQuestionIndex(questionIndex)
+    }
+  }, [difficultyGroups, currentSetIndex, setCurrentQuestionIndex])
+
+  const navigateToPrevious = useCallback(() => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1)
+    }
+  }, [currentQuestionIndex, setCurrentQuestionIndex])
+
+  const navigateToNext = useCallback(() => {
+    const currentSet = difficultyGroups[currentSetIndex]
+    if (currentSet && currentQuestionIndex < currentSet.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1)
+    }
+  }, [difficultyGroups, currentSetIndex, currentQuestionIndex, setCurrentQuestionIndex])
+
   return {
     // App state
     appState,
@@ -603,6 +624,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     user: quizUser || user,
     isAuthenticated,
     signOut,
-    loadQuestionsFromShareTokens // Expose for external use
+    loadQuestionsFromShareTokens, // Expose for external use
+    // Navigation methods
+    navigateToQuestion,
+    navigateToPrevious,
+    navigateToNext
   }
 }

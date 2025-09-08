@@ -15,6 +15,7 @@ import {
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../../../components/ui/tabs'
+import { QuizSettingsPanel } from './QuizSettingsPanel'
 
 interface Question {
   id: string
@@ -37,6 +38,14 @@ interface GroupQuizPreviewProps {
   onGoBack: () => void
   canShowAnswers?: boolean // For admin/owner
   sessionTitle?: string
+  quizSettings?: {
+    shuffleQuestions?: boolean
+    shuffleAnswers?: boolean
+    showCorrectAnswers?: boolean
+    defaultQuizTimeLimit?: number
+    enforceQuizTimeLimit?: boolean
+    allowSkippingQuestions?: boolean
+  }
 }
 
 const DIFFICULTY_COLORS = {
@@ -57,7 +66,8 @@ export function GroupQuizPreview({
   onStartQuiz,
   onGoBack,
   canShowAnswers = false,
-  sessionTitle
+  sessionTitle,
+  quizSettings = {}
 }: GroupQuizPreviewProps) {
   const [showAnswers, setShowAnswers] = useState(false)
 
@@ -159,6 +169,11 @@ export function GroupQuizPreview({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Quiz Settings Panel */}
+          <div className="mb-8">
+            <QuizSettingsPanel settings={quizSettings} />
           </div>
 
           {/* Question Sets in Tabs */}
