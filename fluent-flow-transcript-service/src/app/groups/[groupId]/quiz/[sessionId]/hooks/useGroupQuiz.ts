@@ -14,6 +14,7 @@ import { fetchQuestionSet, submitSet } from '../../../../../questions/[token]/qu
 import { useSessionParticipants } from '../../../components/sessions/hooks/useSessionParticipants'
 import { fetchGroup, fetchGroupSession } from '../queries'
 import { useRealtimeSession } from './useRealtimeSession'
+import { quizQueryKeys, quizQueryOptions } from '../lib/query-keys'
 
 type AppState =
   | 'loading'
@@ -68,15 +69,18 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const [showGridView, setShowGridView] = useState(false)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
 
+  // Query keys and options are now imported directly
+
   // Fetch group session data
   const {
     data: session,
     isLoading: sessionLoading,
     error: sessionError
   } = useQuery({
-    queryKey: ['group-session', groupId, sessionId],
+    queryKey: quizQueryKeys.session(groupId, sessionId),
     queryFn: () => fetchGroupSession(groupId, sessionId),
-    enabled: !!groupId && !!sessionId
+    enabled: !!groupId && !!sessionId,
+    ...quizQueryOptions.session
   })
 
   // Fetch group data
@@ -85,9 +89,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     isLoading: groupLoading,
     error: groupError
   } = useQuery({
-    queryKey: ['group', groupId],
+    queryKey: quizQueryKeys.group(groupId),
     queryFn: () => fetchGroup(groupId),
-    enabled: !!groupId
+    enabled: !!groupId,
+    ...quizQueryOptions.static
   })
 
   // Auth handling (similar to individual quiz)
@@ -99,14 +104,27 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     signOut
   } = useQuizAuth(authToken)
 
-  // Function to load questions from shareTokens
+  // Function to load questions from shareTokens with React Query caching
   const loadQuestionsFromShareTokens = useCallback(async (shareTokens: Record<string, string>) => {
     const availableTokens = Object.entries(shareTokens).filter(([_, token]) => token)
     if (availableTokens.length === 0) {
       throw new Error('No questions available')
     }
 
+    console.log('🔄 [loadQuestionsFromShareTokens] Loading questions with React Query caching:', shareTokens)
+
     const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
+      // Check if data is already cached in React Query
+      const cacheKey = quizQueryKeys.questionSet(shareToken)
+      const cachedData = queryClient.getQueryData(cacheKey) as any
+      
+      if (cachedData) {
+        console.log(`✅ [loadQuestionsFromShareTokens] Using cached ${difficulty} questions`)
+        return cachedData
+      }
+
+      // If not cached, fetch and cache it
+      console.log(`🔄 [loadQuestionsFromShareTokens] Fetching ${difficulty} questions from API`)
       const response = await fetch(`/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`)
       
       if (!response.ok) {
@@ -114,31 +132,37 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       }
       
       const questionData = await response.json()
-      return {
+      const result = {
         difficulty,
         questions: questionData.questions || [],
         shareToken,
         questionSet: questionData
       }
+
+      // Cache the result with React Query
+      queryClient.setQueryData(cacheKey, result)
+      
+      console.log(`✅ [loadQuestionsFromShareTokens] Cached ${difficulty} questions: ${result.questions.length}`)
+      return result
     })
 
     const loadedQuestions = await Promise.all(questionPromises)
     
     // Set difficultyGroups so questions are available for getCurrentQuestion
-    const formattedGroups: DifficultyGroup[] = loadedQuestions.map(({ difficulty, questions, shareToken }) => ({
-      difficulty: difficulty as 'easy' | 'medium' | 'hard',
-      questions,
-      shareToken,
-      questionsData: questions,
-      questionSet: { questions },
+    const formattedGroups: DifficultyGroup[] = loadedQuestions.map((loadedQuestion: any) => ({
+      difficulty: loadedQuestion.difficulty as 'easy' | 'medium' | 'hard',
+      questions: loadedQuestion.questions,
+      shareToken: loadedQuestion.shareToken,
+      questionsData: loadedQuestion.questions,
+      questionSet: { questions: loadedQuestion.questions },
       completed: false // Add required property
     }))
     
-    console.log('📚 Setting difficultyGroups from loaded questions:', formattedGroups)
+    console.log('📚 Setting difficultyGroups from loaded questions:', formattedGroups.map(g => `${g.difficulty}: ${g.questions.length}`))
     setDifficultyGroups(formattedGroups)
     
     return loadedQuestions
-  }, [groupId, sessionId])
+  }, [groupId, sessionId, queryClient])
 
   // Favorites handling (simplified for group context)
   const { data: isFavorited = false } = useQuery({
@@ -234,7 +258,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       }
 
       try {
-        // Fetch existing shareTokens from the backend
+        // Fetch existing shareTokens from the backend using optimized query
         console.log('🔄 Checking for existing questions...')
         const { getAuthHeaders } = await import('@/lib/supabase/auth-utils')
         const headers = await getAuthHeaders()
@@ -362,24 +386,24 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         if (shareTokens) {
           // Load questions from shareTokens
           const loadedQuestions = await loadQuestionsFromShareTokens(shareTokens)
-          allQuestions = loadedQuestions.flatMap(q => q.questions)
+          allQuestions = loadedQuestions.flatMap((q: any) => q.questions)
           
-          const primaryQuestionSet = loadedQuestions.find(q => q.questions.length > 0)?.questionSet
+          const primaryQuestionSet = loadedQuestions.find((q: any) => q.questions.length > 0)?.questionSet
           if (primaryQuestionSet && session?.share_token) {
             queryClient.setQueryData(
-              ['questionSet', session.share_token],
+              quizQueryKeys.questionSet(session.share_token),
               primaryQuestionSet
             )
           }
 
           // Store the video URL from the first available question set
-          const firstQuestionSetWithVideo = loadedQuestions.find(q => q.questionSet.videoUrl)
+          const firstQuestionSetWithVideo = loadedQuestions.find((q: any) => q.questionSet.videoUrl)
           if (firstQuestionSetWithVideo) {
             setVideoUrl(firstQuestionSetWithVideo.questionSet.videoUrl)
           }
         } else {
           // Try to get questions from existing cache (fallback)
-          const cachedQuestionSet = queryClient.getQueryData(['questionSet', session?.share_token])
+          const cachedQuestionSet = queryClient.getQueryData(quizQueryKeys.questionSet(session?.share_token || ''))
           if (cachedQuestionSet && (cachedQuestionSet as any).questions) {
             allQuestions = (cachedQuestionSet as any).questions
           } else {
@@ -400,7 +424,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         alert(error instanceof Error ? error.message : 'Failed to load questions')
       }
     },
-    [isAuthenticated, session?.share_token, queryClient]
+    [isAuthenticated, session?.share_token, queryClient, quizQueryKeys]
   )
 
   const handleQuestionInfoStart = () => {
@@ -638,7 +662,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
-    queryClient.invalidateQueries({ queryKey: ['questionSet', session?.share_token] })
+    queryClient.invalidateQueries({ queryKey: quizQueryKeys.questionSet(session?.share_token || '') })
   }
 
   const handleCloseAuthPrompt = () => {

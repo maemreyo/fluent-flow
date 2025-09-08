@@ -23,17 +23,29 @@ export const useSessionParticipants = ({
 }: UseSessionParticipantsProps) => {
   const queryClient = useQueryClient()
 
-  // Query participants with minimal polling - rely on realtime updates
+  // Import query keys directly instead of dynamic require
+  const quizQueryKeys = {
+    sessionParticipants: (groupId: string, sessionId: string) => ['session-participants', groupId, sessionId]
+  }
+  
+  const quizQueryOptions = {
+    realtime: { 
+      staleTime: 30 * 1000, 
+      gcTime: 2 * 60 * 1000,
+      refetchInterval: false,
+      refetchOnWindowFocus: false 
+    }
+  }
+
+  // Query participants with optimized caching
   const participantsQuery = useQuery({
-    queryKey: ['session-participants', groupId, sessionId],
+    queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId),
     queryFn: () => fetchSessionParticipants(groupId, sessionId),
     enabled,
-    // Fixed interval - we'll use conditional logic elsewhere to reduce calls
+    ...quizQueryOptions.realtime,
+    // Override for participants - they change frequently but we rely on realtime updates
     refetchInterval: 30000, // 30 seconds baseline
     refetchIntervalInBackground: false,
-    staleTime: 5000, // Consider data stale after 5 seconds
-    gcTime: 60 * 1000, // Keep in cache for 1 minute
-    refetchOnWindowFocus: true, // Refresh when user comes back
     refetchOnMount: 'always' // Always fresh data on mount
   })
 
@@ -49,7 +61,7 @@ export const useSessionParticipants = ({
       const newInterval = isUserJoined ? 15000 : 60000
       
       // Update the query's refetch interval
-      queryClient.setQueryDefaults(['session-participants', groupId, sessionId], {
+      queryClient.setQueryDefaults(quizQueryKeys.sessionParticipants(groupId, sessionId), {
         refetchInterval: newInterval
       })
     }
@@ -64,12 +76,12 @@ export const useSessionParticipants = ({
     onMutate: async () => {
       // Optimistically update the cache
       await queryClient.cancelQueries({
-        queryKey: ['session-participants', groupId, sessionId]
+        queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
       })
       
-      const previousData = queryClient.getQueryData(['session-participants', groupId, sessionId])
+      const previousData = queryClient.getQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId))
       
-      queryClient.setQueryData(['session-participants', groupId, sessionId], (old: any) => {
+      queryClient.setQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId), (old: any) => {
         if (!old) return old
         
         const existingParticipant = old.participants.find((p: any) => p.user_id === userId)
@@ -93,13 +105,13 @@ export const useSessionParticipants = ({
       toast.success('Successfully joined the quiz room!')
       // Refetch to get the latest data
       queryClient.invalidateQueries({
-        queryKey: ['session-participants', groupId, sessionId]
+        queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
       })
     },
     onError: (error: Error, _variables, context: any) => {
       // Revert optimistic update
       if (context?.previousData) {
-        queryClient.setQueryData(['session-participants', groupId, sessionId], context.previousData)
+        queryClient.setQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId), context.previousData)
       }
       
       console.error('Error joining session:', error)
@@ -120,12 +132,12 @@ export const useSessionParticipants = ({
     onMutate: async () => {
       // Optimistically update the cache
       await queryClient.cancelQueries({
-        queryKey: ['session-participants', groupId, sessionId]
+        queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
       })
       
-      const previousData = queryClient.getQueryData(['session-participants', groupId, sessionId])
+      const previousData = queryClient.getQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId))
       
-      queryClient.setQueryData(['session-participants', groupId, sessionId], (old: any) => {
+      queryClient.setQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId), (old: any) => {
         if (!old) return old
         
         const existingParticipant = old.participants.find((p: any) => p.user_id === userId)
@@ -149,13 +161,13 @@ export const useSessionParticipants = ({
       toast.success('Left the quiz room')
       // Refetch to get the latest data
       queryClient.invalidateQueries({
-        queryKey: ['session-participants', groupId, sessionId]
+        queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
       })
     },
     onError: (error: Error, _variables, context: any) => {
       // Revert optimistic update
       if (context?.previousData) {
-        queryClient.setQueryData(['session-participants', groupId, sessionId], context.previousData)
+        queryClient.setQueryData(quizQueryKeys.sessionParticipants(groupId, sessionId), context.previousData)
       }
       
       console.error('Error leaving session:', error)
@@ -190,7 +202,7 @@ export const useSessionParticipants = ({
     // Actions
     refetch: participantsQuery.refetch,
     invalidate: () => queryClient.invalidateQueries({
-      queryKey: ['session-participants', groupId, sessionId]
+      queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
     })
   }
 }

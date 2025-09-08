@@ -35,6 +35,13 @@ export function useRealtimeSession({
   const [realtimeData, setRealtimeData] = useState<RealtimeSessionData | null>(null)
   const [isConnected, setIsConnected] = useState(false)
 
+  // Use inline query keys instead of dynamic import
+  const quizQueryKeys = {
+    session: (groupId: string, sessionId: string) => ['group-session', groupId, sessionId],
+    sessionParticipants: (groupId: string, sessionId: string) => ['session-participants', groupId, sessionId],
+    sessionResults: (groupId: string, sessionId: string) => ['group-results', groupId, sessionId]
+  }
+
   useEffect(() => {
     if (!enabled || !supabase) return
 
@@ -47,15 +54,15 @@ export function useRealtimeSession({
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         console.log('New users joined:', newPresences)
-        // Invalidate participants data
+        // Invalidate participants data using centralized query keys
         queryClient.invalidateQueries({
-          queryKey: ['session-participants', groupId, sessionId]
+          queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
         })
       })
       .on('presence', { event: 'leave' }, ({ leftPresences }) => {
         console.log('Users left:', leftPresences)
         queryClient.invalidateQueries({
-          queryKey: ['session-participants', groupId, sessionId]
+          queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
         })
       })
       // Listen for session status changes
@@ -66,9 +73,9 @@ export function useRealtimeSession({
         filter: `id=eq.${sessionId}`
       }, (payload) => {
         console.log('Session updated:', payload.new)
-        // Invalidate session data
+        // Invalidate session data using centralized query keys
         queryClient.invalidateQueries({
-          queryKey: ['group-session', groupId, sessionId]
+          queryKey: quizQueryKeys.session(groupId, sessionId)
         })
         
         // Update realtime data
@@ -85,9 +92,9 @@ export function useRealtimeSession({
         filter: `session_id=eq.${sessionId}`
       }, (payload) => {
         console.log('Quiz results updated:', payload.new)
-        // Invalidate results data for live leaderboard
+        // Invalidate results data for live leaderboard using centralized query keys
         queryClient.invalidateQueries({
-          queryKey: ['group-results', groupId, sessionId]
+          queryKey: quizQueryKeys.sessionResults(groupId, sessionId)
         })
       })
       // Listen for participant changes
@@ -99,7 +106,7 @@ export function useRealtimeSession({
       }, (payload) => {
         console.log('Participants updated:', payload)
         queryClient.invalidateQueries({
-          queryKey: ['session-participants', groupId, sessionId]
+          queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
         })
       })
 
@@ -141,16 +148,16 @@ export function useRealtimeSession({
     })
   }
 
-  // Manual refresh for critical updates
+  // Manual refresh for critical updates using centralized query keys
   const refreshSession = () => {
     queryClient.invalidateQueries({
-      queryKey: ['group-session', groupId, sessionId]
+      queryKey: quizQueryKeys.session(groupId, sessionId)
     })
     queryClient.invalidateQueries({
-      queryKey: ['session-participants', groupId, sessionId]
+      queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
     })
     queryClient.invalidateQueries({
-      queryKey: ['group-results', groupId, sessionId]
+      queryKey: quizQueryKeys.sessionResults(groupId, sessionId)
     })
   }
 

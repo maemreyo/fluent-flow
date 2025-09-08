@@ -23,6 +23,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     user,
     difficultyGroups,
     handleGoBackFromPreview,
+    handleStartQuizFromPreview,
     navigateToInfo,
     navigateToActive
   } = useQuizFlow({ groupId, sessionId })
@@ -46,22 +47,23 @@ export default function PreviewPage({ params }: PreviewPageProps) {
   const handleStartQuiz = useCallback(async () => {
     console.log('🚀 Starting quiz from preview with shareTokens:', shareTokens)
 
+    // CRITICAL: Set appState to 'quiz-active' BEFORE navigation to prevent redirect back to setup
+    await handleStartQuizFromPreview(shareTokens)
+
     // Broadcast session start to all participants with shareTokens
     if (permissions.canManageQuiz()) {
       const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', shareTokens)
       if (success) {
         console.log('✅ Quiz session start broadcasted from preview, navigating to active')
         
-        // Navigate to active quiz
-        setTimeout(() => {
-          navigateToActive()
-        }, 1000) // Small delay to allow broadcast to complete
+        // Navigate to active quiz immediately - no delay needed since appState is already set
+        navigateToActive()
       }
     } else {
       // For non-managers, just navigate directly
       navigateToActive()
     }
-  }, [shareTokens, permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToActive])
+  }, [shareTokens, permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToActive, handleStartQuizFromPreview])
 
   const handleGoBack = () => {
     handleGoBackFromPreview()

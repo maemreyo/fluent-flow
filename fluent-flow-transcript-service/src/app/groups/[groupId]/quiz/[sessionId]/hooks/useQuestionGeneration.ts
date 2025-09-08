@@ -7,6 +7,7 @@ import {
   useQuestionGeneration
 } from '../../../../../../hooks/useQuestionGeneration'
 import { getAuthHeaders } from '../../../../../../lib/supabase/auth-utils'
+import { useSharedQuestions } from './useSharedQuestions'
 
 interface GeneratingState {
   easy: boolean
@@ -22,6 +23,14 @@ interface GeneratedCounts {
 }
 
 export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
+  // Use shared questions hook for cross-page caching instead of local state
+  const { 
+    shareTokens: cachedShareTokens, 
+    generatedCounts: cachedCounts,
+    isLoading: questionsLoading,
+    hasQuestions
+  } = useSharedQuestions({ groupId, sessionId })
+
   const [generatingState, setGeneratingState] = useState<GeneratingState>({
     easy: false,
     medium: false,
@@ -29,13 +38,13 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     all: false
   })
 
+  // Use cached data from shared hook instead of local state
+  const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
   const [generatedCounts, setGeneratedCounts] = useState<GeneratedCounts>({
     easy: 0,
     medium: 0,
     hard: 0
   })
-
-  const [shareTokens, setShareTokens] = useState<Record<string, string>>({})
 
   // New: Track current preset state
   const [currentPreset, setCurrentPreset] = useState<{
@@ -45,13 +54,25 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     createdAt: Date
   } | null>(null)
 
-  // Load current preset and shareTokens from database on mount
+  // Sync cached data with local state when available
   useEffect(() => {
-    const loadExistingData = async () => {
+    if (hasQuestions) {
+      console.log('🔄 [useGroupQuestionGeneration] Syncing from cache:', {
+        cachedShareTokens,
+        cachedCounts
+      })
+      setShareTokens(cachedShareTokens)
+      setGeneratedCounts(cachedCounts)
+    }
+  }, [cachedShareTokens, cachedCounts, hasQuestions])
+
+  // Load current preset from database on mount (preset is separate from questions)
+  useEffect(() => {
+    const loadExistingPreset = async () => {
       try {
         const headers = await getAuthHeaders()
         
-        // Load preset
+        // Load preset (this doesn't change as frequently as questions)
         const presetResponse = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/preset`, {
           headers,
           credentials: 'include'
@@ -66,60 +87,12 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
             console.log('📦 Loaded current preset from database:', presetData.currentPreset.name)
           }
         }
-
-        // Load shareTokens
-        console.log('🔄 Fetching existing shareTokens from:', `/api/groups/${groupId}/sessions/${sessionId}/questions`)
-        const questionsResponse = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
-          headers,
-          credentials: 'include'
-        })
-        
-        console.log('📡 Questions API response status:', questionsResponse.status)
-        
-        if (questionsResponse.ok) {
-          const questionsData = await questionsResponse.json()
-          console.log('📦 Questions API response data:', questionsData)
-          
-          // Parse the actual API response structure
-          if (questionsData.success && questionsData.data?.questionsByDifficulty) {
-            const questionsByDiff = questionsData.data.questionsByDifficulty
-            console.log('📊 Questions by difficulty:', questionsByDiff)
-            
-            // Convert to shareTokens format
-            const shareTokens: Record<string, string> = {}
-            const counts = { easy: 0, medium: 0, hard: 0 }
-            
-            Object.keys(questionsByDiff).forEach(difficulty => {
-              const diffData = questionsByDiff[difficulty]
-              if (diffData.shareToken) {
-                shareTokens[difficulty] = diffData.shareToken
-                if (difficulty in counts) {
-                  counts[difficulty as keyof typeof counts] = diffData.count || 1
-                }
-              }
-            })
-            
-            console.log('✅ Parsed shareTokens:', shareTokens)
-            console.log('✅ Parsed generatedCounts:', counts)
-            
-            if (Object.keys(shareTokens).length > 0) {
-              setShareTokens(shareTokens)
-              setGeneratedCounts(counts)
-            } else {
-              console.log('❌ No valid shareTokens found')
-            }
-          } else {
-            console.log('❌ No questionsByDifficulty in response')
-          }
-        } else {
-          console.log('❌ Questions API failed:', questionsResponse.status, await questionsResponse.text())
-        }
       } catch (error) {
-        console.warn('Failed to load existing data:', error)
+        console.warn('Failed to load existing preset:', error)
       }
     }
 
-    loadExistingData()
+    loadExistingPreset()
   }, [groupId, sessionId])
 
   // Function to save current preset to database
@@ -416,6 +389,8 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     handleGenerateAllQuestions,
     handleGenerateFromPreset,
     clearExistingQuestions,
-    needsPresetReplacement
+    needsPresetReplacement,
+    // Add loading state from shared hook
+    questionsLoading
   }
 }
