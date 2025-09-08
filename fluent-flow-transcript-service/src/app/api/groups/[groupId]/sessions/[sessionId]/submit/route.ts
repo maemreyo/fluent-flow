@@ -97,6 +97,7 @@ export async function POST(
       user_id: user.id,
       score,
       total_questions: totalQuestions,
+      correct_answers: correctAnswers, // 🔧 FIX: Add missing required field
       time_taken: timeTaken,
       answers_data: {
         responses,
