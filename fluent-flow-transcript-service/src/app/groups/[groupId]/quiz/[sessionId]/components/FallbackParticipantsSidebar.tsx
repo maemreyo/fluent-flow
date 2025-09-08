@@ -13,6 +13,22 @@ export function FallbackParticipantsSidebar({
   onlineParticipants, 
   user 
 }: FallbackParticipantsSidebarProps) {
+  // Debug participant data
+  console.log('🧑‍🤝‍🧑 FallbackParticipantsSidebar debug:', {
+    participants: participants.map(p => ({
+      user_id: p.user_id,
+      user_email: p.user_email,
+      username: p.username,
+      is_online: p.is_online
+    })),
+    onlineParticipants: onlineParticipants.map(p => ({
+      user_id: p.user_id,
+      user_email: p.user_email,
+      username: p.username,
+      is_online: p.is_online
+    }))
+  })
+  
   return (
     <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
       <div className="border-b border-white/20 bg-white/60 p-4">

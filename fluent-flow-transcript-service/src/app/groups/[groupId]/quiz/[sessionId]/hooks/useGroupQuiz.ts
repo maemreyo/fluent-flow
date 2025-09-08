@@ -177,17 +177,43 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
   })
 
-  // State management
+  // State management with auto-load from shareTokens  
   useEffect(() => {
     const isLoading = sessionLoading || groupLoading || participantsLoading
 
+    console.log('🔍 useGroupQuiz state management:', {
+      isLoading,
+      sessionLoading,
+      groupLoading,
+      participantsLoading,
+      sessionError,
+      groupError,
+      hasSession: !!session,
+      hasGroup: !!group
+    })
+
     if (isLoading) {
+      console.log('📝 Setting appState to: loading')
       setAppState('loading')
     } else if (sessionError || groupError) {
+      console.log('📝 Setting appState to: error')
       setAppState('error')
     } else if (session && group) {
+      // Check session status to determine proper state
+      console.log('📊 Session data:', {
+        id: session.id,
+        status: session.status,
+        state: (session as any).state,
+        quiz_title: session.quiz_title,
+        created_by: session.created_by,
+        started_at: session.started_at
+      })
+      
       // Show preset selection first - questions will be generated manually by owner
+      console.log('📝 Setting appState to: preset-selection')
       setAppState('preset-selection')
+    } else {
+      console.log('⚠️ No state match, staying in current state')
     }
   }, [
     sessionLoading,
@@ -198,6 +224,58 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     session,
     group
   ])
+
+  // Auto-load questions from existing shareTokens on mount
+  useEffect(() => {
+    const loadExistingQuestions = async () => {
+      // Only try to load if we're in preset-selection state and don't have questions yet
+      if (appState !== 'preset-selection' || difficultyGroups.length > 0) {
+        return
+      }
+
+      try {
+        // Fetch existing shareTokens from the backend
+        console.log('🔄 Checking for existing questions...')
+        const { getAuthHeaders } = await import('@/lib/supabase/auth-utils')
+        const headers = await getAuthHeaders()
+        
+        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
+          headers,
+          credentials: 'include'
+        })
+        
+        if (response.ok) {
+          const data = await response.json()
+          console.log('📦 Found existing questions:', data)
+          
+          // Parse the actual API response structure  
+          if (data.success && data.data?.questionsByDifficulty) {
+            const questionsByDiff = data.data.questionsByDifficulty
+            
+            // Convert to shareTokens format
+            const shareTokens: Record<string, string> = {}
+            Object.keys(questionsByDiff).forEach(difficulty => {
+              const diffData = questionsByDiff[difficulty]
+              if (diffData.shareToken) {
+                shareTokens[difficulty] = diffData.shareToken
+              }
+            })
+            
+            if (Object.keys(shareTokens).length > 0) {
+              console.log('🎯 Loading questions from existing shareTokens:', shareTokens)
+              await loadQuestionsFromShareTokens(shareTokens)
+              // Move to question-info state since we have questions
+              setAppState('question-info')
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load existing questions:', error)
+      }
+    }
+
+    loadExistingQuestions()
+  }, [appState, difficultyGroups.length, groupId, sessionId, loadQuestionsFromShareTokens])
 
   // Quiz functionality (reused from individual quiz)
   const getAvailableQuestionCounts = useCallback((questions: Question[]) => {

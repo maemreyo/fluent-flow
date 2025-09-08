@@ -1,0 +1,83 @@
+'use client'
+
+import { use, useCallback } from 'react'
+import { PermissionManager } from '../../../../../../lib/permissions'
+import { GroupQuizPreview } from '../components/GroupQuizPreview'
+import { useQuizFlow } from '../shared/hooks/useQuizFlow'
+import { useQuizSync } from '../hooks/useQuizSync'
+import { useGroupQuestionGeneration } from '../hooks/useQuestionGeneration'
+
+interface PreviewPageProps {
+  params: Promise<{
+    groupId: string
+    sessionId: string
+  }>
+}
+
+export default function PreviewPage({ params }: PreviewPageProps) {
+  const { groupId, sessionId } = use(params)
+
+  const {
+    session,
+    group,
+    user,
+    difficultyGroups,
+    handleGoBackFromPreview,
+    navigateToInfo,
+    navigateToActive
+  } = useQuizFlow({ groupId, sessionId })
+
+  const { shareTokens } = useGroupQuestionGeneration(groupId, sessionId)
+  
+  // Role-based permissions
+  const permissions = new PermissionManager(user, group, session)
+
+  // Quiz synchronization for broadcasting
+  const { broadcastQuizSessionStart } = useQuizSync({
+    groupId,
+    sessionId,
+    canManage: permissions.canManageQuiz(),
+    enabled: true
+  })
+
+  // Group settings
+  const groupSettings = (group as any)?.settings || {}
+
+  const handleStartQuiz = useCallback(async () => {
+    console.log('🚀 Starting quiz from preview with shareTokens:', shareTokens)
+
+    // Broadcast session start to all participants with shareTokens
+    if (permissions.canManageQuiz()) {
+      const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', shareTokens)
+      if (success) {
+        console.log('✅ Quiz session start broadcasted from preview, navigating to active')
+        
+        // Navigate to active quiz
+        setTimeout(() => {
+          navigateToActive()
+        }, 1000) // Small delay to allow broadcast to complete
+      }
+    } else {
+      // For non-managers, just navigate directly
+      navigateToActive()
+    }
+  }, [shareTokens, permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToActive])
+
+  const handleGoBack = () => {
+    handleGoBackFromPreview()
+    navigateToInfo()
+  }
+
+  return (
+    <div className="mx-auto max-w-8xl">
+      <GroupQuizPreview
+        difficultyGroups={difficultyGroups}
+        onStartQuiz={handleStartQuiz}
+        onGoBack={handleGoBack}
+        canShowAnswers={permissions.canManageQuiz()}
+        sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}
+        quizSettings={groupSettings}
+      />
+    </div>
+  )
+}

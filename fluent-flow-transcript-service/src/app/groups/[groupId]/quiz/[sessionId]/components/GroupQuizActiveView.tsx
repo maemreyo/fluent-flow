@@ -322,7 +322,7 @@ export function GroupQuizActiveView({
   // For now, we'll use a simpler approach - count responses that match questions in current set
   // This assumes the question indices are structured predictably
   const questionsInCurrentSet = groupData?.questions || []
-  const answeredQuestionsInSet = questionsInCurrentSet.filter((setQuestion, questionIdx) => {
+  const answeredQuestionsInSet = questionsInCurrentSet.filter((setQuestion: any, questionIdx: number) => {
     // Try to find a response that matches this question
     return responses.some(response => {
       // Try to match by the question content or structure

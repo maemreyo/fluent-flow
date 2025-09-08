@@ -45,31 +45,81 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     createdAt: Date
   } | null>(null)
 
-  // Load current preset from database on mount
+  // Load current preset and shareTokens from database on mount
   useEffect(() => {
-    const loadCurrentPreset = async () => {
+    const loadExistingData = async () => {
       try {
         const headers = await getAuthHeaders()
-        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/preset`, {
+        
+        // Load preset
+        const presetResponse = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/preset`, {
           headers,
           credentials: 'include'
         })
-        if (response.ok) {
-          const data = await response.json()
-          if (data.currentPreset) {
+        if (presetResponse.ok) {
+          const presetData = await presetResponse.json()
+          if (presetData.currentPreset) {
             setCurrentPreset({
-              ...data.currentPreset,
-              createdAt: new Date(data.currentPreset.createdAt)
+              ...presetData.currentPreset,
+              createdAt: new Date(presetData.currentPreset.createdAt)
             })
-            console.log('Loaded current preset from database:', data.currentPreset.name)
+            console.log('📦 Loaded current preset from database:', presetData.currentPreset.name)
           }
         }
+
+        // Load shareTokens
+        console.log('🔄 Fetching existing shareTokens from:', `/api/groups/${groupId}/sessions/${sessionId}/questions`)
+        const questionsResponse = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
+          headers,
+          credentials: 'include'
+        })
+        
+        console.log('📡 Questions API response status:', questionsResponse.status)
+        
+        if (questionsResponse.ok) {
+          const questionsData = await questionsResponse.json()
+          console.log('📦 Questions API response data:', questionsData)
+          
+          // Parse the actual API response structure
+          if (questionsData.success && questionsData.data?.questionsByDifficulty) {
+            const questionsByDiff = questionsData.data.questionsByDifficulty
+            console.log('📊 Questions by difficulty:', questionsByDiff)
+            
+            // Convert to shareTokens format
+            const shareTokens: Record<string, string> = {}
+            const counts = { easy: 0, medium: 0, hard: 0 }
+            
+            Object.keys(questionsByDiff).forEach(difficulty => {
+              const diffData = questionsByDiff[difficulty]
+              if (diffData.shareToken) {
+                shareTokens[difficulty] = diffData.shareToken
+                if (difficulty in counts) {
+                  counts[difficulty as keyof typeof counts] = diffData.count || 1
+                }
+              }
+            })
+            
+            console.log('✅ Parsed shareTokens:', shareTokens)
+            console.log('✅ Parsed generatedCounts:', counts)
+            
+            if (Object.keys(shareTokens).length > 0) {
+              setShareTokens(shareTokens)
+              setGeneratedCounts(counts)
+            } else {
+              console.log('❌ No valid shareTokens found')
+            }
+          } else {
+            console.log('❌ No questionsByDifficulty in response')
+          }
+        } else {
+          console.log('❌ Questions API failed:', questionsResponse.status, await questionsResponse.text())
+        }
       } catch (error) {
-        console.warn('Failed to load current preset:', error)
+        console.warn('Failed to load existing data:', error)
       }
     }
 
-    loadCurrentPreset()
+    loadExistingData()
   }, [groupId, sessionId])
 
   // Function to save current preset to database
