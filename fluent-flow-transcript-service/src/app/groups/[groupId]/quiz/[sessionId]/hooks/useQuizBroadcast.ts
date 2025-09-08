@@ -19,7 +19,7 @@ export function useQuizBroadcast({
   userId 
 }: UseQuizBroadcastProps) {
   
-  const broadcastQuizSessionStart = useCallback(async (quizTitle?: string) => {
+  const broadcastQuizSessionStart = useCallback(async (quizTitle?: string, shareTokens?: Record<string, string>) => {
     if (!canBroadcast || !channelRef || !userId) {
       console.log('⚠️ Cannot broadcast quiz session start')
       return false
@@ -34,7 +34,8 @@ export function useQuizBroadcast({
         started_at: new Date().toISOString(),
         countdown: 5,
         sessionId,
-        quiz_title: quizTitle || 'Quiz Session'
+        quiz_title: quizTitle || 'Quiz Session',
+        shareTokens: shareTokens || {} // Include shareTokens for members
       }
 
       // Broadcast to session participants

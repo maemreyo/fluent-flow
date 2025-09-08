@@ -9,8 +9,9 @@ interface UseQuizEventHandlersProps {
   sessionId: string
   canManage: boolean
   onBroadcastPreparationUpdate: (step: string, data: any) => void
-  onBroadcastQuizStart: (title?: string) => Promise<boolean>
+  onBroadcastQuizStart: (title?: string, shareTokens?: Record<string, string>) => Promise<boolean>
   onMemberStartQuizInfo?: () => void // Add callback for member state transition
+  onMemberLoadQuestions?: (shareTokens: Record<string, string>) => void // Add callback for loading questions
 }
 
 export function useQuizEventHandlers({
@@ -19,7 +20,8 @@ export function useQuizEventHandlers({
   canManage,
   onBroadcastPreparationUpdate,
   onBroadcastQuizStart,
-  onMemberStartQuizInfo
+  onMemberStartQuizInfo,
+  onMemberLoadQuestions
 }: UseQuizEventHandlersProps) {
   const router = useRouter()
 
@@ -41,11 +43,11 @@ export function useQuizEventHandlers({
     }
   }, [canManage, onBroadcastPreparationUpdate])
 
-  const handleQuizSessionStart = useCallback(async (quizTitle?: string) => {
+  const handleQuizSessionStart = useCallback(async (quizTitle?: string, shareTokens?: Record<string, string>) => {
     console.log('🚀 Enhanced quiz session start initiated')
 
     if (canManage) {
-      const success = await onBroadcastQuizStart(quizTitle)
+      const success = await onBroadcastQuizStart(quizTitle, shareTokens)
       if (success) {
         console.log('✅ Quiz session start broadcasted to all participants')
         
@@ -61,21 +63,29 @@ export function useQuizEventHandlers({
   }, [canManage, onBroadcastQuizStart, router, groupId, sessionId])
 
   const handleQuizSessionStartReceived = useCallback((payload: any) => {
-    const { started_by, countdown } = payload
+    const { started_by, countdown, shareTokens } = payload
     
-    console.log('🎯 Received quiz session start:', { started_by, countdown })
+    console.log('🎯 Received quiz session start:', { started_by, countdown, shareTokens })
     
-    // For members: transition to question-info state instead of redirecting
-    if (!canManage && onMemberStartQuizInfo) {
-      toast.success(`Quiz starting! Transitioning to info screen...`, {
-        duration: 3000
-      })
+    // For members: load questions and transition to question-info state
+    if (!canManage) {
+      // Load questions first if shareTokens available
+      if (shareTokens && onMemberLoadQuestions) {
+        console.log('📚 Member loading questions from shareTokens:', shareTokens)
+        onMemberLoadQuestions(shareTokens)
+      }
       
-      // Immediately transition member to question-info state  
-      setTimeout(() => {
-        console.log('🎯 Member transitioning to question-info state')
-        onMemberStartQuizInfo()
-      }, 1000) // 1 second delay for smooth transition
+      if (onMemberStartQuizInfo) {
+        toast.success(`Quiz starting! Transitioning to info screen...`, {
+          duration: 3000
+        })
+        
+        // Transition member to question-info state  
+        setTimeout(() => {
+          console.log('🎯 Member transitioning to question-info state')
+          onMemberStartQuizInfo()
+        }, 1000) // 1 second delay for smooth transition
+      }
       
     } else if (canManage) {
       // For owners/admins: show countdown and redirect (existing behavior)
@@ -88,7 +98,7 @@ export function useQuizEventHandlers({
         router.push(`/groups/${groupId}/quiz/${sessionId}`)
       }, countdown * 1000)
     }
-  }, [router, groupId, sessionId, canManage, onMemberStartQuizInfo])
+  }, [router, groupId, sessionId, canManage, onMemberStartQuizInfo, onMemberLoadQuestions])
 
   return {
     handlePresetSelected,

@@ -22,6 +22,7 @@ interface UseQuizSyncProps {
   enabled?: boolean
   onMemberStartQuizInfo?: () => void // Add callback for member state transition
   onMemberResetToPresets?: () => void // Add callback for member reset
+  onMemberLoadQuestions?: (shareTokens: Record<string, string>) => void // Add callback for loading questions
 }
 
 export function useQuizSync({
@@ -30,7 +31,8 @@ export function useQuizSync({
   canManage,
   enabled = true,
   onMemberStartQuizInfo,
-  onMemberResetToPresets
+  onMemberResetToPresets,
+  onMemberLoadQuestions
 }: UseQuizSyncProps) {
   const { user } = useAuth()
   const [syncState, setSyncState] = useState<QuizSyncState>({
@@ -57,7 +59,8 @@ export function useQuizSync({
     canManage,
     onBroadcastPreparationUpdate: broadcastPreparationUpdate,
     onBroadcastQuizStart: broadcastQuizSessionStart,
-    onMemberStartQuizInfo
+    onMemberStartQuizInfo,
+    onMemberLoadQuestions
   })
 
   // Setup real-time connection

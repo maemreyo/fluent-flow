@@ -101,7 +101,10 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     // Navigation handlers
     handleNavigateToQuestion,
     handleNavigatePrevious,
-    handleNavigateNext
+    handleNavigateNext,
+    
+    // Question loading function
+    loadQuestionsFromShareTokens
   } = useGroupQuizWithProgress({ groupId, sessionId })
 
   const loopId = (session as any)?.loop_data?.id
@@ -126,6 +129,27 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   // Group settings
   const groupSettings = (group as any)?.settings || {}
 
+  // Handle member loading questions from shareTokens
+  const handleMemberLoadQuestions = useCallback(async (shareTokens: Record<string, string>) => {
+    console.log('📚 Member loading questions from shareTokens:', shareTokens)
+    try {
+      // Call the loadQuestionsFromShareTokens function directly
+      const loadedQuestions = await loadQuestionsFromShareTokens(shareTokens)
+      console.log('✅ Member successfully loaded questions:', loadedQuestions)
+      
+      // Questions and difficultyGroups are now set by loadQuestionsFromShareTokens
+      // Small delay then ensure we're in quiz-active state
+      setTimeout(() => {
+        console.log('🎯 Member ensuring quiz-active state after loading questions')
+        // The state transition should already happen from handleQuestionInfoStart
+      }, 500)
+      
+    } catch (error) {
+      console.error('❌ Member failed to load questions:', error)
+      // Could show error toast here if needed
+    }
+  }, [loadQuestionsFromShareTokens])
+
   // Simplified quiz synchronization
   const {
     syncState,
@@ -138,7 +162,8 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
     canManage: permissions.canManageQuiz(),
     enabled: true,
     onMemberStartQuizInfo: handleQuestionInfoStart, // Pass callback for member state transition
-    onMemberResetToPresets: handleGoBackToPresets // Pass callback for member reset
+    onMemberResetToPresets: handleGoBackToPresets, // Pass callback for member reset
+    onMemberLoadQuestions: handleMemberLoadQuestions // Pass callback for loading questions
   })
 
   // Quiz startup hook
@@ -154,16 +179,16 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
   // Enhanced handleStartQuiz that includes session synchronization
   const handleStartQuiz = useCallback(
     async (shareTokens: Record<string, string>) => {
-      console.log('🚀 Enhanced quiz session start initiated')
+      console.log('🚀 Enhanced quiz session start initiated', { shareTokens })
 
       // First call the original startup logic
       await originalHandleStartQuiz(shareTokens)
 
-      // Then broadcast session start to all participants
+      // Then broadcast session start to all participants with shareTokens
       if (permissions.canManageQuiz()) {
-        const success = await broadcastQuizSessionStart()
+        const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', shareTokens)
         if (success) {
-          console.log('✅ Quiz session start broadcasted to all participants')
+          console.log('✅ Quiz session start broadcasted to all participants with shareTokens')
 
           // Redirect owner after a short delay to allow broadcast
           setTimeout(() => {
@@ -173,8 +198,24 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
         }
       }
     },
-    [originalHandleStartQuiz, permissions.canManageQuiz(), broadcastQuizSessionStart]
+    [originalHandleStartQuiz, permissions.canManageQuiz(), broadcastQuizSessionStart, session?.quiz_title]
   )
+
+  // Enhanced handleStartQuizFromPreview that includes session synchronization
+  const handleStartQuizFromPreviewWithBroadcast = useCallback(async () => {
+    console.log('🚀 Enhanced quiz session start from preview initiated', { shareTokens })
+
+    // First call the original preview start logic and get shareTokens
+    const currentShareTokens = await handleStartQuizFromPreview(shareTokens)
+    
+    // Then broadcast session start to all participants with shareTokens
+    if (permissions.canManageQuiz()) {
+      const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', currentShareTokens)
+      if (success) {
+        console.log('✅ Quiz session start from preview broadcasted to all participants with shareTokens', currentShareTokens)
+      }
+    }
+  }, [handleStartQuizFromPreview, shareTokens, permissions.canManageQuiz(), broadcastQuizSessionStart, session?.quiz_title])
 
   // Simplified question generation handlers
   const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
@@ -414,7 +455,7 @@ export default function GroupQuizPage({ params }: GroupQuizPageProps) {
                       <div className="mx-auto max-w-8xl">
                         <GroupQuizPreview
                           difficultyGroups={difficultyGroups}
-                          onStartQuiz={handleStartQuizFromPreview}
+                          onStartQuiz={handleStartQuizFromPreviewWithBroadcast}
                           onGoBack={handleGoBackFromPreview}
                           canShowAnswers={permissions.canManageQuiz()}
                           sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}

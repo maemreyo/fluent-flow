@@ -123,6 +123,20 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     })
 
     const loadedQuestions = await Promise.all(questionPromises)
+    
+    // Set difficultyGroups so questions are available for getCurrentQuestion
+    const formattedGroups: DifficultyGroup[] = loadedQuestions.map(({ difficulty, questions, shareToken }) => ({
+      difficulty: difficulty as 'easy' | 'medium' | 'hard',
+      questions,
+      shareToken,
+      questionsData: questions,
+      questionSet: { questions },
+      completed: false // Add required property
+    }))
+    
+    console.log('📚 Setting difficultyGroups from loaded questions:', formattedGroups)
+    setDifficultyGroups(formattedGroups)
+    
     return loadedQuestions
   }, [groupId, sessionId])
 
@@ -315,9 +329,12 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     setAppState('question-preview')
   }
 
-  const handleStartQuizFromPreview = () => {
+  const handleStartQuizFromPreview = useCallback(async (currentShareTokens?: Record<string, string>) => {
     setAppState('quiz-active')
-  }
+    
+    // Return shareTokens for broadcasting (if available)
+    return currentShareTokens || {}
+  }, [])
 
   const handleGoBackFromPreview = () => {
     setAppState('question-info')
