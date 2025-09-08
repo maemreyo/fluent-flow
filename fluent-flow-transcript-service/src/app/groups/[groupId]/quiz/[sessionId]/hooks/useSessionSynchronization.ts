@@ -125,16 +125,45 @@ export function useSessionSynchronization({
   }, [isInRoom, autoStartCountdown, router, groupId, sessionId, onJoinQuiz])
 
   // Cancel countdown function
-  const cancelCountdown = useCallback(() => {
-    console.log('🛑 Cancelling quiz countdown')
-    setAutoStartCountdown(null)
-    setIsStartingQuiz(false)
-    setSessionState(prev => ({
-      ...prev,
-      status: 'waiting'
-    }))
-    toast.info('Quiz start cancelled')
-  }, [])
+  const cancelCountdown = useCallback(async () => {
+    if (!supabase || !user || !channelRef) {
+      console.error('❌ Cannot broadcast cancel - missing dependencies')
+      return
+    }
+
+    console.log('🛑 Broadcasting quiz countdown cancellation...')
+    
+    try {
+      const payload = {
+        type: 'quiz_cancelled',
+        cancelled_by: user.id,
+        cancelled_at: new Date().toISOString()
+      }
+      
+      console.log('📡 Broadcasting cancel payload:', payload)
+      
+      await channelRef.send({
+        type: 'broadcast',
+        event: 'session_state_change',
+        payload
+      })
+
+      console.log('✅ Quiz cancellation broadcasted to all participants')
+      
+      // Apply local cancellation for broadcaster
+      setAutoStartCountdown(null)
+      setIsStartingQuiz(false)
+      setSessionState(prev => ({
+        ...prev,
+        status: 'waiting'
+      }))
+      toast.info('Quiz start cancelled')
+      
+    } catch (error) {
+      console.error('❌ Failed to broadcast cancellation:', error)
+      toast.error('Failed to cancel quiz. Please try again.')
+    }
+  }, [user, channelRef])
 
   // Setup real-time listeners
   useEffect(() => {
@@ -153,13 +182,15 @@ export function useSessionSynchronization({
       })
       // Listen for session state broadcasts
       .on('broadcast', { event: 'session_state_change' }, (payload) => {
-        const { type, started_by, started_at, countdown } = payload.payload
+        const { type, started_by, started_at, countdown, cancelled_by, cancelled_at } = payload.payload
 
         console.log('🎯 Received session state change:', {
           type,
           started_by,
           started_at,
           countdown,
+          cancelled_by,
+          cancelled_at,
           isInRoom,
           currentUserId: user.id
         })
@@ -198,6 +229,18 @@ export function useSessionSynchronization({
               duration: 10000
             })
           }
+        } else if (type === 'quiz_cancelled') {
+          console.log('🛑 Quiz cancelled by:', cancelled_by)
+          
+          // Cancel countdown for all participants
+          setAutoStartCountdown(null)
+          setIsStartingQuiz(false)
+          setSessionState(prev => ({
+            ...prev,
+            status: 'waiting'
+          }))
+          
+          toast.info('Quiz start has been cancelled by organizer')
         }
       })
       // Listen for database session updates
