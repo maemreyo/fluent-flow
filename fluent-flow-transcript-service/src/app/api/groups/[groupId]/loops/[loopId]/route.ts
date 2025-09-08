@@ -22,8 +22,11 @@ export async function GET(
       return NextResponse.json({ error: 'Loop not found' }, { status: 404 })
     }
 
-    // Verify user has access to this group's loop
-    if (loop.groupId !== groupId) {
+    // 🔧 FIX: Allow access if user owns the loop OR loop belongs to requested group
+    const isOwner = loop.createdBy === user.id
+    const belongsToGroup = loop.groupId === groupId
+    
+    if (!isOwner && !belongsToGroup) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 })
     }
 

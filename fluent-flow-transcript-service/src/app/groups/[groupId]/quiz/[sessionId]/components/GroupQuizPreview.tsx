@@ -14,13 +14,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../../../components/ui/card'
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger
-} from '../../../../../../components/ui/tabs'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../../../components/ui/tabs'
 
 interface Question {
   id: string
@@ -52,12 +46,10 @@ const DIFFICULTY_COLORS = {
 }
 
 const TAB_TRIGGER_CLASSES = {
-  easy:
-    'data-[state=active]:bg-green-100 data-[state=active]:text-green-800 data-[state=active]:shadow-inner',
+  easy: 'data-[state=active]:bg-green-100 data-[state=active]:text-green-800 data-[state=active]:shadow-inner',
   medium:
     'data-[state=active]:bg-yellow-100 data-[state=active]:text-yellow-800 data-[state=active]:shadow-inner',
-  hard:
-    'data-[state=active]:bg-red-100 data-[state=active]:text-red-800 data-[state=active]:shadow-inner'
+  hard: 'data-[state=active]:bg-red-100 data-[state=active]:text-red-800 data-[state=active]:shadow-inner'
 }
 
 export function GroupQuizPreview({
@@ -82,7 +74,7 @@ export function GroupQuizPreview({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto max-w-8xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="max-w-8xl container mx-auto px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
           <div className="flex items-center gap-4">
@@ -134,35 +126,35 @@ export function GroupQuizPreview({
               <div className="flex items-center gap-3 text-gray-700">
                 <FileQuestion className="h-5 w-5 text-gray-400" />
                 <div>
-                  <span className="font-bold text-lg text-gray-900">{totalQuestions}</span>
+                  <span className="text-lg font-bold text-gray-900">{totalQuestions}</span>
                   <span className="ml-2 text-sm">Total Questions</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-gray-700">
                 <ListTodo className="h-5 w-5 text-gray-400" />
                 <div>
-                  <span className="font-bold text-lg text-gray-900">{difficultyGroups.length}</span>
+                  <span className="text-lg font-bold text-gray-900">{difficultyGroups.length}</span>
                   <span className="ml-2 text-sm">Sets</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-green-600">
                 <CheckCircle className="h-5 w-5" />
                 <div>
-                  <span className="font-bold text-lg">{easyQuestions}</span>
+                  <span className="text-lg font-bold">{easyQuestions}</span>
                   <span className="ml-2 text-sm">Easy</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-yellow-600">
                 <HelpCircle className="h-5 w-5" />
                 <div>
-                  <span className="font-bold text-lg">{mediumQuestions}</span>
+                  <span className="text-lg font-bold">{mediumQuestions}</span>
                   <span className="ml-2 text-sm">Medium</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-red-600">
                 <AlertCircle className="h-5 w-5" />
                 <div>
-                  <span className="font-bold text-lg">{hardQuestions}</span>
+                  <span className="text-lg font-bold">{hardQuestions}</span>
                   <span className="ml-2 text-sm">Hard</span>
                 </div>
               </div>
@@ -171,10 +163,15 @@ export function GroupQuizPreview({
 
           {/* Question Sets in Tabs */}
           <Tabs defaultValue="set-0" className="w-full">
-            <TabsList className={`mb-4 grid h-auto w-full rounded-lg bg-gray-200/75 p-1 ${
-              difficultyGroups.length === 1 ? 'grid-cols-1' :
-              difficultyGroups.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
-            }`}>
+            <TabsList
+              className={`mb-4 grid h-auto w-full rounded-lg bg-gray-200/75 p-1 ${
+                difficultyGroups.length === 1
+                  ? 'grid-cols-1'
+                  : difficultyGroups.length === 2
+                    ? 'grid-cols-2'
+                    : 'grid-cols-3'
+              }`}
+            >
               {difficultyGroups.map((group, setIndex) => (
                 <TabsTrigger
                   key={setIndex}
@@ -187,7 +184,7 @@ export function GroupQuizPreview({
             </TabsList>
             {difficultyGroups.map((group, setIndex) => (
               <TabsContent key={setIndex} value={`set-${setIndex}`}>
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3">
                   {group.questions.map((question, questionIndex) => (
                     <div
                       key={question.id || questionIndex}
@@ -212,8 +209,7 @@ export function GroupQuizPreview({
                         <div className="space-y-2">
                           {question.options.map((option, optionIndex) => {
                             const optionLetter = String.fromCharCode(65 + optionIndex)
-                            const isCorrect =
-                              showAnswers && optionLetter === question.correctAnswer
+                            const isCorrect = showAnswers && optionLetter === question.correctAnswer
 
                             return (
                               <div
@@ -236,9 +232,7 @@ export function GroupQuizPreview({
                                   </span>
                                   <span
                                     className={`flex-1 text-sm ${
-                                      isCorrect
-                                        ? 'font-semibold text-green-900'
-                                        : 'text-gray-700'
+                                      isCorrect ? 'font-semibold text-green-900' : 'text-gray-700'
                                     }`}
                                   >
                                     {option}
@@ -253,9 +247,7 @@ export function GroupQuizPreview({
                         {showAnswers && question.explanation && (
                           <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">
                             <p className="text-sm font-semibold text-blue-800">Explanation</p>
-                            <p className="mt-1 text-sm text-blue-700">
-                              {question.explanation}
-                            </p>
+                            <p className="mt-1 text-sm text-blue-700">{question.explanation}</p>
                           </div>
                         )}
                       </div>
