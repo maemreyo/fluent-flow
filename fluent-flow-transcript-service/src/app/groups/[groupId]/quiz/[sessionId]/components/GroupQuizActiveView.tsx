@@ -5,9 +5,14 @@ import { Clock } from 'lucide-react'
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Card, CardContent } from '../../../../../../components/ui/card'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../../../../../components/ui/tooltip'
-import { QuizSettingsPanel } from './QuizSettingsPanel'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger
+} from '../../../../../../components/ui/tooltip'
 import { QuestionNavigationBar } from './QuestionNavigationBar'
+import { QuizSettingsPanel } from './QuizSettingsPanel'
 
 interface GroupQuizActiveViewProps {
   currentQuestion: {
@@ -85,6 +90,17 @@ export function GroupQuizActiveView({
     }
   }, [timeLimit, timerStarted])
 
+  // Reset setSubmitted when moving to a new set
+  useEffect(() => {
+    setSetSubmitted(false)
+    setCountdownSeconds(3)
+    // Reset timer for new set
+    if (timeLimit && timeLimit > 0) {
+      setTimeRemaining(timeLimit * 60)
+      setTimerStarted(true)
+    }
+  }, [currentSetIndex, timeLimit])
+
   // Define handleNext before it's used
   const handleNext = useCallback(() => {
     if (isLastQuestion) {
@@ -96,37 +112,12 @@ export function GroupQuizActiveView({
         clearTimeout(timerRef.current)
       }
 
-      // Start countdown for auto-transition
-      const isLastSet = currentSetIndex >= totalSets - 1
-      if (!isLastSet) {
-        // Reset countdown and start countdown for next set
-        setCountdownSeconds(3)
-        const startCountdown = () => {
-          countdownRef.current = setInterval(() => {
-            setCountdownSeconds(prev => {
-              if (prev <= 1) {
-                if (countdownRef.current) {
-                  clearInterval(countdownRef.current)
-                }
-                onMoveToNextSet()
-                return 0
-              }
-              return prev - 1
-            })
-          }, 1000)
-        }
-        // Start countdown after a brief moment
-        setTimeout(startCountdown, 100)
-      } else {
-        // For last set, still show auto-transition after delay
-        setTimeout(() => {
-          onMoveToNextSet() // This will call calculateFinalResults()
-        }, 2000)
-      }
+      // Don't auto-transition - let user manually continue
+      // This prevents the bug where it auto-advances to next set completion screen
     } else {
       onNextQuestion()
     }
-  }, [isLastQuestion, onSubmitSet, currentSetIndex, totalSets, onMoveToNextSet, onNextQuestion])
+  }, [isLastQuestion, onSubmitSet, onNextQuestion])
 
   // Timer countdown effect
   useEffect(() => {
@@ -188,19 +179,13 @@ export function GroupQuizActiveView({
   }
 
   const handleContinueToNextSet = () => {
-    // Clear countdown if user manually continues
+    // Clear any existing countdown
     if (countdownRef.current) {
       clearInterval(countdownRef.current)
     }
-    
+
+    // Move to next set - this will trigger the useEffect to reset state
     onMoveToNextSet()
-    setSetSubmitted(false) // Reset for next set
-    setCountdownSeconds(3) // Reset countdown for next time
-    // Reset timer for next set
-    if (timeLimit && timeLimit > 0) {
-      setTimeRemaining(timeLimit * 60)
-      setTimerStarted(true)
-    }
   }
 
   const handleGoBack = () => {
@@ -253,8 +238,8 @@ export function GroupQuizActiveView({
               </h2>
               <p className="text-gray-600">
                 {isLastSet
-                  ? "Congratulations! You've completed all sets. Your results are being processed."
-                  : `Great job! Moving to the next set in ${countdownSeconds} second${countdownSeconds !== 1 ? 's' : ''}...`}
+                  ? "Congratulations! You've completed all sets. Ready to view your results?"
+                  : `Great job! Ready to continue to the next set?`}
               </p>
             </div>
 
@@ -317,20 +302,22 @@ export function GroupQuizActiveView({
   // currentQuestionIndex is 0-based within the current set, so add 1 for display
   const currentQuestionInSet = currentQuestionIndex + 1
   const totalQuestionsInSet = groupData?.questions?.length || 0
-  
+
   // Calculate questions answered in current set for progress bar
   // For now, we'll use a simpler approach - count responses that match questions in current set
   // This assumes the question indices are structured predictably
   const questionsInCurrentSet = groupData?.questions || []
-  const answeredQuestionsInSet = questionsInCurrentSet.filter((setQuestion: any, questionIdx: number) => {
-    // Try to find a response that matches this question
-    return responses.some(response => {
-      // Try to match by the question content or structure
-      const currentSetStartIndex = questionIndex - currentQuestionIndex
-      const expectedGlobalIndex = currentSetStartIndex + questionIdx
-      return response.questionIndex === expectedGlobalIndex
-    })
-  }).length
+  const answeredQuestionsInSet = questionsInCurrentSet.filter(
+    (setQuestion: any, questionIdx: number) => {
+      // Try to find a response that matches this question
+      return responses.some(response => {
+        // Try to match by the question content or structure
+        const currentSetStartIndex = questionIndex - currentQuestionIndex
+        const expectedGlobalIndex = currentSetStartIndex + questionIdx
+        return response.questionIndex === expectedGlobalIndex
+      })
+    }
+  ).length
 
   return (
     <div className="space-y-6">
@@ -384,7 +371,7 @@ export function GroupQuizActiveView({
             }}
           />
         </div>
-        
+
         {/* Current question indicator */}
         <div className="mt-2 text-xs text-gray-600">
           Current: Question {currentQuestionInSet} of {totalQuestionsInSet}
@@ -506,4 +493,3 @@ export function GroupQuizActiveView({
     </div>
   )
 }
-        
