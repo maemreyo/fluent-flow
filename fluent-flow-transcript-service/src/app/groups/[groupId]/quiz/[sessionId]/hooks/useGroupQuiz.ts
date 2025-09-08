@@ -61,6 +61,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
   const [responses, setResponses] = useState<QuestionResponse[]>([])
   const [results, setResults] = useState<any>(null)
+  const [videoUrl, setVideoUrl] = useState<string | undefined>()
 
   const [showVocabulary, setShowVocabulary] = useState(false)
   const [showTranscript, setShowTranscript] = useState(false)
@@ -271,13 +272,18 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
           const loadedQuestions = await loadQuestionsFromShareTokens(shareTokens)
           allQuestions = loadedQuestions.flatMap(q => q.questions)
           
-          // Cache the primary question set for compatibility
-          const primaryQuestionSet = loadedQuestions.find(q => q.questions.length > 0)
+          const primaryQuestionSet = loadedQuestions.find(q => q.questions.length > 0)?.questionSet
           if (primaryQuestionSet && session?.share_token) {
             queryClient.setQueryData(
               ['questionSet', session.share_token],
-              primaryQuestionSet.questionSet
+              primaryQuestionSet
             )
+          }
+
+          // Store the video URL from the first available question set
+          const firstQuestionSetWithVideo = loadedQuestions.find(q => q.questionSet.videoUrl)
+          if (firstQuestionSetWithVideo) {
+            setVideoUrl(firstQuestionSetWithVideo.questionSet.videoUrl)
           }
         } else {
           // Try to get questions from existing cache (fallback)
@@ -399,7 +405,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
           correctAnswer: correctAnswerText,
           isCorrect: !!isCorrect,
           explanation: question?.explanation || 'No explanation available.',
-          points: isCorrect ? 1 : 0
+          points: isCorrect ? 1 : 0,
+          videoUrl: videoUrl
         }
       })
 
@@ -463,6 +470,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
     setResults(finalResults)
     setAppState('quiz-results')
+    console.log('Final results with videoUrl:', finalResults)
   }
 
   const handleAnswerSelect = (questionIndex: number, answer: string) => {

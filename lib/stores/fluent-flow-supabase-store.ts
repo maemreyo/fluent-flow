@@ -900,8 +900,10 @@ const supabaseService = {
 
     // 🚀 NEW: Auto-link transcript with existing loop segments that match video_id and timeframe
     try {
-      console.log(`🔄 FluentFlow: Linking transcript ${transcriptId} with matching loop segments for video ${videoId}`)
-      
+      console.log(
+        `🔄 FluentFlow: Linking transcript ${transcriptId} with matching loop segments for video ${videoId}`
+      )
+
       const { data: matchingSegments, error: segmentError } = await supabase
         .from('loop_segments')
         .select('id, session_id')
@@ -910,18 +912,18 @@ const supabaseService = {
         .lte('start_time', startTime + 0.1)
         .gte('end_time', endTime - 0.1)
         .lte('end_time', endTime + 0.1)
-        .in('session_id', 
-          supabase
-            .from('practice_sessions')
-            .select('id')
-            .eq('video_id', videoId)
+        .in(
+          'session_id',
+          supabase.from('practice_sessions').select('id').eq('video_id', videoId) as any
         )
 
       if (segmentError) {
         console.error('Error finding matching segments:', segmentError)
       } else if (matchingSegments && matchingSegments.length > 0) {
-        console.log(`🔗 FluentFlow: Found ${matchingSegments.length} matching loop segments to link`)
-        
+        console.log(
+          `🔗 FluentFlow: Found ${matchingSegments.length} matching loop segments to link`
+        )
+
         // Update all matching segments to link with this transcript
         const segmentIds = matchingSegments.map(s => s.id)
         const { error: updateError } = await supabase
@@ -942,7 +944,9 @@ const supabaseService = {
         if (updateError) {
           console.error('Error linking transcript to segments:', updateError)
         } else {
-          console.log(`✅ FluentFlow: Successfully linked transcript ${transcriptId} to ${segmentIds.length} loop segments`)
+          console.log(
+            `✅ FluentFlow: Successfully linked transcript ${transcriptId} to ${segmentIds.length} loop segments`
+          )
         }
       } else {
         console.log(`ℹ️ FluentFlow: No matching loop segments found for transcript ${transcriptId}`)
@@ -953,7 +957,7 @@ const supabaseService = {
     }
 
     return transcriptId
-  },,
+  },
 
   async updateLoopWithTranscript(
     segmentId: string,

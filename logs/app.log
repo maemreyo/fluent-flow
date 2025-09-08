@@ -1,5 +1,14 @@
-Điều tra lại đi, tôi thấy các log này khi mở sidepanel:
-```
-use-transcript-query.ts:65 useTranscriptQuery: Saved transcript with ID: d743772d-a607-467f-a096-9d30f3183cbc
-```
-Sử dụng supabase xem transcript có save được vào đâu, và kiểm tra query bên api `getLoops` trong fluent-flow-transcript-service/src/lib/services/loop-management-service.ts xem nó match chưa
+Investigated why videoUrl is undefined in QuestionReviewList.tsx.
+
+1. Traced data flow from QuestionReviewList.tsx backwards.
+2. Identified that `results` prop comes from `useGroupQuizWithProgress` hook, which wraps `useGroupQuiz` hook.
+3. Found that `useGroupQuiz`'s `calculateFinalResults` function constructs the `results` object.
+4. The `videoUrl` was missing from the question result objects created in `calculateFinalResults`.
+5. The `videoUrl` is available in the `QuestionSet` but was not being stored.
+
+Fix implemented:
+
+1. In `useGroupQuiz.ts`, added a state variable `videoUrl`.
+2. In `useGroupQuiz.ts`, modified `handlePresetSelect` to extract and store `videoUrl` from the loaded `questionSet`.
+3. In `useGroupQuiz.ts`, updated `calculateFinalResults` to include the stored `videoUrl` in each question's result object.
+4. Added logging in `useGroupQuiz.ts` and `QuestionReviewList.tsx` to monitor the data flow for verification.

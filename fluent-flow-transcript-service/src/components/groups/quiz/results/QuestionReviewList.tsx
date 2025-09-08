@@ -81,6 +81,7 @@ export function QuestionReviewList({
   results,
   showCorrectAnswers = true
 }: QuestionReviewListProps) {
+  console.log('QuestionReviewList results:', results)
   return (
     <Card>
       <CardHeader>
