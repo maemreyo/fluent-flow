@@ -88,6 +88,20 @@ export interface GeneratedQuestions {
   }
 }
 
+export interface CustomPrompt {
+  system_prompt: string
+  user_template: string
+  config?: {
+    maxTokens?: number
+    temperature?: number
+  }
+}
+
+export interface QuestionGenerationOptions {
+  segments?: Array<{ text: string; start: number; duration: number }>
+  customPrompt?: CustomPrompt
+}
+
 /**
  * AI Service for Next.js - Server-side AI operations
  */
@@ -340,7 +354,7 @@ export class AIService {
     loop: SavedLoop,
     transcript: string,
     preset?: DifficultyPreset,
-    options?: { segments?: Array<{ text: string; start: number; duration: number }> }
+    options?: QuestionGenerationOptions
   ): Promise<GeneratedQuestions> {
     // Import AI prompts dynamically to avoid circular dependencies
     const { prompts, PromptManager } = await import('./ai-prompts')
@@ -444,7 +458,7 @@ export class AIService {
     loop: SavedLoop,
     transcript: string,
     difficulty: 'easy' | 'medium' | 'hard',
-    options?: { segments?: Array<{ text: string; start: number; duration: number }> }
+    options?: QuestionGenerationOptions
   ): Promise<GeneratedQuestions> {
     // Import AI prompts dynamically to avoid circular dependencies
     const { prompts, PromptManager } = await import('./ai-prompts')

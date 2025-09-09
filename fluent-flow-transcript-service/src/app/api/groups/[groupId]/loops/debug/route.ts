@@ -8,6 +8,11 @@ export async function GET(
   try {
     const { groupId } = await params
     const supabase = getSupabaseServer(request)
+    
+    if (!supabase) {
+      return NextResponse.json({ error: 'Database not configured' }, { status: 500 })
+    }
+    
     const user = await getCurrentUserServer(supabase)
 
     if (!user) {

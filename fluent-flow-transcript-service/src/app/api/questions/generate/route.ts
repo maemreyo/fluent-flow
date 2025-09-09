@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
         loop as SavedLoop,
         transcript,
         difficulty,
-        { segments, customPrompt }
+        { segments, customPrompt: customPrompt || undefined }
       )
     } else {
       // Generate questions with mixed difficulty levels
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
         loop as SavedLoop,
         transcript,
         finalPreset,
-        { segments, customPrompt }
+        { segments, customPrompt: customPrompt || undefined }
       )
     }
 

@@ -305,11 +305,19 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
       return
     }
 
-    // Check if trying to generate same preset
-    if (currentPreset && currentPreset.id === presetInfo.id) {
-      console.log(`Preset ${presetInfo.name} is already selected and generated`)
-      toast.info(`${presetInfo.name} preset is already active`)
+    // Fixed logic: Check if preset is already selected AND has actual questions loaded
+    const hasActualQuestions = (generatedCounts.easy + generatedCounts.medium + generatedCounts.hard) > 0
+    const isPresetAlreadyActive = currentPreset && currentPreset.id === presetInfo.id && hasActualQuestions
+
+    if (isPresetAlreadyActive) {
+      console.log(`Preset ${presetInfo.name} is already selected and has questions loaded`)
+      toast.info(`${presetInfo.name} preset is already active with questions loaded`)
       return
+    }
+
+    // If preset matches but no questions loaded, allow regeneration
+    if (currentPreset && currentPreset.id === presetInfo.id && !hasActualQuestions) {
+      console.log(`Preset ${presetInfo.name} matches but no questions loaded - regenerating`)
     }
 
     // Prevent duplicate generation while in progress

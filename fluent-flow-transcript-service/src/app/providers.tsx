@@ -14,12 +14,7 @@ const createPersister = () => {
     storage: window.sessionStorage, // Use sessionStorage for tab-specific caching
     key: 'fluent-flow-quiz-cache',
     serialize: JSON.stringify,
-    deserialize: JSON.parse,
-    // Only persist quiz-related queries to avoid bloating storage
-    filter: (query) => {
-      const queryKey = query.queryKey as string[]
-      return queryKey.includes('quiz') || queryKey.includes('questions') || queryKey.includes('session')
-    }
+    deserialize: JSON.parse
   })
 }
 
@@ -53,7 +48,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
             // Don't restore queries that are too old
             defaultOptions: {
               queries: {
-                staleTime: 15 * 60 * 1000
+                gcTime: 15 * 60 * 1000
               }
             }
           }
