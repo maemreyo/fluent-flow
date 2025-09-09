@@ -103,64 +103,79 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   } = useQuizAuth(authToken)
 
   // Function to load questions from shareTokens with React Query caching
-  const loadQuestionsFromShareTokens = useCallback(async (shareTokens: Record<string, string>) => {
-    const availableTokens = Object.entries(shareTokens).filter(([_, token]) => token)
-    if (availableTokens.length === 0) {
-      throw new Error('No questions available')
-    }
-
-    console.log('🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching:', shareTokens)
-
-    const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
-      // Check if data is already cached in React Query (including persistence)
-      const cacheKey = quizQueryKeys.questionSet(shareToken)
-      const cachedData = queryClient.getQueryData(cacheKey) as any
-      
-      if (cachedData) {
-        console.log(`✅ [CACHE HIT] Using persistent cached ${difficulty} questions from sessionStorage`)
-        return cachedData
+  const loadQuestionsFromShareTokens = useCallback(
+    async (shareTokens: Record<string, string>) => {
+      const availableTokens = Object.entries(shareTokens).filter(([_, token]) => token)
+      if (availableTokens.length === 0) {
+        throw new Error('No questions available')
       }
 
-      // If not cached, fetch and cache it
-      console.log(`🚨 [CACHE MISS] Fetching ${difficulty} questions from API - cache not found`)
-      const response = await fetch(`/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`)
-      
-      if (!response.ok) {
-        throw new Error(`Failed to load ${difficulty} questions`)
-      }
-      
-      const questionData = await response.json()
-      const result = {
-        difficulty,
-        questions: questionData.questions || [],
-        shareToken,
-        questionSet: questionData
-      }
+      console.log(
+        '🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching:',
+        shareTokens
+      )
 
-      // Cache the result with React Query (will be persisted automatically)
-      queryClient.setQueryData(cacheKey, result)
-      
-      console.log(`💾 [CACHED] Stored ${difficulty} questions in persistent cache: ${result.questions.length}`)
-      return result
-    })
+      const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
+        // Check if data is already cached in React Query (including persistence)
+        const cacheKey = quizQueryKeys.questionSet(shareToken)
+        const cachedData = queryClient.getQueryData(cacheKey) as any
 
-    const loadedQuestions = await Promise.all(questionPromises)
-    
-    // Set difficultyGroups so questions are available for getCurrentQuestion
-    const formattedGroups: DifficultyGroup[] = loadedQuestions.map((loadedQuestion: any) => ({
-      difficulty: loadedQuestion.difficulty as 'easy' | 'medium' | 'hard',
-      questions: loadedQuestion.questions,
-      shareToken: loadedQuestion.shareToken,
-      questionsData: loadedQuestion.questions,
-      questionSet: { questions: loadedQuestion.questions },
-      completed: false // Add required property
-    }))
-    
-    console.log('📚 Setting difficultyGroups from loaded questions:', formattedGroups.map(g => `${g.difficulty}: ${g.questions.length}`))
-    setDifficultyGroups(formattedGroups)
-    
-    return loadedQuestions
-  }, [groupId, sessionId, queryClient])
+        if (cachedData) {
+          console.log(
+            `✅ [CACHE HIT] Using persistent cached ${difficulty} questions from sessionStorage`
+          )
+          return cachedData
+        }
+
+        // If not cached, fetch and cache it
+        console.log(`🚨 [CACHE MISS] Fetching ${difficulty} questions from API - cache not found`)
+        const response = await fetch(
+          `/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`
+        )
+
+        if (!response.ok) {
+          throw new Error(`Failed to load ${difficulty} questions`)
+        }
+
+        const questionData = await response.json()
+        const result = {
+          difficulty,
+          questions: questionData.questions || [],
+          shareToken,
+          questionSet: questionData
+        }
+
+        // Cache the result with React Query (will be persisted automatically)
+        queryClient.setQueryData(cacheKey, result)
+
+        console.log(
+          `💾 [CACHED] Stored ${difficulty} questions in persistent cache: ${result.questions.length}`
+        )
+        return result
+      })
+
+      const loadedQuestions = await Promise.all(questionPromises)
+
+      // Set difficultyGroups so questions are available for getCurrentQuestion
+      const formattedGroups: DifficultyGroup[] = loadedQuestions.map((loadedQuestion: any) => ({
+        difficulty: loadedQuestion.difficulty as 'easy' | 'medium' | 'hard',
+        questions: loadedQuestion.questions,
+        shareToken: loadedQuestion.shareToken,
+        questionsData: loadedQuestion.questions,
+        questionSet: { questions: loadedQuestion.questions },
+        completed: false // Add required property
+      }))
+
+      // console.log(
+      //   '📚 Setting difficultyGroups from loaded questions:',
+      //   formattedGroups.map(g => `${g.difficulty}: ${g.questions.length}`)
+      // )
+      setDifficultyGroups(formattedGroups)
+
+      return loadedQuestions
+    },
+    [groupId, sessionId, queryClient]
+  )
 
   // Favorites handling (simplified for group context)
   const { data: isFavorited = false } = useQuery({
@@ -199,21 +214,21 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
   })
 
-  // State management with auto-load from shareTokens  
+  // State management with auto-load from shareTokens
   useEffect(() => {
     const isLoading = sessionLoading || groupLoading || participantsLoading
 
-    console.log('🔍 useGroupQuiz state management:', {
-      isLoading,
-      sessionLoading,
-      groupLoading,
-      participantsLoading,
-      sessionError,
-      groupError,
-      hasSession: !!session,
-      hasGroup: !!group,
-      currentAppState: appState
-    })
+    // console.log('🔍 useGroupQuiz state management:', {
+    //   isLoading,
+    //   sessionLoading,
+    //   groupLoading,
+    //   participantsLoading,
+    //   sessionError,
+    //   groupError,
+    //   hasSession: !!session,
+    //   hasGroup: !!group,
+    //   currentAppState: appState
+    // })
 
     if (isLoading) {
       console.log('📝 Data still loading, keeping current appState:', appState)
@@ -224,23 +239,25 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       setAppState('error')
     } else if (session && group) {
       // Check session status to determine proper state
-      console.log('📊 Session data:', {
-        id: session.id,
-        status: session.status,
-        state: (session as any).state,
-        quiz_title: session.quiz_title,
-        created_by: session.created_by,
-        started_at: session.started_at,
-        currentAppState: appState
-      })
-      
+      // console.log('📊 Session data:', {
+      //   id: session.id,
+      //   status: session.status,
+      //   state: (session as any).state,
+      //   quiz_title: session.quiz_title,
+      //   created_by: session.created_by,
+      //   started_at: session.started_at,
+      //   currentAppState: appState
+      // })
+
       // CRITICAL FIX: Only initialize to preset-selection if we're truly in a loading state
       // Preserve any advanced states like 'quiz-active'
       if (appState === 'loading') {
-        console.log('📝 Initializing appState from loading to: preset-selection')
+        // console.log('📝 Initializing appState from loading to: preset-selection')
         setAppState('preset-selection')
       } else {
-        console.log(`📝 Preserving existing appState: ${appState} (session and group data available)`)
+        // console.log(
+        //   `📝 Preserving existing appState: ${appState} (session and group data available)`
+        // )
       }
     } else {
       console.log('⚠️ No state match, staying in current state')
@@ -258,10 +275,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   ])
 
   // Use shared questions hook for cached API calls - REPLACES direct fetch
-  const { 
-    shareTokens: existingShareTokens,
-    isLoading: questionsLoading 
-  } = useSharedQuestions({
+  const { shareTokens: existingShareTokens, isLoading: questionsLoading } = useSharedQuestions({
     groupId,
     sessionId,
     enabled: true // Always enabled to maintain cache
@@ -273,10 +287,14 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       // CRITICAL FIX: Load questions for all relevant states where we need questions but don't have them
       // This includes preset-selection, question-preview, and quiz-active
       const statesNeedingQuestions = ['preset-selection', 'question-preview', 'quiz-active']
-      const shouldLoadQuestions = statesNeedingQuestions.includes(appState) && difficultyGroups.length === 0
+      const shouldLoadQuestions =
+        statesNeedingQuestions.includes(appState) && difficultyGroups.length === 0
 
       if (!shouldLoadQuestions) {
-        console.log('🚫 Skipping question load:', { appState, difficultyGroupsCount: difficultyGroups.length })
+        console.log('🚫 Skipping question load:', {
+          appState,
+          difficultyGroupsCount: difficultyGroups.length
+        })
         return
       }
 
@@ -288,7 +306,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
       // Use cached shareTokens from useSharedQuestions instead of direct fetch
       if (Object.keys(existingShareTokens).length > 0) {
-        console.log('🎯 [CACHE-POWERED] Loading questions from existing shareTokens:', existingShareTokens)
+        console.log(
+          '🎯 [CACHE-POWERED] Loading questions from existing shareTokens:',
+          existingShareTokens
+        )
         try {
           await loadQuestionsFromShareTokens(existingShareTokens)
           // Only change appState if we're in preset-selection (initial load)
@@ -307,7 +328,14 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
 
     loadExistingQuestionsFromCache()
-  }, [appState, difficultyGroups.length, existingShareTokens, questionsLoading, loadQuestionsFromShareTokens, setAppState])
+  }, [
+    appState,
+    difficultyGroups.length,
+    existingShareTokens,
+    questionsLoading,
+    loadQuestionsFromShareTokens,
+    setAppState
+  ])
 
   // Quiz functionality (reused from individual quiz)
   const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
@@ -337,38 +365,38 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         const questionCount = preset.distribution[difficulty]
         if (questionCount > 0) {
           const availableQuestions = categorizedQuestions[difficulty]
-          
+
           // Apply question shuffling based on group settings
-          const questionsToSelect = shouldShuffleQuestions 
+          const questionsToSelect = shouldShuffleQuestions
             ? [...availableQuestions].sort(() => Math.random() - 0.5)
             : availableQuestions
-            
+
           const selectedQuestions = questionsToSelect.slice(0, questionCount)
-          
+
           // Apply answer shuffling to individual questions if enabled
           const questionsWithShuffledAnswers = selectedQuestions.map(question => {
             if (!groupSettings.shuffleAnswers) {
               return question
             }
-            
+
             // Shuffle answers while preserving correct answer mapping
             const originalOptions = question.options
             const correctIndex = question.options.findIndex(
               (_, index) => ['A', 'B', 'C', 'D'][index] === question.correctAnswer
             )
             const correctOption = originalOptions[correctIndex]
-            
+
             const shuffledOptions = [...originalOptions].sort(() => Math.random() - 0.5)
             const newCorrectIndex = shuffledOptions.indexOf(correctOption)
             const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex]
-            
+
             return {
               ...question,
               options: shuffledOptions,
               correctAnswer: newCorrectAnswer
             }
           })
-          
+
           result.push({
             difficulty,
             questions: questionsWithShuffledAnswers,
@@ -390,13 +418,15 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
       try {
         let allQuestions: Question[] = []
-        
+
         if (shareTokens) {
           // Load questions from shareTokens
           const loadedQuestions = await loadQuestionsFromShareTokens(shareTokens)
           allQuestions = loadedQuestions.flatMap((q: any) => q.questions)
-          
-          const primaryQuestionSet = loadedQuestions.find((q: any) => q.questions.length > 0)?.questionSet
+
+          const primaryQuestionSet = loadedQuestions.find(
+            (q: any) => q.questions.length > 0
+          )?.questionSet
           if (primaryQuestionSet && session?.share_token) {
             queryClient.setQueryData(
               quizQueryKeys.questionSet(session.share_token),
@@ -411,7 +441,9 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
           }
         } else {
           // Try to get questions from existing cache (fallback)
-          const cachedQuestionSet = queryClient.getQueryData(quizQueryKeys.questionSet(session?.share_token || ''))
+          const cachedQuestionSet = queryClient.getQueryData(
+            quizQueryKeys.questionSet(session?.share_token || '')
+          )
           if (cachedQuestionSet && (cachedQuestionSet as any).questions) {
             allQuestions = (cachedQuestionSet as any).questions
           } else {
@@ -432,20 +464,31 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         alert(error instanceof Error ? error.message : 'Failed to load questions')
       }
     },
-    [isAuthenticated, session?.share_token, queryClient, quizQueryKeys, loadQuestionsFromShareTokens, createPresetGroups, setAppState]
+    [
+      isAuthenticated,
+      session?.share_token,
+      queryClient,
+      quizQueryKeys,
+      loadQuestionsFromShareTokens,
+      createPresetGroups,
+      setAppState
+    ]
   )
 
   const handleQuestionInfoStart = () => {
     setAppState('question-preview')
   }
 
-  const handleStartQuizFromPreview = useCallback(async (currentShareTokens?: Record<string, string>) => {
-    console.log('🚀 [handleStartQuizFromPreview] Setting appState to quiz-active')
-    setAppState('quiz-active')
-    
-    // Return shareTokens for broadcasting (if available)
-    return currentShareTokens || {}
-  }, [setAppState])
+  const handleStartQuizFromPreview = useCallback(
+    async (currentShareTokens?: Record<string, string>) => {
+      console.log('🚀 [handleStartQuizFromPreview] Setting appState to quiz-active')
+      setAppState('quiz-active')
+
+      // Return shareTokens for broadcasting (if available)
+      return currentShareTokens || {}
+    },
+    [setAppState]
+  )
 
   const handleGoBackFromPreview = () => {
     setAppState('question-preview')
@@ -671,7 +714,9 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   const handleAuthSuccess = () => {
     setShowAuthPrompt(false)
-    queryClient.invalidateQueries({ queryKey: quizQueryKeys.questionSet(session?.share_token || '') })
+    queryClient.invalidateQueries({
+      queryKey: quizQueryKeys.questionSet(session?.share_token || '')
+    })
   }
 
   const handleCloseAuthPrompt = () => {
@@ -682,12 +727,15 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const closeGridView = () => setShowGridView(false)
 
   // Navigation methods
-  const navigateToQuestion = useCallback((questionIndex: number) => {
-    const currentSet = difficultyGroups[currentSetIndex]
-    if (currentSet && questionIndex >= 0 && questionIndex < currentSet.questions.length) {
-      setCurrentQuestionIndex(questionIndex)
-    }
-  }, [difficultyGroups, currentSetIndex, setCurrentQuestionIndex])
+  const navigateToQuestion = useCallback(
+    (questionIndex: number) => {
+      const currentSet = difficultyGroups[currentSetIndex]
+      if (currentSet && questionIndex >= 0 && questionIndex < currentSet.questions.length) {
+        setCurrentQuestionIndex(questionIndex)
+      }
+    },
+    [difficultyGroups, currentSetIndex, setCurrentQuestionIndex]
+  )
 
   const navigateToPrevious = useCallback(() => {
     if (currentQuestionIndex > 0) {

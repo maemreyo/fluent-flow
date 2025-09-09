@@ -66,16 +66,16 @@ export function useQuizSync({
   // Setup real-time connection
   useEffect(() => {
     if (!enabled || !supabase || !user) {
-      console.log('⚠️ Quiz sync disabled:', { enabled, supabase: !!supabase, user: !!user })
+      // console.log('⚠️ Quiz sync disabled:', { enabled, supabase: !!supabase, user: !!user })
       return
     }
 
-    console.log('🔌 Setting up quiz sync...', { sessionId, canManage, userId: user.id })
+    // console.log('🔌 Setting up quiz sync...', { sessionId, canManage, userId: user.id })
 
     const channel = supabase
       .channel(`quiz-sync-${sessionId}`)
       .on('presence', { event: 'sync' }, () => {
-        console.log('📡 Quiz sync established')
+        // console.log('📡 Quiz sync established')
         setIsConnected(true)
       })
       // Listen for preparation updates
@@ -84,7 +84,7 @@ export function useQuizSync({
 
         if (type === 'preparation_update' && updated_by !== user.id) {
           console.log('🎯 Received preparation update:', { step, updated_by, data })
-          console.log('🔄 Current syncState before update:', syncState)
+          // console.log('🔄 Current syncState before update:', syncState)
 
           setSyncState(prev => {
             const newState = {
@@ -139,7 +139,7 @@ export function useQuizSync({
     // Subscribe
     channel.subscribe(async status => {
       if (status === 'SUBSCRIBED') {
-        console.log(`📡 Connected to quiz sync: ${sessionId}`)
+        // console.log(`📡 Connected to quiz sync: ${sessionId}`)
         setIsConnected(true)
         setChannelRef(channel)
 
@@ -154,7 +154,7 @@ export function useQuizSync({
     })
 
     return () => {
-      console.log(`📡 Disconnecting from quiz sync: ${sessionId}`)
+      // console.log(`📡 Disconnecting from quiz sync: ${sessionId}`)
       setChannelRef(null)
       channel.unsubscribe()
       setIsConnected(false)

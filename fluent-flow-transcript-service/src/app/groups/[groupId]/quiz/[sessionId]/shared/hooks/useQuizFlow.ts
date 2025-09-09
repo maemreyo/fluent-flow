@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useGroupQuizWithProgress } from '../../hooks/useGroupQuizWithProgress'
 
@@ -13,7 +13,7 @@ interface UseQuizFlowProps {
 
 export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   const router = useRouter()
-  
+
   // Use existing hook but add navigation logic
   const quizData = useGroupQuizWithProgress({ groupId, sessionId })
 
@@ -45,9 +45,8 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
 
   // Determine current step from appState
   const getCurrentStep = useCallback((): QuizFlowStep => {
-    console.log('🎯 getCurrentStep - appState:', quizData.appState)
-    console.log('📊 Session status:', quizData.session?.status)
-    
+    // console.log('🎯 getCurrentStep - appState:', quizData.appState)
+
     switch (quizData.appState) {
       case 'preset-selection':
         return 'setup'
@@ -72,7 +71,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
             return 'lobby'
           }
         }
-        
+
         if (quizData.session?.status === 'active') {
           console.log('🏃 Session is active, going to active quiz')
           return 'active'
@@ -80,7 +79,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
           console.log('✅ Session completed, showing results')
           return 'results'
         }
-        
+
         console.log('⚠️ Unknown appState, defaulting to setup:', quizData.appState)
         return 'setup' // Default to setup for most cases
     }
@@ -91,18 +90,18 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //   const currentPath = window.location.pathname
   //   const expectedStep = getCurrentStep()
   //   const expectedPath = `/groups/${groupId}/quiz/${sessionId}/${expectedStep}`
-    
+
   //   console.log('🧭 Navigation check:', {
   //     currentPath,
   //     expectedStep,
   //     expectedPath,
   //     appState: quizData.appState
   //   })
-    
+
   //   // Extract current step from URL
   //   const pathParts = currentPath.split('/')
   //   const currentStep = pathParts[pathParts.length - 1]
-    
+
   //   // Handle different navigation scenarios
   //   if (currentPath === `/groups/${groupId}/quiz/${sessionId}` || currentPath.endsWith(`/quiz/${sessionId}`)) {
   //     // Case 1: Main quiz page - redirect to appropriate step
@@ -111,19 +110,19 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //   } else if (currentStep !== expectedStep) {
   //     // Case 2: User is on wrong step page - handle intelligently
   //     const validSteps = ['setup', 'lobby', 'info', 'preview', 'active', 'results']
-      
+
   //     if (!validSteps.includes(currentStep)) {
   //       // Invalid step - redirect to expected
   //       console.log(`❌ Invalid step "${currentStep}", redirecting to ${expectedStep}`)
   //       router.replace(expectedPath)
   //       return
   //     }
-      
+
   //     // Check if the mismatch is problematic
   //     const stepOrder = { setup: 0, lobby: 1, info: 2, preview: 3, active: 4, results: 5 }
   //     const currentStepIndex = stepOrder[currentStep as keyof typeof stepOrder] ?? -1
   //     const expectedStepIndex = stepOrder[expectedStep as keyof typeof stepOrder] ?? -1
-      
+
   //     // Allow some flexibility in navigation, but prevent major jumps
   //     if (currentStep === 'active' && expectedStep !== 'active') {
   //       // User is on active page but shouldn't be
@@ -153,13 +152,13 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //       currentPath: window.location.pathname,
   //       state: event.state
   //     })
-      
+
   //     // Get current and expected steps
   //     const currentPath = window.location.pathname
   //     const pathParts = currentPath.split('/')
   //     const currentStep = pathParts[pathParts.length - 1]
   //     const expectedStep = getCurrentStep()
-      
+
   //     // Check if user is navigating to a problematic state
   //     if (currentStep === 'active' && expectedStep !== 'active') {
   //       // User hit back to active page but shouldn't be there
@@ -173,7 +172,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //       }
   //     }
   //   }
-    
+
   //   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
   //     // Warn user before leaving if they're in the middle of a quiz
   //     const currentPath = window.location.pathname
@@ -183,11 +182,11 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //       return 'You have unsaved quiz progress. Are you sure you want to leave?'
   //     }
   //   }
-    
+
   //   // Add event listeners
   //   window.addEventListener('popstate', handlePopState)
   //   window.addEventListener('beforeunload', handleBeforeUnload)
-    
+
   //   // Cleanup
   //   return () => {
   //     window.removeEventListener('popstate', handlePopState)
@@ -206,7 +205,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //         const expectedStep = getCurrentStep()
   //         const pathParts = currentPath.split('/')
   //         const currentStep = pathParts[pathParts.length - 1]
-          
+
   //         // Re-validate navigation after page becomes visible (covers refresh scenarios)
   //         if (currentStep === 'active' && expectedStep !== 'active') {
   //           if (expectedStep === 'setup' || expectedStep === 'info') {
@@ -218,9 +217,9 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //       }, 500)
   //     }
   //   }
-    
+
   //   document.addEventListener('visibilitychange', handleVisibilityChange)
-    
+
   //   return () => {
   //     document.removeEventListener('visibilitychange', handleVisibilityChange)
   //   }
@@ -229,7 +228,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   return {
     ...quizData,
     currentStep: getCurrentStep(),
-    
+
     // Navigation functions
     navigateToSetup,
     navigateToLobby,

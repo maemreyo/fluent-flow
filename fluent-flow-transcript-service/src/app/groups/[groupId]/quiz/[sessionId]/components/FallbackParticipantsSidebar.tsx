@@ -1,6 +1,6 @@
 'use client'
 
-import { getInitials, getDisplayName } from '../utils/participantUtils'
+import { getDisplayName, getInitials } from '../utils/participantUtils'
 
 interface FallbackParticipantsSidebarProps {
   participants: any[]
@@ -8,27 +8,27 @@ interface FallbackParticipantsSidebarProps {
   user: any
 }
 
-export function FallbackParticipantsSidebar({ 
-  participants, 
-  onlineParticipants, 
-  user 
+export function FallbackParticipantsSidebar({
+  participants,
+  onlineParticipants,
+  user
 }: FallbackParticipantsSidebarProps) {
   // Debug participant data
-  console.log('🧑‍🤝‍🧑 FallbackParticipantsSidebar debug:', {
-    participants: participants.map(p => ({
-      user_id: p.user_id,
-      user_email: p.user_email,
-      username: p.username,
-      is_online: p.is_online
-    })),
-    onlineParticipants: onlineParticipants.map(p => ({
-      user_id: p.user_id,
-      user_email: p.user_email,
-      username: p.username,
-      is_online: p.is_online
-    }))
-  })
-  
+  // console.log('🧑‍🤝‍🧑 FallbackParticipantsSidebar debug:', {
+  //   participants: participants.map(p => ({
+  //     user_id: p.user_id,
+  //     user_email: p.user_email,
+  //     username: p.username,
+  //     is_online: p.is_online
+  //   })),
+  //   onlineParticipants: onlineParticipants.map(p => ({
+  //     user_id: p.user_id,
+  //     user_email: p.user_email,
+  //     username: p.username,
+  //     is_online: p.is_online
+  //   }))
+  // })
+
   return (
     <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
       <div className="border-b border-white/20 bg-white/60 p-4">

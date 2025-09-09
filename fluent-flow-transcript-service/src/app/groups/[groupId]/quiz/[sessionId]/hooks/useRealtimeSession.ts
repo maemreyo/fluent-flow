@@ -26,10 +26,10 @@ interface UseRealtimeSessionProps {
   enabled?: boolean
 }
 
-export function useRealtimeSession({ 
-  groupId, 
-  sessionId, 
-  enabled = true 
+export function useRealtimeSession({
+  groupId,
+  sessionId,
+  enabled = true
 }: UseRealtimeSessionProps) {
   const queryClient = useQueryClient()
   const [realtimeData, setRealtimeData] = useState<RealtimeSessionData | null>(null)
@@ -38,7 +38,11 @@ export function useRealtimeSession({
   // Use inline query keys instead of dynamic import
   const quizQueryKeys = {
     session: (groupId: string, sessionId: string) => ['group-session', groupId, sessionId],
-    sessionParticipants: (groupId: string, sessionId: string) => ['session-participants', groupId, sessionId],
+    sessionParticipants: (groupId: string, sessionId: string) => [
+      'session-participants',
+      groupId,
+      sessionId
+    ],
     sessionResults: (groupId: string, sessionId: string) => ['group-results', groupId, sessionId]
   }
 
@@ -49,7 +53,7 @@ export function useRealtimeSession({
     const channel = supabase
       .channel(`group-quiz-${sessionId}`)
       .on('presence', { event: 'sync' }, () => {
-        console.log('Syncing presence state')
+        // console.log('Syncing presence state')
         setIsConnected(true)
       })
       .on('presence', { event: 'join' }, ({ newPresences }) => {
@@ -66,56 +70,72 @@ export function useRealtimeSession({
         })
       })
       // Listen for session status changes
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'group_quiz_sessions',
-        filter: `id=eq.${sessionId}`
-      }, (payload) => {
-        console.log('Session updated:', payload.new)
-        // Invalidate session data using centralized query keys
-        queryClient.invalidateQueries({
-          queryKey: quizQueryKeys.session(groupId, sessionId)
-        })
-        
-        // Update realtime data
-        setRealtimeData(prev => prev ? ({
-          ...prev,
-          session_status: (payload.new as any).status,
-        }) : null)
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'group_quiz_sessions',
+          filter: `id=eq.${sessionId}`
+        },
+        payload => {
+          console.log('Session updated:', payload.new)
+          // Invalidate session data using centralized query keys
+          queryClient.invalidateQueries({
+            queryKey: quizQueryKeys.session(groupId, sessionId)
+          })
+
+          // Update realtime data
+          setRealtimeData(prev =>
+            prev
+              ? {
+                  ...prev,
+                  session_status: (payload.new as any).status
+                }
+              : null
+          )
+        }
+      )
       // Listen for new quiz results (live scores)
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'group_quiz_results',
-        filter: `session_id=eq.${sessionId}`
-      }, (payload) => {
-        console.log('Quiz results updated:', payload.new)
-        // Invalidate results data for live leaderboard using centralized query keys
-        queryClient.invalidateQueries({
-          queryKey: quizQueryKeys.sessionResults(groupId, sessionId)
-        })
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_quiz_results',
+          filter: `session_id=eq.${sessionId}`
+        },
+        payload => {
+          // console.log('Quiz results updated:', payload.new)
+          // Invalidate results data for live leaderboard using centralized query keys
+          queryClient.invalidateQueries({
+            queryKey: quizQueryKeys.sessionResults(groupId, sessionId)
+          })
+        }
+      )
       // Listen for participant changes
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'session_participants',
-        filter: `session_id=eq.${sessionId}`
-      }, (payload) => {
-        console.log('Participants updated:', payload)
-        queryClient.invalidateQueries({
-          queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
-        })
-      })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'session_participants',
+          filter: `session_id=eq.${sessionId}`
+        },
+        payload => {
+          console.log('Participants updated:', payload)
+          queryClient.invalidateQueries({
+            queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId)
+          })
+        }
+      )
 
     // Subscribe to the channel
-    channel.subscribe(async (status) => {
+    channel.subscribe(async status => {
       if (status === 'SUBSCRIBED') {
-        console.log(`Connected to realtime channel: group-quiz-${sessionId}`)
+        // console.log(`Connected to realtime channel: group-quiz-${sessionId}`)
         setIsConnected(true)
-        
+
         // Track current user presence
         await channel.track({
           user_id: 'current-user', // You should pass actual user ID
@@ -127,7 +147,7 @@ export function useRealtimeSession({
 
     // Cleanup subscription
     return () => {
-      console.log(`Disconnecting from realtime channel: group-quiz-${sessionId}`)
+      // console.log(`Disconnecting from realtime channel: group-quiz-${sessionId}`)
       channel.unsubscribe()
       setIsConnected(false)
     }
