@@ -123,12 +123,16 @@ export async function POST(request: NextRequest) {
     let generatedQuestions
 
     if (difficulty) {
-      // Generate questions for single difficulty level (max 6 questions)
+      // Generate questions for single difficulty level with custom count support
       generatedQuestions = await aiService.generateSingleDifficultyQuestions(
         loop as SavedLoop,
         transcript,
         difficulty,
-        { segments, customPrompt: customPrompt || undefined }
+        { 
+          segments, 
+          customPrompt: customPrompt || undefined,
+          questionCount: customCount // Pass custom count to AI service
+        }
       )
     } else {
       // Generate questions with mixed difficulty levels

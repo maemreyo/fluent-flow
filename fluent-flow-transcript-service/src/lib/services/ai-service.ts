@@ -100,6 +100,7 @@ export interface CustomPrompt {
 export interface QuestionGenerationOptions {
   segments?: Array<{ text: string; start: number; duration: number }>
   customPrompt?: CustomPrompt
+  questionCount?: number // Allow custom question count
 }
 
 /**
@@ -464,6 +465,9 @@ export class AIService {
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.singleDifficultyQuestions
 
+    // Use custom question count from options, default to 6 if not provided
+    const targetQuestionCount = options?.questionCount || 6
+
     // Use segments if provided, otherwise fallback to transcript
     const promptData = options?.segments && options.segments.length > 0
       ? { loop, segments: options.segments, difficulty }
@@ -481,17 +485,17 @@ export class AIService {
         throw new Error('AI response missing questions array')
       }
 
-      // Validate we have exactly 6 questions
+      // Validate we have the expected number of questions
       const questions = parsedResponse.questions
-      if (questions.length !== 6) {
-        console.warn(`Expected 6 questions but got ${questions.length}. Using available questions.`)
+      if (questions.length !== targetQuestionCount) {
+        console.warn(`Expected ${targetQuestionCount} questions but got ${questions.length}. Using available questions.`)
       }
 
       // Validate all questions are at the correct difficulty level
       const correctDifficultyQuestions = questions.filter((q: any) => q.difficulty === difficulty)
-      const finalQuestions = correctDifficultyQuestions.slice(0, 6) // Take max 6 questions
+      const finalQuestions = correctDifficultyQuestions.slice(0, targetQuestionCount) // Take target count
 
-      console.log(`Generated ${finalQuestions.length} ${difficulty} questions`)
+      console.log(`Generated ${finalQuestions.length} ${difficulty} questions (requested: ${targetQuestionCount})`)
 
       return {
         questions: finalQuestions.map((q: any, index: number) => {
