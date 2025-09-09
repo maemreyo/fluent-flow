@@ -21,6 +21,7 @@ interface GenerateQuestionParams {
   groupId: string
   sessionId: string
   customCount?: number // Optional custom count for preset-based generation
+  customPromptId?: string // Optional custom prompt ID
 }
 
 interface GenerateAllQuestionsParams {
@@ -49,7 +50,7 @@ interface UseQuestionGenerationOptions {
 
 export function useQuestionGeneration(options?: UseQuestionGenerationOptions) {
   return useMutation({
-    mutationFn: async ({ difficulty, loop, groupId, sessionId, customCount }: GenerateQuestionParams) => {
+    mutationFn: async ({ difficulty, loop, groupId, sessionId, customCount, customPromptId }: GenerateQuestionParams) => {
       console.log(`Generating ${difficulty} questions for loop:`, loop, customCount ? `(${customCount} questions)` : '')
 
       if (!loop) {
@@ -76,7 +77,8 @@ export function useQuestionGeneration(options?: UseQuestionGenerationOptions) {
           saveToDatabase: true,
           groupId: groupId,
           sessionId: sessionId,
-          customCount: customCount // Pass custom count to API for preset-based generation
+          customCount: customCount, // Pass custom count to API for preset-based generation
+          customPromptId: customPromptId // Pass custom prompt ID for specialized generation
         })
       })
 

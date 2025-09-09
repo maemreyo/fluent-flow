@@ -332,6 +332,134 @@ export type Database = {
           },
         ]
       }
+      custom_prompts: {
+        Row: {
+          category: string
+          config: Json | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          system_prompt: string
+          updated_at: string | null
+          usage_count: number | null
+          user_template: string
+        }
+        Insert: {
+          category: string
+          config?: Json | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          system_prompt: string
+          updated_at?: string | null
+          usage_count?: number | null
+          user_template: string
+        }
+        Update: {
+          category?: string
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          system_prompt?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          user_template?: string
+        }
+        Relationships: []
+      }
+      favorite_quizzes: {
+        Row: {
+          created_at: string | null
+          difficulty: string | null
+          id: string
+          question_set_title: string | null
+          quiz_title: string | null
+          session_id: string
+          total_questions: number | null
+          updated_at: string | null
+          user_id: string
+          user_score: number | null
+          video_title: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          question_set_title?: string | null
+          quiz_title?: string | null
+          session_id: string
+          total_questions?: number | null
+          updated_at?: string | null
+          user_id: string
+          user_score?: number | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          difficulty?: string | null
+          id?: string
+          question_set_title?: string | null
+          quiz_title?: string | null
+          session_id?: string
+          total_questions?: number | null
+          updated_at?: string | null
+          user_id?: string
+          user_score?: number | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Relationships: []
+      }
+      group_achievements: {
+        Row: {
+          achievement_data: Json | null
+          achievement_type: string
+          earned_at: string | null
+          group_id: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          achievement_data?: Json | null
+          achievement_type: string
+          earned_at?: string | null
+          group_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          achievement_data?: Json | null
+          achievement_type?: string
+          earned_at?: string | null
+          group_id?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_achievements_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_challenges: {
         Row: {
           created_at: string | null
@@ -387,6 +515,342 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_invitations: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          group_id: string
+          id: string
+          invite_token: string
+          invited_by: string
+          message: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          expires_at: string
+          group_id: string
+          id?: string
+          invite_token?: string
+          invited_by: string
+          message?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          group_id?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          message?: string | null
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_invitations_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_join_requests: {
+        Row: {
+          group_id: string
+          id: string
+          processed_at: string | null
+          processed_by: string | null
+          rejection_reason: string | null
+          requested_at: string
+          status: string
+          user_email: string
+          user_id: string
+          username: string
+        }
+        Insert: {
+          group_id: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+          user_email: string
+          user_id: string
+          username: string
+        }
+        Update: {
+          group_id?: string
+          id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          rejection_reason?: string | null
+          requested_at?: string
+          status?: string
+          user_email?: string
+          user_id?: string
+          username?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_join_requests_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_quiz_progress: {
+        Row: {
+          completed: boolean | null
+          confidence_level: string | null
+          correct_answers: number | null
+          created_at: string | null
+          current_question: number | null
+          current_set: number | null
+          help_requested: boolean | null
+          id: string
+          is_online: boolean | null
+          last_activity: string | null
+          question_start_time: string | null
+          session_id: string
+          set_start_time: string | null
+          struggling_indicators: Json | null
+          time_spent: number | null
+          total_answered: number | null
+          updated_at: string | null
+          user_id: string
+          username: string | null
+        }
+        Insert: {
+          completed?: boolean | null
+          confidence_level?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_question?: number | null
+          current_set?: number | null
+          help_requested?: boolean | null
+          id?: string
+          is_online?: boolean | null
+          last_activity?: string | null
+          question_start_time?: string | null
+          session_id: string
+          set_start_time?: string | null
+          struggling_indicators?: Json | null
+          time_spent?: number | null
+          total_answered?: number | null
+          updated_at?: string | null
+          user_id: string
+          username?: string | null
+        }
+        Update: {
+          completed?: boolean | null
+          confidence_level?: string | null
+          correct_answers?: number | null
+          created_at?: string | null
+          current_question?: number | null
+          current_set?: number | null
+          help_requested?: boolean | null
+          id?: string
+          is_online?: boolean | null
+          last_activity?: string | null
+          question_start_time?: string | null
+          session_id?: string
+          set_start_time?: string | null
+          struggling_indicators?: Json | null
+          time_spent?: number | null
+          total_answered?: number | null
+          updated_at?: string | null
+          user_id?: string
+          username?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_progress_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_quiz_results: {
+        Row: {
+          answers_data: Json | null
+          completed_at: string | null
+          correct_answers: number
+          id: string
+          result_data: Json | null
+          score: number
+          session_id: string
+          time_taken: number | null
+          time_taken_seconds: number | null
+          total_questions: number
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          answers_data?: Json | null
+          completed_at?: string | null
+          correct_answers: number
+          id?: string
+          result_data?: Json | null
+          score: number
+          session_id: string
+          time_taken?: number | null
+          time_taken_seconds?: number | null
+          total_questions: number
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          answers_data?: Json | null
+          completed_at?: string | null
+          correct_answers?: number
+          id?: string
+          result_data?: Json | null
+          score?: number
+          session_id?: string
+          time_taken?: number | null
+          time_taken_seconds?: number | null
+          total_questions?: number
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_results_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_quiz_sessions: {
+        Row: {
+          created_at: string | null
+          created_by: string
+          ended_at: string | null
+          group_id: string
+          id: string
+          loop_data: Json | null
+          questions_data: Json | null
+          quiz_title: string | null
+          quiz_token: string
+          scheduled_at: string | null
+          session_type: string | null
+          settings: Json | null
+          share_token: string | null
+          started_at: string | null
+          status: string | null
+          updated_at: string | null
+          video_title: string | null
+          video_url: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by: string
+          ended_at?: string | null
+          group_id: string
+          id?: string
+          loop_data?: Json | null
+          questions_data?: Json | null
+          quiz_title?: string | null
+          quiz_token: string
+          scheduled_at?: string | null
+          session_type?: string | null
+          settings?: Json | null
+          share_token?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string
+          ended_at?: string | null
+          group_id?: string
+          id?: string
+          loop_data?: Json | null
+          questions_data?: Json | null
+          quiz_title?: string | null
+          quiz_token?: string
+          scheduled_at?: string | null
+          session_type?: string | null
+          settings?: Json | null
+          share_token?: string | null
+          started_at?: string | null
+          status?: string | null
+          updated_at?: string | null
+          video_title?: string | null
+          video_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_quiz_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_session_participants: {
+        Row: {
+          completed_at: string | null
+          created_at: string | null
+          id: string
+          joined_at: string | null
+          responses: Json | null
+          score: number | null
+          session_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          joined_at?: string | null
+          responses?: Json | null
+          score?: number | null
+          session_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string | null
+          id?: string
+          joined_at?: string | null
+          responses?: Json | null
+          score?: number | null
+          session_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
             referencedColumns: ["id"]
           },
         ]
@@ -698,6 +1162,208 @@ export type Database = {
         }
         Relationships: []
       }
+      progress_events: {
+        Row: {
+          event_data: Json
+          event_type: string
+          id: string
+          session_id: string
+          timestamp: string | null
+          user_id: string
+        }
+        Insert: {
+          event_data?: Json
+          event_type: string
+          id?: string
+          session_id: string
+          timestamp?: string | null
+          user_id: string
+        }
+        Update: {
+          event_data?: Json
+          event_type?: string
+          id?: string
+          session_id?: string
+          timestamp?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "progress_events_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      selected_words: {
+        Row: {
+          collocations: string[] | null
+          context: string | null
+          created_at: string | null
+          definition: string | null
+          difficulty: string | null
+          example: string | null
+          examples: string[] | null
+          id: string
+          session_context: string | null
+          source_id: string | null
+          source_title: string | null
+          source_type: string | null
+          source_url: string | null
+          updated_at: string | null
+          user_id: string
+          word: string
+        }
+        Insert: {
+          collocations?: string[] | null
+          context?: string | null
+          created_at?: string | null
+          definition?: string | null
+          difficulty?: string | null
+          example?: string | null
+          examples?: string[] | null
+          id?: string
+          session_context?: string | null
+          source_id?: string | null
+          source_title?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+          user_id: string
+          word: string
+        }
+        Update: {
+          collocations?: string[] | null
+          context?: string | null
+          created_at?: string | null
+          definition?: string | null
+          difficulty?: string | null
+          example?: string | null
+          examples?: string[] | null
+          id?: string
+          session_context?: string | null
+          source_id?: string | null
+          source_title?: string | null
+          source_type?: string | null
+          source_url?: string | null
+          updated_at?: string | null
+          user_id?: string
+          word?: string
+        }
+        Relationships: []
+      }
+      session_participants: {
+        Row: {
+          is_online: boolean | null
+          joined_at: string | null
+          last_seen: string | null
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          is_online?: boolean | null
+          joined_at?: string | null
+          last_seen?: string | null
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          is_online?: boolean | null
+          joined_at?: string | null
+          last_seen?: string | null
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      shared_question_sets: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          end_time: number | null
+          expires_at: string
+          group_id: string | null
+          id: string
+          is_public: boolean
+          metadata: Json
+          questions: Json
+          session_id: string | null
+          share_token: string
+          start_time: number | null
+          title: string
+          transcript: string | null
+          updated_at: string
+          video_title: string | null
+          video_url: string | null
+          vocabulary: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          end_time?: number | null
+          expires_at?: string
+          group_id?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          questions?: Json
+          session_id?: string | null
+          share_token?: string
+          start_time?: number | null
+          title: string
+          transcript?: string | null
+          updated_at?: string
+          video_title?: string | null
+          video_url?: string | null
+          vocabulary?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          end_time?: number | null
+          expires_at?: string
+          group_id?: string | null
+          id?: string
+          is_public?: boolean
+          metadata?: Json
+          questions?: Json
+          session_id?: string | null
+          share_token?: string
+          start_time?: number | null
+          title?: string
+          transcript?: string | null
+          updated_at?: string
+          video_title?: string | null
+          video_url?: string | null
+          vocabulary?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "shared_question_sets_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "shared_question_sets_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "group_quiz_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       social_notifications: {
         Row: {
           created_at: string | null
@@ -743,6 +1409,7 @@ export type Database = {
           joined_at: string | null
           last_active: string | null
           role: string
+          user_email: string | null
           user_id: string
           username: string
         }
@@ -754,6 +1421,7 @@ export type Database = {
           joined_at?: string | null
           last_active?: string | null
           role?: string
+          user_email?: string | null
           user_id: string
           username: string
         }
@@ -765,6 +1433,7 @@ export type Database = {
           joined_at?: string | null
           last_active?: string | null
           role?: string
+          user_email?: string | null
           user_id?: string
           username?: string
         }
@@ -782,14 +1451,17 @@ export type Database = {
         Row: {
           created_at: string | null
           created_by: string
+          creator_id: string | null
           current_challenge_id: string | null
           description: string | null
+          group_code: string | null
           id: string
           is_private: boolean | null
           language: string
           level: string
           max_members: number | null
           name: string
+          settings: Json | null
           stats: Json | null
           tags: string[] | null
           updated_at: string | null
@@ -797,14 +1469,17 @@ export type Database = {
         Insert: {
           created_at?: string | null
           created_by: string
+          creator_id?: string | null
           current_challenge_id?: string | null
           description?: string | null
+          group_code?: string | null
           id?: string
           is_private?: boolean | null
           language: string
           level: string
           max_members?: number | null
           name: string
+          settings?: Json | null
           stats?: Json | null
           tags?: string[] | null
           updated_at?: string | null
@@ -812,14 +1487,17 @@ export type Database = {
         Update: {
           created_at?: string | null
           created_by?: string
+          creator_id?: string | null
           current_challenge_id?: string | null
           description?: string | null
+          group_code?: string | null
           id?: string
           is_private?: boolean | null
           language?: string
           level?: string
           max_members?: number | null
           name?: string
+          settings?: Json | null
           stats?: Json | null
           tags?: string[] | null
           updated_at?: string | null
@@ -1240,6 +1918,7 @@ export type Database = {
       user_vocabulary_deck: {
         Row: {
           antonyms: Json | null
+          context: string | null
           created_at: string | null
           definition: string
           definition_vi: string | null
@@ -1249,6 +1928,7 @@ export type Database = {
           frequency: number | null
           id: string
           interval_days: number | null
+          is_starred: boolean
           item_type: string
           last_practiced_at: string | null
           learning_status: string
@@ -1268,6 +1948,7 @@ export type Database = {
         }
         Insert: {
           antonyms?: Json | null
+          context?: string | null
           created_at?: string | null
           definition: string
           definition_vi?: string | null
@@ -1277,6 +1958,7 @@ export type Database = {
           frequency?: number | null
           id?: string
           interval_days?: number | null
+          is_starred?: boolean
           item_type: string
           last_practiced_at?: string | null
           learning_status?: string
@@ -1296,6 +1978,7 @@ export type Database = {
         }
         Update: {
           antonyms?: Json | null
+          context?: string | null
           created_at?: string | null
           definition?: string
           definition_vi?: string | null
@@ -1305,6 +1988,7 @@ export type Database = {
           frequency?: number | null
           id?: string
           interval_days?: number | null
+          is_starred?: boolean
           item_type?: string
           last_practiced_at?: string | null
           learning_status?: string
@@ -1439,9 +2123,21 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: number
       }
+      cleanup_expired_question_sets: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       cleanup_old_usage_data: {
         Args: Record<PropertyKey, never>
         Returns: number
+      }
+      generate_group_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
+      }
+      generate_invitation_code: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       get_subscription_summary: {
         Args: Record<PropertyKey, never>
@@ -1457,6 +2153,10 @@ export type Database = {
       }
       increment_user_stat: {
         Args: { p_field: string; p_increment: number; p_user_id: string }
+        Returns: undefined
+      }
+      set_default_prompt: {
+        Args: { prompt_id: string }
         Returns: undefined
       }
       upsert_contextual_learning_data: {

@@ -30,6 +30,7 @@ const generateRequestSchema = z.object({
     .optional(),
   difficulty: z.enum(['easy', 'medium', 'hard']).optional(),
   customCount: z.number().min(1).max(8).optional(), // Support for preset-based custom counts
+  customPromptId: z.string().optional(), // Support for custom prompts
   aiProvider: z.enum(['openai', 'anthropic', 'google']).optional(),
   saveToDatabase: z.boolean().default(false),
   groupId: z.string().optional(),
@@ -55,11 +56,37 @@ export async function POST(request: NextRequest) {
       preset,
       difficulty,
       customCount,
+      customPromptId,
       aiProvider,
       saveToDatabase,
       groupId,
       sessionId
     } = validatedData
+
+    // Handle custom prompt if provided
+    let customPrompt = null
+    if (customPromptId) {
+      try {
+        const supabase = getSupabaseServer(request)
+        if (supabase) {
+          const { data: promptData, error: promptError } = await supabase
+            .from('custom_prompts')
+            .select('system_prompt, user_template, config')
+            .eq('id', customPromptId.replace('custom-', '')) // Remove 'custom-' prefix
+            .eq('is_active', true)
+            .single()
+
+          if (promptError) {
+            console.warn('Failed to fetch custom prompt:', promptError)
+          } else {
+            customPrompt = promptData
+            console.log('Using custom prompt:', customPromptId)
+          }
+        }
+      } catch (error) {
+        console.warn('Error fetching custom prompt:', error)
+      }
+    }
 
     // Initialize AI service
     const aiService = createAIService(aiProvider ? { provider: aiProvider } : undefined)
@@ -101,7 +128,7 @@ export async function POST(request: NextRequest) {
         loop as SavedLoop,
         transcript,
         difficulty,
-        { segments }
+        { segments, customPrompt }
       )
     } else {
       // Generate questions with mixed difficulty levels
@@ -109,7 +136,7 @@ export async function POST(request: NextRequest) {
         loop as SavedLoop,
         transcript,
         finalPreset,
-        { segments }
+        { segments, customPrompt }
       )
     }
 

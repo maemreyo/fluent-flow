@@ -8,9 +8,15 @@ import {
   Sparkles,
   Target,
   Trophy,
-  Zap
+  Zap,
+  Headphones,
+  Search,
+  Music,
+  BookOpen,
+  MessageSquare
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { useCustomPromptPresets } from '@/hooks/use-custom-prompts'
 import { PresetConfirmationDialog } from '../../../../../../components/groups/quiz/PresetConfirmationDialog'
 import { PresetSelectionHeader } from '../../../../../../components/groups/quiz/PresetSelectionHeader'
 import { PresetCard } from '../../../../../../components/groups/quiz/PresetCard'
@@ -70,6 +76,9 @@ export function GroupPresetSelectionView({
     name: string
     distribution: { easy: number; medium: number; hard: number }
   } | null>(null)
+
+  // Load custom prompts
+  const { customPresets, isLoading: customPromptsLoading } = useCustomPromptPresets()
 
   // Intelligent presets configuration
   const intelligentPresets = [
@@ -193,6 +202,9 @@ export function GroupPresetSelectionView({
     }
   ]
 
+  // Combine standard and custom presets
+  const allPresets = [...intelligentPresets, ...customPresets]
+  
   const totalGenerated = Object.values(generatedCounts).reduce((sum, count) => sum + count, 0)
   const isGenerating = generatingState.easy || generatingState.medium || generatingState.hard || generatingState.all
 
@@ -223,7 +235,18 @@ export function GroupPresetSelectionView({
 
     try {
       setSelectedPreset(preset.id)
-      await onGenerateFromPreset(preset.distribution, { id: preset.id, name: preset.name })
+      
+      // Pass additional info for custom prompts
+      const presetInfo = { 
+        id: preset.id, 
+        name: preset.name,
+        isCustom: preset.isCustom || false,
+        systemPrompt: preset.system_prompt,
+        userTemplate: preset.user_template,
+        config: preset.config
+      }
+      
+      await onGenerateFromPreset(preset.distribution, presetInfo)
       toast.success(`Generated ${preset.totalQuestions} questions from ${preset.name}!`)
     } catch (error) {
       console.error('Failed to generate from preset:', error)
@@ -275,18 +298,53 @@ export function GroupPresetSelectionView({
       {/* Header */}
       <PresetSelectionHeader onGoBack={handleGoBack} currentPreset={currentPreset} />
 
-      {/* Intelligent Presets Grid */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-        {intelligentPresets.map(preset => (
-          <PresetCard
-            key={preset.id}
-            preset={preset}
-            isSelected={selectedPreset === preset.id || currentPreset?.id === preset.id}
-            isGenerating={isGenerating}
-            onClick={() => handlePresetSelection(preset)}
-          />
-        ))}
-      </div>
+      {/* Presets Grid */}
+      {customPromptsLoading ? (
+        <div className="flex justify-center py-8">
+          <div className="text-gray-500">Loading custom presets...</div>
+        </div>
+      ) : (
+        <>
+          {/* Standard Presets */}
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Standard Question Types</h3>
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {intelligentPresets.map(preset => (
+                <PresetCard
+                  key={preset.id}
+                  preset={preset}
+                  isSelected={selectedPreset === preset.id || currentPreset?.id === preset.id}
+                  isGenerating={isGenerating}
+                  onClick={() => handlePresetSelection(preset)}
+                />
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Presets */}
+          {customPresets.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                Specialized Vietnamese Learning
+                <span className="ml-2 text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  Custom Prompts
+                </span>
+              </h3>
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {customPresets.map(preset => (
+                  <PresetCard
+                    key={preset.id}
+                    preset={preset}
+                    isSelected={selectedPreset === preset.id || currentPreset?.id === preset.id}
+                    isGenerating={isGenerating}
+                    onClick={() => handlePresetSelection(preset)}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
       {/* Custom Generation Section */}
       {selectedPreset === 'custom' && (

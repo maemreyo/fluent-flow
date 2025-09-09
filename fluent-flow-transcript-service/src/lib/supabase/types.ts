@@ -332,6 +332,54 @@ export type Database = {
           },
         ]
       }
+      custom_prompts: {
+        Row: {
+          category: string
+          config: Json | null
+          created_at: string | null
+          created_by: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          is_default: boolean | null
+          name: string
+          system_prompt: string
+          updated_at: string | null
+          usage_count: number | null
+          user_template: string
+        }
+        Insert: {
+          category: string
+          config?: Json | null
+          created_at?: string | null
+          created_by: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name: string
+          system_prompt: string
+          updated_at?: string | null
+          usage_count?: number | null
+          user_template: string
+        }
+        Update: {
+          category?: string
+          config?: Json | null
+          created_at?: string | null
+          created_by?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          is_default?: boolean | null
+          name?: string
+          system_prompt?: string
+          updated_at?: string | null
+          usage_count?: number | null
+          user_template?: string
+        }
+        Relationships: []
+      }
       favorite_quizzes: {
         Row: {
           created_at: string | null
@@ -2105,6 +2153,10 @@ export type Database = {
       }
       increment_user_stat: {
         Args: { p_field: string; p_increment: number; p_user_id: string }
+        Returns: undefined
+      }
+      set_default_prompt: {
+        Args: { prompt_id: string }
         Returns: undefined
       }
       upsert_contextual_learning_data: {
