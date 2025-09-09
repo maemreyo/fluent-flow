@@ -27,7 +27,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     difficultyGroups,
     handleGoBackFromPreview,
     handleStartQuizFromPreview,
-    navigateToInfo,
+    navigateToSetup,
     navigateToActive
   } = useQuizFlow({ groupId, sessionId })
 
@@ -98,8 +98,8 @@ export default function PreviewPage({ params }: PreviewPageProps) {
 
   // Handle existing results modal actions with hook integration
   const handleGoBackToPresets = useCallback(() => {
-    handleGoBackToPresetsBase(() => navigateToInfo())
-  }, [handleGoBackToPresetsBase, navigateToInfo])
+    handleGoBackToPresetsBase(() => navigateToSetup())
+  }, [handleGoBackToPresetsBase, navigateToSetup])
 
   const handleStartFresh = useCallback(async () => {
     await handleStartFreshBase(startQuizDirectly)
@@ -107,7 +107,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
 
   const handleGoBack = () => {
     handleGoBackFromPreview()
-    navigateToInfo()
+    navigateToSetup()
   }
 
   return (

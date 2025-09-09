@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   useGenerateAllQuestions,
@@ -8,6 +9,7 @@ import {
 } from '../../../../../../hooks/useQuestionGeneration'
 import { getAuthHeaders } from '../../../../../../lib/supabase/auth-utils'
 import { useSharedQuestions } from './useSharedQuestions'
+import { quizQueryKeys } from '../lib/query-keys'
 
 interface GeneratingState {
   easy: boolean
@@ -23,6 +25,8 @@ interface GeneratedCounts {
 }
 
 export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
+  const queryClient = useQueryClient()
+  
   // Use shared questions hook for cross-page caching instead of local state
   const { 
     shareTokens: cachedShareTokens, 
@@ -141,6 +145,12 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         )
       }
 
+      // 🔥 CRITICAL FIX: Invalidate cache when new questions generated
+      queryClient.invalidateQueries({
+        queryKey: quizQueryKeys.sessionQuestions(groupId, sessionId)
+      })
+      console.log('🔄 [useQuestionGeneration] Invalidated questions cache for new tokens')
+
       setGeneratingState(prev => ({ ...prev, [data.difficulty]: false }))
     },
     onError: (error, difficulty) => {
@@ -169,6 +179,13 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         hard: prev.hard + newCounts.hard
       }))
       setShareTokens(prev => ({ ...prev, ...newShareTokens }))
+
+      // 🔥 CRITICAL FIX: Invalidate cache when new questions generated  
+      queryClient.invalidateQueries({
+        queryKey: quizQueryKeys.sessionQuestions(groupId, sessionId)
+      })
+      console.log('🔄 [useQuestionGeneration] Invalidated questions cache for new preset tokens')
+
       setGeneratingState(prev => ({ ...prev, all: false }))
     },
     onError: () => {

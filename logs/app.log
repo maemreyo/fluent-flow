@@ -1,0 +1,100 @@
+# CACHING FLOW INVESTIGATION REPORT
+
+## V¤N À 
+- Preset generate úng 4,4,4 questions trong database  
+- Preview page không load °ãc questions të share tokens mÛi
+- Cache ci (dataAge: 397s+) ang block viÇc fetch questions mÛi
+
+## CACHING ARCHITECTURE ANALYSIS
+
+### 1. PROVIDER LEVEL - Multi-layer Caching
+**File**: `src/app/providers.tsx`
+```typescript
+// LAYER 1: Memory Cache (React Query)
+staleTime: 15 * 60 * 1000, // 15 minutes
+gcTime: 60 * 60 * 1000,    // 1 hour
+
+// LAYER 2: SessionStorage Persistence  
+storage: window.sessionStorage,
+key: 'fluent-flow-quiz-cache',
+maxAge: 24 * 60 * 60 * 1000 // 24 hours
+```
+
+### 2. SHARED QUESTIONS HOOK - Question Loading
+**File**: `src/app/groups/[groupId]/quiz/[sessionId]/hooks/useSharedQuestions.ts`
+**Function**: `useSharedQuestions`
+- Uses TanStack Query vÛi persistent cache
+- Key: `shared-questions-${groupId}-${sessionId}`
+- Problem: Cache key không include share tokens => stale data
+
+### 3. QUESTION GENERATION HOOK - Share Token Storage  
+**File**: `src/app/groups/[groupId]/quiz/[sessionId]/hooks/useQuestionGeneration.ts`
+**Function**: `useGroupQuestionGeneration`
+- Local state: `shareTokens`, `generatedCounts`
+- Syncs vÛi `useSharedQuestions` cache
+- Share tokens mÛi °ãc t¡o nh°ng không sync vÛi cache
+
+### 4. PREVIEW PAGE - Question Loading
+**File**: `src/app/groups/[groupId]/quiz/[sessionId]/preview/page.tsx`
+**Function**: `PreviewPage`  
+- Uses `difficultyGroups` të `useQuizFlow`
+- Depends on cached data të `useSharedQuestions`
+
+## ROOT CAUSE ANALYSIS
+
+### CACHE KEY MISMATCH
+```typescript
+// Generation t¡o new share tokens:
+shareTokens: {
+  easy: 'c727ca9c-3de6-4643-b82c-93d12bd4fe85',
+  hard: 'ec91e68b-322d-4d4d-8afc-29e60286ec20', 
+  medium: '370686ad-6f2b-45be-9202-c26bdcbac92b'
+}
+
+// Cache key không include tokens:
+`shared-questions-${groupId}-${sessionId}` 
+// => Cache không bi¿t data ã outdated
+```
+
+### STALE DATA PERSISTENCE
+```typescript
+// Cache shows:
+dataAge: '397s ago' // 6+ minutes old
+// But persistence maxAge = 24 hours => không auto-invalidate
+```
+
+## SOLUTION PATHS
+
+### OPTION 1: Fix Cache Key (RECOMMENDED)
+- Include share tokens hash trong cache key
+- Auto-invalidate khi share tokens change
+
+### OPTION 2: Force Cache Clear  
+- Clear cache khi generate new questions
+- Manual invalidation
+
+### OPTION 3: Cache Bypass
+- Skip cache cho fresh generations  
+- Direct API calls vÛi new tokens
+
+## TECHNICAL DETAILS
+
+### FILES INVOLVED:
+1. `providers.tsx` - Global cache config
+2. `useSharedQuestions.ts` - Question loading + caching  
+3. `useQuestionGeneration.ts` - Token generation + sync
+4. `preview/page.tsx` - Question consumption
+
+### CACHE LAYERS:
+1. TanStack Query memory cache (15 min stale)
+2. SessionStorage persistence (24 hour max)  
+3. Component state sync
+4. Database share tokens
+
+### TIMING ISSUE:
+- Generation: Share tokens created ’ Database updated
+- Loading: Cache hit ’ Stale data returned ’ No API call
+- Result: Preview shows no questions despite DB having data
+
+## CONCLUSION
+Cache key design không account cho share token changes. Need to include token fingerprint trong cache key Ã ensure cache invalidation khi có new questions.
