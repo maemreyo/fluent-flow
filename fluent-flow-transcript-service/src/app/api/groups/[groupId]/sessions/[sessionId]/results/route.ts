@@ -18,6 +18,8 @@ export async function GET(
     return corsResponse({ error: 'Database not configured' }, 500)
   }
   const { groupId, sessionId } = await params
+  const { searchParams } = new URL(request.url)
+  const userQuery = searchParams.get('user')
 
   try {
     const user = await getCurrentUserServer(supabase)
@@ -50,7 +52,44 @@ export async function GET(
       return corsResponse({ error: 'Session not found' }, 404)
     }
 
-    // Get results for this session
+    // If user=me query parameter is provided, return only current user's results
+    if (userQuery === 'me') {
+      const { data: userResult, error: userResultError } = await supabase
+        .from('group_quiz_results')
+        .select('*')
+        .eq('session_id', sessionId)
+        .eq('user_id', user.id)
+        .single()
+
+      if (userResultError) {
+        console.error('Error fetching user result:', userResultError)
+        return corsResponse({ userResult: null })
+      }
+
+      // Transform the database result back to the frontend format
+      if (userResult && userResult.result_data) {
+        const transformedResult = {
+          sessionId: `group_${sessionId}_${userResult.id}`,
+          score: userResult.score,
+          totalQuestions: userResult.total_questions,
+          correctAnswers: userResult.correct_answers,
+          results: userResult.result_data.allResults || [],
+          submittedAt: userResult.completed_at,
+          setIndex: 0, // Could be derived from result_data if needed
+          difficulty: 'mixed',
+          userData: { userId: user.id, email: user.email },
+          groupId,
+          groupSessionId: sessionId,
+          isGroupQuiz: true
+        }
+
+        return corsResponse({ userResult: transformedResult })
+      } else {
+        return corsResponse({ userResult: null })
+      }
+    }
+
+    // Default behavior: return all results (leaderboard)
     const { data: results, error: resultsError } = await supabase
       .from('group_quiz_results')
       .select('*')

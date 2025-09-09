@@ -30,6 +30,9 @@ export function GroupQuizResults({
   canRetakeQuiz = true
 }: GroupQuizResultsProps) {
   const [activeTab, setActiveTab] = useState<'personal' | 'leaderboard'>('personal')
+  
+  // Debug logging
+  console.log('🎯 GroupQuizResults received:', { results, hasResults: !!results })
 
   // Fetch group results for leaderboard with proper caching
   const { data: groupResults, isLoading: groupResultsLoading, refetch: refetchGroupResults } = useQuery({

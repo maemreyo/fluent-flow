@@ -1,51 +1,37 @@
-useRealtimeSession.ts:60 New users joined: [{…}]
-use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
-useQuestionGeneration.ts:91 📦 Loaded current preset from database: Quick Review
-useQuestionGeneration.ts:91 📦 Loaded current preset from database: Quick Review
-page.tsx:67 🚀 Starting quiz from preview with shareTokens: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useExistingResultsCheck.ts:56 👤 User is authenticated, checking for existing results...
-useExistingResultsCheck.ts:70 🔍 No cached results, checking server...
-useExistingResultsCheck.ts:41 🔍 Checking for existing results from hook
-progress-tracking-service.ts:167 Found progress data: null
-page.tsx:79 ▶️ Starting quiz directly (no existing results)
-useGroupQuiz.ts:484 🚀 [handleStartQuizFromPreview] Setting appState to quiz-active
-useQuizBroadcast.ts:24 ⚠️ Cannot broadcast quiz session start
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'quiz-active', difficultyGroupsCount: 3}
-page.tsx:67 🚀 Starting quiz from preview with shareTokens: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useExistingResultsCheck.ts:56 👤 User is authenticated, checking for existing results...
-useExistingResultsCheck.ts:60 📋 Using cached existing results: {hasResults: false}
-page.tsx:79 ▶️ Starting quiz directly (no existing results)
-useGroupQuiz.ts:484 🚀 [handleStartQuizFromPreview] Setting appState to quiz-active
-useQuizBroadcast.ts:28 🚀 Broadcasting quiz session start... {sessionId: '9017b917-3220-4ee1-bc42-08dee4c797a8', userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
-useQuizBroadcast.ts:58 ✅ Quiz session start broadcasted successfully
-page.tsx:88 ✅ Quiz session start broadcasted from preview, navigating to active
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
-useGroupQuiz.ts:309 🎯 [CACHE-POWERED] Loading questions from existing shareTokens: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useGroupQuiz.ts:113 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached medium questions from sessionStorage
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'question-preview', difficultyGroupsCount: 3}
-turbopack-hot-reloader-common.ts:43 [Fast Refresh] rebuilding
-use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
-report-hmr-latency.ts:26 [Fast Refresh] done in 1176ms
-useGroupQuiz.ts:210 Set submitted successfully
-useGroupQuiz.ts:210 Set submitted successfully
-useGroupQuiz.ts:210 Set submitted successfully
-useGroupQuiz.ts:635 Final results submitted successfully to group leaderboard
-useGroupQuiz.ts:644 Final results with videoUrl: {sessionId: 'group_9017b917-3220-4ee1-bc42-08dee4c797a8_1757426244102', score: 11, totalQuestions: 9, correctAnswers: 1, results: Array(9), …}
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'quiz-results', difficultyGroupsCount: 3}
-useGroupQuizWithProgress.ts:257 Marking quiz as completed...
-useGroupQuizWithProgress.ts:268 Final progress update: {currentQuestion: 9, currentSet: 3, totalAnswered: 9, correctAnswers: 1, timeSpent: 0, …}
-page.tsx:45 🎯 Quiz completed, navigating to results page
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
-useGroupQuiz.ts:309 🎯 [CACHE-POWERED] Loading questions from existing shareTokens: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useGroupQuiz.ts:113 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '88788f85-889e-42a6-828e-4aef979b2655', medium: '683b227d-5d3f-482d-82f1-ab4c9649927e', easy: '967274dc-ecf5-4993-99f2-116f9483a753'}
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached medium questions from sessionStorage
-useGroupQuiz.ts:124 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
-useGroupQuiz.ts:294 🚫 Skipping question load: {appState: 'question-preview', difficultyGroupsCount: 3}
-
-
+Kiểm tra loop này:
+```
+{
+    "loops": [
+        {
+            "id": "a016ec86-9d9d-404e-9fe1-f7d4d0acf763",
+            "videoUrl": "https://www.youtube.com/watch?v=IetohLp7i9g&list=PLnrRzQzjf1x6sLdnKPkZ8EOJc6WcvA75k&index=5",
+            "videoTitle": "What I Wish I Knew Before Getting Married",
+            "videoId": "IetohLp7i9g",
+            "startTime": 0.689655,
+            "endTime": 198.582764,
+            "transcript": "",
+            "segments": [],
+            "createdBy": "39abb7b6-93ca-4f4c-b07b-1087f6224cb5",
+            "createdAt": "2025-09-09T14:41:56.985541+00:00",
+            "updatedAt": "2025-09-09T14:41:56.985541+00:00",
+            "metadata": {
+                "transcriptId": null,
+                "segmentId": "1ebaac2e-e2cc-4254-91ec-6444d9b2cd79",
+                "savedLoop": {
+                    "id": "36383ded-d77f-462b-8374-43abdc04f55c",
+                    "title": "Loop 1 (3:17)",
+                    "language": "auto",
+                    "segments": [],
+                    "createdAt": "2025-09-09T14:41:55.490Z",
+                    "updatedAt": "2025-09-09T14:41:55.490Z",
+                    "transcript": "",
+                    "description": "Getting Married",
+                    "hasTranscript": false,
+                    "transcriptMetadata": null
+                }
+            },
+            "practiceSessionsCount": 0,
+            "questionsCount": 0
+        },
+```
+trong database để xem có transcript và segments không? `fxawystovhtbuqhllswl`

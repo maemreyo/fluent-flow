@@ -20,8 +20,24 @@ export function useQuizBroadcast({
 }: UseQuizBroadcastProps) {
   
   const broadcastQuizSessionStart = useCallback(async (quizTitle?: string, shareTokens?: Record<string, string>) => {
-    if (!canBroadcast || !channelRef || !userId) {
-      console.log('⚠️ Cannot broadcast quiz session start')
+    if (!canBroadcast || !userId) {
+      console.log('⚠️ Cannot broadcast quiz session start - missing permissions or user')
+      return false
+    }
+
+    // Wait for channel to be ready (with retry mechanism)
+    let retries = 0
+    const maxRetries = 5
+    const retryDelay = 500
+
+    while (!channelRef && retries < maxRetries) {
+      console.log(`⏳ Waiting for channel connection... (attempt ${retries + 1}/${maxRetries})`)
+      await new Promise(resolve => setTimeout(resolve, retryDelay))
+      retries++
+    }
+
+    if (!channelRef) {
+      console.log('⚠️ Cannot broadcast - channel not ready after retries')
       return false
     }
 

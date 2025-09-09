@@ -370,6 +370,8 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     // Navigation handlers
     handleNavigateToQuestion,
     handleNavigatePrevious,
-    handleNavigateNext
+    handleNavigateNext,
+    // Ensure results are passed through
+    results: groupQuizData.results
   }
 }
