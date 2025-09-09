@@ -67,7 +67,7 @@ export function useQuizEventHandlers({
     
     console.log('🎯 Received quiz session start:', { started_by, countdown, shareTokens })
     
-    // For members: load questions and transition to question-info state
+    // For members: load questions and transition to question-preview state
     if (!canManage) {
       // Load questions first if shareTokens available
       if (shareTokens && onMemberLoadQuestions) {
@@ -76,13 +76,13 @@ export function useQuizEventHandlers({
       }
       
       if (onMemberStartQuizInfo) {
-        toast.success(`Quiz starting! Transitioning to info screen...`, {
+        toast.success(`Quiz starting! Transitioning to preview screen...`, {
           duration: 3000
         })
         
-        // Transition member to question-info state  
+        // Transition member to question-preview state  
         setTimeout(() => {
-          console.log('🎯 Member transitioning to question-info state')
+          console.log('🎯 Member transitioning to question-preview state')
           onMemberStartQuizInfo()
         }, 1000) // 1 second delay for smooth transition
       }

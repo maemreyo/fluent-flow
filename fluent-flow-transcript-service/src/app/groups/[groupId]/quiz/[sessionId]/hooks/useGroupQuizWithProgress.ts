@@ -130,9 +130,9 @@ export function useGroupQuizWithProgress({ groupId, sessionId }: UseGroupQuizWit
     }
   }, [groupQuizData.appState, groupQuizData.isAuthenticated, existingResults])
 
-  // Clear cache when quiz starts (preset-selection to question-info transition)
+  // Clear cache when quiz starts (preset-selection to question-preview transition)
   useEffect(() => {
-    if (groupQuizData.appState === 'question-info') {
+    if (groupQuizData.appState === 'question-preview') {
       clearCache()
     }
   }, [groupQuizData.appState, clearCache])

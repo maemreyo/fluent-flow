@@ -27,7 +27,8 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   }, [router, groupId, sessionId])
 
   const navigateToInfo = useCallback(() => {
-    router.push(`/groups/${groupId}/quiz/${sessionId}/info`)
+    // DEPRECATED: Redirect to preview instead of info
+    router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
   }, [router, groupId, sessionId])
 
   const navigateToPreview = useCallback(() => {
@@ -50,8 +51,6 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
     switch (quizData.appState) {
       case 'preset-selection':
         return 'setup'
-      case 'question-info':
-        return 'info'
       case 'question-preview':
         return 'preview'
       case 'quiz-active':

@@ -12,7 +12,7 @@ The quiz system uses the following `AppState` values to manage flow:
 type AppState =
   | 'loading'           // Initial loading state
   | 'preset-selection'  // Setup screen - choose presets
-  | 'question-info'     // Info screen - view question summary  
+  | 'question-info'     // DEPRECATED - redirects to question-preview
   | 'question-preview'  // Preview screen - see questions before starting
   | 'quiz-active'       // Active screen - taking the quiz
   | 'quiz-results'      // Results screen - view final scores
@@ -36,7 +36,7 @@ type AppState =
   - Question generation from transcripts
   - Real-time generation progress
 - **Navigation**:
-  - **Next**: `/info` (when questions are generated)
+  - **Next**: `/preview` (when questions are generated)
   - **Permissions**: Owner/Admin only
 
 ### 3. **Lobby Screen** (`/[sessionId]/lobby/page.tsx`)
@@ -50,8 +50,8 @@ type AppState =
   - **Owner**: Can start quiz → `/info`
   - **Members**: Wait for owner to start
 
-### 4. **Info Screen** (`/[sessionId]/info/page.tsx`)
-- **AppState**: `'question-info'`
+### 4. **Info Screen** (DEPRECATED - removed)
+- **AppState**: `'question-info'` (DEPRECATED - redirects to preview)
 - **Purpose**: Display quiz overview and allow final preparation
 - **Features**:
   - Question count by difficulty
@@ -138,10 +138,10 @@ type AppState =
 
 ## State Management
 
-### AppState Persistence
-- **Storage**: `sessionStorage` with key `quiz-app-state-${sessionId}`
-- **Purpose**: Maintains state across page refreshes and navigation
-- **Scope**: Tab-specific (not shared across browser tabs)
+### AppState Management
+- **Storage**: In-memory state only (no persistence)
+- **Behavior**: State resets on page refresh
+- **Navigation**: Natural browser behavior without forced redirects
 
 ### Question Data Caching
 - **Technology**: TanStack Query with sessionStorage persistence

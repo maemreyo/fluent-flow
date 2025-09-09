@@ -18,8 +18,7 @@ import { useSharedQuestions } from './useSharedQuestions'
 type AppState =
   | 'loading'
   | 'preset-selection'
-  | 'question-info'
-  | 'question-preview' // Add this new state
+  | 'question-preview'
   | 'quiz-active'
   | 'quiz-results'
   | 'error'
@@ -53,39 +52,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     enabled: true
   })
 
-  // CRITICAL FIX: Persist appState across navigation using sessionStorage
-  const getPersistedAppState = useCallback((): AppState => {
-    if (typeof window === 'undefined') return 'loading'
-    
-    try {
-      const key = `quiz-app-state-${sessionId}`
-      const persistedState = sessionStorage.getItem(key)
-      if (persistedState && ['loading', 'error', 'preset-selection', 'question-info', 'question-preview', 'quiz-active', 'quiz-results'].includes(persistedState)) {
-        console.log(`🔄 [useGroupQuiz] Restored appState from sessionStorage: ${persistedState}`)
-        return persistedState as AppState
-      }
-    } catch (error) {
-      console.warn('Failed to read persisted appState:', error)
-    }
-    
-    return 'loading'
-  }, [sessionId])
-
-  const setPersistedAppState = useCallback((newState: AppState) => {
-    if (typeof window !== 'undefined') {
-      try {
-        const key = `quiz-app-state-${sessionId}`
-        sessionStorage.setItem(key, newState)
-        console.log(`💾 [useGroupQuiz] Persisted appState to sessionStorage: ${newState}`)
-      } catch (error) {
-        console.warn('Failed to persist appState:', error)
-      }
-    }
-    setAppState(newState)
-  }, [sessionId])
-
-  // Quiz state (similar to individual useQuiz) - now with persistence
-  const [appState, setAppState] = useState<AppState>(getPersistedAppState)
+  // Quiz state (simplified - no persistence)
+  const [appState, setAppState] = useState<AppState>('loading')
   const [selectedPreset, setSelectedPreset] = useState<QuestionPreset | null>(null)
   const [difficultyGroups, setDifficultyGroups] = useState<DifficultyGroup[]>([])
   const [currentSetIndex, setCurrentSetIndex] = useState(0)
@@ -253,7 +221,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       return
     } else if (sessionError || groupError) {
       console.log('📝 Setting appState to: error')
-      setPersistedAppState('error')
+      setAppState('error')
     } else if (session && group) {
       // Check session status to determine proper state
       console.log('📊 Session data:', {
@@ -270,7 +238,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       // Preserve any advanced states like 'quiz-active'
       if (appState === 'loading') {
         console.log('📝 Initializing appState from loading to: preset-selection')
-        setPersistedAppState('preset-selection')
+        setAppState('preset-selection')
       } else {
         console.log(`📝 Preserving existing appState: ${appState} (session and group data available)`)
       }
@@ -286,7 +254,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     session,
     group,
     appState,
-    setPersistedAppState
+    setAppState
   ])
 
   // Use shared questions hook for cached API calls - REPLACES direct fetch
@@ -303,8 +271,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   useEffect(() => {
     const loadExistingQuestionsFromCache = async () => {
       // CRITICAL FIX: Load questions for all relevant states where we need questions but don't have them
-      // This includes preset-selection, question-info, question-preview, and quiz-active
-      const statesNeedingQuestions = ['preset-selection', 'question-info', 'question-preview', 'quiz-active']
+      // This includes preset-selection, question-preview, and quiz-active
+      const statesNeedingQuestions = ['preset-selection', 'question-preview', 'quiz-active']
       const shouldLoadQuestions = statesNeedingQuestions.includes(appState) && difficultyGroups.length === 0
 
       if (!shouldLoadQuestions) {
@@ -326,7 +294,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
           // Only change appState if we're in preset-selection (initial load)
           // For other states like quiz-active, keep the existing state
           if (appState === 'preset-selection') {
-            setPersistedAppState('question-info')
+            setAppState('question-preview')
           } else {
             console.log(`✅ Questions loaded for ${appState} state - preserving current appState`)
           }
@@ -339,7 +307,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
 
     loadExistingQuestionsFromCache()
-  }, [appState, difficultyGroups.length, existingShareTokens, questionsLoading, loadQuestionsFromShareTokens, setPersistedAppState])
+  }, [appState, difficultyGroups.length, existingShareTokens, questionsLoading, loadQuestionsFromShareTokens, setAppState])
 
   // Quiz functionality (reused from individual quiz)
   const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
@@ -458,29 +426,29 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         setSelectedPreset(preset)
         const groups = createPresetGroups(preset, allQuestions)
         setDifficultyGroups(groups)
-        setPersistedAppState('question-info')
+        setAppState('question-preview')
       } catch (error) {
         console.error('Error loading questions:', error)
         alert(error instanceof Error ? error.message : 'Failed to load questions')
       }
     },
-    [isAuthenticated, session?.share_token, queryClient, quizQueryKeys, loadQuestionsFromShareTokens, createPresetGroups, setPersistedAppState]
+    [isAuthenticated, session?.share_token, queryClient, quizQueryKeys, loadQuestionsFromShareTokens, createPresetGroups, setAppState]
   )
 
   const handleQuestionInfoStart = () => {
-    setPersistedAppState('question-preview')
+    setAppState('question-preview')
   }
 
   const handleStartQuizFromPreview = useCallback(async (currentShareTokens?: Record<string, string>) => {
     console.log('🚀 [handleStartQuizFromPreview] Setting appState to quiz-active')
-    setPersistedAppState('quiz-active')
+    setAppState('quiz-active')
     
     // Return shareTokens for broadcasting (if available)
     return currentShareTokens || {}
-  }, [setPersistedAppState])
+  }, [setAppState])
 
   const handleGoBackFromPreview = () => {
-    setPersistedAppState('question-info')
+    setAppState('question-preview')
   }
 
   const submitCurrentSet = async () => {
@@ -629,7 +597,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     }
 
     setResults(finalResults)
-    setPersistedAppState('quiz-results')
+    setAppState('quiz-results')
     console.log('Final results with videoUrl:', finalResults)
   }
 
@@ -684,7 +652,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   }
 
   const handleRestart = () => {
-    setPersistedAppState('preset-selection')
+    setAppState('preset-selection')
     setSelectedPreset(null)
     setDifficultyGroups([])
     setCurrentSetIndex(0)

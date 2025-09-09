@@ -6,6 +6,9 @@ import { GroupQuizPreview } from '../components/GroupQuizPreview'
 import { useQuizFlow } from '../shared/hooks/useQuizFlow'
 import { useQuizSync } from '../hooks/useQuizSync'
 import { useGroupQuestionGeneration } from '../hooks/useQuestionGeneration'
+import { useExistingResultsCheck } from '../hooks/useExistingResultsCheck'
+import { ExistingResultsModal } from '../../../../../../components/groups/quiz/ExistingResultsModal'
+import { CheckingResultsModal } from '../../../../../../components/groups/quiz/CheckingResultsModal'
 
 interface PreviewPageProps {
   params: Promise<{
@@ -30,6 +33,22 @@ export default function PreviewPage({ params }: PreviewPageProps) {
 
   const { shareTokens } = useGroupQuestionGeneration(groupId, sessionId)
   
+  // Existing results checking hook
+  const {
+    showExistingResultsModal,
+    isCheckingExistingResults,
+    existingResults,
+    checkForExistingResults,
+    handleGoBackToPresets: handleGoBackToPresetsBase,
+    handleStartFresh: handleStartFreshBase,
+    handleCloseModal
+  } = useExistingResultsCheck({
+    groupId,
+    sessionId,
+    userId: user?.id,
+    enabled: true
+  })
+  
   // Role-based permissions
   const permissions = new PermissionManager(user, group, session)
 
@@ -47,6 +66,18 @@ export default function PreviewPage({ params }: PreviewPageProps) {
   const handleStartQuiz = useCallback(async () => {
     console.log('🚀 Starting quiz from preview with shareTokens:', shareTokens)
 
+    // Check for existing results first if user is authenticated
+    const hasExistingResults = await checkForExistingResults()
+    
+    if (!hasExistingResults) {
+      // No existing results - proceed with quiz start
+      await startQuizDirectly()
+    }
+  }, [shareTokens, checkForExistingResults])
+
+  const startQuizDirectly = useCallback(async () => {
+    console.log('▶️ Starting quiz directly (no existing results)')
+    
     // CRITICAL: Set appState to 'quiz-active' BEFORE navigation to prevent redirect back to setup
     await handleStartQuizFromPreview(shareTokens)
 
@@ -65,21 +96,46 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     }
   }, [shareTokens, permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToActive, handleStartQuizFromPreview])
 
+  // Handle existing results modal actions with hook integration
+  const handleGoBackToPresets = useCallback(() => {
+    handleGoBackToPresetsBase(() => navigateToInfo())
+  }, [handleGoBackToPresetsBase, navigateToInfo])
+
+  const handleStartFresh = useCallback(async () => {
+    await handleStartFreshBase(startQuizDirectly)
+  }, [handleStartFreshBase, startQuizDirectly])
+
   const handleGoBack = () => {
     handleGoBackFromPreview()
     navigateToInfo()
   }
 
   return (
-    <div className="mx-auto max-w-8xl">
-      <GroupQuizPreview
-        difficultyGroups={difficultyGroups}
-        onStartQuiz={handleStartQuiz}
-        onGoBack={handleGoBack}
-        canShowAnswers={permissions.canManageQuiz()}
-        sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}
-        quizSettings={groupSettings}
-      />
-    </div>
+    <>
+      {/* Existing Results Modal */}
+      {showExistingResultsModal && existingResults?.hasResults && existingResults.results && (
+        <ExistingResultsModal
+          isOpen={showExistingResultsModal}
+          results={existingResults.results}
+          onGoBackToPresets={handleGoBackToPresets}
+          onStartFresh={handleStartFresh}
+          onClose={handleCloseModal}
+        />
+      )}
+
+      {/* Checking Results Modal */}
+      <CheckingResultsModal isOpen={isCheckingExistingResults} />
+
+      <div className="mx-auto max-w-8xl">
+        <GroupQuizPreview
+          difficultyGroups={difficultyGroups}
+          onStartQuiz={handleStartQuiz}
+          onGoBack={handleGoBack}
+          canShowAnswers={permissions.canManageQuiz()}
+          sessionTitle={session?.quiz_title || session?.title || 'Group Quiz Session'}
+          quizSettings={groupSettings}
+        />
+      </div>
+    </>
   )
 }
