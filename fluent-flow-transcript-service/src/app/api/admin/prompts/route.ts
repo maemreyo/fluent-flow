@@ -58,22 +58,27 @@ export async function GET(request: NextRequest) {
   if (adminCheck) return adminCheck
 
   try {
-    const supabase = getSupabaseServer(request)
-    if (!supabase) {
-      return corsResponse({ error: 'Database not configured' }, 500)
-    }
-    
+    // Use admin service key to bypass RLS entirely
+    const { createClient } = require('@supabase/supabase-js')
+    const adminSupabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SERVICE_ROLE_KEY!, // Use service role key
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
     
     const { searchParams } = new URL(request.url)
     
     const category = searchParams.get('category')
     const active_only = searchParams.get('active_only') === 'true'
     
-    let query = supabase
-      .from('custom_prompts')
-      .select('*')
-      .order('created_at', { ascending: false })
-
+    // Build query with filters using the service role client
+    let query = adminSupabase.from('custom_prompts').select('*')
+    
     if (category) {
       query = query.eq('category', category)
     }
@@ -81,8 +86,8 @@ export async function GET(request: NextRequest) {
     if (active_only) {
       query = query.eq('is_active', true)
     }
-
-    const { data: prompts, error } = await query
+    
+    const { data: prompts, error } = await query.order('created_at', { ascending: false })
 
     if (error) {
       console.error('Error fetching custom prompts:', error)
