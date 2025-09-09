@@ -309,20 +309,13 @@ export function GroupQuizActiveView({
   const currentQuestionInSet = currentQuestionIndex + 1
   const totalQuestionsInSet = groupData?.questions?.length || 0
 
-  // Calculate questions answered in current set for progress bar
-  // For now, we'll use a simpler approach - count responses that match questions in current set
-  // This assumes the question indices are structured predictably
-  const questionsInCurrentSet = groupData?.questions || []
-  const answeredQuestionsInSet = questionsInCurrentSet.filter(
-    (setQuestion: any, questionIdx: number) => {
-      // Try to find a response that matches this question
-      return responses.some(response => {
-        // Try to match by the question content or structure
-        const currentSetStartIndex = questionIndex - currentQuestionIndex
-        const expectedGlobalIndex = currentSetStartIndex + questionIdx
-        return response.questionIndex === expectedGlobalIndex
-      })
-    }
+  // Calculate questions answered in current set for progress bar - FIXED
+  const currentSetStartIndex = questionIndex - currentQuestionIndex
+  const currentSetEndIndex = currentSetStartIndex + totalQuestionsInSet - 1
+  const answeredQuestionsInSet = responses.filter(response => 
+    response.questionIndex >= currentSetStartIndex && 
+    response.questionIndex <= currentSetEndIndex &&
+    response.answer
   ).length
 
   return (
@@ -392,7 +385,21 @@ export function GroupQuizActiveView({
         <QuestionNavigationBar
           currentQuestionIndex={currentQuestionIndex}
           totalQuestions={totalQuestionsInSet}
-          responses={responses}
+          responses={
+            // CRITICAL FIX: Filter responses to only include current set and map global indices to local indices
+            responses
+              .filter(response => {
+                // Calculate the global index range for current set
+                const currentSetStartIndex = questionIndex - currentQuestionIndex
+                const currentSetEndIndex = currentSetStartIndex + totalQuestionsInSet - 1
+                return response.questionIndex >= currentSetStartIndex && response.questionIndex <= currentSetEndIndex
+              })
+              .map(response => ({
+                ...response,
+                // Convert global questionIndex to local index within current set
+                questionIndex: response.questionIndex - (questionIndex - currentQuestionIndex)
+              }))
+          }
           onNavigateToQuestion={onNavigateToQuestion}
           onPrevious={onNavigatePrevious}
           onNext={onNavigateNext}

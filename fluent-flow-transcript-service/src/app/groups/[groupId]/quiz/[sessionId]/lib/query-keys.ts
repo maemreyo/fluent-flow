@@ -86,13 +86,14 @@ export const quizQueryOptions = {
     refetchOnReconnect: false,
   },
 
-  // Questions data (changes only when regenerated) - OPTIMIZED for cross-page caching
+  // Questions data (changes only when regenerated) - OPTIMIZED for persistence caching
   questions: {
-    staleTime: 30 * 60 * 1000, // 30 minutes - extended to prevent refetching across pages
-    gcTime: 2 * 60 * 60 * 1000, // 2 hours - keep in cache longer
+    staleTime: 60 * 60 * 1000, // 1 hour - longer for persistent cache
+    gcTime: 24 * 60 * 60 * 1000, // 24 hours - very long garbage collection for persistence
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
     refetchOnMount: false, // CRITICAL: Don't refetch on mount if data exists
+    retry: 1, // Reduce retries for cached data
   },
 
   // Results data (immutable once created)

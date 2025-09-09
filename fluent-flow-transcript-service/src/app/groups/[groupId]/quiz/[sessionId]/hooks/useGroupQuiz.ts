@@ -13,6 +13,7 @@ import { useSessionParticipants } from '../../../components/sessions/hooks/useSe
 import { quizQueryKeys, quizQueryOptions } from '../lib/query-keys'
 import { fetchGroup, fetchGroupSession } from '../queries'
 import { useRealtimeSession } from './useRealtimeSession'
+import { useSharedQuestions } from './useSharedQuestions'
 
 type AppState =
   | 'loading'
@@ -140,20 +141,20 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       throw new Error('No questions available')
     }
 
-    console.log('🔄 [loadQuestionsFromShareTokens] Loading questions with React Query caching:', shareTokens)
+    console.log('🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching:', shareTokens)
 
     const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
-      // Check if data is already cached in React Query
+      // Check if data is already cached in React Query (including persistence)
       const cacheKey = quizQueryKeys.questionSet(shareToken)
       const cachedData = queryClient.getQueryData(cacheKey) as any
       
       if (cachedData) {
-        console.log(`✅ [loadQuestionsFromShareTokens] Using cached ${difficulty} questions`)
+        console.log(`✅ [CACHE HIT] Using persistent cached ${difficulty} questions from sessionStorage`)
         return cachedData
       }
 
       // If not cached, fetch and cache it
-      console.log(`🔄 [loadQuestionsFromShareTokens] Fetching ${difficulty} questions from API`)
+      console.log(`🚨 [CACHE MISS] Fetching ${difficulty} questions from API - cache not found`)
       const response = await fetch(`/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`)
       
       if (!response.ok) {
@@ -168,10 +169,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         questionSet: questionData
       }
 
-      // Cache the result with React Query
+      // Cache the result with React Query (will be persisted automatically)
       queryClient.setQueryData(cacheKey, result)
       
-      console.log(`✅ [loadQuestionsFromShareTokens] Cached ${difficulty} questions: ${result.questions.length}`)
+      console.log(`💾 [CACHED] Stored ${difficulty} questions in persistent cache: ${result.questions.length}`)
       return result
     })
 
@@ -288,9 +289,19 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     setPersistedAppState
   ])
 
-  // Auto-load questions from existing shareTokens on mount
+  // Use shared questions hook for cached API calls - REPLACES direct fetch
+  const { 
+    shareTokens: existingShareTokens,
+    isLoading: questionsLoading 
+  } = useSharedQuestions({
+    groupId,
+    sessionId,
+    enabled: true // Always enabled to maintain cache
+  })
+
+  // Auto-load questions from existing shareTokens on mount - NOW USING CACHED DATA
   useEffect(() => {
-    const loadExistingQuestions = async () => {
+    const loadExistingQuestionsFromCache = async () => {
       // CRITICAL FIX: Load questions for all relevant states where we need questions but don't have them
       // This includes preset-selection, question-info, question-preview, and quiz-active
       const statesNeedingQuestions = ['preset-selection', 'question-info', 'question-preview', 'quiz-active']
@@ -301,54 +312,34 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         return
       }
 
-      try {
-        // Fetch existing shareTokens from the backend using optimized query
-        console.log('🔄 Checking for existing questions...')
-        const { getAuthHeaders } = await import('@/lib/supabase/auth-utils')
-        const headers = await getAuthHeaders()
-        
-        const response = await fetch(`/api/groups/${groupId}/sessions/${sessionId}/questions`, {
-          headers,
-          credentials: 'include'
-        })
-        
-        if (response.ok) {
-          const data = await response.json()
-          console.log('📦 Found existing questions:', data)
-          
-          // Parse the actual API response structure  
-          if (data.success && data.data?.questionsByDifficulty) {
-            const questionsByDiff = data.data.questionsByDifficulty
-            
-            // Convert to shareTokens format
-            const shareTokens: Record<string, string> = {}
-            Object.keys(questionsByDiff).forEach(difficulty => {
-              const diffData = questionsByDiff[difficulty]
-              if (diffData.shareToken) {
-                shareTokens[difficulty] = diffData.shareToken
-              }
-            })
-            
-            if (Object.keys(shareTokens).length > 0) {
-              console.log('🎯 Loading questions from existing shareTokens:', shareTokens)
-              await loadQuestionsFromShareTokens(shareTokens)
-              // Only change appState if we're in preset-selection (initial load)
-              // For other states like quiz-active, keep the existing state
-              if (appState === 'preset-selection') {
-                setPersistedAppState('question-info')
-              } else {
-                console.log(`✅ Questions loaded for ${appState} state - preserving current appState`)
-              }
-            }
+      // Don't load while questions are still loading
+      if (questionsLoading) {
+        console.log('⏳ Questions still loading from cache, waiting...')
+        return
+      }
+
+      // Use cached shareTokens from useSharedQuestions instead of direct fetch
+      if (Object.keys(existingShareTokens).length > 0) {
+        console.log('🎯 [CACHE-POWERED] Loading questions from existing shareTokens:', existingShareTokens)
+        try {
+          await loadQuestionsFromShareTokens(existingShareTokens)
+          // Only change appState if we're in preset-selection (initial load)
+          // For other states like quiz-active, keep the existing state
+          if (appState === 'preset-selection') {
+            setPersistedAppState('question-info')
+          } else {
+            console.log(`✅ Questions loaded for ${appState} state - preserving current appState`)
           }
+        } catch (error) {
+          console.warn('Failed to load questions from cached shareTokens:', error)
         }
-      } catch (error) {
-        console.warn('Failed to load existing questions:', error)
+      } else {
+        console.log('📭 No existing questions found in cache')
       }
     }
 
-    loadExistingQuestions()
-  }, [appState, difficultyGroups.length, groupId, sessionId, loadQuestionsFromShareTokens, setPersistedAppState])
+    loadExistingQuestionsFromCache()
+  }, [appState, difficultyGroups.length, existingShareTokens, questionsLoading, loadQuestionsFromShareTokens, setPersistedAppState])
 
   // Quiz functionality (reused from individual quiz)
   const getAvailableQuestionCounts = useCallback((questions: Question[]) => {
