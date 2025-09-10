@@ -21,7 +21,13 @@ export function useLoops(groupId: string) {
       }
       const data = await response.json()
       return data.loops
-    }
+    },
+    // Override global settings for fresh data when users export from YouTube
+    staleTime: 10 * 1000, // 10 seconds - very short to ensure fresh data
+    gcTime: 2 * 60 * 1000, // 2 minutes - short garbage collection
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user comes back to tab
+    refetchOnReconnect: true // Refetch when network reconnects
   })
 }
 
@@ -96,7 +102,13 @@ export function useLoop(groupId: string, loopId: string) {
       const data = await response.json()
       return data.loop
     },
-    enabled: !!loopId && !!groupId
+    enabled: !!loopId && !!groupId,
+    // Override global settings for fresh data when users export from YouTube
+    staleTime: 10 * 1000, // 10 seconds - very short to ensure fresh data
+    gcTime: 2 * 60 * 1000, // 2 minutes - short garbage collection
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user comes back to tab
+    refetchOnReconnect: true // Refetch when network reconnects
   })
 }
 

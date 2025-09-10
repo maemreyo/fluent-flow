@@ -1,3 +1,7 @@
+// ❌ DEPRECATED: Old conversation analysis service
+// TODO: Remove this file - replaced by conversation-analysis-service.ts
+// This file contains old Gemini-based implementation that is no longer used
+
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import type {
   ConversationQuestion,

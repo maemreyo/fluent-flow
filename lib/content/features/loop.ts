@@ -361,58 +361,43 @@ export class LoopFeature {
       endTime: context.data.endTime,
       description,
       createdAt: new Date(),
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      transcript: '',
+      segments: [],
+      language: 'auto',
+      hasTranscript: false
     }
 
-    // Send to background for storage with enhanced feedback
-    const toastId = this.ui.showToast(`Saving loop: ${savedLoop.title}`, { 
-      type: 'loading',
-      persistent: true 
-    } as any)
-
-    try {
-      const response = await new Promise<any>((resolve, reject) => {
-        chrome.runtime.sendMessage({
-          type: 'SAVE_LOOP',
-          data: savedLoop
-        }, (response) => {
-          if (chrome.runtime.lastError) {
-            reject(new Error(chrome.runtime.lastError.message))
-          } else {
-            resolve(response)
-          }
-        })
-      })
-
-      // Update toast based on response
-      if (response.status === 'success') {
-        this.ui.updateToast(toastId, `✅ Loop saved: ${savedLoop.title}`, { 
-          type: 'success' 
-        })
-      } else if (response.status === 'local_fallback') {
-        const retryHandler = () => this.retrySaveLoop(savedLoop)
-        this.ui.updateToast(toastId, `💾 Loop saved offline: ${savedLoop.title}`, {
-          type: 'warning',
-          action: { text: 'Sync Now', handler: retryHandler }
-        })
-      } else {
-        const retryHandler = () => this.retrySaveLoop(savedLoop)
-        this.ui.updateToast(toastId, `❌ Save failed: ${response.error || 'Unknown error'}`, {
-          type: 'error',
-          action: { text: 'Retry', handler: retryHandler }
-        })
-      }
-    } catch (error: any) {
-      console.error('FluentFlow: Save message error:', error)
-      const retryHandler = () => this.retrySaveLoop(savedLoop)
-      this.ui.updateToast(toastId, `❌ Connection failed`, {
-        type: 'error',
-        action: { text: 'Retry', handler: retryHandler }
-      })
-    }
+    // Store loop data temporarily for sidepanel sync  
+    this.storeLoopForSync(savedLoop)
+    
+    this.ui.showToast(`✅ Loop created: ${savedLoop.title}`, { 
+      type: 'success'
+    })
 
     return savedLoop
   }
+
+  // Store loop data temporarily in localStorage for sidepanel sync
+  private storeLoopForSync(loop: SavedLoop): void {
+    try {
+      const key = 'fluent-flow-pending-loops'
+      const existingLoops = JSON.parse(localStorage.getItem(key) || '[]')
+      existingLoops.push({
+        ...loop,
+        syncTimestamp: Date.now()
+      })
+      localStorage.setItem(key, JSON.stringify(existingLoops))
+      console.log(`🔄 FluentFlow: Stored loop for sidepanel sync: ${loop.title}`)
+    } catch (error) {
+      console.error('Failed to store loop for sync:', error)
+    }
+  }
+
+  // Direct transcript extraction from content script context
+  
+
+  
 
   // Retry save method for failed saves
   private async retrySaveLoop(savedLoop: SavedLoop): Promise<void> {

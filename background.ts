@@ -132,8 +132,8 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       return true
 
     case 'OPEN_SIDE_PANEL':
-      handleSidePanelOpen(message, sender)
-      break
+      handleSidePanelOpen(message, sender, sendResponse)
+      return true
 
     case 'GET_CONFIG':
       // Simple sync response for configuration
@@ -157,48 +157,71 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 })
 
 // Side panel handler - utility function, not business logic
-function handleSidePanelOpen(message: any, sender: chrome.runtime.MessageSender) {
-  if (sender.tab?.id) {
-    // Called from content script - use the tab ID
-    chrome.sidePanel.open({ tabId: sender.tab.id })
+function handleSidePanelOpen(message: any, sender: chrome.runtime.MessageSender, sendResponse: (response: any) => void) {
+  try {
+    if (sender.tab?.id) {
+      // Called from content script - use the tab ID
+      chrome.sidePanel.open({ tabId: sender.tab.id })
+        .then(() => {
+          console.log('FluentFlow: Sidepanel opened successfully for tab:', sender.tab?.id)
+          sendResponse({ success: true, message: 'Sidepanel opened' })
+        })
+        .catch(error => {
+          console.error('FluentFlow: Failed to open sidepanel:', error)
+          sendResponse({ success: false, error: error.message })
+        })
 
-    // If there's selectedText, send it to the sidepanel
-    if (message.selectedText) {
-      // Send data to sidepanel after a small delay to ensure it's open
-      setTimeout(() => {
-        chrome.runtime
-          .sendMessage({
-            type: 'SIDEPANEL_DATA',
-            selectedText: message.selectedText,
-            timestamp: message.timestamp
-          })
-          .catch(error => {
-            console.log('Sidepanel not ready yet, this is normal:', error.message)
-          })
-      }, 500)
-    }
-  } else {
-    // Called from popup or other extension context - get active tab
-    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-      if (tabs[0]?.id) {
-        chrome.sidePanel.open({ tabId: tabs[0].id })
-
-        // If there's selectedText, send it to the sidepanel
-        if (message.selectedText) {
-          setTimeout(() => {
-            chrome.runtime
-              .sendMessage({
-                type: 'SIDEPANEL_DATA',
-                selectedText: message.selectedText,
-                timestamp: message.timestamp
-              })
-              .catch(error => {
-                console.log('Sidepanel not ready yet, this is normal:', error.message)
-              })
-          }, 500)
-        }
+      // If there's selectedText, send it to the sidepanel
+      if (message.selectedText) {
+        // Send data to sidepanel after a small delay to ensure it's open
+        setTimeout(() => {
+          chrome.runtime
+            .sendMessage({
+              type: 'SIDEPANEL_DATA',
+              selectedText: message.selectedText,
+              timestamp: message.timestamp
+            })
+            .catch(error => {
+              console.log('Sidepanel not ready yet, this is normal:', error.message)
+            })
+        }, 500)
       }
-    })
+    } else {
+      // Called from popup or other extension context - get active tab
+      chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+        if (tabs[0]?.id) {
+          chrome.sidePanel.open({ tabId: tabs[0].id })
+            .then(() => {
+              console.log('FluentFlow: Sidepanel opened successfully for active tab:', tabs[0]?.id)
+              sendResponse({ success: true, message: 'Sidepanel opened' })
+            })
+            .catch(error => {
+              console.error('FluentFlow: Failed to open sidepanel:', error)
+              sendResponse({ success: false, error: error.message })
+            })
+
+          // If there's selectedText, send it to the sidepanel
+          if (message.selectedText) {
+            setTimeout(() => {
+              chrome.runtime
+                .sendMessage({
+                  type: 'SIDEPANEL_DATA',
+                  selectedText: message.selectedText,
+                  timestamp: message.timestamp
+                })
+                .catch(error => {
+                  console.log('Sidepanel not ready yet, this is normal:', error.message)
+                })
+            }, 500)
+          }
+        } else {
+          sendResponse({ success: false, error: 'No active tab found' })
+        }
+      })
+    }
+  } catch (error) {
+    console.error('FluentFlow: Error in handleSidePanelOpen:', error)
+    sendResponse({ success: false, error: error instanceof Error ? error.message : 'Unknown error' })
   }
 }
 

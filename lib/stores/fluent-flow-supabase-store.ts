@@ -552,100 +552,112 @@ const supabaseService = {
         })
         .eq('id', segmentId)
     } else {
-      // Create new segment
+      // 🔄 FIX: Process transcript FIRST, then create segment with transcript_id if available
+      let transcriptId: string | null = null
+
+      // 🚀 Create transcript data if available BEFORE creating loop segment
+      if (loop.transcript && loop.transcript.trim() && loop.segments && loop.segments.length > 0) {
+        console.log(
+          `🔄 FluentFlow: Processing transcript data for loop ${loop.id} BEFORE creating segment`
+        )
+
+        try {
+          // Check if transcript already exists for this segment
+          const { data: existingTranscript } = await supabase
+            .from('transcripts')
+            .select('id')
+            .eq('video_id', loop.videoId)
+            .eq('start_time', loop.startTime)
+            .eq('end_time', loop.endTime)
+            .maybeSingle()
+
+          const transcriptData = {
+            video_id: loop.videoId,
+            start_time: loop.startTime,
+            end_time: loop.endTime,
+            segments: loop.segments,
+            full_text: loop.transcript,
+            language: loop.language || 'auto',
+            metadata: {
+              createdAt: new Date().toISOString(),
+              source: 'fluent-flow-extension',
+              loopId: loop.id
+            }
+          }
+
+          if (existingTranscript) {
+            // Update existing transcript
+            await supabase
+              .from('transcripts')
+              .update({
+                ...transcriptData,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', existingTranscript.id)
+            transcriptId = existingTranscript.id
+          } else {
+            // Create new transcript
+            const { data: newTranscript, error: transcriptError } = await supabase
+              .from('transcripts')
+              .insert(transcriptData)
+              .select('id')
+              .single()
+
+            if (transcriptError) throw transcriptError
+            transcriptId = newTranscript.id
+          }
+
+          console.log(
+            `✅ FluentFlow: Successfully created/updated transcript ${transcriptId} for loop ${loop.id}`
+          )
+        } catch (transcriptError) {
+          console.error(
+            `❌ FluentFlow: Failed to process transcript data for loop ${loop.id}:`,
+            transcriptError
+          )
+          // Continue with segment creation even if transcript fails, but log the error
+          transcriptId = null
+        }
+      }
+
+      // Create new segment WITH transcript_id if available
+      const segmentData: any = {
+        session_id: sessionId,
+        start_time: loop.startTime,
+        end_time: loop.endTime,
+        label: loop.title,
+        description: loop.description
+      }
+
+      // Include transcript linking data if transcript was created successfully
+      if (transcriptId) {
+        segmentData.transcript_id = transcriptId
+        segmentData.has_transcript = true
+        segmentData.transcript_metadata = {
+          language: loop.language || 'auto',
+          segmentCount: loop.segments?.length || 0,
+          textLength: loop.transcript?.length || 0,
+          lastUpdated: new Date().toISOString()
+        }
+      }
+
       const { data: newSegment, error: segmentError } = await supabase
         .from('loop_segments')
-        .insert({
-          session_id: sessionId,
-          start_time: loop.startTime,
-          end_time: loop.endTime,
-          label: loop.title,
-          description: loop.description
-        })
+        .insert(segmentData)
         .select('id')
         .single()
 
       if (segmentError) throw segmentError
       segmentId = newSegment.id
-    }
 
-    // 🚀 NEW: Save transcript data to transcripts table if available
-    if (loop.transcript && loop.transcript.trim() && loop.segments && loop.segments.length > 0) {
-      console.log(`🔄 FluentFlow: Saving transcript data to database for loop ${loop.id}`)
-
-      try {
-        // Check if transcript already exists for this segment
-        const { data: existingTranscript } = await supabase
-          .from('transcripts')
-          .select('id')
-          .eq('video_id', loop.videoId)
-          .eq('start_time', loop.startTime)
-          .eq('end_time', loop.endTime)
-          .maybeSingle()
-
-        const transcriptData = {
-          video_id: loop.videoId,
-          start_time: loop.startTime,
-          end_time: loop.endTime,
-          segments: loop.segments,
-          full_text: loop.transcript,
-          language: loop.language || 'auto',
-          metadata: {
-            createdAt: new Date().toISOString(),
-            source: 'fluent-flow-extension',
-            loopId: loop.id
-          }
-        }
-
-        let transcriptId: string
-
-        if (existingTranscript) {
-          // Update existing transcript
-          await supabase
-            .from('transcripts')
-            .update({
-              ...transcriptData,
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', existingTranscript.id)
-          transcriptId = existingTranscript.id
-        } else {
-          // Create new transcript
-          const { data: newTranscript, error: transcriptError } = await supabase
-            .from('transcripts')
-            .insert(transcriptData)
-            .select('id')
-            .single()
-
-          if (transcriptError) throw transcriptError
-          transcriptId = newTranscript.id
-        }
-
-        // Link transcript to loop segment
-        await supabase
-          .from('loop_segments')
-          .update({
-            transcript_id: transcriptId,
-            has_transcript: true,
-            transcript_metadata: {
-              language: loop.language || 'auto',
-              segmentCount: loop.segments.length,
-              textLength: loop.transcript.length,
-              lastUpdated: new Date().toISOString()
-            },
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', segmentId)
-
+      if (transcriptId) {
         console.log(
-          `✅ FluentFlow: Successfully saved transcript data to database for loop ${loop.id}`
+          `✅ FluentFlow: Successfully created loop segment ${segmentId} with transcript ${transcriptId} for loop ${loop.id}`
         )
-      } catch (transcriptError) {
-        console.error(
-          `❌ FluentFlow: Failed to save transcript data for loop ${loop.id}:`,
-          transcriptError
+      } else {
+        console.log(
+          `ℹ️ FluentFlow: Created loop segment ${segmentId} without transcript for loop ${loop.id}`
         )
-        // Don't throw - loop save should still succeed even if transcript fails
       }
     }
 
@@ -904,18 +916,28 @@ const supabaseService = {
         `🔄 FluentFlow: Linking transcript ${transcriptId} with matching loop segments for video ${videoId}`
       )
 
+      // First get the session IDs for this video
+      const { data: sessions } = await supabase
+        .from('practice_sessions')
+        .select('id')
+        .eq('video_id', videoId)
+
+      if (!sessions || sessions.length === 0) {
+        console.log('ℹ️ FluentFlow: No sessions found for this video')
+        return transcriptId
+      }
+
+      const sessionIds = sessions.map(s => s.id)
+
       const { data: matchingSegments, error: segmentError } = await supabase
         .from('loop_segments')
         .select('id, session_id')
-        .eq('transcript_id', null) // Only update segments that don't have transcript yet
+        .is('transcript_id', null) // Only update segments that don't have transcript yet
         .gte('start_time', startTime - 0.1) // Allow small tolerance for floating point precision
         .lte('start_time', startTime + 0.1)
         .gte('end_time', endTime - 0.1)
         .lte('end_time', endTime + 0.1)
-        .in(
-          'session_id',
-          supabase.from('practice_sessions').select('id').eq('video_id', videoId) as any
-        )
+        .in('session_id', sessionIds)
 
       if (segmentError) {
         console.error('Error finding matching segments:', segmentError)

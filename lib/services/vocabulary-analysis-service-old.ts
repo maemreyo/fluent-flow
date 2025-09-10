@@ -1,4 +1,6 @@
-// Vocabulary Analysis Service for extracting and analyzing words from transcripts
+// ❌ DEPRECATED: Vocabulary Analysis Service for extracting and analyzing words from transcripts
+// TODO: Remove this file - replaced by vocabulary-analysis-service.ts
+// This file contains old implementation that is no longer used
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { getFluentFlowStore } from '../stores/fluent-flow-supabase-store'

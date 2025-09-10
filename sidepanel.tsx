@@ -42,6 +42,45 @@ function FluentFlowSidePanelContent() {
   const { user, checkingAuth, signOut } = useAuthentication()
   useVideoTracking()
 
+  // Sync pending loops from content script when sidepanel opens
+  useEffect(() => {
+    const syncPendingLoops = async () => {
+      if (!user || checkingAuth) return
+
+      try {
+        const pendingLoopsKey = 'fluent-flow-pending-loops'
+        const pendingLoops = JSON.parse(localStorage.getItem(pendingLoopsKey) || '[]')
+        
+        if (pendingLoops.length > 0) {
+          console.log(`🔄 FluentFlow: Syncing ${pendingLoops.length} pending loops from content script`)
+          
+          // Save each pending loop to database
+          const { supabaseService } = getFluentFlowStore()
+          for (const loop of pendingLoops) {
+            try {
+              await supabaseService.saveLoop(user.id, loop)
+              console.log(`✅ FluentFlow: Synced loop: ${loop.title}`)
+            } catch (error) {
+              console.error(`❌ FluentFlow: Failed to sync loop ${loop.title}:`, error)
+            }
+          }
+          
+          // Clear pending loops after successful sync
+          localStorage.removeItem(pendingLoopsKey)
+          
+          // Refetch loops to update UI
+          refetchLoops()
+          
+          console.log(`✅ FluentFlow: Completed syncing ${pendingLoops.length} loops`)
+        }
+      } catch (error) {
+        console.error('❌ FluentFlow: Failed to sync pending loops:', error)
+      }
+    }
+
+    syncPendingLoops()
+  }, [user, checkingAuth, refetchLoops])
+
   // Initialize integration service
   useEffect(() => {
     const initializeIntegration = async () => {

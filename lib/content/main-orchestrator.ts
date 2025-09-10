@@ -639,8 +639,19 @@ export class FluentFlowOrchestrator {
           }
         })
         
+        // Request background script to open sidepanel (using correct message type)
+        console.log('🔄 FluentFlow: Requesting sidepanel to open...')
+        chrome.runtime.sendMessage({
+          type: 'OPEN_SIDE_PANEL'
+        }, (response) => {
+          console.log('📬 FluentFlow: Sidepanel open response:', response)
+          if (chrome.runtime.lastError) {
+            console.warn('⚠️ FluentFlow: Failed to request sidepanel open:', chrome.runtime.lastError)
+          }
+        })
+        
         this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
-        this.uiUtilities.showToast(`Exported ${exported.length} loop(s)`)
+        this.uiUtilities.showToast(`Exported ${exported.length} loop(s) - Opening sidepanel`)
         console.log(`🎉 FluentFlow: Successfully exported ${exported.length} loop(s)`)
         
         setTimeout(() => {
@@ -712,8 +723,19 @@ export class FluentFlowOrchestrator {
             }
           })
           
+          // Request background script to open sidepanel (using correct message type)
+          console.log('🔄 FluentFlow: Requesting sidepanel to open...')
+          chrome.runtime.sendMessage({
+            type: 'OPEN_SIDE_PANEL'
+          }, (response) => {
+            console.log('📬 FluentFlow: Sidepanel open response:', response)
+            if (chrome.runtime.lastError) {
+              console.warn('⚠️ FluentFlow: Failed to request sidepanel open:', chrome.runtime.lastError)
+            }
+          })
+          
           this.uiUtilities.updateButtonState('fluent-flow-loop-export', 'active')
-          this.uiUtilities.showToast(`Exported ${exported.length} loop(s) with description`)
+          this.uiUtilities.showToast(`Exported ${exported.length} loop(s) - Opening sidepanel`)
           console.log(`🎉 FluentFlow: Successfully exported ${exported.length} loop(s) with description`)
           
           setTimeout(() => {
