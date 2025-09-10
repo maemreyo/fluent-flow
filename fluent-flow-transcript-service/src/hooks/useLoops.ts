@@ -150,3 +150,105 @@ export function useDeleteLoop(groupId: string) {
     }
   })
 }
+
+// User loops (not tied to specific groups)
+export function useUserLoops() {
+  return useQuery({
+    queryKey: ['user-loops'],
+    queryFn: async (): Promise<LoopWithStats[]> => {
+      const headers = await getAuthHeaders()
+      const response = await fetch('/api/user/loops', {
+        headers
+      })
+      if (!response.ok) {
+        throw new Error('Failed to fetch user loops')
+      }
+      const data = await response.json()
+      return data.loops
+    },
+    // Override global settings for fresh data when users export from YouTube
+    staleTime: 10 * 1000, // 10 seconds - very short to ensure fresh data
+    gcTime: 2 * 60 * 1000, // 2 minutes - short garbage collection
+    refetchOnMount: true, // Always refetch when component mounts
+    refetchOnWindowFocus: true, // Refetch when user comes back to tab
+    refetchOnReconnect: true // Refetch when network reconnects
+  })
+}
+
+export function useCreateUserLoop() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateLoopData) => {
+      // First, extract transcript using the existing API
+      const transcriptResponse = await fetch('/api/transcript', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          videoId: data.videoUrl,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          action: 'getSegment'
+        })
+      })
+
+      if (!transcriptResponse.ok) {
+        const error = await transcriptResponse.json()
+        throw new Error(error.error || 'Failed to extract transcript')
+      }
+
+      const transcript = await transcriptResponse.json()
+
+      // Then create loop using the user API endpoint with auth headers
+      const headers = await getAuthHeaders()
+      const loopResponse = await fetch('/api/user/loops', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          videoUrl: data.videoUrl,
+          videoTitle: transcript.videoInfo?.title || 'YouTube Video',
+          videoId: transcript.videoId,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          transcript: transcript.fullText,
+          segments: transcript.segments,
+          language: transcript.language,
+          metadata: {
+            videoInfo: transcript.videoInfo
+          }
+        })
+      })
+
+      if (!loopResponse.ok) {
+        const error = await loopResponse.json()
+        throw new Error(error.error || 'Failed to create loop')
+      }
+
+      return loopResponse.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-loops'] })
+    }
+  })
+}
+
+export function useDeleteUserLoop() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (loopId: string) => {
+      const headers = await getAuthHeaders()
+      const response = await fetch(`/api/user/loops/${loopId}`, {
+        method: 'DELETE',
+        headers
+      })
+      if (!response.ok) {
+        throw new Error('Failed to delete loop')
+      }
+      return response.json()
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-loops'] })
+    }
+  })
+}

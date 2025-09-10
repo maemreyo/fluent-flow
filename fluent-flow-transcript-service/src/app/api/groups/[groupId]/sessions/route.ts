@@ -163,12 +163,15 @@ export async function POST(
     const body = await request.json()
     const {
       title,
+      description,
       scheduledAt,
+      sessionType = 'instant',
+      notifyMembers = false,
+      loopId,
+      // Legacy support for existing format
       questions,
       shareToken,
-      loopData,
-      notifyMembers = false,
-      sessionType = 'scheduled'
+      loopData
     } = body
 
     // Get user membership and group settings for permission checking
@@ -227,8 +230,78 @@ export async function POST(
 
     const sessionId = uuidv4()
     let finalShareToken = shareToken
-    const questionsData = questions
-    const _loopData = loopData
+    let questionsData = questions
+    let _loopData = loopData
+
+    // Handle new loop-based approach
+    if (loopId && !loopData) {
+      // Import the service role client here to avoid circular imports
+      const { getSupabaseServiceRole } = await import('../../../../../lib/supabase/service-role')
+      const serviceSupabase = getSupabaseServiceRole()
+      
+      if (!serviceSupabase) {
+        return corsResponse({ error: 'Service not configured' }, 500)
+      }
+
+      // Get loop data using service role (since we created it with service role)
+      const { data: loop, error: loopError } = await serviceSupabase
+        .from('practice_sessions')
+        .select(`
+          id,
+          video_id,
+          video_title,
+          video_url,
+          video_duration,
+          metadata,
+          loop_segments!inner (
+            id,
+            start_time,
+            end_time,
+            transcript_id,
+            transcripts (
+              full_text,
+              segments,
+              language
+            )
+          )
+        `)
+        .eq('id', loopId)
+        .eq('user_id', user.id)
+        .eq('metadata->userLoop', 'true')
+        .single()
+
+      if (loopError || !loop) {
+        return corsResponse({ 
+          error: 'Loop not found or access denied' 
+        }, 404)
+      }
+
+      // Extract loop segment and transcript data
+      const segment = loop.loop_segments[0]
+      const transcript = Array.isArray(segment?.transcripts)
+        ? segment.transcripts[0]
+        : segment?.transcripts
+
+      // Convert loop data to the expected format
+      _loopData = {
+        id: loop.id,
+        videoId: loop.video_id,
+        videoTitle: loop.video_title,
+        videoUrl: loop.video_url,
+        startTime: segment?.start_time || 0,
+        endTime: segment?.end_time || loop.video_duration || 0,
+        transcript: transcript?.full_text || '',
+        segments: transcript?.segments || [],
+        language: transcript?.language
+      }
+
+      // Initialize empty questions data for loop-based sessions
+      questionsData = {
+        questions: [],
+        vocabulary: [],
+        transcript: transcript?.full_text || ''
+      }
+    }
 
     // If no shareToken provided but questions/loop provided, create new shared question set
     if (!shareToken && questions && loopData) {

@@ -472,8 +472,68 @@ const supabaseService = {
     return true
   },
 
+  async getAccessToken(): Promise<string | null> {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      return session?.access_token || null
+    } catch (error) {
+      console.error('Failed to get access token:', error)
+      return null
+    }
+  },
+
   async saveLoop(userId: string, loop: SavedLoop): Promise<string> {
-    // Save to Supabase: create or update practice session with loop segment
+    try {
+      const accessToken = await this.getAccessToken()
+      if (!accessToken) {
+        throw new Error('No access token available')
+      }
+
+      // Use the new user loops API instead of direct Supabase access
+      const response = await fetch('https://fluent-flow.vercel.app/api/user/loops', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        },
+        body: JSON.stringify({
+          videoUrl: loop.videoUrl,
+          videoTitle: loop.videoTitle,
+          videoId: loop.videoId,
+          startTime: loop.startTime,
+          endTime: loop.endTime,
+          transcript: loop.transcript || '',
+          segments: loop.segments || [],
+          language: loop.language || 'auto',
+          metadata: {
+            originalLoopId: loop.id,
+            title: loop.title,
+            description: loop.description,
+            createdAt: typeof loop.createdAt === 'string' ? loop.createdAt : loop.createdAt.toISOString(),
+            updatedAt: typeof loop.updatedAt === 'string' ? loop.updatedAt : loop.updatedAt.toISOString(),
+            hasTranscript: loop.hasTranscript || false,
+            transcriptMetadata: loop.transcriptMetadata || null
+          }
+        })
+      })
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || 'Failed to save loop to API')
+      }
+
+      const { loop: savedLoop } = await response.json()
+      return savedLoop.id
+    } catch (error) {
+      console.error('Failed to save loop via API, falling back to direct Supabase:', error)
+      
+      // Fallback to original Supabase method
+      return await this.saveLoopDirectly(userId, loop)
+    }
+  },
+
+  async saveLoopDirectly(userId: string, loop: SavedLoop): Promise<string> {
+    // Original Supabase-direct method as fallback
     const sessionData = {
       user_id: userId,
       video_id: loop.videoId,
