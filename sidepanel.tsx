@@ -242,6 +242,29 @@ function FluentFlowSidePanelContent() {
     }
   }
 
+  const openInApp = async (loop: SavedLoop) => {
+    try {
+      console.log('🚀 FluentFlow: Opening loop in web app:', loop.id, loop.title)
+      
+      if (!user) {
+        console.error('User not authenticated')
+        return
+      }
+
+      // Construct URL to NextJS app with loop ID to highlight it
+      // The app should detect the highlight parameter and scroll to/highlight that loop
+      const appUrl = `https://fluent-flow.vercel.app/groups?highlight=${loop.id}`
+      
+      // Open in new tab
+      window.open(appUrl, '_blank')
+      
+      console.log('✅ FluentFlow: Loop opened in web app with highlight:', loop.id)
+      
+    } catch (error) {
+      console.error('Failed to open loop in web app:', error)
+    }
+  }
+
   return (
     <div className="flex flex-col bg-background">
       <div className="flex-shrink-0 border-b p-4">
@@ -286,6 +309,7 @@ function FluentFlowSidePanelContent() {
               onApplyLoop={applyLoop}
               onDeleteLoop={deleteLoop}
               onExportLoop={exportLoop}
+              onOpenInApp={openInApp}
               applyingLoopId={applyingLoopId}
               deletingAllLoops={deletingAllLoops}
             />

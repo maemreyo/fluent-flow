@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { CheckCircle, Clock, Loader2, Play, Trash2 } from 'lucide-react'
+import { CheckCircle, Clock, Loader2, Play, Trash2, ExternalLink } from 'lucide-react'
 import { useGenerateQuestionsMutation, useQuestionsQuery } from '../../lib/hooks/use-question-query'
 import { useTranscriptQuery } from '../../lib/hooks/use-transcript-query'
 import type {
@@ -24,6 +24,7 @@ interface LoopCardProps {
   integrationService: any
   onApply?: (loop: SavedLoop) => void
   onDelete?: (loopId: string) => void
+  onOpenInApp?: (loop: SavedLoop) => void
   isApplying?: boolean
   className?: string
 }
@@ -33,6 +34,7 @@ export function LoopCard({
   integrationService,
   onApply,
   onDelete,
+  onOpenInApp,
   isApplying = false,
   className = ''
 }: LoopCardProps) {
@@ -403,6 +405,18 @@ export function LoopCard({
             )}
             {isApplying ? 'Applying...' : 'Apply Loop'}
           </Button>
+
+          {onOpenInApp && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onOpenInApp(loop)}
+              title="Open this loop in the web application"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open in App
+            </Button>
+          )}
 
           {/* Show Overlay Button */}
           {/* <Button

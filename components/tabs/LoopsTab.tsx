@@ -16,6 +16,7 @@ interface LoopsTabProps {
   onApplyLoop: (loop: SavedLoop) => Promise<void>
   onDeleteLoop: (loopId: string) => Promise<void>
   onExportLoop: (loop: SavedLoop) => Promise<void>
+  onOpenInApp: (loop: SavedLoop) => Promise<void>
   applyingLoopId: string | null
   deletingAllLoops: boolean
 }
@@ -29,6 +30,7 @@ export function LoopsTab({
   onApplyLoop,
   onDeleteLoop,
   onExportLoop,
+  onOpenInApp,
   applyingLoopId,
   deletingAllLoops
 }: LoopsTabProps) {
@@ -145,6 +147,7 @@ export function LoopsTab({
               integrationService={integrationService}
               onApply={() => onApplyLoop(loop)}
               onDelete={loopId => onDeleteLoop(loopId)}
+              onOpenInApp={() => onOpenInApp(loop)}
               isApplying={applyingLoopId === loop.id}
             />
           ))}

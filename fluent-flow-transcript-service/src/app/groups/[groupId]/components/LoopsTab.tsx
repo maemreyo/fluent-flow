@@ -42,6 +42,33 @@ export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps)
     }
   }
 
+  const handleOpenInExtension = async (loop: any) => {
+    try {
+      console.log('🚀 Opening loop in extension:', loop.id, loop.videoTitle)
+      
+      // Construct the YouTube URL with the video, time, and loop metadata as hash parameters
+      // The extension can read these parameters to auto-load the loop
+      const videoUrl = `https://www.youtube.com/watch?v=${loop.videoId}&t=${Math.floor(loop.startTime)}s#fluent-flow-loop=${encodeURIComponent(JSON.stringify({
+        id: loop.id,
+        title: loop.videoTitle,
+        startTime: loop.startTime,
+        endTime: loop.endTime,
+        videoId: loop.videoId,
+        segments: loop.segments,
+        transcript: loop.transcript
+      }))}`
+      
+      // Open in new tab - the extension will detect the hash and auto-apply the loop
+      window.open(videoUrl, '_blank')
+      
+      // Show a helpful toast message
+      console.log('✅ Loop opened in YouTube. The extension will automatically apply the loop if installed.')
+      
+    } catch (error) {
+      console.error('Failed to open loop in extension:', error)
+    }
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -113,6 +140,7 @@ export function LoopsTab({ groupId, canManage, onCreateSession }: LoopsTabProps)
               canManage={canManage}
               onDelete={() => handleDeleteLoop(loop.id)}
               onCreateSession={() => handlePracticeLoop(loop)}
+              onOpenInExtension={() => handleOpenInExtension(loop)}
             />
           ))}
         </div>
