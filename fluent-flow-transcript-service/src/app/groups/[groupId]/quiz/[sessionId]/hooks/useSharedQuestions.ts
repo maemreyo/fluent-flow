@@ -76,6 +76,7 @@ export function useSharedQuestions({
       }
 
       // Return empty state if no questions found
+      console.log('⚠️ [useSharedQuestions] No questions found in API response:', questionsData)
       return {
         shareTokens: {},
         generatedCounts: { easy: 0, medium: 0, hard: 0 },
@@ -89,15 +90,19 @@ export function useSharedQuestions({
     refetchOnMount: false // CRITICAL: Don't refetch if cache exists
   })
 
-  // // Debug cache status
-  // console.log('🔍 [useSharedQuestions] Cache status:', {
-  //   hasData: !!data,
-  //   isLoading,
-  //   isFetching,
-  //   isStale,
-  //   dataAge: dataUpdatedAt ? `${Math.floor((Date.now() - dataUpdatedAt) / 1000)}s ago` : 'never',
-  //   cacheKey: quizQueryKeys.sessionQuestions(groupId, sessionId)
-  // })
+  // Debug cache status for active/preview pages
+  if (typeof window !== 'undefined' && (window.location.pathname.includes('/active') || window.location.pathname.includes('/preview'))) {
+    console.log('🔍 [useSharedQuestions] Cache status:', {
+      hasData: !!data,
+      shareTokensCount: data ? Object.keys(data.shareTokens).length : 0,
+      isLoading,
+      isFetching,
+      error: error?.message,
+      isStale,
+      dataAge: dataUpdatedAt ? `${Math.floor((Date.now() - dataUpdatedAt) / 1000)}s ago` : 'never',
+      cacheKey: quizQueryKeys.sessionQuestions(groupId, sessionId)
+    })
+  }
 
   return {
     // Data

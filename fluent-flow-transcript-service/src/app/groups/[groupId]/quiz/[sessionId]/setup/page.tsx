@@ -80,9 +80,43 @@ export default function SetupPage({ params }: SetupPageProps) {
     onMemberResetToPresets: () => window.location.reload(),
     // Pass shareTokens to session storage for later use by preview page
     onMemberLoadQuestions: (shareTokens) => {
-      console.log('📚 Member storing shareTokens for preview page:', shareTokens)
+      console.log('📚 [Setup] Member received shareTokens:', shareTokens)
+      console.log('📚 [Setup] ShareTokens keys:', Object.keys(shareTokens || {}))
+      console.log('📚 [Setup] SessionId for storage:', sessionId)
+      
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem(`quiz-shareTokens-${sessionId}`, JSON.stringify(shareTokens))
+        const storageKey = `quiz-shareTokens-${sessionId}`
+        console.log('📚 [Setup] Storing with key:', storageKey)
+        
+        try {
+          const tokenString = JSON.stringify(shareTokens)
+          sessionStorage.setItem(storageKey, tokenString)
+          console.log('✅ [Setup] ShareTokens stored successfully')
+          
+          // Verify storage worked
+          const retrieved = sessionStorage.getItem(storageKey)
+          console.log('✅ [Setup] Verification - retrieved value:', retrieved)
+          
+          // CRITICAL FIX: Navigate to preview with shareTokens in URL
+          if (shareTokens && Object.keys(shareTokens).length > 0) {
+            try {
+              const encodedTokens = btoa(JSON.stringify(shareTokens))
+              const previewUrl = `/groups/${groupId}/quiz/${sessionId}/preview/${encodedTokens}`
+              console.log('🚀 [Setup] Navigating to preview with tokens:', previewUrl)
+              window.location.href = previewUrl
+            } catch (error) {
+              console.error('❌ [Setup] Failed to encode shareTokens for URL:', error)
+              // Fallback to regular navigation
+              navigateToInfo()
+            }
+          } else {
+            console.log('🔄 [Setup] No shareTokens to encode, using regular navigation')
+            navigateToInfo()
+          }
+        } catch (error) {
+          console.error('❌ [Setup] Failed to store shareTokens:', error)
+          navigateToInfo() // Fallback navigation
+        }
       }
     }
   })

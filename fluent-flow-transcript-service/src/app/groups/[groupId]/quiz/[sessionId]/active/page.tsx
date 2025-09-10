@@ -14,6 +14,44 @@ interface ActivePageProps {
 export default function ActivePage({ params }: ActivePageProps) {
   const { groupId, sessionId } = use(params)
 
+  // Extract shareTokens from URL params for reliable question loading
+  const getShareTokensFromUrl = () => {
+    if (typeof window === 'undefined') return {}
+    
+    console.log('🔍 [Active Page] Current URL:', window.location.href)
+    console.log('🔍 [Active Page] Search params:', window.location.search)
+    
+    const urlParams = new URLSearchParams(window.location.search)
+    const tokens: Record<string, string> = {}
+    
+    // Look for difficulty tokens in URL params
+    const difficulties = ['easy', 'medium', 'hard']
+    difficulties.forEach(difficulty => {
+      const token = urlParams.get(`${difficulty}Token`)
+      if (token) {
+        tokens[difficulty] = token
+        console.log(`🔗 Found ${difficulty}Token in URL:`, token.substring(0, 10) + '...')
+      }
+    })
+    
+    if (Object.keys(tokens).length > 0) {
+      console.log('🔗 Found shareTokens in URL params:', tokens)
+      
+      // Store in sessionStorage for useGroupQuiz hook to pick up
+      sessionStorage.setItem(`quiz-shareTokens-${sessionId}`, JSON.stringify(tokens))
+      console.log('💾 Stored shareTokens in sessionStorage for sessionId:', sessionId)
+    } else {
+      console.log('❌ No shareTokens found in URL params')
+    }
+    
+    return tokens
+  }
+
+  // Initialize shareTokens from URL on mount
+  useEffect(() => {
+    getShareTokensFromUrl()
+  }, [sessionId])
+
   const {
     session,
     group,

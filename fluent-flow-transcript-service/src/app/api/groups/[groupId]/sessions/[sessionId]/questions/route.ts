@@ -20,13 +20,50 @@ export async function GET(
       return corsResponse({ error: 'Authentication required' }, 401)
     }
 
+    // Check if user has access to this group/session
+    const { data: membership, error: memberError } = await supabase!
+      .from('study_group_members')
+      .select('role, user_id')
+      .eq('group_id', groupId)
+      .eq('user_id', user.id)
+      .single()
+
+    console.log('👥 [questions/route] Membership check:', { 
+      userId: user.id,
+      groupId,
+      membership: membership?.role,
+      memberError: memberError?.message
+    })
+
+    if (memberError || !membership) {
+      console.log('❌ [questions/route] Access denied - not a group member')
+      return corsResponse({ error: 'Access denied - not a group member' }, 403)
+    }
+
     // Get questions for this session by difficulty
+    console.log('🔍 [questions/route] Fetching questions for:', { 
+      sessionId, 
+      groupId, 
+      userId: user.id,
+      userEmail: user.email 
+    })
+    
     const { data: questionSets, error } = await supabase!
       .from('shared_question_sets')
       .select('*')
       .eq('session_id', sessionId)
       .eq('group_id', groupId)
       .order('created_at', { ascending: false })
+
+    console.log('📊 [questions/route] Query result:', { 
+      questionSetsCount: questionSets?.length || 0,
+      error: error?.message,
+      questionSets: questionSets?.map(qs => ({ 
+        id: qs.id, 
+        difficulty: qs.metadata?.difficulty,
+        questionsCount: qs.questions?.length 
+      }))
+    })
 
     if (error) {
       console.error('Failed to fetch session questions:', error)

@@ -344,10 +344,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
       // Use shareTokens from either cache or session storage
       if (Object.keys(shareTokensToUse).length > 0) {
-        console.log(
-          '🎯 [CACHE-POWERED] Loading questions from shareTokens:',
-          shareTokensToUse
-        )
+        console.log('🎯 [CACHE-POWERED] Loading questions from shareTokens:', shareTokensToUse)
         try {
           await loadQuestionsFromShareTokens(shareTokensToUse)
           // Only change appState if we're in preset-selection (initial load)
@@ -362,6 +359,32 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         }
       } else {
         console.log('📭 No existing questions found in cache or session storage')
+        console.log('🔍 Debug info:', {
+          appState,
+          existingShareTokens,
+          questionsLoading,
+          sessionId,
+          sessionStorageKey: `quiz-shareTokens-${sessionId}`,
+          sessionStorageValue:
+            typeof window !== 'undefined'
+              ? sessionStorage.getItem(`quiz-shareTokens-${sessionId}`)
+              : 'N/A'
+        })
+
+        // DEBUG: Log why no shareTokens are available
+        if (
+          typeof window !== 'undefined' &&
+          (window.location.pathname.includes('/active') ||
+            window.location.pathname.includes('/preview'))
+        ) {
+          console.log('🔍 No shareTokens available on quiz page:', {
+            currentPath: window.location.pathname,
+            appState,
+            needsQuestions: appState === 'quiz-active' || appState === 'question-preview',
+            hasCache: Object.keys(existingShareTokens).length > 0,
+            questionsLoading
+          })
+        }
       }
     }
 
@@ -373,7 +396,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     questionsLoading,
     loadQuestionsFromShareTokens,
     setAppState,
-    sessionId
+    sessionId,
+    groupId
   ])
 
   // Quiz functionality (reused from individual quiz)
