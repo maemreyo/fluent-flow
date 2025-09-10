@@ -11,7 +11,6 @@ import {
   TooltipTrigger
 } from '../../../../../../components/ui/tooltip'
 import { QuestionNavigationBar } from './QuestionNavigationBar'
-import { QuizSettingsPanel } from './QuizSettingsPanel'
 
 interface GroupQuizActiveViewProps {
   currentQuestion: {
@@ -312,10 +311,11 @@ export function GroupQuizActiveView({
   // Calculate questions answered in current set for progress bar - FIXED
   const currentSetStartIndex = questionIndex - currentQuestionIndex
   const currentSetEndIndex = currentSetStartIndex + totalQuestionsInSet - 1
-  const answeredQuestionsInSet = responses.filter(response => 
-    response.questionIndex >= currentSetStartIndex && 
-    response.questionIndex <= currentSetEndIndex &&
-    response.answer
+  const answeredQuestionsInSet = responses.filter(
+    response =>
+      response.questionIndex >= currentSetStartIndex &&
+      response.questionIndex <= currentSetEndIndex &&
+      response.answer
   ).length
 
   return (
@@ -378,7 +378,7 @@ export function GroupQuizActiveView({
       </div>
 
       {/* Compact Quiz Settings */}
-      <QuizSettingsPanel settings={quizSettings} compact />
+      {/* <QuizSettingsPanel settings={quizSettings} compact /> */}
 
       {/* Question Navigation */}
       {onNavigateToQuestion && onNavigatePrevious && onNavigateNext && (
@@ -392,7 +392,10 @@ export function GroupQuizActiveView({
                 // Calculate the global index range for current set
                 const currentSetStartIndex = questionIndex - currentQuestionIndex
                 const currentSetEndIndex = currentSetStartIndex + totalQuestionsInSet - 1
-                return response.questionIndex >= currentSetStartIndex && response.questionIndex <= currentSetEndIndex
+                return (
+                  response.questionIndex >= currentSetStartIndex &&
+                  response.questionIndex <= currentSetEndIndex
+                )
               })
               .map(response => ({
                 ...response,

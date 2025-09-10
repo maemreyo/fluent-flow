@@ -1,14 +1,14 @@
 'use client'
 
 import { use, useCallback } from 'react'
+import { CheckingResultsModal } from '../../../../../../components/groups/quiz/CheckingResultsModal'
+import { ExistingResultsModal } from '../../../../../../components/groups/quiz/ExistingResultsModal'
 import { PermissionManager } from '../../../../../../lib/permissions'
 import { GroupQuizPreview } from '../components/GroupQuizPreview'
-import { useQuizFlow } from '../shared/hooks/useQuizFlow'
-import { useQuizSync } from '../hooks/useQuizSync'
-import { useGroupQuestionGeneration } from '../hooks/useQuestionGeneration'
 import { useExistingResultsCheck } from '../hooks/useExistingResultsCheck'
-import { ExistingResultsModal } from '../../../../../../components/groups/quiz/ExistingResultsModal'
-import { CheckingResultsModal } from '../../../../../../components/groups/quiz/CheckingResultsModal'
+import { useGroupQuestionGeneration } from '../hooks/useQuestionGeneration'
+import { useQuizSync } from '../hooks/useQuizSync'
+import { useQuizFlow } from '../shared/hooks/useQuizFlow'
 
 interface PreviewPageProps {
   params: Promise<{
@@ -32,7 +32,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
   } = useQuizFlow({ groupId, sessionId })
 
   const { shareTokens } = useGroupQuestionGeneration(groupId, sessionId)
-  
+
   // Existing results checking hook
   const {
     showExistingResultsModal,
@@ -48,7 +48,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
     userId: user?.id,
     enabled: true
   })
-  
+
   // Role-based permissions
   const permissions = new PermissionManager(user, group, session)
 
@@ -68,7 +68,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
 
     // Check for existing results first if user is authenticated
     const hasExistingResults = await checkForExistingResults()
-    
+
     if (!hasExistingResults) {
       // No existing results - proceed with quiz start
       await startQuizDirectly()
@@ -77,24 +77,31 @@ export default function PreviewPage({ params }: PreviewPageProps) {
 
   const startQuizDirectly = useCallback(async () => {
     console.log('▶️ Starting quiz directly (no existing results)')
-    
+
     // CRITICAL: Set appState to 'quiz-active' BEFORE navigation to prevent redirect back to setup
     await handleStartQuizFromPreview(shareTokens)
 
     // Broadcast session start to all participants with shareTokens
     if (permissions.canManageQuiz()) {
-      const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', shareTokens)
-      if (success) {
-        console.log('✅ Quiz session start broadcasted from preview, navigating to active')
-        
-        // Navigate to active quiz immediately - no delay needed since appState is already set
-        navigateToActive()
-      }
+      // const success = await broadcastQuizSessionStart(session?.quiz_title || 'Quiz Session', shareTokens)
+      // if (success) {
+      //   console.log('✅ Quiz session start broadcasted from preview, navigating to active')
+
+      // Navigate to active quiz immediately - no delay needed since appState is already set
+      navigateToActive()
+      // }
     } else {
       // For non-managers, just navigate directly
       navigateToActive()
     }
-  }, [shareTokens, permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToActive, handleStartQuizFromPreview])
+  }, [
+    shareTokens,
+    permissions,
+    broadcastQuizSessionStart,
+    session?.quiz_title,
+    navigateToActive,
+    handleStartQuizFromPreview
+  ])
 
   // Handle existing results modal actions with hook integration
   const handleGoBackToPresets = useCallback(() => {
@@ -126,7 +133,7 @@ export default function PreviewPage({ params }: PreviewPageProps) {
       {/* Checking Results Modal */}
       <CheckingResultsModal isOpen={isCheckingExistingResults} />
 
-      <div className="mx-auto max-w-8xl">
+      <div className="max-w-8xl mx-auto">
         <GroupQuizPreview
           difficultyGroups={difficultyGroups}
           onStartQuiz={handleStartQuiz}

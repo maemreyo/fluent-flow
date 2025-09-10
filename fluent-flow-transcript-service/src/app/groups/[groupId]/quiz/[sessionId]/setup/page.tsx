@@ -77,7 +77,14 @@ export default function SetupPage({ params }: SetupPageProps) {
     canManage: permissions.canManageQuiz(),
     enabled: true,
     onMemberStartQuizInfo: navigateToInfo,
-    onMemberResetToPresets: () => window.location.reload()
+    onMemberResetToPresets: () => window.location.reload(),
+    // Pass shareTokens to session storage for later use by preview page
+    onMemberLoadQuestions: (shareTokens) => {
+      console.log('📚 Member storing shareTokens for preview page:', shareTokens)
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem(`quiz-shareTokens-${sessionId}`, JSON.stringify(shareTokens))
+      }
+    }
   })
 
   const handlePresetSelect = useCallback((preset: any) => {

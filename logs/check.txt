@@ -1,0 +1,14 @@
+useGroupQuiz.ts:283 ⚠️ No state match, staying in current state
+useGroupQuiz.ts:314 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:261 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:314 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:364 📭 No existing questions found in cache or session storage
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:261 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:314 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:261 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:314 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:364 📭 No existing questions found in cache or session storage
+AuthContext.tsx:82 Auth Context: Auth state changed: INITIAL_SESSION
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useRealtimeSession.ts:60 New users joined: [{…}]

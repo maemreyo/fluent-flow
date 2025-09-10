@@ -80,11 +80,9 @@ export function useQuizEventHandlers({
           duration: 3000
         })
         
-        // Transition member to question-preview state  
-        setTimeout(() => {
-          console.log('🎯 Member transitioning to question-preview state')
-          onMemberStartQuizInfo()
-        }, 1000) // 1 second delay for smooth transition
+        // FIXED: Immediate navigation without delay to prevent staying on setup page
+        console.log('🎯 Member transitioning to question-preview state immediately')
+        onMemberStartQuizInfo()
       }
       
     } else if (canManage) {

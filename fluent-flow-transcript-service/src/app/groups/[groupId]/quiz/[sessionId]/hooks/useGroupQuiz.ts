@@ -249,10 +249,30 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
       //   currentAppState: appState
       // })
 
-      // CRITICAL FIX: Only initialize to preset-selection if we're truly in a loading state
-      // Preserve any advanced states like 'quiz-active'
-      if (appState === 'loading') {
-        // console.log('📝 Initializing appState from loading to: preset-selection')
+      // CRITICAL FIX: Check current page and set appropriate state
+      if (typeof window !== 'undefined') {
+        const pathname = window.location.pathname
+        const isOnPreviewPage = pathname.includes('/preview')
+        const isOnActivePage = pathname.includes('/active')
+        
+        if (appState === 'loading') {
+          if (isOnActivePage) {
+            // Members navigated to active page should go to quiz-active state
+            console.log('📝 Member on active page: transitioning from loading to quiz-active')
+            setAppState('quiz-active')
+          } else if (isOnPreviewPage) {
+            // Members navigated to preview page should go to question-preview state
+            console.log('📝 Member on preview page: transitioning from loading to question-preview')
+            setAppState('question-preview')
+          } else {
+            // Default initialization for other pages
+            console.log('📝 Initializing appState from loading to: preset-selection')
+            setAppState('preset-selection')
+          }
+        }
+      } else if (appState === 'loading') {
+        // Fallback for server-side rendering
+        console.log('📝 Server-side: Initializing appState from loading to: preset-selection')
         setAppState('preset-selection')
       } else {
         // console.log(
@@ -304,14 +324,32 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         return
       }
 
-      // Use cached shareTokens from useSharedQuestions instead of direct fetch
-      if (Object.keys(existingShareTokens).length > 0) {
+      // MEMBER FIX: Check for shareTokens from session storage (from quiz start event)
+      let shareTokensToUse = existingShareTokens
+      
+      if (Object.keys(shareTokensToUse).length === 0 && typeof window !== 'undefined') {
+        const storedShareTokens = sessionStorage.getItem(`quiz-shareTokens-${sessionId}`)
+        if (storedShareTokens) {
+          try {
+            const parsedTokens = JSON.parse(storedShareTokens)
+            console.log('📦 Found shareTokens in sessionStorage for members:', parsedTokens)
+            shareTokensToUse = parsedTokens
+            // Clear from session storage after use
+            sessionStorage.removeItem(`quiz-shareTokens-${sessionId}`)
+          } catch (error) {
+            console.warn('Failed to parse shareTokens from sessionStorage:', error)
+          }
+        }
+      }
+
+      // Use shareTokens from either cache or session storage
+      if (Object.keys(shareTokensToUse).length > 0) {
         console.log(
-          '🎯 [CACHE-POWERED] Loading questions from existing shareTokens:',
-          existingShareTokens
+          '🎯 [CACHE-POWERED] Loading questions from shareTokens:',
+          shareTokensToUse
         )
         try {
-          await loadQuestionsFromShareTokens(existingShareTokens)
+          await loadQuestionsFromShareTokens(shareTokensToUse)
           // Only change appState if we're in preset-selection (initial load)
           // For other states like quiz-active, keep the existing state
           if (appState === 'preset-selection') {
@@ -320,10 +358,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
             console.log(`✅ Questions loaded for ${appState} state - preserving current appState`)
           }
         } catch (error) {
-          console.warn('Failed to load questions from cached shareTokens:', error)
+          console.warn('Failed to load questions from shareTokens:', error)
         }
       } else {
-        console.log('📭 No existing questions found in cache')
+        console.log('📭 No existing questions found in cache or session storage')
       }
     }
 
@@ -334,7 +372,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     existingShareTokens,
     questionsLoading,
     loadQuestionsFromShareTokens,
-    setAppState
+    setAppState,
+    sessionId
   ])
 
   // Quiz functionality (reused from individual quiz)

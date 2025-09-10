@@ -15,7 +15,6 @@ import {
 import { Badge } from '../../../../../../components/ui/badge'
 import { Button } from '../../../../../../components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../../../components/ui/tabs'
-import { QuizSettingsPanel } from './QuizSettingsPanel'
 
 interface Question {
   id: string
@@ -172,9 +171,9 @@ export function GroupQuizPreview({
           </div>
 
           {/* Quiz Settings Panel */}
-          <div className="mb-8">
+          {/* <div className="mb-8">
             <QuizSettingsPanel settings={quizSettings} />
-          </div>
+          </div> */}
 
           {/* Question Sets in Tabs */}
           <Tabs defaultValue="set-0" className="w-full">
