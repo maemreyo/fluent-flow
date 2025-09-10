@@ -1,162 +1,121 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { BookOpen, Plus } from 'lucide-react'
-import { useGroupsData } from '@/app/groups/hooks/useGroupsData'
+import { useState } from 'react'
 import { CreateLoopModal } from '@/components/loops/CreateLoopModal'
 import { CreateSessionModal } from '@/components/loops/CreateSessionModal'
-import { LoopCard } from '@/components/loops/LoopCard'
-import { useDeleteUserLoop, useUserLoops } from '@/hooks/useLoops'
-import { supabase } from '@/lib/supabase/client'
+import { PagesNavigation } from '@/components/navigation/PagesNavigation'
+import { useGroupsData } from '../groups/hooks/useGroupsData'
+import { useUserLoops } from '@/hooks/useLoops'
+import { AuthPrompt } from '../../components/auth/AuthPrompt'
+import { useAuth } from '../../contexts/AuthContext'
+import { LoopsEmptyState } from './components/LoopsEmptyState'
+import { LoopsGrid } from './components/LoopsGrid'
+import { LoopsHeader } from './components/LoopsHeader'
+import { LoopsLoadingSkeleton } from './components/LoopsLoadingSkeleton'
 
 export default function LoopsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSessionModal, setShowSessionModal] = useState(false)
   const [selectedLoopId, setSelectedLoopId] = useState<string | null>(null)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  // Check authentication
-  useEffect(() => {
-    const checkAuth = async () => {
-      const {
-        data: { session }
-      } = await supabase!.auth.getSession()
-      setIsAuthenticated(!!session)
-    }
-    checkAuth()
-  }, [])
-
+  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth()
   const { data: loops = [], isLoading, error } = useUserLoops()
   const { myGroupsQuery } = useGroupsData({ isAuthenticated })
   const userGroups = myGroupsQuery.data || []
-  const deleteMutation = useDeleteUserLoop()
-
-  const handleDeleteLoop = async (loopId: string) => {
-    if (
-      window.confirm('Are you sure you want to delete this loop? This action cannot be undone.')
-    ) {
-      try {
-        await deleteMutation.mutateAsync(loopId)
-      } catch (error) {
-        console.error('Failed to delete loop:', error)
-      }
-    }
-  }
+  const filteredLoops = loops.filter(
+    loop =>
+      loop.videoTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      loop.transcript?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      loop.language?.toLowerCase().includes(searchQuery.toLowerCase())
+  )
 
   const handleCreateSession = (loopId: string) => {
     setSelectedLoopId(loopId)
     setShowSessionModal(true)
   }
 
-  const handleOpenInExtension = async (loop: any) => {
-    try {
-      console.log('🚀 Opening loop in extension:', loop.id, loop.videoTitle)
-
-      // Construct the YouTube URL with the video, time, and loop metadata as hash parameters
-      // The extension can read these parameters to auto-load the loop
-      const videoUrl = `https://www.youtube.com/watch?v=${loop.videoId}&t=${Math.floor(loop.startTime)}s#fluent-flow-loop=${encodeURIComponent(
-        JSON.stringify({
-          id: loop.id,
-          title: loop.videoTitle,
-          startTime: loop.startTime,
-          endTime: loop.endTime,
-          videoId: loop.videoId,
-          segments: loop.segments,
-          transcript: loop.transcript
-        })
-      )}`
-
-      // Open in new tab - the extension will detect the hash and auto-apply the loop
-      window.open(videoUrl, '_blank')
-
-      console.log(
-        '✅ Loop opened in YouTube. The extension will automatically apply the loop if installed.'
-      )
-    } catch (error) {
-      console.error('Failed to open loop in extension:', error)
-    }
+  const handlePlayLoop = (loop: any) => {
+    // Navigate to practice session or open in extension
+    const videoUrl = `https://www.youtube.com/watch?v=${loop.videoId}&t=${Math.floor(loop.startTime)}s#fluent-flow-loop=${encodeURIComponent(
+      JSON.stringify({
+        id: loop.id,
+        title: loop.videoTitle,
+        startTime: loop.startTime,
+        endTime: loop.endTime,
+        videoId: loop.videoId,
+        segments: loop.segments,
+        transcript: loop.transcript
+      })
+    )}`
+    window.open(videoUrl, '_blank')
   }
 
-  if (isLoading) {
+  const handleCloseAuthPrompt = () => {
+    // Handle auth prompt close
+  }
+
+  const handleAuthSuccess = () => {
+    // Handle auth success
+  }
+
+  if (authLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">My Loops</h1>
-            <div className="h-10 w-32 animate-pulse rounded-lg bg-gray-200"></div>
-          </div>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-48 animate-pulse rounded-xl bg-gray-100 p-6"></div>
-            ))}
-          </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-lg text-gray-600">Loading...</div>
         </div>
       </div>
     )
   }
 
-  if (error) {
+  if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
-        <div className="mx-auto max-w-7xl">
-          <div className="rounded-lg bg-red-50 p-6 text-center">
-            <h3 className="mb-2 text-lg font-medium text-red-800">Error Loading Loops</h3>
-            <p className="text-red-600">Failed to load your loops. Please try again.</p>
-          </div>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <AuthPrompt
+          onClose={handleCloseAuthPrompt}
+          onAuthSuccess={handleAuthSuccess}
+          title="Access Your Loops"
+          subtitle="Sign in to create and manage your personal practice loops from YouTube videos"
+        />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-7xl space-y-8">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">My Loops</h1>
-            <p className="mt-1 text-gray-600">
-              YouTube video segments with transcripts for focused practice
-            </p>
-          </div>
-          <button
-            onClick={() => setShowCreateModal(true)}
-            className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-white transition-colors hover:bg-indigo-700"
-          >
-            <Plus className="h-4 w-4" />
-            Create Loop
-          </button>
+    <>
+      <PagesNavigation />
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-20">
+        <div className="pointer-events-none fixed inset-0 overflow-hidden">
+          <div className="animate-blob absolute left-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 mix-blend-multiply blur-xl filter"></div>
+          <div className="animate-blob animation-delay-2000 absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 mix-blend-multiply blur-xl filter"></div>
+          <div className="animate-blob animation-delay-4000 absolute -bottom-8 left-20 h-72 w-72 rounded-full bg-gradient-to-r from-pink-400/20 to-orange-400/20 mix-blend-multiply blur-xl filter"></div>
         </div>
 
-        {loops.length === 0 ? (
-          <div className="py-16 text-center">
-            <BookOpen className="mx-auto mb-6 h-20 w-20 text-gray-300" />
-            <h3 className="mb-3 text-xl font-medium text-gray-900">No Practice Loops</h3>
-            <p className="mx-auto mb-8 max-w-md text-gray-600">
-              Create your first loop from a YouTube video to start practicing with AI-generated
-              questions. You can then use these loops to create group sessions.
-            </p>
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-white transition-colors hover:bg-indigo-700"
-            >
-              <Plus className="h-5 w-5" />
-              Create Your First Loop
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {loops.map(loop => (
-              <LoopCard
-                key={loop.id}
-                loop={loop}
-                canManage={true}
-                onDelete={() => handleDeleteLoop(loop.id)}
-                onCreateSession={() => handleCreateSession(loop.id)}
-                onOpenInExtension={() => handleOpenInExtension(loop)}
-              />
-            ))}
-          </div>
-        )}
+        <div className="container relative z-10 mx-auto max-w-7xl px-6 py-8">
+          <LoopsHeader
+            user={user}
+            isAuthenticated={isAuthenticated}
+            signOut={signOut}
+            handleCreateLoop={() => setShowCreateModal(true)}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+          />
+
+          {isLoading ? (
+            <LoopsLoadingSkeleton />
+          ) : error ? (
+            <div className="text-center text-red-500">Error fetching loops: {error?.message}</div>
+          ) : filteredLoops.length === 0 ? (
+            <LoopsEmptyState handleCreateLoop={() => setShowCreateModal(true)} />
+          ) : (
+            <LoopsGrid
+              loops={filteredLoops}
+              onCreateSession={handleCreateSession}
+              onPlayLoop={handlePlayLoop}
+            />
+          )}
+        </div>
 
         {/* Modals */}
         {showCreateModal && (
@@ -181,6 +140,6 @@ export default function LoopsPage() {
           />
         )}
       </div>
-    </div>
+    </>
   )
 }

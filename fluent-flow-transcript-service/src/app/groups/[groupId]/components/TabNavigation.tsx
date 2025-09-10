@@ -1,8 +1,8 @@
 'use client'
 
-import { Calendar, Play, Settings, Users, BookOpen } from 'lucide-react'
+import { Calendar, Play, Settings, Users } from 'lucide-react'
 
-export type GroupTab = 'overview' | 'members' | 'sessions' | 'loops' | 'settings'
+export type GroupTab = 'overview' | 'members' | 'sessions' | 'settings'
 
 interface TabNavigationProps {
   activeTab: GroupTab
@@ -19,7 +19,6 @@ export function TabNavigation({
     { id: 'overview', label: 'Overview', icon: Calendar },
     { id: 'members', label: 'Members', icon: Users },
     { id: 'sessions', label: 'Sessions', icon: Play },
-    { id: 'loops', label: 'Loops', icon: BookOpen },
     ...(canManage ? [{ id: 'settings', label: 'Settings', icon: Settings }] : [])
   ]
 

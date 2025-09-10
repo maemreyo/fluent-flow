@@ -10,7 +10,6 @@ import { useAuth } from '../../../contexts/AuthContext'
 import { PermissionManager } from '../../../lib/permissions'
 import { SessionRedirectManager } from '../../../lib/supabase/auth-utils'
 import { GroupHeader } from './components/GroupHeader'
-import { LoopsTab } from './components/LoopsTab'
 import { MembersTab } from './components/MembersTab'
 import { OverviewTab } from './components/OverviewTab'
 import { SettingsTab } from './components/SettingsTab'
@@ -252,13 +251,6 @@ export default function GroupPage({
                 canManageQuiz={permissions.canManageQuiz()}
                 onCreateSession={handleCreateSession}
                 highlightSessionId={highlightSessionId}
-              />
-            )}
-            {activeTab === 'loops' && (
-              <LoopsTab
-                groupId={groupId}
-                canManage={!!canManage}
-                onCreateSession={handleCreateSession}
               />
             )}
             {activeTab === 'settings' && canManage && (
