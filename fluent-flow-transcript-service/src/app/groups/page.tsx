@@ -1,32 +1,47 @@
 'use client'
 
-import { useState } from 'react'
-import { PagesNavigation } from '@/components/navigation/PagesNavigation'
-import { AuthPrompt } from '../../components/auth/AuthPrompt'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { UserPlus, Plus } from 'lucide-react'
+import { AuthenticatedPage } from '../../components/pages/shared/AuthenticatedPage'
+import { PageHeader } from '../../components/pages/shared/PageHeader'
+import { SearchableGrid } from '../../components/pages/shared/SearchableGrid'
 import { useAuth } from '../../contexts/AuthContext'
+import { usePageSearch } from '../../hooks/shared/usePageSearch'
 import { CreateGroupModal } from './components/CreateGroupModal'
 import { EmptyState } from './components/EmptyState'
-import { GroupsGrid } from './components/GroupsGrid'
-import { GroupsHeader } from './components/GroupsHeader'
-import { GroupsLoadingSkeleton } from './components/GroupsLoadingSkeleton'
+import { GroupCardAdapter } from './components/GroupCardAdapter'
 import { JoinGroupModal } from './components/JoinGroupModal'
 import { useGroupsData } from './hooks/useGroupsData'
+import { Group } from './types'
 
 export default function GroupsPage() {
   const [activeTab, setActiveTab] = useState<'my-groups' | 'public'>('my-groups')
-  const [searchQuery, setSearchQuery] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showJoinModal, setShowJoinModal] = useState(false)
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false)
+  const searchParams = useSearchParams()
 
-  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth()
+  const { isAuthenticated } = useAuth()
+
+  // Handle URL actions
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    const action = searchParams.get('action')
+    
+    if (tab === 'public') {
+      setActiveTab('public')
+    }
+    
+    if (action === 'create') {
+      setShowCreateModal(true)
+    }
+  }, [searchParams])
 
   const {
     getGroupsForTab,
     getLoadingStateForTab,
     getErrorStateForTab,
     prefetchTab,
-    invalidateTab,
     invalidateAllGroups
   } = useGroupsData({ isAuthenticated })
 
@@ -35,35 +50,21 @@ export default function GroupsPage() {
   const groupsLoading = getLoadingStateForTab(activeTab)
   const { isError, error } = getErrorStateForTab(activeTab)
 
-  const filteredGroups = groups.filter(
-    group =>
-      group.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      group.language.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+  // Search functionality
+  const { searchQuery, setSearchQuery, filteredData: filteredGroups } = usePageSearch<Group>({
+    data: groups,
+    searchFields: ['name', 'description', 'language']
+  })
 
   const handleAuthSuccess = () => {
-    setShowAuthPrompt(false)
     invalidateAllGroups()
   }
 
-  const handleCloseAuthPrompt = () => {
-    setShowAuthPrompt(false)
-  }
-
   const handleCreateGroup = () => {
-    if (!isAuthenticated) {
-      setShowAuthPrompt(true)
-      return
-    }
     setShowCreateModal(true)
   }
 
   const handleJoinGroup = () => {
-    if (!isAuthenticated) {
-      setShowAuthPrompt(true)
-      return
-    }
     setShowJoinModal(true)
   }
 
@@ -72,95 +73,63 @@ export default function GroupsPage() {
     invalidateAllGroups()
   }
 
-  const handlePrefetchTab = (tab: 'my-groups' | 'public') => {
-    // Chỉ prefetch nếu không phải tab hiện tại
-    if (tab !== activeTab) {
-      prefetchTab(tab)
-    }
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-lg text-gray-600">Loading...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AuthPrompt
-          onClose={handleCloseAuthPrompt}
-          onAuthSuccess={handleAuthSuccess}
-          title="Join Study Groups!"
-          subtitle="Sign in to create, join, and manage study groups with your classmates"
-        />
-      </div>
-    )
-  }
 
   return (
-    <>
-      <PagesNavigation />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-20">
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="animate-blob absolute left-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 mix-blend-multiply blur-xl filter"></div>
-          <div className="animate-blob animation-delay-2000 absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 mix-blend-multiply blur-xl filter"></div>
-          <div className="animate-blob animation-delay-4000 absolute -bottom-8 left-20 h-72 w-72 rounded-full bg-gradient-to-r from-pink-400/20 to-orange-400/20 mix-blend-multiply blur-xl filter"></div>
-        </div>
+    <AuthenticatedPage
+      title="Study Groups"
+      subtitle="Sign in to create, join, and manage study groups with your classmates"
+      onAuthSuccess={handleAuthSuccess}
+    >
+      <PageHeader
+        title="Study Groups"
+        subtitle="Join or create groups to learn together and track progress"
+        tabs={[
+          { key: 'my-groups', label: 'My Groups', onPrefetch: () => prefetchTab('my-groups') },
+          { key: 'public', label: 'Public Groups', onPrefetch: () => prefetchTab('public') }
+        ]}
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as 'my-groups' | 'public')}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search groups..."
+        actions={[
+          { label: 'Join Group', action: handleJoinGroup, icon: UserPlus, variant: 'secondary' },
+          { label: 'Create Group', action: handleCreateGroup, icon: Plus, variant: 'primary' }
+        ]}
+      />
 
-        <div className="container relative z-10 mx-auto max-w-7xl px-6 py-8">
-          <GroupsHeader
-            user={user}
-            isAuthenticated={isAuthenticated}
-            signOut={signOut}
-            handleJoinGroup={handleJoinGroup}
-            handleCreateGroup={handleCreateGroup}
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-            onPrefetchTab={handlePrefetchTab}
-          />
+      <SearchableGrid<Group>
+        data={filteredGroups}
+        isLoading={groupsLoading}
+        error={isError ? error : null}
+        CardComponent={GroupCardAdapter}
+        EmptyComponent={filteredGroups.length === 0 && groups.length === 0 ? EmptyState : undefined}
+        emptyProps={{
+          activeTab,
+          handleCreateGroup,
+          handleJoinGroup
+        }}
+      />
 
-          {groupsLoading ? (
-            <GroupsLoadingSkeleton />
-          ) : isError ? (
-            <div className="text-center text-red-500">Error fetching groups: {error?.message}</div>
-          ) : filteredGroups.length === 0 ? (
-            <EmptyState
-              activeTab={activeTab}
-              handleCreateGroup={handleCreateGroup}
-              handleJoinGroup={handleJoinGroup}
-            />
-          ) : (
-            <GroupsGrid groups={filteredGroups} />
-          )}
-        </div>
+      {showCreateModal && (
+        <CreateGroupModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => {
+            setShowCreateModal(false)
+            handleModalSuccess()
+          }}
+        />
+      )}
 
-        {showCreateModal && (
-          <CreateGroupModal
-            onClose={() => setShowCreateModal(false)}
-            onSuccess={() => {
-              setShowCreateModal(false)
-              handleModalSuccess()
-            }}
-          />
-        )}
-
-        {showJoinModal && (
-          <JoinGroupModal
-            onClose={() => setShowJoinModal(false)}
-            onSuccess={() => {
-              setShowJoinModal(false)
-              handleModalSuccess()
-            }}
-          />
-        )}
-      </div>
-    </>
+      {showJoinModal && (
+        <JoinGroupModal
+          onClose={() => setShowJoinModal(false)}
+          onSuccess={() => {
+            setShowJoinModal(false)
+            handleModalSuccess()
+          }}
+        />
+      )}
+    </AuthenticatedPage>
   )
 }

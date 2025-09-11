@@ -16,3 +16,5 @@ export interface StudyGroup {
     joined_at: string
   }>
 }
+
+export type Group = StudyGroup

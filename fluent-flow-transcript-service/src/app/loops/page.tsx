@@ -1,34 +1,62 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
+import { Plus } from 'lucide-react'
 import { CreateLoopModal } from '@/components/loops/CreateLoopModal'
 import { CreateSessionModal } from '@/components/loops/CreateSessionModal'
-import { PagesNavigation } from '@/components/navigation/PagesNavigation'
 import { useGroupsData } from '../groups/hooks/useGroupsData'
 import { useUserLoops } from '@/hooks/useLoops'
-import { AuthPrompt } from '../../components/auth/AuthPrompt'
 import { useAuth } from '../../contexts/AuthContext'
+import { AuthenticatedPage } from '../../components/pages/shared/AuthenticatedPage'
+import { PageHeader } from '../../components/pages/shared/PageHeader'
+import { SearchableGrid } from '../../components/pages/shared/SearchableGrid'
+import { usePageSearch } from '../../hooks/shared/usePageSearch'
 import { LoopsEmptyState } from './components/LoopsEmptyState'
-import { LoopsGrid } from './components/LoopsGrid'
-import { LoopsHeader } from './components/LoopsHeader'
-import { LoopsLoadingSkeleton } from './components/LoopsLoadingSkeleton'
+import { LoopCardAdapter } from './components/LoopCardAdapter'
+import { useHighlightTour, PRACTICE_TOUR_STEPS } from '../../hooks/useHighlightTour'
+
+import type { LoopWithStats } from '@/lib/services/loop-management-service'
 
 export default function LoopsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showSessionModal, setShowSessionModal] = useState(false)
   const [selectedLoopId, setSelectedLoopId] = useState<string | null>(null)
-  const [searchQuery, setSearchQuery] = useState('')
+  const searchParams = useSearchParams()
 
-  const { user, isAuthenticated, isLoading: authLoading, signOut } = useAuth()
+  const { isAuthenticated } = useAuth()
   const { data: loops = [], isLoading, error } = useUserLoops()
   const { myGroupsQuery } = useGroupsData({ isAuthenticated })
   const userGroups = myGroupsQuery.data || []
-  const filteredLoops = loops.filter(
-    loop =>
-      loop.videoTitle?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loop.transcript?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      loop.language?.toLowerCase().includes(searchQuery.toLowerCase())
-  )
+
+  // Handle URL actions
+  useEffect(() => {
+    const action = searchParams.get('action')
+    if (action === 'create') {
+      setShowCreateModal(true)
+    } else if (action === 'practice') {
+      // Practice highlighting will be triggered via useHighlightTour
+    }
+  }, [searchParams])
+
+  // Highlight practice buttons when coming from dashboard
+  const shouldShowPracticeTour = searchParams.get('action') === 'practice'
+  useHighlightTour({
+    steps: PRACTICE_TOUR_STEPS,
+    enabled: shouldShowPracticeTour && loops.length > 0,
+    onComplete: () => {
+      // Clean up URL after tour
+      const url = new URL(window.location.href)
+      url.searchParams.delete('action')
+      window.history.replaceState({}, '', url.toString())
+    }
+  })
+  
+  // Search functionality
+  const { searchQuery, setSearchQuery, filteredData: filteredLoops } = usePageSearch<LoopWithStats>({
+    data: loops,
+    searchFields: ['videoTitle', 'transcript', 'language']
+  })
 
   const handleCreateSession = (loopId: string) => {
     setSelectedLoopId(loopId)
@@ -51,95 +79,61 @@ export default function LoopsPage() {
     window.open(videoUrl, '_blank')
   }
 
-  const handleCloseAuthPrompt = () => {
-    // Handle auth prompt close
-  }
-
-  const handleAuthSuccess = () => {
-    // Handle auth success
-  }
-
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <div className="flex h-64 items-center justify-center">
-          <div className="text-lg text-gray-600">Loading...</div>
-        </div>
-      </div>
-    )
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <AuthPrompt
-          onClose={handleCloseAuthPrompt}
-          onAuthSuccess={handleAuthSuccess}
-          title="Access Your Loops"
-          subtitle="Sign in to create and manage your personal practice loops from YouTube videos"
-        />
-      </div>
-    )
+  const handleCreateLoop = () => {
+    setShowCreateModal(true)
   }
 
   return (
-    <>
-      <PagesNavigation />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 pt-20">
-        <div className="pointer-events-none fixed inset-0 overflow-hidden">
-          <div className="animate-blob absolute left-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 mix-blend-multiply blur-xl filter"></div>
-          <div className="animate-blob animation-delay-2000 absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 mix-blend-multiply blur-xl filter"></div>
-          <div className="animate-blob animation-delay-4000 absolute -bottom-8 left-20 h-72 w-72 rounded-full bg-gradient-to-r from-pink-400/20 to-orange-400/20 mix-blend-multiply blur-xl filter"></div>
-        </div>
+    <AuthenticatedPage
+      title="My Loops"
+      subtitle="Sign in to create and manage your personal practice loops from YouTube videos"
+    >
+      <PageHeader
+        title="My Loops"
+        subtitle="Create and manage your personal practice loops from YouTube videos"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        searchPlaceholder="Search loops..."
+        actions={[
+          { label: 'Create Loop', action: handleCreateLoop, icon: Plus, variant: 'primary' }
+        ]}
+      />
 
-        <div className="container relative z-10 mx-auto max-w-7xl px-6 py-8">
-          <LoopsHeader
-            user={user}
-            isAuthenticated={isAuthenticated}
-            signOut={signOut}
-            handleCreateLoop={() => setShowCreateModal(true)}
-            searchQuery={searchQuery}
-            setSearchQuery={setSearchQuery}
-          />
+      <SearchableGrid<LoopWithStats>
+        data={filteredLoops}
+        isLoading={isLoading}
+        error={error}
+        CardComponent={LoopCardAdapter}
+        EmptyComponent={filteredLoops.length === 0 && loops.length === 0 ? LoopsEmptyState : undefined}
+        emptyProps={{ handleCreateLoop }}
+        cardProps={{
+          onCreateSession: handleCreateSession,
+          onPlayLoop: handlePlayLoop
+        }}
+      />
 
-          {isLoading ? (
-            <LoopsLoadingSkeleton />
-          ) : error ? (
-            <div className="text-center text-red-500">Error fetching loops: {error?.message}</div>
-          ) : filteredLoops.length === 0 ? (
-            <LoopsEmptyState handleCreateLoop={() => setShowCreateModal(true)} />
-          ) : (
-            <LoopsGrid
-              loops={filteredLoops}
-              onCreateSession={handleCreateSession}
-              onPlayLoop={handlePlayLoop}
-            />
-          )}
-        </div>
+      {/* Modals */}
+      {showCreateModal && (
+        <CreateLoopModal
+          onClose={() => setShowCreateModal(false)}
+          onSuccess={() => setShowCreateModal(false)}
+        />
+      )}
 
-        {/* Modals */}
-        {showCreateModal && (
-          <CreateLoopModal
-            onClose={() => setShowCreateModal(false)}
-            onSuccess={() => setShowCreateModal(false)}
-          />
-        )}
-
-        {showSessionModal && selectedLoopId && (
-          <CreateSessionModal
-            loopId={selectedLoopId}
-            availableGroups={userGroups}
-            onClose={() => {
-              setShowSessionModal(false)
-              setSelectedLoopId(null)
-            }}
-            onSuccess={() => {
-              setShowSessionModal(false)
-              setSelectedLoopId(null)
-            }}
-          />
-        )}
-      </div>
-    </>
+      {showSessionModal && selectedLoopId && (
+        <CreateSessionModal
+          loopId={selectedLoopId}
+          availableGroups={userGroups}
+          onClose={() => {
+            setShowSessionModal(false)
+            setSelectedLoopId(null)
+          }}
+          onSuccess={() => {
+            setShowSessionModal(false)
+            setSelectedLoopId(null)
+          }}
+        />
+      )}
+    </AuthenticatedPage>
   )
 }

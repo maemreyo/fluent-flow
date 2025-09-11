@@ -61,6 +61,7 @@ export function LoopCard({ loop, onCreateSession, onPlay }: LoopCardProps) {
       {/* Action Buttons */}
       <div className="flex items-center gap-2 border-t border-gray-200 pt-4">
         <button
+          data-tour="practice-button"
           onClick={(e) => {
             e.stopPropagation()
             onPlay(loop)
@@ -71,6 +72,7 @@ export function LoopCard({ loop, onCreateSession, onPlay }: LoopCardProps) {
           Practice
         </button>
         <button
+          data-tour="group-session-button"
           onClick={(e) => {
             e.stopPropagation()
             onCreateSession(loop.id)
