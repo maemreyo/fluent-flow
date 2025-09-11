@@ -1,6 +1,7 @@
 'use client'
 
 import { ReactNode } from 'react'
+import { motion } from 'framer-motion'
 
 interface AuthLayoutProps {
   children: ReactNode
@@ -8,17 +9,30 @@ interface AuthLayoutProps {
 
 export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-purple-50">
-      <div className="flex min-h-screen items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <h1 className="mb-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-blue-600 bg-clip-text text-4xl font-bold text-transparent">
-              Fluent Flow
-            </h1>
-            <p className="text-gray-600">Learn languages with AI-powered conversations</p>
-          </div>
-          {children}
-        </div>
+    <div className="min-h-screen w-full lg:grid lg:grid-cols-3">
+      <div className="flex items-center justify-center p-6 sm:p-12 lg:col-span-1">
+        {children}
+      </div>
+      <div className="relative hidden lg:col-span-2 lg:block">
+        <motion.div
+          className="absolute inset-0 z-0"
+          style={{
+            background: 'linear-gradient(120deg, #a1c4fd, #c2e9fb)',
+          }}
+          animate={{
+            background: [
+              'linear-gradient(120deg, #a1c4fd, #c2e9fb)',
+              'linear-gradient(120deg, #ffecd2, #fcb69f)',
+              'linear-gradient(120deg, #d4fc79, #96e6a1)',
+              'linear-gradient(120deg, #a1c4fd, #c2e9fb)',
+            ],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            repeatType: 'reverse',
+          }}
+        />
       </div>
     </div>
   )
