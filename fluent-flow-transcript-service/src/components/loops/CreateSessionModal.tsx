@@ -127,8 +127,8 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
           {/* Description */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
-                <FileText className="h-4 w-4 text-purple-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100">
+                <FileText className="h-4 w-4 text-indigo-600" />
               </div>
               <Label htmlFor="description" className="text-sm font-semibold text-gray-700">
                 Description <span className="text-gray-400 font-normal">(Optional)</span>
@@ -141,23 +141,23 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
                 onChange={(e) => setDescription(e.target.value)}
                 placeholder="Describe what participants will learn and practice..."
                 rows={3}
-                className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 focus:border-purple-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02] group-hover:border-purple-300 resize-none"
+                className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 focus:border-indigo-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02] group-hover:border-indigo-300 resize-none"
               />
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/5 to-pink-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
             </div>
           </div>
 
           {/* Group Selection */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-cyan-100">
-                <Users className="h-4 w-4 text-blue-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100">
+                <Users className="h-4 w-4 text-indigo-600" />
               </div>
               <Label className="text-sm font-semibold text-gray-700">Select Group *</Label>
             </div>
             <div className="relative group">
               <Select value={selectedGroupId} onValueChange={setSelectedGroupId} required>
-                <SelectTrigger className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 hover:border-blue-300 focus:border-blue-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02]">
+                <SelectTrigger className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 hover:border-indigo-300 focus:border-indigo-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02]">
                   <SelectValue placeholder="Choose a group..." />
                 </SelectTrigger>
                 <SelectContent className="rounded-2xl border-2 border-gray-200/60 bg-white/95 backdrop-blur-sm shadow-xl">
@@ -165,10 +165,10 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
                     <SelectItem 
                       key={group.id} 
                       value={group.id}
-                      className="rounded-xl hover:bg-blue-50/80 focus:bg-blue-50/80 cursor-pointer"
+                      className="rounded-xl hover:bg-indigo-50/80 focus:bg-indigo-50/80 cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 text-white text-xs font-bold">
+                        <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-xs font-bold">
                           {group.name.charAt(0).toUpperCase()}
                         </div>
                         <span className="font-medium">{group.name}</span>
@@ -178,15 +178,15 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
                   ))}
                 </SelectContent>
               </Select>
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/5 to-cyan-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-indigo-500/5 to-purple-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
             </div>
           </div>
 
           {/* Session Type */}
           <div className="space-y-4">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-100 to-green-100">
-                <Sparkles className="h-4 w-4 text-emerald-600" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100">
+                <Sparkles className="h-4 w-4 text-indigo-600" />
               </div>
               <Label className="text-sm font-semibold text-gray-700">Session Type</Label>
             </div>
@@ -194,23 +194,23 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
               <div
                 className={`cursor-pointer rounded-2xl border-2 p-5 text-left transition-all duration-300 group ${
                   sessionType === 'instant'
-                    ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-50 text-emerald-700 shadow-lg shadow-emerald-500/20 scale-105'
-                    : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-emerald-300 hover:bg-emerald-50/30 hover:scale-102'
+                    ? 'border-indigo-400 bg-gradient-to-br from-indigo-50 to-purple-50 text-indigo-700 shadow-lg shadow-indigo-500/20 scale-105'
+                    : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-indigo-300 hover:bg-indigo-50/30 hover:scale-102'
                 }`}
                 onClick={() => setSessionType('instant')}
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
                     sessionType === 'instant' 
-                      ? 'bg-gradient-to-br from-emerald-500 to-green-600 text-white shadow-lg' 
-                      : 'bg-gradient-to-br from-emerald-100 to-green-100 text-emerald-600 group-hover:from-emerald-500 group-hover:to-green-600 group-hover:text-white'
+                      ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg' 
+                      : 'bg-gradient-to-br from-indigo-100 to-purple-100 text-indigo-600 group-hover:from-indigo-500 group-hover:to-purple-600 group-hover:text-white'
                   }`}>
                     <Zap className="h-5 w-5" />
                   </div>
                   <span className="font-bold text-lg">Start Now</span>
                 </div>
                 <p className={`text-sm transition-colors ${
-                  sessionType === 'instant' ? 'text-emerald-600' : 'text-gray-600 group-hover:text-emerald-700'
+                  sessionType === 'instant' ? 'text-indigo-600' : 'text-gray-600 group-hover:text-indigo-700'
                 }`}>
                   Begin session immediately
                 </p>
@@ -219,23 +219,23 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
               <div
                 className={`cursor-pointer rounded-2xl border-2 p-5 text-left transition-all duration-300 group ${
                   sessionType === 'scheduled'
-                    ? 'border-blue-400 bg-gradient-to-br from-blue-50 to-indigo-50 text-blue-700 shadow-lg shadow-blue-500/20 scale-105'
-                    : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-blue-300 hover:bg-blue-50/30 hover:scale-102'
+                    ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-indigo-50 text-purple-700 shadow-lg shadow-purple-500/20 scale-105'
+                    : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-purple-300 hover:bg-purple-50/30 hover:scale-102'
                 }`}
                 onClick={() => setSessionType('scheduled')}
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div className={`flex h-10 w-10 items-center justify-center rounded-xl transition-all ${
                     sessionType === 'scheduled' 
-                      ? 'bg-gradient-to-br from-blue-500 to-indigo-600 text-white shadow-lg' 
-                      : 'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 group-hover:from-blue-500 group-hover:to-indigo-600 group-hover:text-white'
+                      ? 'bg-gradient-to-br from-purple-500 to-indigo-600 text-white shadow-lg' 
+                      : 'bg-gradient-to-br from-purple-100 to-indigo-100 text-purple-600 group-hover:from-purple-500 group-hover:to-indigo-600 group-hover:text-white'
                   }`}>
                     <Calendar className="h-5 w-5" />
                   </div>
                   <span className="font-bold text-lg">Schedule</span>
                 </div>
                 <p className={`text-sm transition-colors ${
-                  sessionType === 'scheduled' ? 'text-blue-600' : 'text-gray-600 group-hover:text-blue-700'
+                  sessionType === 'scheduled' ? 'text-purple-600' : 'text-gray-600 group-hover:text-purple-700'
                 }`}>
                   Set a specific time
                 </p>
@@ -247,8 +247,8 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
           {sessionType === 'scheduled' && (
             <div className="space-y-3 animate-in slide-in-from-top-4 duration-300">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-blue-100 to-indigo-100">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-purple-100 to-indigo-100">
+                  <Clock className="h-4 w-4 text-purple-600" />
                 </div>
                 <Label htmlFor="scheduledAt" className="text-sm font-semibold text-gray-700">
                   Scheduled Time *
@@ -261,10 +261,10 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
                   value={scheduledAt}
                   onChange={(e) => setScheduledAt(e.target.value)}
                   min={new Date().toISOString().slice(0, 16)}
-                  className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 focus:border-blue-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02] group-hover:border-blue-300"
+                  className="rounded-2xl border-2 border-gray-200/60 bg-white/70 backdrop-blur-sm px-4 py-3 shadow-sm transition-all duration-300 focus:border-purple-400 focus:bg-white/90 focus:shadow-lg focus:scale-[1.02] group-hover:border-purple-300"
                   required
                 />
-                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-purple-500/5 to-indigo-500/5 opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
               </div>
             </div>
           )}
@@ -272,15 +272,15 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
           {/* Notifications */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-amber-100 to-orange-100">
-                {notifyMembers ? <Bell className="h-4 w-4 text-amber-600" /> : <BellOff className="h-4 w-4 text-amber-600" />}
+              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100">
+                {notifyMembers ? <Bell className="h-4 w-4 text-indigo-600" /> : <BellOff className="h-4 w-4 text-indigo-600" />}
               </div>
               <Label className="text-sm font-semibold text-gray-700">Notifications</Label>
             </div>
             <div className={`flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-300 cursor-pointer group ${
               notifyMembers 
-                ? 'border-amber-300 bg-gradient-to-br from-amber-50 to-orange-50' 
-                : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-amber-200 hover:bg-amber-50/30'
+                ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50' 
+                : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-indigo-200 hover:bg-indigo-50/30'
             }`}
             onClick={() => setNotifyMembers(!notifyMembers)}
             >
@@ -288,12 +288,12 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
                 id="notifyMembers"
                 checked={notifyMembers}
                 onCheckedChange={(checked) => setNotifyMembers(checked === true)}
-                className={`transition-all duration-300 ${notifyMembers ? 'border-amber-500' : 'border-gray-300'}`}
+                className={`transition-all duration-300 ${notifyMembers ? 'border-indigo-500' : 'border-gray-300'}`}
               />
               <div className="flex-1">
                 <Label htmlFor="notifyMembers" className="text-sm font-medium text-gray-700 cursor-pointer flex items-center gap-2">
                   <span>Notify group members</span>
-                  {notifyMembers && <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse" />}
+                  {notifyMembers && <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />}
                 </Label>
                 <p className="text-xs text-gray-500 mt-1">
                   Send email notifications about this session to all group members
@@ -304,12 +304,12 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
 
           {/* No Groups Alert */}
           {availableGroups.length === 0 && (
-            <Alert className="rounded-2xl border-2 border-orange-300 bg-gradient-to-br from-orange-50 to-red-50 animate-in slide-in-from-top-4 duration-300">
+            <Alert className="rounded-2xl border-2 border-red-300 bg-gradient-to-br from-red-50 to-pink-50 animate-in slide-in-from-top-4 duration-300">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-red-500 text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-red-500 to-pink-500 text-white">
                   <AlertCircle className="h-5 w-5" />
                 </div>
-                <AlertDescription className="text-sm text-orange-800 font-medium">
+                <AlertDescription className="text-sm text-red-800 font-medium">
                   You need to join or create a group first to create sessions.
                 </AlertDescription>
               </div>
