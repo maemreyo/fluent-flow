@@ -1,22 +1,21 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
+import { HelpCircle, Plus } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
 import { CreateLoopModal } from '@/components/loops/CreateLoopModal'
 import { CreateSessionModal } from '@/components/loops/CreateSessionModal'
-import { useGroupsData } from '../groups/hooks/useGroupsData'
 import { useUserLoops } from '@/hooks/useLoops'
-import { useAuth } from '../../contexts/AuthContext'
+import type { LoopWithStats } from '@/lib/services/loop-management-service'
 import { AuthenticatedPage } from '../../components/pages/shared/AuthenticatedPage'
 import { PageHeader } from '../../components/pages/shared/PageHeader'
 import { SearchableGrid } from '../../components/pages/shared/SearchableGrid'
+import { useAuth } from '../../contexts/AuthContext'
 import { usePageSearch } from '../../hooks/shared/usePageSearch'
-import { LoopsEmptyState } from './components/LoopsEmptyState'
+import { PRACTICE_TOUR_STEPS, startTour, useHighlightTour } from '../../hooks/useHighlightTour'
+import { useGroupsData } from '../groups/hooks/useGroupsData'
 import { LoopCardAdapter } from './components/LoopCardAdapter'
-import { useHighlightTour, PRACTICE_TOUR_STEPS } from '../../hooks/useHighlightTour'
-
-import type { LoopWithStats } from '@/lib/services/loop-management-service'
+import { LoopsEmptyState } from './components/LoopsEmptyState'
 
 export default function LoopsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -44,6 +43,7 @@ export default function LoopsPage() {
   useHighlightTour({
     steps: PRACTICE_TOUR_STEPS,
     enabled: shouldShowPracticeTour && loops.length > 0,
+    storageKey: 'fluent-flow-practice-tour-shown',
     onComplete: () => {
       // Clean up URL after tour
       const url = new URL(window.location.href)
@@ -51,9 +51,13 @@ export default function LoopsPage() {
       window.history.replaceState({}, '', url.toString())
     }
   })
-  
+
   // Search functionality
-  const { searchQuery, setSearchQuery, filteredData: filteredLoops } = usePageSearch<LoopWithStats>({
+  const {
+    searchQuery,
+    setSearchQuery,
+    filteredData: filteredLoops
+  } = usePageSearch<LoopWithStats>({
     data: loops,
     searchFields: ['videoTitle', 'transcript', 'language']
   })
@@ -83,6 +87,10 @@ export default function LoopsPage() {
     setShowCreateModal(true)
   }
 
+  const handleShowTourHelp = () => {
+    startTour(PRACTICE_TOUR_STEPS, { storageKey: 'fluent-flow-practice-tour-shown' })
+  }
+
   return (
     <AuthenticatedPage
       title="My Loops"
@@ -95,7 +103,8 @@ export default function LoopsPage() {
         onSearchChange={setSearchQuery}
         searchPlaceholder="Search loops..."
         actions={[
-          { label: 'Create Loop', action: handleCreateLoop, icon: Plus, variant: 'primary' }
+          { label: 'Create Loop', action: handleCreateLoop, icon: Plus, variant: 'primary' },
+          { label: '', action: handleShowTourHelp, icon: HelpCircle, variant: 'secondary' }
         ]}
       />
 
@@ -104,7 +113,9 @@ export default function LoopsPage() {
         isLoading={isLoading}
         error={error}
         CardComponent={LoopCardAdapter}
-        EmptyComponent={filteredLoops.length === 0 && loops.length === 0 ? LoopsEmptyState : undefined}
+        EmptyComponent={
+          filteredLoops.length === 0 && loops.length === 0 ? LoopsEmptyState : undefined
+        }
         emptyProps={{ handleCreateLoop }}
         cardProps={{
           onCreateSession: handleCreateSession,

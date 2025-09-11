@@ -1,21 +1,12 @@
 'use client'
 
+import { Activity, ArrowRight, BookOpen, RotateCcw, Target, Users } from 'lucide-react'
 import Link from 'next/link'
-import { 
-  Users, 
-  RotateCcw, 
-  BookOpen, 
-  Clock, 
-  Target,
-  ArrowRight,
-  Award,
-  Activity
-} from 'lucide-react'
+import { useUserLoops } from '@/hooks/useLoops'
 import { AuthenticatedPage } from '../../components/pages/shared/AuthenticatedPage'
 import { PageHeader } from '../../components/pages/shared/PageHeader'
 import { useAuth } from '../../contexts/AuthContext'
 import { useGroupsData } from '../groups/hooks/useGroupsData'
-import { useUserLoops } from '@/hooks/useLoops'
 
 interface DashboardWidget {
   title: string
@@ -37,7 +28,7 @@ export default function DashboardPage() {
   const { user, isAuthenticated } = useAuth()
   const { getGroupsForTab } = useGroupsData({ isAuthenticated })
   const { data: loops = [] } = useUserLoops()
-  
+
   const myGroups = getGroupsForTab('my-groups')
 
   // Dashboard widgets with stats
@@ -61,16 +52,16 @@ export default function DashboardPage() {
       value: loops.reduce((acc, loop) => acc + (loop.practiceSessionsCount || 0), 0),
       icon: Target,
       color: 'from-green-500 to-emerald-600'
-    },
-    {
-      title: 'Learning Streak',
-      value: '7 days',
-      icon: Award,
-      color: 'from-yellow-500 to-orange-600'
     }
+    // {
+    //   title: 'Learning Streak',
+    //   value: '7 days',
+    //   icon: Award,
+    //   color: 'from-yellow-500 to-orange-600'
+    // }
   ]
 
-  // Quick actions for navigation  
+  // Quick actions for navigation
   const quickActions: QuickAction[] = [
     {
       title: 'Practice Session',
@@ -112,7 +103,7 @@ export default function DashboardPage() {
     {
       type: 'group_joined',
       title: 'Joined "Advanced Language Learning"',
-      time: '1 day ago', 
+      time: '1 day ago',
       icon: Users
     },
     {
@@ -124,37 +115,34 @@ export default function DashboardPage() {
   ]
 
   return (
-    <AuthenticatedPage
-      title="Dashboard"
-      subtitle="Welcome to your language learning journey"
-    >
+    <AuthenticatedPage title="Dashboard" subtitle="Welcome to your language learning journey">
       <PageHeader
         title="Dashboard"
         subtitle={`Welcome back, ${user?.user_metadata?.username || user?.email?.split('@')[0] || 'learner'}! Ready to continue your language learning journey?`}
       />
 
       {/* Stats Widgets */}
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+      <div className="mb-8 grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-3">
         {widgets.map((widget, index) => {
           const Icon = widget.icon
           const content = (
             <div className="group relative overflow-hidden rounded-2xl bg-white/90 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl">
-              <div className={`absolute inset-0 bg-gradient-to-br ${widget.color} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${widget.color} opacity-5 transition-opacity group-hover:opacity-10`}
+              ></div>
               <div className="relative">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${widget.color} shadow-lg`}>
+                <div className="mb-4 flex items-center justify-between">
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${widget.color} shadow-lg`}
+                  >
                     <Icon className="h-6 w-6 text-white" />
                   </div>
                   {widget.href && (
-                    <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                    <ArrowRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-600" />
                   )}
                 </div>
-                <div className="text-2xl font-bold text-gray-900 mb-1">
-                  {widget.value}
-                </div>
-                <div className="text-sm text-gray-600">
-                  {widget.title}
-                </div>
+                <div className="mb-1 text-2xl font-bold text-gray-900">{widget.value}</div>
+                <div className="text-sm text-gray-600">{widget.title}</div>
               </div>
             </div>
           )
@@ -164,22 +152,20 @@ export default function DashboardPage() {
               {content}
             </Link>
           ) : (
-            <div key={index}>
-              {content}
-            </div>
+            <div key={index}>{content}</div>
           )
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Quick Actions */}
         <div className="lg:col-span-2">
           <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Quick Actions</h2>
             <Activity className="h-5 w-5 text-gray-400" />
           </div>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             {quickActions.map((action, index) => {
               const Icon = action.icon
               return (
@@ -188,20 +174,20 @@ export default function DashboardPage() {
                   href={action.href}
                   className="group relative overflow-hidden rounded-2xl bg-white/90 p-6 shadow-lg backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-xl"
                 >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-5 group-hover:opacity-10 transition-opacity`}></div>
+                  <div
+                    className={`absolute inset-0 bg-gradient-to-br ${action.color} opacity-5 transition-opacity group-hover:opacity-10`}
+                  ></div>
                   <div className="relative">
-                    <div className="flex items-start justify-between mb-4">
-                      <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} shadow-lg`}>
+                    <div className="mb-4 flex items-start justify-between">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${action.color} shadow-lg`}
+                      >
                         <Icon className="h-5 w-5 text-white" />
                       </div>
-                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-gray-600 transition-colors" />
+                      <ArrowRight className="h-4 w-4 text-gray-400 transition-colors group-hover:text-gray-600" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {action.title}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      {action.description}
-                    </p>
+                    <h3 className="mb-2 text-lg font-semibold text-gray-900">{action.title}</h3>
+                    <p className="text-sm text-gray-600">{action.description}</p>
                   </div>
                 </Link>
               )
@@ -211,7 +197,7 @@ export default function DashboardPage() {
 
         {/* Recent Activity */}
         <div className="lg:col-span-1">
-          <div className="mb-6 flex items-center justify-between">
+          {/* <div className="mb-6 flex items-center justify-between">
             <h2 className="text-2xl font-bold text-gray-900">Recent Activity</h2>
             <Clock className="h-5 w-5 text-gray-400" />
           </div>
@@ -237,16 +223,17 @@ export default function DashboardPage() {
                 )
               })}
             </div>
-          </div>
+          </div> */}
 
           {/* Learning Tips */}
-          <div className="mt-6 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 p-6 border border-indigo-100">
-            <div className="flex items-center gap-2 mb-3">
+          <div className="mt-6 rounded-2xl border border-indigo-100 bg-gradient-to-br from-indigo-50 to-purple-50 p-6">
+            <div className="mb-3 flex items-center gap-2">
               <BookOpen className="h-5 w-5 text-indigo-600" />
               <h3 className="font-semibold text-indigo-900">Learning Tip</h3>
             </div>
             <p className="text-sm text-indigo-700">
-              Consistency is key! Try to practice at least 15 minutes daily to maintain your learning momentum and improve retention.
+              Consistency is key! Try to practice at least 15 minutes daily to maintain your
+              learning momentum and improve retention.
             </p>
           </div>
         </div>

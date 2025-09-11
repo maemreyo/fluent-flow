@@ -1,21 +1,20 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { 
-  LogOut, 
-  User, 
-  Settings, 
-  HelpCircle, 
+import {
   BookOpen,
-  Users,
-  RotateCcw,
+  HelpCircle,
+  LogOut,
   Menu,
+  RotateCcw,
+  Settings,
+  User,
+  Users,
   X
 } from 'lucide-react'
+import Link from 'next/link'
+import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '../../contexts/AuthContext'
-import { UserAvatar } from '../ui/user-avatar'
 import { Button } from '../ui/button'
 import {
   DropdownMenu,
@@ -23,8 +22,9 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
+  DropdownMenuTrigger
 } from '../ui/dropdown-menu'
+import { UserAvatar } from '../ui/user-avatar'
 
 interface MasterHeaderProps {
   showNavigation?: boolean
@@ -38,8 +38,8 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
 
   const navigationItems = [
     { href: '/loops', label: 'Loops', icon: RotateCcw },
-    { href: '/groups', label: 'Groups', icon: Users },
-    { href: '/questions', label: 'Practice', icon: BookOpen },
+    { href: '/groups', label: 'Groups', icon: Users }
+    // { href: '/questions', label: 'Practice', icon: BookOpen },
   ]
 
   const handleSignOut = async () => {
@@ -53,7 +53,7 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
   }
 
   const handleSettings = () => {
-    // Navigate to settings page when implemented  
+    // Navigate to settings page when implemented
     console.log('Navigate to settings')
   }
 
@@ -63,17 +63,17 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
   }
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 border-b border-white/20 bg-white/80 backdrop-blur-xl">
+    <header className="fixed left-0 right-0 top-0 z-50 border-b border-white/20 bg-white/80 backdrop-blur-xl">
       <div className="container mx-auto max-w-7xl px-6">
         <div className="flex h-16 items-center justify-between">
           {/* Logo & Brand */}
           <div className="flex items-center gap-4">
-            <Link href="/dashboard" className="flex items-center gap-3 group">
+            <Link href="/dashboard" className="group flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 shadow-lg transition-transform group-hover:scale-105">
                 <BookOpen className="h-6 w-6 text-white" />
               </div>
               <div className="hidden sm:block">
-                <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                <h1 className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-xl font-bold text-transparent">
                   Fluent Flow
                 </h1>
                 <p className="text-xs text-gray-500">Language Learning</p>
@@ -82,15 +82,15 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
 
             {/* Navigation - Desktop */}
             {showNavigation && isAuthenticated && (
-              <nav className="hidden md:flex items-center gap-1 ml-8">
-                {navigationItems.map((item) => {
+              <nav className="ml-8 hidden items-center gap-1 md:flex">
+                {navigationItems.map(item => {
                   const Icon = item.icon
                   const isActive = pathname.startsWith(item.href)
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                      className={`flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-medium transition-all ${
                         isActive
                           ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                           : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'
@@ -117,11 +117,7 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
                     className="md:hidden"
                     onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                   >
-                    {isMobileMenuOpen ? (
-                      <X className="h-5 w-5" />
-                    ) : (
-                      <Menu className="h-5 w-5" />
-                    )}
+                    {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
                   </Button>
                 )}
 
@@ -130,21 +126,19 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
                   <DropdownMenuTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="flex items-center gap-3 h-auto px-3 py-2 rounded-xl hover:bg-indigo-50"
+                      className="flex h-auto items-center gap-3 rounded-xl px-3 py-2 hover:bg-indigo-50"
                     >
-                      <UserAvatar 
+                      <UserAvatar
                         email={user?.email}
                         username={user?.user_metadata?.username}
                         imageUrl={user?.user_metadata?.avatar_url}
                         size="md"
                       />
-                      <div className="hidden sm:block text-left">
+                      <div className="hidden text-left sm:block">
                         <div className="text-sm font-medium text-gray-900">
                           {user?.user_metadata?.username || user?.email?.split('@')[0] || 'User'}
                         </div>
-                        <div className="text-xs text-gray-500">
-                          {user?.email}
-                        </div>
+                        <div className="text-xs text-gray-500">{user?.email}</div>
                       </div>
                     </Button>
                   </DropdownMenuTrigger>
@@ -164,9 +158,9 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
                       Help & Support
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem 
+                    <DropdownMenuItem
                       onClick={handleSignOut}
-                      className="text-red-600 focus:text-red-700 focus:bg-red-50"
+                      className="text-red-600 focus:bg-red-50 focus:text-red-700"
                     >
                       <LogOut className="mr-2 h-4 w-4 text-red-600 focus:text-red-700" />
                       Sign Out
@@ -189,16 +183,16 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
 
         {/* Mobile Navigation */}
         {showNavigation && isAuthenticated && isMobileMenuOpen && (
-          <div className="md:hidden border-t border-white/20 py-4">
+          <div className="border-t border-white/20 py-4 md:hidden">
             <nav className="flex flex-col gap-2">
-              {navigationItems.map((item) => {
+              {navigationItems.map(item => {
                 const Icon = item.icon
                 const isActive = pathname.startsWith(item.href)
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-all ${
                       isActive
                         ? 'bg-indigo-100 text-indigo-700 shadow-sm'
                         : 'text-gray-600 hover:bg-indigo-50 hover:text-indigo-600'

@@ -1,0 +1,167 @@
+/* Custom Driver.js styling to match app theme */
+
+/* Popover styling with custom class */
+.driver-popover.fluent-flow-tour {
+  background: rgba(255, 255, 255, 0.98) !important;
+  backdrop-filter: blur(8px) !important;
+  border: 2px solid rgba(99, 102, 241, 0.2) !important;
+  border-radius: 1rem !important;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  max-width: 320px !important;
+}
+
+/* Popover header */
+.driver-popover.fluent-flow-tour .driver-popover-title {
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  color: #1f2937 !important;
+  margin-bottom: 0.5rem !important;
+  background: linear-gradient(to right, #6366f1, #8b5cf6, #3b82f6) !important;
+  background-clip: text !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
+/* Popover description */
+.driver-popover.fluent-flow-tour .driver-popover-description {
+  color: #6b7280 !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Footer buttons */
+.driver-popover.fluent-flow-tour .driver-popover-footer {
+  display: flex !important;
+  gap: 0.5rem !important;
+  justify-content: flex-end !important;
+}
+
+/* Next/Previous buttons */
+.driver-popover.fluent-flow-tour .driver-popover-next-btn,
+.driver-popover.fluent-flow-tour .driver-popover-prev-btn {
+  background: linear-gradient(to right, #6366f1, #8b5cf6) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 0.5rem !important;
+  padding: 0.25rem 0.75rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  text-shadow: none !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-next-btn:hover,
+.driver-popover.fluent-flow-tour .driver-popover-prev-btn:hover {
+  background: linear-gradient(to right, #4f46e5, #7c3aed) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Close button */
+.driver-popover.fluent-flow-tour .driver-popover-close-btn {
+  background: transparent !important;
+  color: #dc2626 !important;
+  border: 0px solid rgba(239, 68, 68, 0.2) !important;
+  border-radius: 0.5rem !important;
+  padding: 0.75rem 1rem !important;
+  font-size: 1rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+  min-width: auto !important;
+  width: auto !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-close-btn:hover {
+  transform: translateY(-1px) !important;
+}
+
+/* Done button */
+.driver-popover.fluent-flow-tour .driver-popover-done-btn {
+  background: linear-gradient(to right, #10b981, #059669) !important;
+  color: white !important;
+  border: none !important;
+  border-radius: 0.75rem !important;
+  padding: 0.5rem 1rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  transition: all 0.3s ease !important;
+  cursor: pointer !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-done-btn:hover {
+  background: linear-gradient(to right, #059669, #047857) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Progress text */
+.driver-popover.fluent-flow-tour .driver-popover-progress-text {
+  color: #6366f1 !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+}
+
+/* Popover arrow */
+.driver-popover.fluent-flow-tour .driver-popover-arrow {
+  border-color: rgba(99, 102, 241, 0.2) !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-arrow-side-top {
+  border-top-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-arrow-side-bottom {
+  border-bottom-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-arrow-side-left {
+  border-left-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.driver-popover.fluent-flow-tour .driver-popover-arrow-side-right {
+  border-right-color: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Stage (highlighted element) */
+.driver-highlighted-element {
+  border-radius: 0.75rem !important;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.8) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  filter: none !important;
+  -webkit-filter: none !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .driver-popover.fluent-flow-tour {
+    max-width: 280px !important;
+    margin: 1rem !important;
+  }
+
+  .driver-popover.fluent-flow-tour .driver-popover-title {
+    font-size: 1rem !important;
+  }
+
+  .driver-popover.fluent-flow-tour .driver-popover-description {
+    font-size: 0.8125rem !important;
+  }
+
+  .driver-popover.fluent-flow-tour .driver-popover-footer {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+  }
+
+  .driver-popover.fluent-flow-tour .driver-popover-next-btn,
+  .driver-popover.fluent-flow-tour .driver-popover-prev-btn,
+  .driver-popover.fluent-flow-tour .driver-popover-close-btn,
+  .driver-popover.fluent-flow-tour .driver-popover-done-btn {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+}
