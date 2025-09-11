@@ -56,9 +56,6 @@ export default function GroupsPage() {
     searchFields: ['name', 'description', 'language']
   })
 
-  const handleAuthSuccess = () => {
-    invalidateAllGroups()
-  }
 
   const handleCreateGroup = () => {
     setShowCreateModal(true)
@@ -78,7 +75,6 @@ export default function GroupsPage() {
     <AuthenticatedPage
       title="Study Groups"
       subtitle="Sign in to create, join, and manage study groups with your classmates"
-      onAuthSuccess={handleAuthSuccess}
     >
       <PageHeader
         title="Study Groups"

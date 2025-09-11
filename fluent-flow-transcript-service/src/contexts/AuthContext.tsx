@@ -9,6 +9,7 @@ import {
   useMemo,
   useState
 } from 'react'
+import { useRouter } from 'next/navigation'
 import { User } from '@supabase/supabase-js'
 import { getCurrentUser, supabase } from '../lib/supabase/client'
 
@@ -23,6 +24,7 @@ interface AuthContextType extends AuthState {
   signOut: () => Promise<void>
   refreshAuth: () => Promise<void>
   hasValidSession: boolean
+  redirectToLogin: (currentPath?: string) => void
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -32,6 +34,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
+  const router = useRouter()
   const [authState, setAuthState] = useState<AuthState>({
     user: null,
     isAuthenticated: false,
@@ -149,14 +152,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, [])
 
+  const redirectToLogin = useCallback((currentPath?: string) => {
+    const redirectTo = currentPath || window.location.pathname
+    const loginUrl = `/auth/signin?redirectTo=${encodeURIComponent(redirectTo)}`
+    router.replace(loginUrl)
+  }, [router])
+
   const contextValue: AuthContextType = useMemo(
     () => ({
       ...authState,
       signOut,
       refreshAuth,
+      redirectToLogin,
       hasValidSession: authState.isAuthenticated && !!authState.user
     }),
-    [authState, signOut, refreshAuth]
+    [authState, signOut, refreshAuth, redirectToLogin]
   )
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>

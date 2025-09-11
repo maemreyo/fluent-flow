@@ -70,7 +70,8 @@ export function useProfile() {
           full_name: editData.fullName,
           bio: editData.bio,
           location: editData.location,
-          website: editData.website
+          website: editData.website,
+          avatar_url: editData.avatar
         }
       })
       

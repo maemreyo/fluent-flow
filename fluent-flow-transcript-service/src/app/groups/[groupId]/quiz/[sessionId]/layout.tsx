@@ -105,7 +105,7 @@ export default function QuizLayout({ children, params }: QuizLayoutProps) {
       {showAuthPrompt && (
         <AuthPrompt
           onClose={handleCloseAuthPrompt}
-          onAuthSuccess={handleAuthSuccess}
+          onAuthSuccess={() => window.location.reload()}
           title="Join Group Quiz!"
           subtitle="Sign in to participate in this group quiz session and compare your results"
         />

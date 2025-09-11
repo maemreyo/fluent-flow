@@ -22,6 +22,8 @@ import { AuthenticatedPage } from '../../components/pages/shared/AuthenticatedPa
 import { PageHeader } from '../../components/pages/shared/PageHeader'
 import { useProfile } from '../../hooks/profile/useProfile'
 import { useProfileStats } from '../../hooks/profile/useProfileStats'
+import { PasswordChangeForm } from '@/components/profile/PasswordChangeForm'
+import { AvatarUpload } from '@/components/profile/AvatarUpload'
 
 export default function ProfilePage() {
   const {
@@ -73,27 +75,30 @@ export default function ProfilePage() {
           <Card className="border-white/20 bg-white/90 backdrop-blur-sm">
             <CardContent className="p-8">
               {/* Avatar Section */}
-              <div className="relative mb-6 flex justify-center">
-                <div className="relative">
-                  <div className="h-32 w-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-xl">
-                    <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-4xl font-bold text-indigo-600">
-                      {profileData.avatar ? (
-                        <img
-                          src={profileData.avatar}
-                          alt="Profile"
-                          className="h-full w-full rounded-full object-cover"
-                        />
-                      ) : (
-                        profileData.username.charAt(0).toUpperCase()
-                      )}
+              <div className="mb-6">
+                {isEditing ? (
+                  <AvatarUpload
+                    currentAvatar={profileData.avatar}
+                    username={profileData.username}
+                    onAvatarChange={(url) => updateEditData('avatar', url)}
+                  />
+                ) : (
+                  <div className="flex justify-center">
+                    <div className="h-32 w-32 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 p-1 shadow-xl">
+                      <div className="flex h-full w-full items-center justify-center rounded-full bg-white text-4xl font-bold text-indigo-600">
+                        {profileData.avatar ? (
+                          <img
+                            src={profileData.avatar}
+                            alt="Profile"
+                            className="h-full w-full rounded-full object-cover"
+                          />
+                        ) : (
+                          profileData.username.charAt(0).toUpperCase()
+                        )}
+                      </div>
                     </div>
                   </div>
-                  {isEditing && (
-                    <button className="absolute bottom-0 right-0 flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg transition-transform hover:scale-110">
-                      <Camera className="h-5 w-5" />
-                    </button>
-                  )}
-                </div>
+                )}
               </div>
 
               {/* Basic Info */}
@@ -290,6 +295,9 @@ export default function ProfilePage() {
             </CardContent>
           </Card>
 
+          {/* Security Settings */}
+          <PasswordChangeForm />
+
           {/* Account Settings Preview */}
           <Card className="relative border-white/20 bg-white/90 backdrop-blur-sm">
             <CardHeader>
@@ -297,7 +305,7 @@ export default function ProfilePage() {
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-gray-500 to-gray-700">
                   <Settings className="h-5 w-5 text-white" />
                 </div>
-                Account Settings
+                Advanced Settings
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -305,7 +313,7 @@ export default function ProfilePage() {
               <div className="absolute inset-0 z-10 flex items-center justify-center rounded-xl border-2 border-dashed border-indigo-200 bg-white/80 backdrop-blur-sm">
                 <ComingSoon
                   title="Advanced Settings"
-                  description="Comprehensive account management options coming soon"
+                  description="Notifications, privacy controls, and account deletion coming soon"
                   size="sm"
                 />
               </div>
@@ -319,6 +327,10 @@ export default function ProfilePage() {
                 <div className="rounded-xl border-2 border-gray-200 p-4">
                   <h3 className="mb-2 font-semibold text-gray-500">Privacy</h3>
                   <p className="text-sm text-gray-400">Control your privacy settings</p>
+                </div>
+                <div className="rounded-xl border-2 border-red-200 p-4">
+                  <h3 className="mb-2 font-semibold text-red-600">Danger Zone</h3>
+                  <p className="text-sm text-red-400">Delete account and all associated data</p>
                 </div>
               </div>
             </CardContent>

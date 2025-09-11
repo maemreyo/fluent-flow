@@ -144,7 +144,7 @@ export default function GroupPage({
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <AuthPrompt
           onClose={handleCloseAuthPrompt}
-          onAuthSuccess={handleAuthSuccess}
+          onAuthSuccess={() => window.location.reload()}
           title="Access Group"
           subtitle="Sign in to view and participate in study groups"
         />
