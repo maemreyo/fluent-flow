@@ -23,19 +23,40 @@ export default function ResetPasswordPage() {
   const [success, setSuccess] = useState('')
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null)
 
-  // Check if we have valid tokens from the email link
+  // Check if we have valid tokens from the email link fragment
   useEffect(() => {
-    const accessToken = searchParams.get('access_token')
-    const refreshToken = searchParams.get('refresh_token')
-    
-    if (!accessToken || !refreshToken) {
+    const hash = window.location.hash
+    if (!hash) {
       setIsValidToken(false)
       setError('Invalid or missing reset token. Please request a new password reset.')
       return
     }
-    
-    setIsValidToken(true)
-  }, [searchParams])
+
+    const params = new URLSearchParams(hash.substring(1)) // remove #
+    const accessToken = params.get('access_token')
+    const refreshToken = params.get('refresh_token')
+
+    if (!accessToken || !refreshToken) {
+      setIsValidToken(false)
+      setError('Invalid or missing reset token data. Please request a new password reset.')
+      return
+    }
+
+    // Set the session for the Supabase client so the updateUser call is authenticated
+    supabase!.auth
+      .setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken
+      })
+      .then(({ error }) => {
+        if (error) {
+          setIsValidToken(false)
+          setError('Failed to validate reset token. It might be expired.')
+        } else {
+          setIsValidToken(true)
+        }
+      })
+  }, [])
 
   const validateForm = () => {
     if (password !== confirmPassword) {
