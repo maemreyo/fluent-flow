@@ -37,7 +37,9 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     participants,
     onlineParticipants,
     isUserJoined,
-    isLoading: participantsLoading
+    isLoading: participantsLoading,
+    isFetching: participantsRefreshing,
+    refetch: refreshParticipants
   } = useSessionParticipants({
     groupId,
     sessionId,
@@ -825,6 +827,8 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     participants,
     onlineParticipants,
     isUserJoined,
+    participantsRefreshing,
+    refreshParticipants,
 
     // Quiz functionality
     isFavorited,

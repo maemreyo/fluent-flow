@@ -1,17 +1,22 @@
 'use client'
 
+import { RefreshCcw } from 'lucide-react'
 import { getDisplayName, getInitials } from '../utils/participantUtils'
 
 interface FallbackParticipantsSidebarProps {
   participants: any[]
   onlineParticipants: any[]
   user: any
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function FallbackParticipantsSidebar({
   participants,
   onlineParticipants,
-  user
+  user,
+  onRefresh,
+  isRefreshing = false
 }: FallbackParticipantsSidebarProps) {
   // Debug participant data
   // console.log('🧑‍🤝‍🧑 FallbackParticipantsSidebar debug:', {
@@ -32,10 +37,24 @@ export function FallbackParticipantsSidebar({
   return (
     <div className="w-80 flex-shrink-0 overflow-y-auto border-r border-white/20 bg-white/50 backdrop-blur-sm">
       <div className="border-b border-white/20 bg-white/60 p-4">
-        <h2 className="flex items-center gap-2 font-semibold text-gray-800">
-          <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
-          Participants
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="flex items-center gap-2 font-semibold text-gray-800">
+            <div className="h-2 w-2 animate-pulse rounded-full bg-green-500"></div>
+            Participants
+          </h2>
+          
+          {onRefresh && (
+            <button
+              onClick={onRefresh}
+              disabled={isRefreshing}
+              className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-100 text-indigo-600 transition-colors hover:bg-indigo-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Refresh participants list"
+            >
+              <RefreshCcw className={`h-3 w-3 ${isRefreshing ? 'animate-spin' : ''}`} />
+            </button>
+          )}
+        </div>
+        
         <div className="mt-1 text-sm text-gray-600">
           {onlineParticipants.length} online • {participants.length} total
         </div>

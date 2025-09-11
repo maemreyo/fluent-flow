@@ -25,7 +25,9 @@ export default function SetupPage({ params }: SetupPageProps) {
     user,
     onlineParticipants,
     navigateToLobby,
-    navigateToInfo
+    navigateToInfo,
+    participantsRefreshing,
+    refreshParticipants
   } = useQuizFlow({ groupId, sessionId })
 
   // Question generation hook
@@ -240,6 +242,8 @@ export default function SetupPage({ params }: SetupPageProps) {
         onlineParticipants={onlineParticipants}
         sessionTitle={session?.quiz_title || 'Group Quiz Session'}
         currentStep={syncState.currentStep}
+        onRefresh={refreshParticipants}
+        isRefreshing={participantsRefreshing}
       />
     )
   }

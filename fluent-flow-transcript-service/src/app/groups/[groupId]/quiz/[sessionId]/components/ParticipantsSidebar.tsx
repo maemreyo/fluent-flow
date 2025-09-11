@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Circle, Clock, Users, Minimize2 } from 'lucide-react'
+import { Circle, Clock, Users, Minimize2, RefreshCcw } from 'lucide-react'
 import { useState } from 'react'
 import type { SessionParticipant } from '../../../components/sessions/queries'
 import type { GroupSession } from '../queries'
@@ -12,13 +12,17 @@ interface ParticipantsSidebarProps {
   onlineParticipants: SessionParticipant[]
   currentUserId?: string
   session?: GroupSession
+  onRefresh?: () => void
+  isRefreshing?: boolean
 }
 
 export function ParticipantsSidebar({ 
   participants, 
   onlineParticipants, 
   currentUserId, 
-  session 
+  session,
+  onRefresh,
+  isRefreshing = false
 }: ParticipantsSidebarProps) {
   const [isMinimized, setIsMinimized] = useState(false)
 
@@ -98,12 +102,25 @@ export function ParticipantsSidebar({
             </Badge>
           </div>
           
-          <button
-            onClick={() => setIsMinimized(true)}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
-          >
-            <Minimize2 className="w-4 h-4 text-gray-500" />
-          </button>
+          <div className="flex items-center gap-1">
+            {onRefresh && (
+              <button
+                onClick={onRefresh}
+                disabled={isRefreshing}
+                className="p-1 hover:bg-indigo-100 rounded transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                title="Refresh participants list"
+              >
+                <RefreshCcw className={`w-4 h-4 text-indigo-600 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </button>
+            )}
+            
+            <button
+              onClick={() => setIsMinimized(true)}
+              className="p-1 hover:bg-gray-100 rounded transition-colors"
+            >
+              <Minimize2 className="w-4 h-4 text-gray-500" />
+            </button>
+          </div>
         </div>
 
         {/* Session status */}

@@ -46,10 +46,12 @@ export function GroupQuizRoom({
     onlineParticipants,
     isUserJoined,
     isLoading,
+    isFetching,
     joinSession,
     leaveSession,
     isJoining,
-    isLeaving
+    isLeaving,
+    refetch
   } = useSessionParticipants({
     groupId,
     sessionId,
@@ -167,6 +169,8 @@ export function GroupQuizRoom({
           participants={participants}
           onlineParticipants={onlineParticipants}
           currentUserId={user?.id}
+          onRefresh={refetch}
+          isRefreshing={isFetching}
         />
 
         {/* Action Panel */}

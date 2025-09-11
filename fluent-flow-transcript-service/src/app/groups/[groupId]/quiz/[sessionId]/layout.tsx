@@ -34,6 +34,8 @@ export default function QuizLayout({ children, params }: QuizLayoutProps) {
     isUserJoined,
     user,
     isAuthenticated,
+    participantsRefreshing,
+    refreshParticipants,
     
     // Auth functionality
     showAuthPrompt,
@@ -136,6 +138,8 @@ export default function QuizLayout({ children, params }: QuizLayoutProps) {
               participants={participants}
               onlineParticipants={onlineParticipants}
               user={user}
+              onRefresh={refreshParticipants}
+              isRefreshing={participantsRefreshing}
             />
           )}
 

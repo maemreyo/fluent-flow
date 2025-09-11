@@ -1,11 +1,9 @@
-import React from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { 
   fetchSessionParticipants, 
   joinSession, 
-  leaveSession,
-  SessionParticipant 
+  leaveSession
 } from '../queries'
 
 interface UseSessionParticipantsProps {
@@ -37,35 +35,23 @@ export const useSessionParticipants = ({
     }
   }
 
-  // Query participants with optimized caching
+  // Query participants with manual refresh only
   const participantsQuery = useQuery({
     queryKey: quizQueryKeys.sessionParticipants(groupId, sessionId),
     queryFn: () => fetchSessionParticipants(groupId, sessionId),
     enabled,
     ...quizQueryOptions.realtime,
-    // Override for participants - they change frequently but we rely on realtime updates
-    refetchInterval: 30000, // 30 seconds baseline
+    // DISABLED: No automatic refetching - use manual refresh button instead
+    refetchInterval: false, // Disabled continuous fetching
     refetchIntervalInBackground: false,
-    refetchOnMount: 'always' // Always fresh data on mount
+    refetchOnMount: 'always', // Fresh data on initial mount only
+    refetchOnWindowFocus: false // No refetch on window focus
   })
 
   // Derived state
   const participants = participantsQuery.data?.participants || []
   const onlineParticipants = participants.filter(p => p.is_online)
   const isUserJoined = participants.some(p => p.user_id === userId && p.is_online)
-
-  // Dynamic interval adjustment based on user status
-  React.useEffect(() => {
-    if (participantsQuery.data) {
-      // If user is not joined, we can poll less frequently
-      const newInterval = isUserJoined ? 15000 : 60000
-      
-      // Update the query's refetch interval
-      queryClient.setQueryDefaults(quizQueryKeys.sessionParticipants(groupId, sessionId), {
-        refetchInterval: newInterval
-      })
-    }
-  }, [isUserJoined, groupId, sessionId, queryClient, participantsQuery.data])
 
   // Join session mutation
   const joinMutation = useMutation({
