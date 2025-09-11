@@ -131,20 +131,26 @@ export default function LoopsPage() {
         />
       )}
 
-      {showSessionModal && selectedLoopId && (
-        <CreateSessionModal
-          loopId={selectedLoopId}
-          availableGroups={userGroups}
-          onClose={() => {
-            setShowSessionModal(false)
-            setSelectedLoopId(null)
-          }}
-          onSuccess={() => {
-            setShowSessionModal(false)
-            setSelectedLoopId(null)
-          }}
-        />
-      )}
+      {showSessionModal && selectedLoopId && (() => {
+        const selectedLoop = loops.find(loop => loop.id === selectedLoopId);
+        if (!selectedLoop) return null;
+
+        return (
+          <CreateSessionModal
+            loopId={selectedLoopId}
+            loopTitle={selectedLoop.videoTitle}
+            availableGroups={userGroups}
+            onClose={() => {
+              setShowSessionModal(false)
+              setSelectedLoopId(null)
+            }}
+            onSuccess={() => {
+              setShowSessionModal(false)
+              setSelectedLoopId(null)
+            }}
+          />
+        )
+      })()}
     </AuthenticatedPage>
   )
 }

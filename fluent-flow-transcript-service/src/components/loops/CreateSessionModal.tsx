@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar, Clock, X, AlertCircle, Users, Sparkles, Zap, FileText, Bell, BellOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,8 +10,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { getAuthHeaders } from '@/lib/supabase/auth-utils'
 
+const SESSION_TITLES = [
+  "Let's master this together!",
+  "Group Study Session",
+  "Deep Dive & Practice",
+  "Q&A and Review",
+  "Let's break this down",
+  "Collaborative Learning Hour",
+  "Practice Makes Perfect"
+];
+
+const SESSION_DESCRIPTIONS = [
+  "Join this session to practice and discuss the key concepts from the video.",
+  "A collaborative session to review the material and help each other out.",
+  "Let's work through this together and solidify our understanding.",
+  "Open discussion and practice session. All questions welcome!",
+  "Focusing on the tricky parts of the loop. Let's solve them as a team.",
+  "Let's watch, discuss, and quiz each other to make sure we've got it."
+];
+
 interface CreateSessionModalProps {
   loopId: string
+  loopTitle: string
   availableGroups: Array<{
     id: string
     name: string
@@ -22,7 +42,7 @@ interface CreateSessionModalProps {
   onSuccess: () => void
 }
 
-export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateSessionModalProps) {
+export function CreateSessionModal({ loopId, loopTitle, availableGroups, onClose }: CreateSessionModalProps) {
   const [selectedGroupId, setSelectedGroupId] = useState('')
   const [sessionTitle, setSessionTitle] = useState('')
   const [description, setDescription] = useState('')
@@ -30,6 +50,20 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
   const [scheduledAt, setScheduledAt] = useState('')
   const [notifyMembers, setNotifyMembers] = useState(true)
   const [isCreating, setIsCreating] = useState(false)
+
+  useEffect(() => {
+    // Set default values when the modal opens
+    if (availableGroups && availableGroups.length > 0) {
+      setSelectedGroupId(availableGroups[0].id);
+    }
+
+    const randomTitleTemplate = SESSION_TITLES[Math.floor(Math.random() * SESSION_TITLES.length)];
+    const finalTitle = loopTitle ? `${loopTitle}: ${randomTitleTemplate}` : randomTitleTemplate;
+    setSessionTitle(finalTitle);
+
+    const randomDescription = SESSION_DESCRIPTIONS[Math.floor(Math.random() * SESSION_DESCRIPTIONS.length)];
+    setDescription(randomDescription);
+  }, [availableGroups, loopTitle]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -281,8 +315,7 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
               notifyMembers 
                 ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50' 
                 : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-indigo-200 hover:bg-indigo-50/30'
-            }`}
-            >
+            }`}>
               <Checkbox
                 id="notifyMembers"
                 checked={notifyMembers}

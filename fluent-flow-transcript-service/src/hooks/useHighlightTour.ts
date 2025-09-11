@@ -1,8 +1,8 @@
 'use client'
 
-import { useEffect } from 'react'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
+import { useEffect } from 'react'
 import '../styles/driver-custom.css'
 
 interface TourStep {
@@ -23,7 +23,13 @@ interface UseHighlightTourOptions {
   forceShow?: boolean
 }
 
-export function useHighlightTour({ steps, enabled, onComplete, storageKey = 'fluent-flow-tour-shown', forceShow = false }: UseHighlightTourOptions) {
+export function useHighlightTour({
+  steps,
+  enabled,
+  onComplete,
+  storageKey = 'fluent-flow-tour-shown',
+  forceShow = false
+}: UseHighlightTourOptions) {
   useEffect(() => {
     if (!enabled || steps.length === 0) return
 
@@ -52,7 +58,7 @@ export function useHighlightTour({ steps, enabled, onComplete, storageKey = 'flu
           popover: {
             ...step.popover,
             side: step.popover.side || 'bottom',
-            align: step.popover.align || 'start',
+            align: step.popover.align || 'start'
           }
         })),
         onDestroyed: (element, step, options) => {
@@ -60,10 +66,10 @@ export function useHighlightTour({ steps, enabled, onComplete, storageKey = 'flu
           localStorage.setItem(storageKey, 'true')
           onComplete?.()
         },
-        onHighlighted: (element) => {
+        onHighlighted: element => {
           // Add custom highlight animation
           if (element && 'style' in element) {
-            (element as HTMLElement).style.transition = 'all 0.3s ease'
+            ;(element as HTMLElement).style.transition = 'all 0.3s ease'
           }
         }
       })
@@ -78,7 +84,7 @@ export function useHighlightTour({ steps, enabled, onComplete, storageKey = 'flu
 // Function to manually trigger a tour
 export function startTour(steps: TourStep[], options?: { storageKey?: string }) {
   const { storageKey = 'fluent-flow-tour-shown' } = options || {}
-  
+
   const driverObj = driver({
     showProgress: true,
     progressText: '{{current}} of {{total}}',
@@ -96,17 +102,17 @@ export function startTour(steps: TourStep[], options?: { storageKey?: string }) 
       popover: {
         ...step.popover,
         side: step.popover.side || 'bottom',
-        align: step.popover.align || 'start',
+        align: step.popover.align || 'start'
       }
     })),
     onDestroyed: () => {
       // Mark tour as shown when destroyed (either completed or closed)
       localStorage.setItem(storageKey, 'true')
     },
-    onHighlighted: (element) => {
+    onHighlighted: element => {
       // Add custom highlight animation
       if (element && 'style' in element) {
-        (element as HTMLElement).style.transition = 'all 0.3s ease'
+        ;(element as HTMLElement).style.transition = 'all 0.3s ease'
       }
     }
   })
@@ -121,15 +127,15 @@ export const PRACTICE_TOUR_STEPS: TourStep[] = [
     popover: {
       title: 'Practice Solo',
       description: 'Click here to start individual practice session with this loop',
-      side: 'top'
+      side: 'bottom'
     }
   },
   {
-    element: '[data-tour="group-session-button"]', 
+    element: '[data-tour="group-session-button"]',
     popover: {
       title: 'Study Together',
       description: 'Create a group study session to practice with friends',
-      side: 'top'
+      side: 'bottom'
     }
   }
 ]
