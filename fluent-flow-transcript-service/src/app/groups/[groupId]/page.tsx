@@ -1,9 +1,10 @@
 'use client'
 
-import { use, useState, useEffect } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { AuthPrompt } from '../../../components/auth/AuthPrompt'
+import { AuthenticatedPage } from '../../../components/pages/shared/AuthenticatedPage'
 import CreateSessionModal from '../../../components/sessions/CreateSessionModal'
 import SessionsTab from '../../../components/sessions/SessionsTab'
 import { useAuth } from '../../../contexts/AuthContext'
@@ -15,13 +16,13 @@ import { OverviewTab } from './components/OverviewTab'
 import { SettingsTab } from './components/SettingsTab'
 import { StatCards } from './components/StatCards'
 import { GroupTab, TabNavigation } from './components/TabNavigation'
-import { useGroupDetail } from './hooks/useGroupDetail'
 import { useGlobalQuizSessionListener } from './hooks/useGlobalQuizSessionListener'
+import { useGroupDetail } from './hooks/useGroupDetail'
 
-export default function GroupPage({ 
-  params, 
-  searchParams 
-}: { 
+export default function GroupPage({
+  params,
+  searchParams
+}: {
   params: Promise<{ groupId: string }>
   searchParams: Promise<{ tab?: string; highlight?: string }>
 }) {
@@ -31,9 +32,7 @@ export default function GroupPage({
   const queryClient = useQueryClient()
 
   // Use URL tab parameter or default to 'overview'
-  const [activeTab, setActiveTab] = useState<GroupTab>(
-    (initialTab as GroupTab) || 'overview'
-  )
+  const [activeTab, setActiveTab] = useState<GroupTab>((initialTab as GroupTab) || 'overview')
   const [showCreateSession, setShowCreateSession] = useState(false)
   const [selectedLoopId, setSelectedLoopId] = useState<string | undefined>(undefined)
   const [showAuthPrompt, setShowAuthPrompt] = useState(false)
@@ -67,32 +66,32 @@ export default function GroupPage({
   const handleTabChange = (newTab: GroupTab) => {
     console.log(`handleTabChange called with: ${newTab}, current activeTab: ${activeTab}`)
     setActiveTab(newTab)
-    
+
     // Update URL without navigation
     const current = new URLSearchParams(window.location.search)
     current.set('tab', newTab)
     if (highlightSessionId) {
       current.set('highlight', highlightSessionId)
     }
-    
+
     const search = current.toString()
     const query = search ? `?${search}` : ''
-    
+
     // Use replace to avoid adding to browser history for each tab click
     window.history.replaceState(null, '', `/groups/${groupId}${query}`)
   }
 
   const handleAuthSuccess = async () => {
     setShowAuthPrompt(false)
-    
+
     // Check for stored session redirect destination
     const destination = SessionRedirectManager.getAndClearIntendedDestination()
-    
+
     if (destination?.type === 'session' && destination.groupId === groupId) {
       try {
         // Auto-join the group first
         const joinResult = await SessionRedirectManager.autoJoinGroupById(groupId)
-        
+
         if (joinResult.success || joinResult.error?.includes('Already a member')) {
           // Redirect to the intended session after successful join/already member
           setTimeout(() => {
@@ -198,14 +197,17 @@ export default function GroupPage({
   console.log(`Rendering with activeTab: ${activeTab}, initialTab: ${initialTab}`)
 
   return (
-    <>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <AuthenticatedPage
+      title={`${(group as any).name}`}
+      subtitle="Sign in to create, join, and manage study groups with your classmates"
+    >
+      <div className="min-h-screen">
         <div className="pointer-events-none fixed inset-0 overflow-hidden">
           <div className="animate-blob absolute left-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-blue-400/20 to-purple-400/20 mix-blend-multiply blur-xl filter"></div>
           <div className="animate-blob animation-delay-2000 absolute right-10 top-10 h-72 w-72 rounded-full bg-gradient-to-r from-purple-400/20 to-pink-400/20 mix-blend-multiply blur-xl filter"></div>
         </div>
 
-        <div className="container relative z-10 mx-auto max-w-7xl px-6 py-8">
+        <div className="container relative z-10 mx-auto max-w-7xl px-6 pb-8 pt-4">
           <GroupHeader
             group={group as any}
             canManage={!!canManage}
@@ -253,11 +255,7 @@ export default function GroupPage({
                 highlightSessionId={highlightSessionId}
               />
             )}
-            {activeTab === 'settings' && canManage && (
-              <SettingsTab 
-                group={group as any} 
-              />
-            )}
+            {activeTab === 'settings' && canManage && <SettingsTab group={group as any} />}
           </div>
         </div>
 
@@ -270,6 +268,6 @@ export default function GroupPage({
           />
         )}
       </div>
-    </>
+    </AuthenticatedPage>
   )
 }
