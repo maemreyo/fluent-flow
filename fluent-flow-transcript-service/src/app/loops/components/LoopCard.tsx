@@ -80,7 +80,7 @@ export function LoopCard({ loop, onCreateSession, onPlay }: LoopCardProps) {
           className="flex flex-1 items-center justify-center gap-2 rounded-xl border-2 border-indigo-200 bg-white/80 px-4 py-2 text-sm font-semibold text-indigo-700 transition-all duration-300 hover:border-indigo-300 hover:bg-indigo-50"
         >
           <Users className="h-4 w-4" />
-          Group Session
+          Study Together
         </button>
       </div>
     </div>
