@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Calendar, Clock, X, AlertCircle, Send, Users, Sparkles, Zap, FileText, Bell, BellOff } from 'lucide-react'
+import { Calendar, Clock, X, AlertCircle, Users, Sparkles, Zap, FileText, Bell, BellOff } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -277,12 +277,11 @@ export function CreateSessionModal({ loopId, availableGroups, onClose }: CreateS
               </div>
               <Label className="text-sm font-semibold text-gray-700">Notifications</Label>
             </div>
-            <div className={`flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-300 cursor-pointer group ${
+            <div className={`flex items-start gap-4 p-4 rounded-2xl border-2 transition-all duration-300 group ${
               notifyMembers 
                 ? 'border-indigo-300 bg-gradient-to-br from-indigo-50 to-purple-50' 
                 : 'border-gray-200/60 bg-white/70 backdrop-blur-sm hover:border-indigo-200 hover:bg-indigo-50/30'
             }`}
-            onClick={() => setNotifyMembers(!notifyMembers)}
             >
               <Checkbox
                 id="notifyMembers"

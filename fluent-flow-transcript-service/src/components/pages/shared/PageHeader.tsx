@@ -8,6 +8,7 @@ export interface PageAction {
   action: () => void
   icon?: ComponentType<{ className?: string }>
   variant?: 'primary' | 'secondary'
+  disabled?: boolean
 }
 
 export interface PageTab {
@@ -50,7 +51,12 @@ export function PageHeader({
       <button
         key={index}
         onClick={action.action}
-        className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
+        disabled={action.disabled}
+        className={`inline-flex items-center gap-2 rounded-2xl px-6 py-3 font-semibold shadow-lg transition-all duration-300 ${
+          action.disabled
+            ? 'cursor-not-allowed opacity-50'
+            : 'hover:scale-105'
+        } ${
           isPrimary
             ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-700 hover:to-purple-700'
             : 'border-2 border-indigo-200 bg-white/80 text-indigo-700 backdrop-blur-sm hover:border-indigo-300 hover:bg-indigo-50'

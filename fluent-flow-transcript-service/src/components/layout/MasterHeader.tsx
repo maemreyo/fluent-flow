@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import {
+  Blocks,
   BookOpen,
   HelpCircle,
   LogOut,
@@ -9,6 +10,7 @@ import {
   RotateCcw,
   Settings,
   User,
+  User2,
   Users,
   X
 } from 'lucide-react'
@@ -37,8 +39,10 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
   const pathname = usePathname()
 
   const navigationItems = [
+    { href: '/dashboard', label: 'Dashboard', icon: Blocks },
     { href: '/loops', label: 'Loops', icon: RotateCcw },
-    { href: '/groups', label: 'Groups', icon: Users }
+    { href: '/groups', label: 'Groups', icon: Users },
+    { href: '/profile', label: 'Profile', icon: User2 }
     // { href: '/questions', label: 'Practice', icon: BookOpen },
   ]
 
@@ -48,8 +52,7 @@ export function MasterHeader({ showNavigation = true }: MasterHeaderProps) {
   }
 
   const handleProfile = () => {
-    // Navigate to profile page when implemented
-    console.log('Navigate to profile')
+    router.push('/profile')
   }
 
   const handleSettings = () => {
