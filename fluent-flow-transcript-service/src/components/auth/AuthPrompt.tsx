@@ -271,16 +271,42 @@ export function AuthPrompt({ onClose, onAuthSuccess, title, subtitle }: AuthProm
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
+              <div className="mt-6 space-y-3 text-center">
                 <button
                   onClick={() => setIsSignUp(!isSignUp)}
-                  className="text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                  className="block w-full text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
                 >
                   {isSignUp 
                     ? "Already have an account? Sign in" 
                     : "Don't have an account? Create one"
                   }
                 </button>
+                
+                {!isSignUp && (
+                  <button
+                    onClick={() => window.location.href = '/auth/forgot-password'}
+                    className="text-sm text-gray-600 hover:text-indigo-600 transition-colors"
+                  >
+                    Forgot your password?
+                  </button>
+                )}
+                
+                <div className="pt-2 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-2">
+                    Prefer the full experience?
+                  </p>
+                  <button
+                    onClick={() => {
+                      const currentUrl = window.location.pathname + window.location.search
+                      const authUrl = isSignUp ? '/auth/signup' : '/auth/signin'
+                      const redirectParam = currentUrl !== '/' ? `?redirectTo=${encodeURIComponent(currentUrl)}` : ''
+                      window.location.href = `${authUrl}${redirectParam}`
+                    }}
+                    className="text-sm text-indigo-600 hover:text-indigo-700 font-medium transition-colors"
+                  >
+                    {isSignUp ? 'Go to Sign Up Page' : 'Go to Sign In Page'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
