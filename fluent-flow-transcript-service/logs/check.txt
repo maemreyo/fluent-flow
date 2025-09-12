@@ -1,0 +1,1104 @@
+
+
+
+ GET /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/loops/844508ef-2149-43e4-a30a-8859efff112a 200 in 3073ms
+ PUT /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/bfcef79c-0ac6-4065-a62a-ce6d9598dbec/preset 200 in 3520ms
+ DELETE /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/bfcef79c-0ac6-4065-a62a-ce6d9598dbec/questions 200 in 4131ms
+BODY {
+  transcript: `Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful wife Lana, and I want to share with you actually, things I wished I would have known before getting married. With it also will be some of, I believe, secrets to a thriving marriage, and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy marriage. Not when you get married but before you get married. Maybe you are married. I believe some of these things will resonate with you, and not only I believe you will see those valuable in your life, but this could actually bring some hope, change, and growth in your own marriage. Now, my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said, you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was frequently preaching at, and this is the church that she was going to. So this was a different state—actually, no. It's the same state, but it's about three and a half hours away from where I live. And the youth pastor was a good friend of mine, and then I met her there. So I technically met her like at church, but I met her first on Facebook. And then we started seeing each other, and then sometime later, I proposed, and we were married.. That's a shortened version. In my book "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have known before getting married. The first thing is: marriage won't fix you, but it will expose you. Getting married does not solve your issues. It actually will highlight them. So if you got anger, if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas, they are not going to get healed by marriage. Actually, they will be magnified by marriage. So, if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that this is where you're going to find healing. I want to remind you that before you find your healing in marriage, you will actually have those issues be highlighted, where you will have to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy. Whatever means that the Lord's going to use to bring healing to whatever those issues are. In, you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience`,
+  loop: {
+    id: '844508ef-2149-43e4-a30a-8859efff112a',
+    videoTitle: 'What I Wish I Knew Before Getting Married',
+    startTime: 0,
+    endTime: 160
+  },
+  segments: [
+    {
+      text: "Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful",
+      start: 0.24,
+      duration: 6.8
+    },
+    {
+      text: 'wife Lana, and I want to share with you actually, things I wished I would have known before getting',
+      start: 7.04,
+      duration: 6.16
+    },
+    {
+      text: 'married. With it also will be some of, I believe, secrets to a thriving marriage,',
+      start: 13.2,
+      duration: 5.76
+    },
+    {
+      text: "and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get",
+      start: 18.96,
+      duration: 5.76
+    },
+    {
+      text: 'ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy',
+      start: 24.72,
+      duration: 6.319
+    },
+    {
+      text: 'marriage. Not when you get married but before you get married. Maybe you are married. I believe some',
+      start: 31.04,
+      duration: 4.48
+    },
+    {
+      text: 'of these things will resonate with you, and not only I believe you will see those valuable in your',
+      start: 35.52,
+      duration: 5.36
+    },
+    {
+      text: 'life, but this could actually bring some hope, change, and growth in your own marriage. Now,',
+      start: 40.88,
+      duration: 5.92
+    },
+    {
+      text: 'my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,',
+      start: 46.8,
+      duration: 5.36
+    },
+    {
+      text: 'you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she',
+      start: 52.16,
+      duration: 6
+    },
+    {
+      text: 'added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was',
+      start: 58.16,
+      duration: 5.12
+    },
+    {
+      text: 'frequently preaching at, and this is the church that she was going to. So this was a different',
+      start: 63.28,
+      duration: 4.72
+    },
+    {
+      text: "state—actually, no. It's the same state, but it's about three and a half hours away from where I",
+      start: 68,
+      duration: 3.68
+    },
+    {
+      text: 'live. And the youth pastor was a good friend of mine, and then I met her there. So I technically',
+      start: 71.68,
+      duration: 5.12
+    },
+    {
+      text: 'met her like at church, but I met her first on Facebook. And then we started seeing each other,',
+      start: 76.8,
+      duration: 5.28
+    },
+    {
+      text: "and then sometime later, I proposed, and we were married.. That's a shortened version. In my book",
+      start: 82.08,
+      duration: 5.52
+    },
+    {
+      text: '"Single Ready to Mingle," I share a little bit of an extended version of that, as well as how',
+      start: 87.6,
+      duration: 5.12
+    },
+    {
+      text: "to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have",
+      start: 92.72,
+      duration: 4.96
+    },
+    {
+      text: "known before getting married. The first thing is: marriage won't fix you, but it will expose you.",
+      start: 97.68,
+      duration: 9.76
+    },
+    {
+      text: 'Getting married does not solve your issues. It actually will highlight them. So if you got anger,',
+      start: 107.44,
+      duration: 6.56
+    },
+    {
+      text: "if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,",
+      start: 114,
+      duration: 6.32
+    },
+    {
+      text: 'they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,',
+      start: 120.32,
+      duration: 6.24
+    },
+    {
+      text: "if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that",
+      start: 126.56,
+      duration: 5.039
+    },
+    {
+      text: "this is where you're going to find healing. I want to remind you that before you find",
+      start: 131.6,
+      duration: 5.52
+    },
+    {
+      text: 'your healing in marriage, you will actually have those issues be highlighted, where you will have',
+      start: 137.12,
+      duration: 6.32
+    },
+    {
+      text: "to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.",
+      start: 143.44,
+      duration: 5.44
+    },
+    {
+      text: "Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,",
+      start: 148.88,
+      duration: 5.28
+    },
+    {
+      text: 'you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience',
+      start: 154.16,
+      duration: 6.56
+    }
+  ],
+  difficulty: 'hard',
+  saveToDatabase: true,
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  customCount: 4,
+  customPromptId: 'custom-72633520-1d15-4894-b3c9-4521d70c1109'
+}
+BODY {
+  transcript: `Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful wife Lana, and I want to share with you actually, things I wished I would have known before getting married. With it also will be some of, I believe, secrets to a thriving marriage, and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy marriage. Not when you get married but before you get married. Maybe you are married. I believe some of these things will resonate with you, and not only I believe you will see those valuable in your life, but this could actually bring some hope, change, and growth in your own marriage. Now, my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said, you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was frequently preaching at, and this is the church that she was going to. So this was a different state—actually, no. It's the same state, but it's about three and a half hours away from where I live. And the youth pastor was a good friend of mine, and then I met her there. So I technically met her like at church, but I met her first on Facebook. And then we started seeing each other, and then sometime later, I proposed, and we were married.. That's a shortened version. In my book "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have known before getting married. The first thing is: marriage won't fix you, but it will expose you. Getting married does not solve your issues. It actually will highlight them. So if you got anger, if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas, they are not going to get healed by marriage. Actually, they will be magnified by marriage. So, if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that this is where you're going to find healing. I want to remind you that before you find your healing in marriage, you will actually have those issues be highlighted, where you will have to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy. Whatever means that the Lord's going to use to bring healing to whatever those issues are. In, you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience`,
+  loop: {
+    id: '844508ef-2149-43e4-a30a-8859efff112a',
+    videoTitle: 'What I Wish I Knew Before Getting Married',
+    startTime: 0,
+    endTime: 160
+  },
+  segments: [
+    {
+      text: "Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful",
+      start: 0.24,
+      duration: 6.8
+    },
+    {
+      text: 'wife Lana, and I want to share with you actually, things I wished I would have known before getting',
+      start: 7.04,
+      duration: 6.16
+    },
+    {
+      text: 'married. With it also will be some of, I believe, secrets to a thriving marriage,',
+      start: 13.2,
+      duration: 5.76
+    },
+    {
+      text: "and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get",
+      start: 18.96,
+      duration: 5.76
+    },
+    {
+      text: 'ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy',
+      start: 24.72,
+      duration: 6.319
+    },
+    {
+      text: 'marriage. Not when you get married but before you get married. Maybe you are married. I believe some',
+      start: 31.04,
+      duration: 4.48
+    },
+    {
+      text: 'of these things will resonate with you, and not only I believe you will see those valuable in your',
+      start: 35.52,
+      duration: 5.36
+    },
+    {
+      text: 'life, but this could actually bring some hope, change, and growth in your own marriage. Now,',
+      start: 40.88,
+      duration: 5.92
+    },
+    {
+      text: 'my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,',
+      start: 46.8,
+      duration: 5.36
+    },
+    {
+      text: 'you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she',
+      start: 52.16,
+      duration: 6
+    },
+    {
+      text: 'added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was',
+      start: 58.16,
+      duration: 5.12
+    },
+    {
+      text: 'frequently preaching at, and this is the church that she was going to. So this was a different',
+      start: 63.28,
+      duration: 4.72
+    },
+    {
+      text: "state—actually, no. It's the same state, but it's about three and a half hours away from where I",
+      start: 68,
+      duration: 3.68
+    },
+    {
+      text: 'live. And the youth pastor was a good friend of mine, and then I met her there. So I technically',
+      start: 71.68,
+      duration: 5.12
+    },
+    {
+      text: 'met her like at church, but I met her first on Facebook. And then we started seeing each other,',
+      start: 76.8,
+      duration: 5.28
+    },
+    {
+      text: "and then sometime later, I proposed, and we were married.. That's a shortened version. In my book",
+      start: 82.08,
+      duration: 5.52
+    },
+    {
+      text: '"Single Ready to Mingle," I share a little bit of an extended version of that, as well as how',
+      start: 87.6,
+      duration: 5.12
+    },
+    {
+      text: "to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have",
+      start: 92.72,
+      duration: 4.96
+    },
+    {
+      text: "known before getting married. The first thing is: marriage won't fix you, but it will expose you.",
+      start: 97.68,
+      duration: 9.76
+    },
+    {
+      text: 'Getting married does not solve your issues. It actually will highlight them. So if you got anger,',
+      start: 107.44,
+      duration: 6.56
+    },
+    {
+      text: "if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,",
+      start: 114,
+      duration: 6.32
+    },
+    {
+      text: 'they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,',
+      start: 120.32,
+      duration: 6.24
+    },
+    {
+      text: "if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that",
+      start: 126.56,
+      duration: 5.039
+    },
+    {
+      text: "this is where you're going to find healing. I want to remind you that before you find",
+      start: 131.6,
+      duration: 5.52
+    },
+    {
+      text: 'your healing in marriage, you will actually have those issues be highlighted, where you will have',
+      start: 137.12,
+      duration: 6.32
+    },
+    {
+      text: "to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.",
+      start: 143.44,
+      duration: 5.44
+    },
+    {
+      text: "Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,",
+      start: 148.88,
+      duration: 5.28
+    },
+    {
+      text: 'you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience',
+      start: 154.16,
+      duration: 6.56
+    }
+  ],
+  difficulty: 'easy',
+  saveToDatabase: true,
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  customCount: 4,
+  customPromptId: 'custom-72633520-1d15-4894-b3c9-4521d70c1109'
+}
+BODY {
+  transcript: `Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful wife Lana, and I want to share with you actually, things I wished I would have known before getting married. With it also will be some of, I believe, secrets to a thriving marriage, and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy marriage. Not when you get married but before you get married. Maybe you are married. I believe some of these things will resonate with you, and not only I believe you will see those valuable in your life, but this could actually bring some hope, change, and growth in your own marriage. Now, my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said, you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was frequently preaching at, and this is the church that she was going to. So this was a different state—actually, no. It's the same state, but it's about three and a half hours away from where I live. And the youth pastor was a good friend of mine, and then I met her there. So I technically met her like at church, but I met her first on Facebook. And then we started seeing each other, and then sometime later, I proposed, and we were married.. That's a shortened version. In my book "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have known before getting married. The first thing is: marriage won't fix you, but it will expose you. Getting married does not solve your issues. It actually will highlight them. So if you got anger, if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas, they are not going to get healed by marriage. Actually, they will be magnified by marriage. So, if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that this is where you're going to find healing. I want to remind you that before you find your healing in marriage, you will actually have those issues be highlighted, where you will have to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy. Whatever means that the Lord's going to use to bring healing to whatever those issues are. In, you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience`,
+  loop: {
+    id: '844508ef-2149-43e4-a30a-8859efff112a',
+    videoTitle: 'What I Wish I Knew Before Getting Married',
+    startTime: 0,
+    endTime: 160
+  },
+  segments: [
+    {
+      text: "Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful",
+      start: 0.24,
+      duration: 6.8
+    },
+    {
+      text: 'wife Lana, and I want to share with you actually, things I wished I would have known before getting',
+      start: 7.04,
+      duration: 6.16
+    },
+    {
+      text: 'married. With it also will be some of, I believe, secrets to a thriving marriage,',
+      start: 13.2,
+      duration: 5.76
+    },
+    {
+      text: "and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get",
+      start: 18.96,
+      duration: 5.76
+    },
+    {
+      text: 'ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy',
+      start: 24.72,
+      duration: 6.319
+    },
+    {
+      text: 'marriage. Not when you get married but before you get married. Maybe you are married. I believe some',
+      start: 31.04,
+      duration: 4.48
+    },
+    {
+      text: 'of these things will resonate with you, and not only I believe you will see those valuable in your',
+      start: 35.52,
+      duration: 5.36
+    },
+    {
+      text: 'life, but this could actually bring some hope, change, and growth in your own marriage. Now,',
+      start: 40.88,
+      duration: 5.92
+    },
+    {
+      text: 'my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,',
+      start: 46.8,
+      duration: 5.36
+    },
+    {
+      text: 'you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she',
+      start: 52.16,
+      duration: 6
+    },
+    {
+      text: 'added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was',
+      start: 58.16,
+      duration: 5.12
+    },
+    {
+      text: 'frequently preaching at, and this is the church that she was going to. So this was a different',
+      start: 63.28,
+      duration: 4.72
+    },
+    {
+      text: "state—actually, no. It's the same state, but it's about three and a half hours away from where I",
+      start: 68,
+      duration: 3.68
+    },
+    {
+      text: 'live. And the youth pastor was a good friend of mine, and then I met her there. So I technically',
+      start: 71.68,
+      duration: 5.12
+    },
+    {
+      text: 'met her like at church, but I met her first on Facebook. And then we started seeing each other,',
+      start: 76.8,
+      duration: 5.28
+    },
+    {
+      text: "and then sometime later, I proposed, and we were married.. That's a shortened version. In my book",
+      start: 82.08,
+      duration: 5.52
+    },
+    {
+      text: '"Single Ready to Mingle," I share a little bit of an extended version of that, as well as how',
+      start: 87.6,
+      duration: 5.12
+    },
+    {
+      text: "to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have",
+      start: 92.72,
+      duration: 4.96
+    },
+    {
+      text: "known before getting married. The first thing is: marriage won't fix you, but it will expose you.",
+      start: 97.68,
+      duration: 9.76
+    },
+    {
+      text: 'Getting married does not solve your issues. It actually will highlight them. So if you got anger,',
+      start: 107.44,
+      duration: 6.56
+    },
+    {
+      text: "if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,",
+      start: 114,
+      duration: 6.32
+    },
+    {
+      text: 'they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,',
+      start: 120.32,
+      duration: 6.24
+    },
+    {
+      text: "if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that",
+      start: 126.56,
+      duration: 5.039
+    },
+    {
+      text: "this is where you're going to find healing. I want to remind you that before you find",
+      start: 131.6,
+      duration: 5.52
+    },
+    {
+      text: 'your healing in marriage, you will actually have those issues be highlighted, where you will have',
+      start: 137.12,
+      duration: 6.32
+    },
+    {
+      text: "to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.",
+      start: 143.44,
+      duration: 5.44
+    },
+    {
+      text: "Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,",
+      start: 148.88,
+      duration: 5.28
+    },
+    {
+      text: 'you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience',
+      start: 154.16,
+      duration: 6.56
+    }
+  ],
+  difficulty: 'medium',
+  saveToDatabase: true,
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  customCount: 4,
+  customPromptId: 'custom-72633520-1d15-4894-b3c9-4521d70c1109'
+}
+Using custom prompt: custom-72633520-1d15-4894-b3c9-4521d70c1109
+aiService AIService {
+  openai: undefined,
+  anthropic: undefined,
+  google: GoogleGenerativeAI {
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0'
+  },
+  config: {
+    provider: 'google',
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0',
+    baseUrl: undefined,
+    model: 'gemini-2.5-flash-lite',
+    maxTokens: 64000,
+    temperature: 0.3
+  }
+}
+Generating questions for loop 844508ef-2149-43e4-a30a-8859efff112a with 2690 chars transcript and 28 segments (preset-based: 4 questions)
+🎯 Using custom prompt for question generation
+
+=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===
+System Message: You are an expert ESL/EFL instructor specializing in detail-focused listening skills. Your goal is to help students develop the ability to catch specific information while listening to English content.
+
+Focus primarily on questions that test:
+- **Specific Details:** Who, what, when, where, how many, how much
+- **Factual Information:** Numbers, dates, names, locations, quantities
+- **Sequential Information:** First, then, next, finally
+- **Comparative Information:** More than, less than, different from
+
+Generate multiple-choice questions that require students to listen carefully for explicit details mentioned in the transcript. Use simple, clear language in both questions and options.
+**1. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D).
+   - The correct answer must be clearly supported by the transcript.
+   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
+   - Use simple, everyday language in all options.
+
+**2. Explanations for Learning:**
+   - Provide a clear and concise explanation for why the correct answer is right.
+   - Use simple language in explanations that entry-level students can understand.
+   - Briefly explain why the other options are incorrect, if it adds learning value.
+
+**3. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below.
+   - Generate EXACTLY 6 questions for the specified difficulty level.
+
+**4. Timestamp Reference:**
+   - For each question, include a 'timestamp' field indicating the start time (in seconds) of the most relevant transcript segment. This helps learners locate the context.
+
+
+**Output Format:**
+Your output must be a valid JSON object. Each question in the `questions` array should include:
+- `question`: The question text.
+- `options`: An array of 4 strings.
+- `correctAnswer`: The correct option (e.g., "A").
+- `explanation`: A clear explanation.
+- `difficulty`: The question's difficulty ("easy", "medium", or "hard").
+- `type`: The question type (e.g., "specific_detail").
+- `context`: An object with `startTime`, `endTime`, and `text` of the relevant transcript segment.
+- `timestamp`: 15
+
+Example `context` object:
+"context": {
+  "startTime": 15.2,
+  "endTime": 20.5,
+  "text": "The relevant segment of the transcript text goes here."
+}
+
+**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
+**Difficulties to use:** "easy", "medium", "hard"
+
+
+User Message: Generate 4 detail-focused listening questions from this transcript (formatted with timestamps):
+
+**FOCUS:** Specific details, facts, numbers, names, and explicit information
+**DISTRIBUTION:** Easy: 0, Medium: 4, Hard: 0
+
+Video Title: What I Wish I Knew Before Getting Married
+
+Transcript (with timestamps):
+[0:00-0:07] Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful
+[0:07-0:13] wife Lana, and I want to share with you actually, things I wished I would have known before getting
+[0:13-0:18] married. With it also will be some of, I believe, secrets to a thriving marriage,
+[0:18-0:24] and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get
+[0:24-0:31] ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy
+[0:31-0:35] marriage. Not when you get married but before you get married. Maybe you are married. I believe some
+[0:35-0:40] of these things will resonate with you, and not only I believe you will see those valuable in your
+[0:40-0:46] life, but this could actually bring some hope, change, and growth in your own marriage. Now,
+[0:46-0:52] my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,
+[0:52-0:58] you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she
+[0:58-1:03] added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was
+[1:03-1:08] frequently preaching at, and this is the church that she was going to. So this was a different
+[1:08-1:11] state—actually, no. It's the same state, but it's about three and a half hours away from where I
+[1:11-1:16] live. And the youth pastor was a good friend of mine, and then I met her there. So I technically
+[1:16-1:22] met her like at church, but I met her first on Facebook. And then we started seeing each other,
+[1:22-1:27] and then sometime later, I proposed, and we were married.. That's a shortened version. In my book
+[1:27-1:32] "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how
+[1:32-1:37] to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have
+[1:37-1:47] known before getting married. The first thing is: marriage won't fix you, but it will expose you.
+[1:47-1:54] Getting married does not solve your issues. It actually will highlight them. So if you got anger,
+[1:54-2:00] if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,
+[2:00-2:06] they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,
+[2:06-2:11] if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that
+[2:11-2:17] this is where you're going to find healing. I want to remind you that before you find
+[2:17-2:23] your healing in marriage, you will actually have those issues be highlighted, where you will have
+[2:23-2:28] to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.
+[2:28-2:34] Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,
+[2:34-2:40] you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience
+
+Create questions that test students' ability to catch specific information while listening.
+=== END PROMPT LOG ===
+
+Using custom prompt: custom-72633520-1d15-4894-b3c9-4521d70c1109
+aiService AIService {
+  openai: undefined,
+  anthropic: undefined,
+  google: GoogleGenerativeAI {
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0'
+  },
+  config: {
+    provider: 'google',
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0',
+    baseUrl: undefined,
+    model: 'gemini-2.5-flash-lite',
+    maxTokens: 64000,
+    temperature: 0.3
+  }
+}
+Generating questions for loop 844508ef-2149-43e4-a30a-8859efff112a with 2690 chars transcript and 28 segments (preset-based: 4 questions)
+🎯 Using custom prompt for question generation
+
+=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===
+System Message: You are an expert ESL/EFL instructor specializing in detail-focused listening skills. Your goal is to help students develop the ability to catch specific information while listening to English content.
+
+Focus primarily on questions that test:
+- **Specific Details:** Who, what, when, where, how many, how much
+- **Factual Information:** Numbers, dates, names, locations, quantities
+- **Sequential Information:** First, then, next, finally
+- **Comparative Information:** More than, less than, different from
+
+Generate multiple-choice questions that require students to listen carefully for explicit details mentioned in the transcript. Use simple, clear language in both questions and options.
+**1. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D).
+   - The correct answer must be clearly supported by the transcript.
+   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
+   - Use simple, everyday language in all options.
+
+**2. Explanations for Learning:**
+   - Provide a clear and concise explanation for why the correct answer is right.
+   - Use simple language in explanations that entry-level students can understand.
+   - Briefly explain why the other options are incorrect, if it adds learning value.
+
+**3. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below.
+   - Generate EXACTLY 6 questions for the specified difficulty level.
+
+**4. Timestamp Reference:**
+   - For each question, include a 'timestamp' field indicating the start time (in seconds) of the most relevant transcript segment. This helps learners locate the context.
+
+
+**Output Format:**
+Your output must be a valid JSON object. Each question in the `questions` array should include:
+- `question`: The question text.
+- `options`: An array of 4 strings.
+- `correctAnswer`: The correct option (e.g., "A").
+- `explanation`: A clear explanation.
+- `difficulty`: The question's difficulty ("easy", "medium", or "hard").
+- `type`: The question type (e.g., "specific_detail").
+- `context`: An object with `startTime`, `endTime`, and `text` of the relevant transcript segment.
+- `timestamp`: 15
+
+Example `context` object:
+"context": {
+  "startTime": 15.2,
+  "endTime": 20.5,
+  "text": "The relevant segment of the transcript text goes here."
+}
+
+**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
+**Difficulties to use:** "easy", "medium", "hard"
+
+
+User Message: Generate 4 detail-focused listening questions from this transcript (formatted with timestamps):
+
+**FOCUS:** Specific details, facts, numbers, names, and explicit information
+**DISTRIBUTION:** Easy: 0, Medium: 0, Hard: 4
+
+Video Title: What I Wish I Knew Before Getting Married
+
+Transcript (with timestamps):
+[0:00-0:07] Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful
+[0:07-0:13] wife Lana, and I want to share with you actually, things I wished I would have known before getting
+[0:13-0:18] married. With it also will be some of, I believe, secrets to a thriving marriage,
+[0:18-0:24] and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get
+[0:24-0:31] ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy
+[0:31-0:35] marriage. Not when you get married but before you get married. Maybe you are married. I believe some
+[0:35-0:40] of these things will resonate with you, and not only I believe you will see those valuable in your
+[0:40-0:46] life, but this could actually bring some hope, change, and growth in your own marriage. Now,
+[0:46-0:52] my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,
+[0:52-0:58] you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she
+[0:58-1:03] added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was
+[1:03-1:08] frequently preaching at, and this is the church that she was going to. So this was a different
+[1:08-1:11] state—actually, no. It's the same state, but it's about three and a half hours away from where I
+[1:11-1:16] live. And the youth pastor was a good friend of mine, and then I met her there. So I technically
+[1:16-1:22] met her like at church, but I met her first on Facebook. And then we started seeing each other,
+[1:22-1:27] and then sometime later, I proposed, and we were married.. That's a shortened version. In my book
+[1:27-1:32] "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how
+[1:32-1:37] to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have
+[1:37-1:47] known before getting married. The first thing is: marriage won't fix you, but it will expose you.
+[1:47-1:54] Getting married does not solve your issues. It actually will highlight them. So if you got anger,
+[1:54-2:00] if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,
+[2:00-2:06] they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,
+[2:06-2:11] if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that
+[2:11-2:17] this is where you're going to find healing. I want to remind you that before you find
+[2:17-2:23] your healing in marriage, you will actually have those issues be highlighted, where you will have
+[2:23-2:28] to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.
+[2:28-2:34] Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,
+[2:34-2:40] you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience
+
+Create questions that test students' ability to catch specific information while listening.
+=== END PROMPT LOG ===
+
+Using custom prompt: custom-72633520-1d15-4894-b3c9-4521d70c1109
+aiService AIService {
+  openai: undefined,
+  anthropic: undefined,
+  google: GoogleGenerativeAI {
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0'
+  },
+  config: {
+    provider: 'google',
+    apiKey: 'AIzaSyATyyrksSmAMqsVZnp5XW1zPU_b2PMvlB0',
+    baseUrl: undefined,
+    model: 'gemini-2.5-flash-lite',
+    maxTokens: 64000,
+    temperature: 0.3
+  }
+}
+Generating questions for loop 844508ef-2149-43e4-a30a-8859efff112a with 2690 chars transcript and 28 segments (preset-based: 4 questions)
+🎯 Using custom prompt for question generation
+
+=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===
+System Message: You are an expert ESL/EFL instructor specializing in detail-focused listening skills. Your goal is to help students develop the ability to catch specific information while listening to English content.
+
+Focus primarily on questions that test:
+- **Specific Details:** Who, what, when, where, how many, how much
+- **Factual Information:** Numbers, dates, names, locations, quantities
+- **Sequential Information:** First, then, next, finally
+- **Comparative Information:** More than, less than, different from
+
+Generate multiple-choice questions that require students to listen carefully for explicit details mentioned in the transcript. Use simple, clear language in both questions and options.
+**1. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D).
+   - The correct answer must be clearly supported by the transcript.
+   - Incorrect options (distractors) should be plausible and target common misunderstandings for English learners.
+   - Use simple, everyday language in all options.
+
+**2. Explanations for Learning:**
+   - Provide a clear and concise explanation for why the correct answer is right.
+   - Use simple language in explanations that entry-level students can understand.
+   - Briefly explain why the other options are incorrect, if it adds learning value.
+
+**3. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below.
+   - Generate EXACTLY 6 questions for the specified difficulty level.
+
+**4. Timestamp Reference:**
+   - For each question, include a 'timestamp' field indicating the start time (in seconds) of the most relevant transcript segment. This helps learners locate the context.
+
+
+**Output Format:**
+Your output must be a valid JSON object. Each question in the `questions` array should include:
+- `question`: The question text.
+- `options`: An array of 4 strings.
+- `correctAnswer`: The correct option (e.g., "A").
+- `explanation`: A clear explanation.
+- `difficulty`: The question's difficulty ("easy", "medium", or "hard").
+- `type`: The question type (e.g., "specific_detail").
+- `context`: An object with `startTime`, `endTime`, and `text` of the relevant transcript segment.
+- `timestamp`: 15
+
+Example `context` object:
+"context": {
+  "startTime": 15.2,
+  "endTime": 20.5,
+  "text": "The relevant segment of the transcript text goes here."
+}
+
+**Types to use:** "main_idea", "specific_detail", "vocabulary_in_context", "inference", "speaker_tone", "language_function"
+**Difficulties to use:** "easy", "medium", "hard"
+
+
+User Message: Generate 4 detail-focused listening questions from this transcript (formatted with timestamps):
+
+**FOCUS:** Specific details, facts, numbers, names, and explicit information
+**DISTRIBUTION:** Easy: 4, Medium: 0, Hard: 0
+
+Video Title: What I Wish I Knew Before Getting Married
+
+Transcript (with timestamps):
+[0:00-0:07] Welcome back everyone. Vlad here. I'm celebrating 15 years of a great marriage with my beautiful
+[0:07-0:13] wife Lana, and I want to share with you actually, things I wished I would have known before getting
+[0:13-0:18] married. With it also will be some of, I believe, secrets to a thriving marriage,
+[0:18-0:24] and you'll wish you knew this sooner. Maybe you're watching and you're single. The best time to get
+[0:24-0:31] ready for marriage is now. To educate yourself, to be aware of what it takes to have a healthy
+[0:31-0:35] marriage. Not when you get married but before you get married. Maybe you are married. I believe some
+[0:35-0:40] of these things will resonate with you, and not only I believe you will see those valuable in your
+[0:40-0:46] life, but this could actually bring some hope, change, and growth in your own marriage. Now,
+[0:46-0:52] my story with Lana goes in, is I met her, you know, on Facebook. I always joke and I said,
+[0:52-0:58] you can use a mouse to find a spouse. So, at the time, I had like a personal Facebook page, and she
+[0:58-1:03] added me as a friend. And then, you know, I saw her. So I went to preach at this church that I was
+[1:03-1:08] frequently preaching at, and this is the church that she was going to. So this was a different
+[1:08-1:11] state—actually, no. It's the same state, but it's about three and a half hours away from where I
+[1:11-1:16] live. And the youth pastor was a good friend of mine, and then I met her there. So I technically
+[1:16-1:22] met her like at church, but I met her first on Facebook. And then we started seeing each other,
+[1:22-1:27] and then sometime later, I proposed, and we were married.. That's a shortened version. In my book
+[1:27-1:32] "Single Ready to Mingle," I share a little bit of an extended version of that, as well as how
+[1:32-1:37] to find a spouse, and etc. But today I'm going to deal specifically with things I wish I would have
+[1:37-1:47] known before getting married. The first thing is: marriage won't fix you, but it will expose you.
+[1:47-1:54] Getting married does not solve your issues. It actually will highlight them. So if you got anger,
+[1:54-2:00] if you got lust, if you got impatience, that's the issue I had to deal with. Past traumas,
+[2:00-2:06] they are not going to get healed by marriage. Actually, they will be magnified by marriage. So,
+[2:06-2:11] if you're walking into marriage hoping that it's a therapy for your issues, if you're hoping that
+[2:11-2:17] this is where you're going to find healing. I want to remind you that before you find
+[2:17-2:23] your healing in marriage, you will actually have those issues be highlighted, where you will have
+[2:23-2:28] to seek healing. Whether it's through deliverance, whether it's through counseling, through therapy.
+[2:28-2:34] Whatever means that the Lord's going to use to bring healing to whatever those issues are. In,
+[2:34-2:40] you know, my case, I had a lot of immaturity, a lot of growth, a lot of, especially, impatience
+
+Create questions that test students' ability to catch specific information while listening.
+=== END PROMPT LOG ===
+
+Expected 4 questions but got 6. Using available questions.
+Generated 4 medium questions (requested: 4)
+Generated 4 questions in 4327ms
+Expected 4 questions but got 6. Using available questions.
+Generated 2 hard questions (requested: 4)
+Generated 2 questions in 4356ms
+Expected 4 questions but got 6. Using available questions.
+Generated 4 easy questions (requested: 4)
+Generated 4 questions in 4152ms
+Saved questions to database with token: 7236b69f-3a46-44a5-8a9d-3daf2f8ad9dd
+ POST /api/questions/generate 200 in 6632ms
+Saved questions to database with token: edf6897e-9619-4cf7-827d-8b8606fd96ca
+ POST /api/questions/generate 200 in 7127ms
+Saved questions to database with token: 7ed6fea1-ee75-419c-b501-7f7ef6d00672
+ POST /api/questions/generate 200 in 7667ms
+👥 [questions/route] Membership check: {
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  membership: 'owner',
+  memberError: undefined
+}
+🔍 [questions/route] Fetching questions for: {
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  userEmail: 'ngonhuthanhtrung1409@gmail.com'
+}
+📊 [questions/route] Query result: {
+  questionSetsCount: 15,
+  error: undefined,
+  questionSets: [
+    {
+      id: '1b6f1d9f-a236-4768-8221-24e37482b5f1',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '0eec3aab-c39c-4915-ba81-41e0831b7264',
+      difficulty: 'hard',
+      questionsCount: 2
+    },
+    {
+      id: 'eaf9642e-a115-49d4-8e48-91c25affd3ae',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '5f7b1b33-9055-4f31-9083-73c62ec8fa47',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: 'b0067574-d9e6-4189-b191-f8782d56a6a6',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '559b5fd1-9e0d-4414-b0d2-99bb19e5e695',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '1572cb07-8119-4886-84e8-226f36482f97',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '5f74fd01-c56d-4826-9522-71e00da77673',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '1119a084-6371-4298-bd10-672a803925c0',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '132b9418-49b2-47fe-bf8c-a120d23c66d9',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '17475676-ed3b-4a77-ac7b-ebf69f628a60',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '410f5e7f-6e88-4974-acbd-c1fe43efe240',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '22628a36-56e8-4406-b1ce-ceb2b4a83e78',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '6d05b438-5921-44b1-b6d2-c15609f0c283',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '82ef0142-d876-46e0-b6e1-c171b5394ac1',
+      difficulty: 'easy',
+      questionsCount: 4
+    }
+  ]
+}
+ GET /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/bfcef79c-0ac6-4065-a62a-ce6d9598dbec/questions 200 in 2382ms
+ PUT /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/bfcef79c-0ac6-4065-a62a-ce6d9598dbec/preset 200 in 1804ms
+👥 [questions/route] Membership check: {
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  membership: 'owner',
+  memberError: undefined
+}
+🔍 [questions/route] Fetching questions for: {
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  userEmail: 'ngonhuthanhtrung1409@gmail.com'
+}
+📊 [questions/route] Query result: {
+  questionSetsCount: 15,
+  error: undefined,
+  questionSets: [
+    {
+      id: '1b6f1d9f-a236-4768-8221-24e37482b5f1',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '0eec3aab-c39c-4915-ba81-41e0831b7264',
+      difficulty: 'hard',
+      questionsCount: 2
+    },
+    {
+      id: 'eaf9642e-a115-49d4-8e48-91c25affd3ae',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '5f7b1b33-9055-4f31-9083-73c62ec8fa47',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: 'b0067574-d9e6-4189-b191-f8782d56a6a6',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '559b5fd1-9e0d-4414-b0d2-99bb19e5e695',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '1572cb07-8119-4886-84e8-226f36482f97',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '5f74fd01-c56d-4826-9522-71e00da77673',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '1119a084-6371-4298-bd10-672a803925c0',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '132b9418-49b2-47fe-bf8c-a120d23c66d9',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '17475676-ed3b-4a77-ac7b-ebf69f628a60',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '410f5e7f-6e88-4974-acbd-c1fe43efe240',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '22628a36-56e8-4406-b1ce-ceb2b4a83e78',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '6d05b438-5921-44b1-b6d2-c15609f0c283',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '82ef0142-d876-46e0-b6e1-c171b5394ac1',
+      difficulty: 'easy',
+      questionsCount: 4
+    }
+  ]
+}
+ GET /api/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/sessions/bfcef79c-0ac6-4065-a62a-ce6d9598dbec/questions 200 in 2073ms
+👥 [questions/route] Membership check: {
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  membership: 'owner',
+  memberError: undefined
+}
+🔍 [questions/route] Fetching questions for: {
+  sessionId: 'bfcef79c-0ac6-4065-a62a-ce6d9598dbec',
+  groupId: '9f640f92-d11c-463d-b3a6-2df737c912f0',
+  userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5',
+  userEmail: 'ngonhuthanhtrung1409@gmail.com'
+}
+📊 [questions/route] Query result: {
+  questionSetsCount: 15,
+  error: undefined,
+  questionSets: [
+    {
+      id: '1b6f1d9f-a236-4768-8221-24e37482b5f1',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '0eec3aab-c39c-4915-ba81-41e0831b7264',
+      difficulty: 'hard',
+      questionsCount: 2
+    },
+    {
+      id: 'eaf9642e-a115-49d4-8e48-91c25affd3ae',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '5f7b1b33-9055-4f31-9083-73c62ec8fa47',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: 'b0067574-d9e6-4189-b191-f8782d56a6a6',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '559b5fd1-9e0d-4414-b0d2-99bb19e5e695',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '1572cb07-8119-4886-84e8-226f36482f97',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '5f74fd01-c56d-4826-9522-71e00da77673',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '1119a084-6371-4298-bd10-672a803925c0',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '132b9418-49b2-47fe-bf8c-a120d23c66d9',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '17475676-ed3b-4a77-ac7b-ebf69f628a60',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '410f5e7f-6e88-4974-acbd-c1fe43efe240',
+      difficulty: 'easy',
+      questionsCount: 4
+    },
+    {
+      id: '22628a36-56e8-4406-b1ce-ceb2b4a83e78',
+      difficulty: 'medium',
+      questionsCount: 4
+    },
+    {
+      id: '6d05b438-5921-44b1-b6d2-c15609f0c283',
+      difficulty: 'hard',
+      questionsCount: 4
+    },
+    {
+      id: '82ef0142-d876-46e0-b6e1-c171b5394ac1',
+      difficulty: 'easy',
+      questionsCount: 4
+    }
+  ]
+}

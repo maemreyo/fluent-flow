@@ -1,7 +1,9 @@
-import Anthropic from '@anthropic-ai/sdk'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import OpenAI from 'openai'
-import { z } from 'zod'
+import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import OpenAI from 'openai';
+import { z } from 'zod';
+import { PromptManager } from './ai-prompts';
+
 
 // Types
 export interface ChatMessage {
@@ -461,20 +463,71 @@ export class AIService {
     difficulty: 'easy' | 'medium' | 'hard',
     options?: QuestionGenerationOptions
   ): Promise<GeneratedQuestions> {
-    // Import AI prompts dynamically to avoid circular dependencies
-    const { prompts, PromptManager } = await import('./ai-prompts')
-    const template = prompts.singleDifficultyQuestions
-
     // Use custom question count from options, default to 6 if not provided
     const targetQuestionCount = options?.questionCount || 6
 
-    // Use segments if provided, otherwise fallback to transcript
-    const promptData = options?.segments && options.segments.length > 0
-      ? { loop, segments: options.segments, difficulty }
-      : { loop, transcript, difficulty }
+    let messages: any[]
+    let config: any
 
-    const messages = PromptManager.buildMessages(template, promptData)
-    const config = PromptManager.getConfig(template)
+    // Check if custom prompt is provided
+    if (options?.customPrompt) {
+      console.log('🎯 Using custom prompt for question generation')
+      
+      // Build custom prompt with variable substitution
+      const customPrompt = options.customPrompt
+
+      // Format time helper
+      const formatTime = (seconds: number): string => {
+        const mins = Math.floor(seconds / 60)
+        const secs = Math.floor(seconds % 60)
+        return `${mins}:${secs.toString().padStart(2, '0')}`
+      }
+
+      // Build transcript with timestamps if segments are available
+      let transcriptWithTimestamps = transcript
+      if (options?.segments && options.segments.length > 0) {
+        transcriptWithTimestamps = options.segments.map((segment, index) => 
+          `[${formatTime(segment.start)}-${formatTime(segment.start + segment.duration)}] ${segment.text}`
+        ).join('\n')
+      }
+
+      // Substitute template variables in user_template
+      const userPrompt = customPrompt.user_template
+        .replace(/\{\{totalQuestions\}\}/g, targetQuestionCount.toString())
+        .replace(/\{\{easyCount\}\}/g, difficulty === 'easy' ? targetQuestionCount.toString() : '0')
+        .replace(/\{\{mediumCount\}\}/g, difficulty === 'medium' ? targetQuestionCount.toString() : '0')
+        .replace(/\{\{hardCount\}\}/g, difficulty === 'hard' ? targetQuestionCount.toString() : '0')
+        .replace(/\{\{videoTitle\}\}/g, loop.videoTitle || 'YouTube Video')
+        .replace(/\{\{transcriptWithTimestamps\}\}/g, transcriptWithTimestamps)
+
+      messages = [
+        { role: 'system', content: customPrompt.system_prompt },
+        { role: 'user', content: userPrompt }
+      ]
+
+      config = {
+        maxTokens: customPrompt.config?.maxTokens || 16000,
+        temperature: customPrompt.config?.temperature || 0.3
+      }
+    } else {
+      // Use default prompt template
+      const { prompts, PromptManager } = await import('./ai-prompts')
+      const template = prompts.singleDifficultyQuestions
+
+      // Use segments if provided, otherwise fallback to transcript
+      const promptData = options?.segments && options.segments.length > 0
+        ? { loop, segments: options.segments, difficulty }
+        : { loop, transcript, difficulty }
+
+      messages = PromptManager.buildMessages(template, promptData)
+      config = PromptManager.getConfig(template)
+    }
+
+    // Console log the full prompt after applying variables
+    console.log('\n=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===')
+    console.log('System Message:', messages.find(m => m.role === 'system')?.content)
+    console.log('\nUser Message:', messages.find(m => m.role === 'user')?.content)
+    console.log('=== END PROMPT LOG ===\n')
 
     try {
       const response = await this.chat(messages, config)

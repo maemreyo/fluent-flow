@@ -299,8 +299,113 @@ export class PromptManager {
 }
 
 // Export all prompts for easy access
+const detailFocusedListeningPrompt: PromptTemplate = {
+  system: `You are an expert ESL/EFL instructor specializing in **detail-focused listening skills** for ambitious entry-level students aiming for advanced proficiency. Your primary goal is to help students develop precision in catching specific information, factual details, and sequential elements in spoken English.
+
+Please generate multiple-choice questions with the following criteria:
+
+**1. Difficulty Distribution (Flexible based on user's learning level):**
+   - **Easy:** Questions focusing on explicit, clearly stated specific details (numbers, names, places, times). Use simple, everyday vocabulary.
+   - **Medium:** Questions requiring attention to factual information, sequences, or cause-and-effect relationships. Use familiar words and common expressions.
+   - **Hard:** Questions demanding precise listening for subtle details, complex sequences, or nuanced factual distinctions.
+
+**2. Detail-Focused Question Types:**
+   - **Specific Facts:** Numbers, dates, names, places, quantities, measurements
+   - **Sequential Information:** Order of events, steps in processes, chronological details
+   - **Factual Accuracy:** Distinguishing between similar but different pieces of information
+   - **Precise Details:** Exact words used, specific conditions mentioned, particular exceptions noted
+   - **Supporting Details:** Evidence, examples, or specifics that support main points
+
+**3. Language Simplification Requirements:**
+   - Use simple, familiar vocabulary in questions and options
+   - Avoid complex academic words that might overwhelm entry-level students
+   - Choose everyday language that students encounter in daily conversation
+   - Make questions accessible while maintaining focus on detailed listening
+   - Prioritize clarity in asking about specific details
+
+**4. Quality of Options:**
+   - Each question must have 4 options (A, B, C, D)
+   - The correct answer must be precisely stated in the transcript
+   - Incorrect options should be plausible details that might confuse careful listeners
+   - Include near-misses (similar numbers, dates, or facts) as distractors
+   - Use simple, everyday language in all options
+
+**5. Explanations for Learning:**
+   - Point to the exact part of the transcript that contains the correct detail
+   - Use simple language that entry-level students can understand
+   - Explain why precision in listening for details is important
+   - Briefly note why other options might seem correct but are not
+
+**6. JSON Output Format:**
+   - Format your response as a valid JSON object with the exact structure below
+   - Generate the EXACT number of questions requested for each difficulty level
+
+{
+  "questions": [
+    {
+      "question": "Question text here?",
+      "options": ["Option A", "Option B", "Option C", "Option D"],
+      "correctAnswer": "A",
+      "explanation": "Explanation pointing to exact detail in transcript and why precision matters.",
+      "difficulty": "easy",
+      "type": "specific_facts"
+    }
+  ]
+}
+
+**Types to use:** "specific_facts", "sequential_information", "factual_accuracy", "precise_details", "supporting_details"
+**Difficulties to use:** "easy", "medium", "hard"
+
+**IMPORTANT:** You will receive specific instructions about how many questions of each difficulty level to generate. Follow these numbers exactly to ensure detailed listening practice matches the chosen learning preset.`,
+
+  userTemplate: (context: {
+    loop: SavedLoop
+    transcript: string
+    preset?: { easy: number; medium: number; hard: number }
+  }) => {
+    const formatTime = (seconds: number): string => {
+      const mins = Math.floor(seconds / 60)
+      const secs = Math.floor(seconds % 60)
+      return `${mins}:${secs.toString().padStart(2, '0')}`
+    }
+
+    // Default to largest preset (15 questions) to ensure we generate enough for all presets
+    const distribution = context.preset || { easy: 5, medium: 6, hard: 4 }
+    const totalQuestions = distribution.easy + distribution.medium + distribution.hard
+
+    return `Based on the following YouTube video transcript, generate exactly ${totalQuestions} detail-focused listening questions with this specific difficulty distribution:
+
+**REQUIRED DISTRIBUTION:**
+- Easy: ${distribution.easy} questions (explicit specific details - numbers, names, places)
+- Medium: ${distribution.medium} questions (factual information, sequences, relationships)  
+- Hard: ${distribution.hard} questions (precise details, subtle distinctions, complex sequences)
+
+**TOTAL: ${totalQuestions} questions**
+
+**FOCUS:** Train students to listen precisely for specific factual information, sequential details, and exact elements mentioned in the audio.
+
+Video Title: ${context.loop.videoTitle || 'YouTube Video'}
+Segment: ${formatTime(context.loop.startTime)} to ${formatTime(context.loop.endTime)}
+Duration: ${formatTime(context.loop.endTime - context.loop.startTime)}
+
+**IMPORTANT REMINDERS:**
+- Focus on details that require precise listening (numbers, names, exact words, sequences)
+- Use simple vocabulary in questions while testing detailed comprehension
+- Make questions accessible but demanding in terms of listening precision
+- Generate EXACTLY the number specified for each difficulty level
+
+Transcript:
+${context.transcript}`
+  },
+
+  config: {
+    maxTokens: 64000,
+    temperature: 0.3
+  }
+}
 export const prompts = {
   vocabularyAnalysis: vocabularyAnalysisPrompt,
   transcriptSummary: transcriptSummaryPrompt,
-  conversationQuestions: conversationQuestionsPrompt
+  conversationQuestions: conversationQuestionsPrompt,
+  detailFocusedListening: detailFocusedListeningPrompt
 } as const
