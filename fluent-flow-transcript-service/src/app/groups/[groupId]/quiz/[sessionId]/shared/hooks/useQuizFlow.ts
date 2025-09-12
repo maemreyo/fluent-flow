@@ -17,6 +17,32 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   // Use existing hook but add navigation logic
   const quizData = useGroupQuizWithProgress({ groupId, sessionId })
 
+  // Get shareTokens for navigation - try multiple sources
+  const getShareTokensForNavigation = useCallback(() => {
+    console.log('🔍 [useQuizFlow] Getting shareTokens for navigation...')
+    
+    // First check sessionStorage for existing tokens
+    if (typeof window !== 'undefined') {
+      const sessionStorageKey = `quiz-shareTokens-${sessionId}`
+      const storedTokens = sessionStorage.getItem(sessionStorageKey)
+      
+      if (storedTokens) {
+        try {
+          const parsedTokens = JSON.parse(storedTokens)
+          if (Object.keys(parsedTokens).length > 0) {
+            console.log('✅ [useQuizFlow] Using shareTokens from sessionStorage for navigation')
+            return parsedTokens
+          }
+        } catch (error) {
+          console.warn('❌ [useQuizFlow] Failed to parse sessionStorage shareTokens:', error)
+        }
+      }
+    }
+
+    console.log('ℹ️ [useQuizFlow] No shareTokens available for navigation')
+    return {}
+  }, [sessionId])
+
   // Navigation functions
   const navigateToSetup = useCallback(() => {
     router.push(`/groups/${groupId}/quiz/${sessionId}/setup`)
@@ -28,12 +54,41 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
 
   const navigateToInfo = useCallback(() => {
     // DEPRECATED: Redirect to preview instead of info
-    router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
-  }, [router, groupId, sessionId])
+    const shareTokens = getShareTokensForNavigation()
+    
+    if (shareTokens && Object.keys(shareTokens).length > 0) {
+      try {
+        const tokensJson = JSON.stringify(shareTokens)
+        const encodedTokens = btoa(tokensJson)
+        console.log('🔗 [useQuizFlow] Navigating to preview with tokens:', encodedTokens)
+        router.push(`/groups/${groupId}/quiz/${sessionId}/preview/${encodedTokens}`)
+      } catch (error) {
+        console.error('❌ [useQuizFlow] Failed to encode shareTokens for preview:', error)
+        router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
+      }
+    } else {
+      router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
+    }
+  }, [router, groupId, sessionId, getShareTokensForNavigation])
 
   const navigateToPreview = useCallback(() => {
-    router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
-  }, [router, groupId, sessionId])
+    const shareTokens = getShareTokensForNavigation()
+    
+    if (shareTokens && Object.keys(shareTokens).length > 0) {
+      try {
+        const tokensJson = JSON.stringify(shareTokens)
+        const encodedTokens = btoa(tokensJson)
+        console.log('🔗 [useQuizFlow] Navigating to preview with tokens:', encodedTokens)
+        router.push(`/groups/${groupId}/quiz/${sessionId}/preview/${encodedTokens}`)
+      } catch (error) {
+        console.error('❌ [useQuizFlow] Failed to encode shareTokens for preview:', error)
+        router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
+      }
+    } else {
+      console.log('⚠️ [useQuizFlow] No shareTokens available, using regular preview route')
+      router.push(`/groups/${groupId}/quiz/${sessionId}/preview`)
+    }
+  }, [router, groupId, sessionId, getShareTokensForNavigation])
 
   const navigateToActive = useCallback(() => {
     router.push(`/groups/${groupId}/quiz/${sessionId}/active`)
@@ -91,7 +146,7 @@ export function useQuizFlow({ groupId, sessionId }: UseQuizFlowProps) {
   //   const expectedStep = getCurrentStep()
   //   const expectedPath = `/groups/${groupId}/quiz/${sessionId}/${expectedStep}`
 
-  //   console.log('🧭 Navigation check:', {
+  //   console.log('🗺️ Navigation check:', {
   //     currentPath,
   //     expectedStep,
   //     expectedPath,
