@@ -222,4 +222,45 @@ export class CustomPromptService {
       missingVars: missingRequired
     }
   }
+
+  /**
+   * Detect if a custom prompt is for Fill-in-the-Blank exercises
+   */
+  static detectExerciseType(customPrompt: CustomPrompt): 'multiple_choice' | 'fill_blank' {
+    const systemLower = customPrompt.system_prompt.toLowerCase()
+    const templateLower = customPrompt.user_template.toLowerCase()
+    
+    // Check for Fill-in-the-Blank indicators
+    const fillBlankIndicators = [
+      'fill-in-the-blank',
+      'fill in the blank', 
+      'complete the transcript',
+      'missing words',
+      'blanks',
+      'transcript with gaps',
+      'exercises',
+      'fill_blank'
+    ]
+    
+    const isFillBlank = fillBlankIndicators.some(indicator => 
+      systemLower.includes(indicator) || templateLower.includes(indicator)
+    )
+    
+    return isFillBlank ? 'fill_blank' : 'multiple_choice'
+  }
+
+  /**
+   * Convert custom prompt from database to AI service format
+   */
+  static toAIServiceFormat(customPrompt: CustomPrompt): import('./ai-service').CustomPrompt {
+    return {
+      system_prompt: customPrompt.system_prompt,
+      user_template: customPrompt.user_template,
+      exerciseType: this.detectExerciseType(customPrompt),
+      config: {
+        maxTokens: customPrompt.config?.maxTokens || 16000,
+        temperature: customPrompt.config?.temperature || 0.3
+      }
+    }
+  }
 }

@@ -1,151 +1,26 @@
-import Anthropic from '@anthropic-ai/sdk';
-import { GoogleGenerativeAI } from '@google/generative-ai';
-import OpenAI from 'openai';
-import { z } from 'zod';
-import { PromptManager } from './ai-prompts';
-
-
-// Types
-export interface ChatMessage {
-  role: 'system' | 'user' | 'assistant'
-  content: string
-}
-
-export interface AIResponse {
-  content: string
-  usage: {
-    totalTokens: number
-    promptTokens: number
-    completionTokens: number
-  }
-  model: string
-  provider: 'openai' | 'anthropic' | 'google' | 'custom'
-  finishReason: string
-  stream?: any
-}
-
-export type AIProvider = 'openai' | 'anthropic' | 'google' | 'custom'
-export type AICapability =
-  | 'text-generation'
-  | 'text-analysis'
-  | 'summarization'
-  | 'translation'
-  | 'code-generation'
-  | 'function-calling'
-  | 'long-context'
-  | 'reasoning'
-  | 'multimodal'
-  | 'fast-generation'
-
-// Configuration Schema
-export const aiConfigSchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'google', 'custom']),
-  apiKey: z.string().min(1, 'API key is required'),
-  baseUrl: z.string().optional(),
-  model: z.string().min(1, 'Model is required'),
-  maxTokens: z.number().min(1).max(100000).default(4000),
-  temperature: z.number().min(0).max(2).default(0.7)
-})
-
-export type AIConfig = z.infer<typeof aiConfigSchema>
-
-// Loop and generation types
-export interface SavedLoop {
-  id: string
-  videoTitle?: string
-  startTime: number
-  endTime: number
-}
-
-export interface DifficultyPreset {
-  easy: number
-  medium: number
-  hard: number
-}
-
-export interface GeneratedQuestion {
-  id: string
-  question: string
-  options: string[]
-  correctAnswer: 'A' | 'B' | 'C' | 'D'
-  explanation: string
-  difficulty: 'easy' | 'medium' | 'hard'
-  type:
-    | 'main_idea'
-    | 'specific_detail'
-    | 'vocabulary_in_context'
-    | 'inference'
-    | 'speaker_tone'
-    | 'language_function'
-  timestamp?: number
-}
-
-export interface GeneratedQuestions {
-  questions: GeneratedQuestion[]
-  preset: DifficultyPreset
-  actualDistribution: {
-    easy: number
-    medium: number
-    hard: number
-  }
-}
-
-export interface CustomPrompt {
-  system_prompt: string
-  user_template: string
-  config?: {
-    maxTokens?: number
-    temperature?: number
-  }
-}
-
-export interface QuestionGenerationOptions {
-  segments?: Array<{ text: string; start: number; duration: number }>
-  customPrompt?: CustomPrompt
-  questionCount?: number // Allow custom question count
-}
-
 /**
- * AI Service for Next.js - Server-side AI operations
+ * AI Service - Modular and Clean Implementation
+ * Orchestrates AI providers and question processors
  */
+
+import { AIConfig, ChatMessage, AIResponse, SavedLoop, DifficultyPreset, GeneratedQuestion, GeneratedQuestions, QuestionGenerationOptions, AICapability } from './ai-types'
+import { createAIProvider } from './ai-providers'
+import { createQuestionProcessor } from './question-processors'
+import { detectExerciseType, formatTime, processTemplateVariables, shuffleOptionsWithSeed } from './utils'
+import { createAIConfig } from './ai-config'
+
 export class AIService {
-  private openai?: OpenAI
-  private anthropic?: Anthropic
-  private google?: GoogleGenerativeAI
+  private provider: any
   private config: AIConfig
 
   constructor(config: AIConfig) {
-    this.config = aiConfigSchema.parse(config)
-    this.initializeProviders()
+    this.config = config
+    this.provider = createAIProvider(config)
   }
 
-  private initializeProviders() {
-    switch (this.config.provider) {
-      case 'openai':
-        this.openai = new OpenAI({
-          apiKey: this.config.apiKey,
-          baseURL: this.config.baseUrl
-        })
-        break
-
-      case 'anthropic':
-        this.anthropic = new Anthropic({
-          apiKey: this.config.apiKey,
-          baseURL: this.config.baseUrl
-        })
-        break
-
-      case 'google':
-        this.google = new GoogleGenerativeAI(this.config.apiKey)
-        break
-
-      case 'custom':
-        // For custom HTTP-based providers
-        break
-    }
-  }
-
-  // Main chat completion method
+  /**
+   * Main chat completion method
+   */
   async chat(
     messages: ChatMessage[],
     options?: {
@@ -154,202 +29,105 @@ export class AIService {
       maxTokens?: number
     }
   ): Promise<AIResponse> {
-    try {
-      const mergedOptions = { ...this.config, ...options }
-
-      switch (this.config.provider) {
-        case 'openai':
-          return await this.chatWithOpenAI(messages, mergedOptions)
-
-        case 'anthropic':
-          return await this.chatWithAnthropic(messages, mergedOptions)
-
-        case 'google':
-          return await this.chatWithGoogle(messages, mergedOptions)
-
-        case 'custom':
-          return await this.chatWithCustomProvider(messages, mergedOptions)
-
-        default:
-          throw new Error(`Unsupported AI provider: ${this.config.provider}`)
-      }
-    } catch (error) {
-      throw this.handleAIError(error)
-    }
+    return await this.provider.chat(messages, options)
   }
 
-  // OpenAI implementation
-  private async chatWithOpenAI(messages: ChatMessage[], options: any): Promise<AIResponse> {
-    if (!this.openai) throw new Error('OpenAI client not initialized')
+  /**
+   * Generate questions for a single difficulty level
+   */
+  async generateSingleDifficultyQuestions(
+    loop: SavedLoop,
+    transcript: string,
+    difficulty: 'easy' | 'medium' | 'hard',
+    options?: QuestionGenerationOptions
+  ): Promise<GeneratedQuestions> {
+    const targetQuestionCount = options?.questionCount || 6
 
-    const response = await this.openai.chat.completions.create({
-      model: this.config.model,
-      messages: messages.map(msg => ({
-        role: msg.role as 'system' | 'user' | 'assistant',
-        content: msg.content
-      })),
-      max_tokens: options.maxTokens,
-      temperature: options.temperature,
-      stream: options.stream
-    })
+    let messages: ChatMessage[]
+    let config: any
+    let exerciseType: 'multiple_choice' | 'fill_blank' = 'multiple_choice'
 
-    if (options.stream) {
-      // Handle streaming response
-      return {
-        content: '', // Will be populated via streaming
-        usage: { totalTokens: 0, promptTokens: 0, completionTokens: 0 },
-        model: this.config.model,
-        provider: 'openai',
-        finishReason: 'length',
-        stream: response as any
+    // Check if custom prompt is provided
+    if (options?.customPrompt) {
+      console.log('🎯 Using custom prompt for question generation')
+      
+      const customPrompt = options.customPrompt
+      
+      // Detect exercise type
+      exerciseType = customPrompt.exerciseType || 
+                    detectExerciseType(customPrompt.system_prompt)
+
+      console.log(`📝 Exercise type detected: ${exerciseType === 'fill_blank' ? 'Fill-in-the-Blank' : 'Multiple Choice'}`)
+
+      // Build transcript with timestamps if segments are available
+      let transcriptWithTimestamps = transcript
+      if (options?.segments && options.segments.length > 0) {
+        transcriptWithTimestamps = options.segments.map(segment => 
+          `[${formatTime(segment.start)}-${formatTime(segment.start + segment.duration)}] ${segment.text}`
+        ).join('\n')
       }
-    }
 
-    const completion = response as OpenAI.Chat.Completions.ChatCompletion
-    return {
-      content: completion.choices[0]?.message?.content || '',
-      usage: {
-        totalTokens: completion.usage?.total_tokens || 0,
-        promptTokens: completion.usage?.prompt_tokens || 0,
-        completionTokens: completion.usage?.completion_tokens || 0
-      },
-      model: completion.model,
-      provider: 'openai',
-      finishReason: completion.choices[0]?.finish_reason || 'stop'
-    }
-  }
-
-  // Anthropic Claude implementation
-  private async chatWithAnthropic(messages: ChatMessage[], options: any): Promise<AIResponse> {
-    if (!this.anthropic) throw new Error('Anthropic client not initialized')
-
-    // Convert messages to Anthropic format
-    const systemMessage = messages.find(m => m.role === 'system')
-    const conversationMessages = messages.filter(m => m.role !== 'system')
-
-    const response = await this.anthropic.messages.create({
-      model: this.config.model,
-      max_tokens: options.maxTokens,
-      temperature: options.temperature,
-      system: systemMessage?.content,
-      messages: conversationMessages.map(msg => ({
-        role: msg.role as 'user' | 'assistant',
-        content: msg.content
-      })),
-      stream: options.stream
-    })
-
-    if (options.stream) {
-      return {
-        content: '',
-        usage: { totalTokens: 0, promptTokens: 0, completionTokens: 0 },
-        model: this.config.model,
-        provider: 'anthropic',
-        finishReason: 'max_tokens',
-        stream: response as any
+      // Prepare template variables
+      const variables = {
+        totalQuestions: targetQuestionCount,
+        easyCount: difficulty === 'easy' ? targetQuestionCount : 0,
+        mediumCount: difficulty === 'medium' ? targetQuestionCount : 0,
+        hardCount: difficulty === 'hard' ? targetQuestionCount : 0,
+        videoTitle: loop.videoTitle || 'YouTube Video',
+        transcript: transcriptWithTimestamps,
+        transcriptWithTimestamps
       }
+
+      // Process template
+      const userPrompt = processTemplateVariables(customPrompt.user_template, variables)
+
+      messages = [
+        { role: 'system', content: customPrompt.system_prompt },
+        { role: 'user', content: userPrompt }
+      ]
+
+      config = {
+        maxTokens: customPrompt.config?.maxTokens || 16000,
+        temperature: customPrompt.config?.temperature || 0.3
+      }
+    } else {
+      // Use default prompt template
+      const { prompts, PromptManager } = await import('./ai-prompts')
+      const template = prompts.singleDifficultyQuestions
+
+      const promptData = options?.segments && options.segments.length > 0
+        ? { loop, segments: options.segments, difficulty }
+        : { loop, transcript, difficulty }
+
+      messages = PromptManager.buildMessages(template, promptData)
+      config = PromptManager.getConfig(template)
     }
 
-    const message = response as Anthropic.Messages.Message
-    const content = message.content[0]?.type === 'text' ? message.content[0].text : ''
-
-    return {
-      content,
-      usage: {
-        totalTokens: message.usage.input_tokens + message.usage.output_tokens,
-        promptTokens: message.usage.input_tokens,
-        completionTokens: message.usage.output_tokens
-      },
-      model: message.model,
-      provider: 'anthropic',
-      finishReason: message.stop_reason || 'end_turn'
-    }
-  }
-
-  // Google Gemini implementation
-  private async chatWithGoogle(messages: ChatMessage[], options: any): Promise<AIResponse> {
-    if (!this.google) throw new Error('Google Gemini client not initialized')
-
-    // Convert messages to Gemini format
-    const systemMessage = messages.find(m => m.role === 'system')
-    const conversationMessages = messages.filter(m => m.role !== 'system')
-
-    // Build prompt for Gemini (it uses a single prompt format)
-    let prompt = ''
-    if (systemMessage) {
-      prompt += systemMessage.content + '\n\n'
-    }
-
-    conversationMessages.forEach(msg => {
-      const rolePrefix = msg.role === 'user' ? 'User: ' : 'Assistant: '
-      prompt += rolePrefix + msg.content + '\n'
-    })
+    // Log the full prompt
+    console.log('\n=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===')
+    console.log('System Message:', messages.find(m => m.role === 'system')?.content)
+    console.log('\nUser Message:', messages.find(m => m.role === 'user')?.content)
+    console.log('=== END PROMPT LOG ===\n')
 
     try {
-      const model = this.google.getGenerativeModel({
-        model: this.config.model || 'gemini-2.5-flash-lite',
-        generationConfig: {
-          maxOutputTokens: options.maxTokens,
-          temperature: options.temperature
-        }
-      })
+      // Get AI response
+      const response = await this.chat(messages, config)
+      const parsedResponse = this.parseJSONResponse(response.content)
 
-      const result = await model.generateContent(prompt)
-      const response = result.response
+      console.log('🔍 Parsed AI Response:', JSON.stringify(parsedResponse, null, 2))
 
-      return {
-        content: response.text(),
-        usage: {
-          totalTokens: response.usageMetadata?.totalTokenCount || 0,
-          promptTokens: response.usageMetadata?.promptTokenCount || 0,
-          completionTokens: response.usageMetadata?.candidatesTokenCount || 0
-        },
-        model: this.config.model,
-        provider: 'google',
-        finishReason: response.candidates?.[0]?.finishReason || 'stop'
-      }
+      // Process response using appropriate processor
+      const processor = createQuestionProcessor(exerciseType)
+      return processor.processResponse(parsedResponse, loop, difficulty, targetQuestionCount)
+
     } catch (error: any) {
-      throw new Error(`Google Gemini API error: ${error.message}`)
+      throw new Error(`Single difficulty questions generation failed: ${error.message}`)
     }
   }
 
-  // Custom provider implementation (for future extensibility)
-  private async chatWithCustomProvider(messages: ChatMessage[], options: any): Promise<AIResponse> {
-    // Simple HTTP client implementation for custom providers
-    const response = await fetch(`${this.config.baseUrl}/chat/completions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${this.config.apiKey}`
-      },
-      body: JSON.stringify({
-        model: this.config.model,
-        messages,
-        max_tokens: options.maxTokens,
-        temperature: options.temperature,
-        stream: options.stream
-      })
-    })
-
-    if (!response.ok) {
-      throw new Error(`Custom provider error: ${response.statusText}`)
-    }
-
-    const data = await response.json()
-
-    return {
-      content: data.choices[0]?.message?.content || '',
-      usage: {
-        totalTokens: data.usage?.total_tokens || 0,
-        promptTokens: data.usage?.prompt_tokens || 0,
-        completionTokens: data.usage?.completion_tokens || 0
-      },
-      model: data.model,
-      provider: 'custom',
-      finishReason: data.choices[0]?.finish_reason || 'stop'
-    }
-  }
-
+  /**
+   * Generate conversation questions from transcript text
+   */
   /**
    * Generate conversation questions from transcript text
    */
@@ -359,7 +137,6 @@ export class AIService {
     preset?: DifficultyPreset,
     options?: QuestionGenerationOptions
   ): Promise<GeneratedQuestions> {
-    // Import AI prompts dynamically to avoid circular dependencies
     const { prompts, PromptManager } = await import('./ai-prompts')
     const template = prompts.conversationQuestions
 
@@ -370,17 +147,16 @@ export class AIService {
 
     // Use segments if provided, otherwise fallback to transcript
     // This avoids duplication since segments contain timeframe-specific content
-    const promptData =
-      options?.segments && options.segments.length > 0
-        ? { loop, segments: options.segments, preset: actualPreset }
-        : { loop, transcript, preset: actualPreset }
+    const promptData = options?.segments && options.segments.length > 0
+      ? { loop, segments: options.segments, preset: actualPreset }
+      : { loop, transcript, preset: actualPreset }
 
     const messages = PromptManager.buildMessages(template, promptData)
     const config = PromptManager.getConfig(template)
 
     try {
       const response = await this.chat(messages, config)
-      const parsedResponse = PromptManager.parseJSONResponse(response.content)
+      const parsedResponse = this.parseJSONResponse(response.content)
 
       // Validate response structure
       if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
@@ -417,10 +193,10 @@ export class AIService {
           // Shuffle answer options to randomize correct answer position
           const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
           const correctOption = q.options[correctAnswerIndex] || q.options[0]
-
+          
           // Create shuffled array with seeded randomization for consistency
           const seed = loop.id + index // Use loop ID and index as seed for reproducible shuffling
-          const shuffledData = this.shuffleOptionsWithSeed(q.options, seed)
+          const shuffledData = shuffleOptionsWithSeed(q.options, seed)
           const newCorrectIndex = shuffledData.options.indexOf(correctOption)
           const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex] as 'A' | 'B' | 'C' | 'D'
 
@@ -455,193 +231,23 @@ export class AIService {
   }
 
   /**
-   * Generate questions for a single difficulty level (max 6 questions)
+   * Parse JSON response with error handling
    */
-  async generateSingleDifficultyQuestions(
-    loop: SavedLoop,
-    transcript: string,
-    difficulty: 'easy' | 'medium' | 'hard',
-    options?: QuestionGenerationOptions
-  ): Promise<GeneratedQuestions> {
-    // Use custom question count from options, default to 6 if not provided
-    const targetQuestionCount = options?.questionCount || 6
-
-    let messages: any[]
-    let config: any
-
-    // Check if custom prompt is provided
-    if (options?.customPrompt) {
-      console.log('🎯 Using custom prompt for question generation')
-      
-      // Build custom prompt with variable substitution
-      const customPrompt = options.customPrompt
-
-      // Format time helper
-      const formatTime = (seconds: number): string => {
-        const mins = Math.floor(seconds / 60)
-        const secs = Math.floor(seconds % 60)
-        return `${mins}:${secs.toString().padStart(2, '0')}`
-      }
-
-      // Build transcript with timestamps if segments are available
-      let transcriptWithTimestamps = transcript
-      if (options?.segments && options.segments.length > 0) {
-        transcriptWithTimestamps = options.segments.map((segment, index) => 
-          `[${formatTime(segment.start)}-${formatTime(segment.start + segment.duration)}] ${segment.text}`
-        ).join('\n')
-      }
-
-      // Substitute template variables in user_template
-      const userPrompt = customPrompt.user_template
-        .replace(/\{\{totalQuestions\}\}/g, targetQuestionCount.toString())
-        .replace(/\{\{easyCount\}\}/g, difficulty === 'easy' ? targetQuestionCount.toString() : '0')
-        .replace(/\{\{mediumCount\}\}/g, difficulty === 'medium' ? targetQuestionCount.toString() : '0')
-        .replace(/\{\{hardCount\}\}/g, difficulty === 'hard' ? targetQuestionCount.toString() : '0')
-        .replace(/\{\{videoTitle\}\}/g, loop.videoTitle || 'YouTube Video')
-        .replace(/\{\{transcriptWithTimestamps\}\}/g, transcriptWithTimestamps)
-
-      messages = [
-        { role: 'system', content: customPrompt.system_prompt },
-        { role: 'user', content: userPrompt }
-      ]
-
-      config = {
-        maxTokens: customPrompt.config?.maxTokens || 16000,
-        temperature: customPrompt.config?.temperature || 0.3
-      }
-    } else {
-      // Use default prompt template
-      const { prompts, PromptManager } = await import('./ai-prompts')
-      const template = prompts.singleDifficultyQuestions
-
-      // Use segments if provided, otherwise fallback to transcript
-      const promptData = options?.segments && options.segments.length > 0
-        ? { loop, segments: options.segments, difficulty }
-        : { loop, transcript, difficulty }
-
-      messages = PromptManager.buildMessages(template, promptData)
-      config = PromptManager.getConfig(template)
-    }
-
-    // Console log the full prompt after applying variables
-    console.log('\n=== FULL PROMPT AFTER VARIABLE SUBSTITUTION ===')
-    console.log('System Message:', messages.find(m => m.role === 'system')?.content)
-    console.log('\nUser Message:', messages.find(m => m.role === 'user')?.content)
-    console.log('=== END PROMPT LOG ===\n')
-
-    try {
-      const response = await this.chat(messages, config)
-      const parsedResponse = PromptManager.parseJSONResponse(response.content)
-
-      // Validate response structure
-      if (!parsedResponse.questions || !Array.isArray(parsedResponse.questions)) {
-        throw new Error('AI response missing questions array')
-      }
-
-      // Validate we have the expected number of questions
-      const questions = parsedResponse.questions
-      if (questions.length !== targetQuestionCount) {
-        console.warn(`Expected ${targetQuestionCount} questions but got ${questions.length}. Using available questions.`)
-      }
-
-      // Validate all questions are at the correct difficulty level
-      const correctDifficultyQuestions = questions.filter((q: any) => q.difficulty === difficulty)
-      const finalQuestions = correctDifficultyQuestions.slice(0, targetQuestionCount) // Take target count
-
-      console.log(`Generated ${finalQuestions.length} ${difficulty} questions (requested: ${targetQuestionCount})`)
-
-      return {
-        questions: finalQuestions.map((q: any, index: number) => {
-          // Validate question structure
-          if (!q.question || !Array.isArray(q.options) || q.options.length !== 4) {
-            throw new Error(`Invalid question structure at index ${index}`)
-          }
-
-          // Shuffle answer options to randomize correct answer position
-          const correctAnswerIndex = ['A', 'B', 'C', 'D'].indexOf(q.correctAnswer || 'A')
-          const correctOption = q.options[correctAnswerIndex] || q.options[0]
-          
-          // Create shuffled array with seeded randomization for consistency
-          const seed = loop.id + difficulty + index // Use loop ID, difficulty and index as seed
-          const shuffledData = this.shuffleOptionsWithSeed(q.options, seed)
-          const newCorrectIndex = shuffledData.options.indexOf(correctOption)
-          const newCorrectAnswer = ['A', 'B', 'C', 'D'][newCorrectIndex] as 'A' | 'B' | 'C' | 'D'
-
-          return {
-            id: `q_${loop.id}_${difficulty}_${index + 1}`,
-            question: q.question,
-            options: shuffledData.options,
-            correctAnswer: newCorrectAnswer,
-            explanation: q.explanation || 'No explanation provided',
-            difficulty: difficulty, // Ensure difficulty is consistent
-            type: [
-              'main_idea',
-              'specific_detail',
-              'vocabulary_in_context',
-              'inference',
-              'speaker_tone',
-              'language_function'
-            ].includes(q.type)
-              ? q.type
-              : 'main_idea',
-            timestamp:
-              q.timestamp ??
-              loop.startTime + (index * (loop.endTime - loop.startTime)) / finalQuestions.length
-          } as GeneratedQuestion
-        }),
-        preset: { easy: difficulty === 'easy' ? finalQuestions.length : 0, medium: difficulty === 'medium' ? finalQuestions.length : 0, hard: difficulty === 'hard' ? finalQuestions.length : 0 },
-        actualDistribution: { 
-          easy: difficulty === 'easy' ? finalQuestions.length : 0, 
-          medium: difficulty === 'medium' ? finalQuestions.length : 0, 
-          hard: difficulty === 'hard' ? finalQuestions.length : 0 
-        }
-      }
-    } catch (error: any) {
-      throw new Error(`Single difficulty questions generation failed: ${error.message}`)
-    }
+  private parseJSONResponse(responseText: string): any {
+    const { PromptManager } = require('./ai-prompts')
+    return PromptManager.parseJSONResponse(responseText)
   }
 
   /**
-   * Shuffle array options with seeded randomization for consistent results
+   * Basic text processing methods
    */
-  private shuffleOptionsWithSeed(options: string[], seed: string): { options: string[] } {
-    // Create a simple hash from the seed for consistent randomization
-    let hash = 0
-    for (let i = 0; i < seed.length; i++) {
-      const char = seed.charCodeAt(i)
-      hash = (hash << 5) - hash + char
-      hash = hash & hash // Convert to 32bit integer
-    }
-
-    // Create a copy of options to shuffle
-    const shuffled = [...options]
-
-    // Fisher-Yates shuffle with seeded random
-    for (let i = shuffled.length - 1; i > 0; i--) {
-      // Generate deterministic "random" index based on hash and position
-      hash = (hash * 9301 + 49297) % 233280
-      const j = Math.abs(hash) % (i + 1)
-
-      // Swap elements
-      const temp = shuffled[i]
-      shuffled[i] = shuffled[j]
-      shuffled[j] = temp
-    }
-
-    return { options: shuffled }
-  }
-
-  // Specialized AI functions for other use cases
   async summarizeText(text: string, maxLength: number = 200): Promise<string> {
     const messages: ChatMessage[] = [
       {
         role: 'system',
         content: `Summarize the given text in approximately ${maxLength} characters or less. Be concise but capture the key points.`
       },
-      {
-        role: 'user',
-        content: text
-      }
+      { role: 'user', content: text }
     ]
 
     const response = await this.chat(messages, { maxTokens: Math.ceil(maxLength / 3) })
@@ -654,69 +260,33 @@ export class AIService {
         role: 'system',
         content: `Translate the given text to ${targetLanguage}. Only return the translation, no additional text.`
       },
-      {
-        role: 'user',
-        content: text
-      }
+      { role: 'user', content: text }
     ]
 
     const response = await this.chat(messages, { maxTokens: Math.ceil(text.length * 1.5) })
     return response.content
   }
 
-  // Check AI service capabilities
+  /**
+   * Get AI service capabilities
+   */
   async getCapabilities(): Promise<AICapability[]> {
-    const baseCapabilities: AICapability[] = [
-      'text-generation',
-      'text-analysis',
-      'summarization',
-      'translation'
-    ]
-
-    // Add provider-specific capabilities
-    switch (this.config.provider) {
-      case 'openai':
-        return [...baseCapabilities, 'code-generation', 'function-calling']
-      case 'anthropic':
-        return [...baseCapabilities, 'long-context', 'reasoning']
-      case 'google':
-        return [...baseCapabilities, 'multimodal', 'fast-generation']
-      default:
-        return baseCapabilities
-    }
+    return this.provider.getCapabilities()
   }
 
-  // Enhanced error handling for AI operations
-  private handleAIError(error: any): Error {
-    if (error.status === 401) {
-      return new Error('AI API key is invalid or expired')
-    }
-
-    if (error.status === 429) {
-      return new Error('AI service rate limit exceeded. Please try again later.')
-    }
-
-    if (error.status === 500) {
-      return new Error('AI service is temporarily unavailable')
-    }
-
-    if (error.message?.includes('context_length_exceeded')) {
-      return new Error('Text is too long for AI processing. Please try with shorter text.')
-    }
-
-    return new Error(`AI processing failed: ${error.message || 'Unknown error'}`)
-  }
-
-  // Update configuration
+  /**
+   * Update configuration
+   */
   updateConfig(newConfig: Partial<AIConfig>): void {
-    this.config = aiConfigSchema.parse({ ...this.config, ...newConfig })
-    this.initializeProviders()
+    this.config = { ...this.config, ...newConfig }
+    this.provider.updateConfig(this.config)
   }
 
-  // Get current configuration (without sensitive data)
+  /**
+   * Get current configuration (without sensitive data)
+   */
   getConfig(): Omit<AIConfig, 'apiKey'> {
-    const { apiKey, ...safeConfig } = this.config
-    return safeConfig
+    return this.provider.getConfig()
   }
 }
 
@@ -724,15 +294,10 @@ export class AIService {
  * Factory function to create AI Service with environment configuration
  */
 export function createAIService(overrides?: Partial<AIConfig>): AIService {
-  const config: AIConfig = {
-    provider: (process.env.AI_PROVIDER as AIProvider) || 'openai',
-    apiKey: process.env.AI_API_KEY || '',
-    baseUrl: process.env.AI_BASE_URL,
-    model: process.env.AI_MODEL || 'gpt-4o-mini',
-    maxTokens: Number(process.env.AI_MAX_TOKENS) || 4000,
-    temperature: Number(process.env.AI_TEMPERATURE) || 0.3,
-    ...overrides
-  }
-
+  const config = createAIConfig(overrides)
   return new AIService(config)
 }
+
+// Re-export types for backward compatibility
+export * from './ai-types'
+export * from './ai-config'

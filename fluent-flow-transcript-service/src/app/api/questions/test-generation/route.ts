@@ -8,16 +8,19 @@ import { createQuestionGenerationService } from '@/lib/services/question-generat
 export async function GET(request: NextRequest) {
   try {
     const service = createQuestionGenerationService(request)
-    
+
     // Get service status
     const status = await service.getServiceStatus()
-    
+
     if (status.status === 'error') {
-      return NextResponse.json({
-        status: 'error',
-        message: 'AI service not available',
-        details: status
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: 'AI service not available',
+          details: status
+        },
+        { status: 500 }
+      )
     }
 
     // Run a simple test generation
@@ -40,7 +43,7 @@ export async function GET(request: NextRequest) {
 
     console.log('Running test generation...')
     const startTime = Date.now()
-    
+
     try {
       const result = await service.generateFromTranscript({
         transcript: testTranscript,
@@ -60,31 +63,39 @@ export async function GET(request: NextRequest) {
           expected: testPreset.easy + testPreset.medium + testPreset.hard,
           processingTimeMs: testDuration,
           sampleQuestions: result.questions.questions.slice(0, 2).map(q => ({
-            question: q.question,
+            question: q.question || 'Fill-in-the-Blank Exercise', // Handle optional question
             difficulty: q.difficulty,
             type: q.type,
-            hasOptions: q.options.length === 4,
-            hasExplanation: !!q.explanation
+            hasOptions: q.options?.length === 4, // Handle optional options
+            hasExplanation: !!q.explanation,
+            // Add Fill-in-the-Blank specific info
+            isFillBlank: q.type === 'fill_blank',
+            blankCount: q.blanks?.length || 0
           }))
         }
       })
     } catch (genError) {
       console.error('Test generation failed:', genError)
-      return NextResponse.json({
-        status: 'partial_error',
-        message: 'AI service is available but test generation failed',
-        serviceInfo: status,
-        error: genError instanceof Error ? genError.message : 'Unknown generation error'
-      }, { status: 500 })
+      return NextResponse.json(
+        {
+          status: 'partial_error',
+          message: 'AI service is available but test generation failed',
+          serviceInfo: status,
+          error: genError instanceof Error ? genError.message : 'Unknown generation error'
+        },
+        { status: 500 }
+      )
     }
-
   } catch (error) {
-    console.error('Test generation endpoint error:', error)
-    return NextResponse.json({
-      status: 'error',
-      message: 'Failed to test generation service',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    console.error('Service initialization error:', error)
+    return NextResponse.json(
+      {
+        status: 'error',
+        message: 'Failed to initialize AI service',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
   }
 }
 
@@ -96,14 +107,17 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
     const service = createQuestionGenerationService(request)
-    
+
     // Validate request
     const validation = service.validateRequest(body, body.type || 'transcript')
     if (!validation.isValid) {
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: validation.errors
-      }, { status: 400 })
+      return NextResponse.json(
+        {
+          error: 'Invalid request parameters',
+          details: validation.errors
+        },
+        { status: 400 }
+      )
     }
 
     // Run generation based on type
@@ -137,50 +151,68 @@ export async function POST(request: NextRequest) {
       testResult: {
         type: body.type || 'transcript',
         generated: result.questions.questions.length,
-        expected: body.preset ? (body.preset.easy + body.preset.medium + body.preset.hard) : 'default',
+        expected: body.preset
+          ? body.preset.easy + body.preset.medium + body.preset.hard
+          : 'default',
         processingTimeMs: testDuration,
         metadata: result.metadata,
         questions: result.questions.questions.map((q, i) => ({
           index: i + 1,
-          question: q.question.substring(0, 100) + (q.question.length > 100 ? '...' : ''),
+          question: q.question
+            ? q.question.substring(0, 100) + (q.question.length > 100 ? '...' : '')
+            : 'Fill-in-the-Blank Exercise', // Handle optional question
           difficulty: q.difficulty,
           type: q.type,
           correctAnswer: q.correctAnswer,
-          hasExplanation: !!q.explanation
+          hasExplanation: !!q.explanation,
+          // Add Fill-in-the-Blank specific info
+          isFillBlank: q.type === 'fill_blank',
+          blankCount: q.blanks?.length || 0
         }))
       }
     })
-
   } catch (error) {
     console.error('Custom test generation error:', error)
 
     // Handle specific error types
     if (error instanceof Error) {
       if (error.message.includes('YouTube')) {
-        return NextResponse.json({
-          error: 'YouTube processing failed',
-          message: error.message
-        }, { status: 400 })
+        return NextResponse.json(
+          {
+            error: 'YouTube processing failed',
+            message: error.message
+          },
+          { status: 400 }
+        )
       }
 
       if (error.message.includes('rate limit')) {
-        return NextResponse.json({
-          error: 'Rate limit exceeded',
-          message: 'Please wait before making another request'
-        }, { status: 429 })
+        return NextResponse.json(
+          {
+            error: 'Rate limit exceeded',
+            message: 'Please wait before making another request'
+          },
+          { status: 429 }
+        )
       }
 
       if (error.message.includes('API key') || error.message.includes('configuration')) {
-        return NextResponse.json({
-          error: 'AI service configuration error',
-          message: 'AI service is not properly configured'
-        }, { status: 500 })
+        return NextResponse.json(
+          {
+            error: 'AI service configuration error',
+            message: 'AI service is not properly configured'
+          },
+          { status: 500 }
+        )
       }
     }
 
-    return NextResponse.json({
-      error: 'Test generation failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return NextResponse.json(
+      {
+        error: 'Test generation failed',
+        message: error instanceof Error ? error.message : 'Unknown error'
+      },
+      { status: 500 }
+    )
   }
 }
