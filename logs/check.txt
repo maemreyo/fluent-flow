@@ -1,0 +1,450 @@
+page.tsx:133 🚀 Starting quiz from setup with shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useQuizBroadcast.ts:44 🚀 Broadcasting quiz session start... {sessionId: '57b6e5d2-a0c9-45f5-92b2-7a77b934082f', userId: '39abb7b6-93ca-4f4c-b07b-1087f6224cb5'}
+useQuizBroadcast.ts:74 ✅ Quiz session start broadcasted successfully
+page.tsx:139 ✅ Quiz session start broadcasted, navigating to lobby
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:292 📝 Initializing appState from loading to: preset-selection
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:292 📝 Initializing appState from loading to: preset-selection
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:370 🎯 [CACHE-POWERED] Loading questions from shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:128 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'question-preview', difficultyGroupsCount: 2}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useQuizFlow.ts:22 🔍 [useQuizFlow] Getting shareTokens for navigation...
+useQuizFlow.ts:42 ℹ️ [useQuizFlow] No shareTokens available for navigation
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:288 📝 Member on preview page: transitioning from loading to question-preview
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useQuestionGeneration.ts:64 🔄 [useGroupQuestionGeneration] Syncing from cache: {cachedShareTokens: {…}, cachedCounts: {…}}
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:288 📝 Member on preview page: transitioning from loading to question-preview
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useQuestionGeneration.ts:64 🔄 [useGroupQuestionGeneration] Syncing from cache: {cachedShareTokens: {…}, cachedCounts: {…}}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:370 🎯 [CACHE-POWERED] Loading questions from shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:128 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
+useGroupQuiz.ts:378 ✅ Questions loaded for question-preview state - preserving current appState
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'question-preview', difficultyGroupsCount: 2}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+page.tsx:45 🔍 [Preview] Getting shareTokens for start quiz...
+page.tsx:46 🔍 [Preview] hookShareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:47 🔍 [Preview] sharedShareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:48 🔍 [Preview] hasSharedQuestions: true
+page.tsx:49 🔍 [Preview] sessionId: 57b6e5d2-a0c9-45f5-92b2-7a77b934082f
+page.tsx:53 ✅ [Preview] Using hookShareTokens (owner): {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:171 🚀 Starting quiz from preview with shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useExistingResultsCheck.ts:56 👤 User is authenticated, checking for existing results...
+useExistingResultsCheck.ts:70 🔍 No cached results, checking server...
+useExistingResultsCheck.ts:41 🔍 Checking for existing results from hook
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+progress-tracking-service.ts:167 Found progress data: null
+page.tsx:127 ▶️ [Preview] Starting quiz directly (no existing results)
+page.tsx:45 🔍 [Preview] Getting shareTokens for start quiz...
+page.tsx:46 🔍 [Preview] hookShareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:47 🔍 [Preview] sharedShareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:48 🔍 [Preview] hasSharedQuestions: true
+page.tsx:49 🔍 [Preview] sessionId: 57b6e5d2-a0c9-45f5-92b2-7a77b934082f
+page.tsx:53 ✅ [Preview] Using hookShareTokens (owner): {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:131 🔍 [Preview] ShareTokens retrieved for start quiz: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:132 🔍 [Preview] ShareTokens keys count: 2
+useGroupQuiz.ts:589 🚀 [handleStartQuizFromPreview] Setting appState to quiz-active
+page.tsx:141 ✅ [Preview] Encoding shareTokens for route...
+page.tsx:147 🔗 [Preview] Encoded tokens: eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+page.tsx:151 ✅ [Preview] Final URL with encoded tokens: /groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/57b6e5d2-a0c9-45f5-92b2-7a77b934082f/active/eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+page.tsx:165 🚀 [Preview] Navigating to: /groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/57b6e5d2-a0c9-45f5-92b2-7a77b934082f/active/eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'quiz-active', difficultyGroupsCount: 2}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuestionGeneration.ts:103 Failed to generate medium questions: TypeError: Failed to fetch
+    at useQuestionGeneration.useMutation [as mutationFn] (:3838/_next/static/chunks/src_eb736cab._.js:632:40)
+error @ intercept-console-error.ts:44
+useQuestionGeneration.useMutation @ useQuestionGeneration.ts:103
+execute @ mutation.ts:248
+useQuestionGeneration.ts:410 Failed to generate questions from preset: TypeError: Failed to fetch
+    at useQuestionGeneration.useMutation [as mutationFn] (:3838/_next/static/chunks/src_eb736cab._.js:632:40)
+error @ intercept-console-error.ts:44
+handleGenerateFromPreset @ useQuestionGeneration.ts:410
+useQuestionGeneration.ts:198 Clearing existing questions and preset state
+Navigated to http://localhost:3838/groups/9f640f92-d11c-463d-b3a6-2df737c912f0/quiz/57b6e5d2-a0c9-45f5-92b2-7a77b934082f/active/eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+react-dom-client.development.js:25630 Download the React DevTools for a better development experience: https://react.dev/link/react-devtools
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: false, shareTokensCount: 0, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useGroupQuiz.ts:306 ⚠️ No state match, staying in current state
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:284 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:370 🎯 [CACHE-POWERED] Loading questions from shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:128 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
+useGroupQuiz.ts:378 ✅ Questions loaded for quiz-active state - preserving current appState
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'quiz-active', difficultyGroupsCount: 2}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: undefined
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+page.tsx:20 🔍 [Active/Tokens] Raw tokens from route: ['eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OT…jZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9']
+page.tsx:33 🔍 [Active/Tokens] Encoded tokens string: eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+page.tsx:37 🔍 [Active/Tokens] Decoded JSON string: {"hard":"87b56873-064b-477e-b9c5-2e49042783f1","easy":"5cf43e51-820b-43bf-bfac-9be5af04b102"}
+page.tsx:41 ✅ [Active/Tokens] Parsed shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:48 ✅ [Active/Tokens] Valid hardToken: 87b56873-0...
+page.tsx:48 ✅ [Active/Tokens] Valid easyToken: 5cf43e51-8...
+page.tsx:56 ✅ [Active/Tokens] Final decoded shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:66 💾 [Active/Tokens] Storing shareTokens in sessionStorage: quiz-shareTokens-57b6e5d2-a0c9-45f5-92b2-7a77b934082f
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:284 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+page.tsx:20 🔍 [Active/Tokens] Raw tokens from route: ['eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OT…jZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9']
+page.tsx:33 🔍 [Active/Tokens] Encoded tokens string: eyJoYXJkIjoiODdiNTY4NzMtMDY0Yi00NzdlLWI5YzUtMmU0OTA0Mjc4M2YxIiwiZWFzeSI6IjVjZjQzZTUxLTgyMGItNDNiZi1iZmFjLTliZTVhZjA0YjEwMiJ9
+page.tsx:37 🔍 [Active/Tokens] Decoded JSON string: {"hard":"87b56873-064b-477e-b9c5-2e49042783f1","easy":"5cf43e51-820b-43bf-bfac-9be5af04b102"}
+page.tsx:41 ✅ [Active/Tokens] Parsed shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:48 ✅ [Active/Tokens] Valid hardToken: 87b56873-0...
+page.tsx:48 ✅ [Active/Tokens] Valid easyToken: 5cf43e51-8...
+page.tsx:56 ✅ [Active/Tokens] Final decoded shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+page.tsx:66 💾 [Active/Tokens] Storing shareTokens in sessionStorage: quiz-shareTokens-57b6e5d2-a0c9-45f5-92b2-7a77b934082f
+useGroupQuiz.ts:109 📺 Setting videoUrl from session on load: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:284 📝 Member on active page: transitioning from loading to quiz-active
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'loading', difficultyGroupsCount: 0}
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+useGroupQuiz.ts:370 🎯 [CACHE-POWERED] Loading questions from shareTokens: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:128 🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching: {hard: '87b56873-064b-477e-b9c5-2e49042783f1', easy: '5cf43e51-820b-43bf-bfac-9be5af04b102'}
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached hard questions from sessionStorage
+useGroupQuiz.ts:139 ✅ [CACHE HIT] Using persistent cached easy questions from sessionStorage
+useGroupQuiz.ts:378 ✅ Questions loaded for quiz-active state - preserving current appState
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+FillInTheBlankQuestion.tsx:106 ⚠️ FillInTheBlankQuestion missing videoUrl but has audioSegment: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useGroupQuiz.ts:337 🚫 Skipping question load: {appState: 'quiz-active', difficultyGroupsCount: 2}
+FillInTheBlankQuestion.tsx:106 ⚠️ FillInTheBlankQuestion missing videoUrl but has audioSegment: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+AuthContext.tsx:85 Auth Context: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useRealtimeSession.ts:60 New users joined: [{…}]
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+use-quiz-auth.ts:88 Quiz Auth: Auth state changed: INITIAL_SESSION
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+useGroupQuiz.ts:103 ✅ useGroupQuiz videoUrl set: https://www.youtube.com/watch?v=IetohLp7i9g
+useSharedQuestions.ts:95 🔍 [useSharedQuestions] Cache status: {hasData: true, shareTokensCount: 2, isLoading: false, isFetching: false, error: undefined, …}
+useQuizFlow.ts:284 🎬 [useQuizFlow] quizData.videoUrl: https://www.youtube.com/watch?v=IetohLp7i9g
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1
+GroupQuizActiveView.tsx:78 🎬 [GroupQuizActiveView] Received videoUrl prop: undefined
+GroupQuizActiveView.tsx:326 ⚠️ Fill-in-blank question missing videoUrl: q_febf3e85-4805-404b-9f98-b110df095430_fillblank_1

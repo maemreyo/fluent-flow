@@ -1,6 +1,6 @@
 'use client'
 
-import { use, useCallback } from 'react'
+import { use, useCallback, useState } from 'react'
 import { PermissionManager } from '../../../../../../lib/permissions'
 import { useLoop } from '../../../../../../hooks/useLoops'
 import { useGroupQuestionGeneration } from '../hooks/useQuestionGeneration'
@@ -18,6 +18,7 @@ interface SetupPageProps {
 
 export default function SetupPage({ params }: SetupPageProps) {
   const { groupId, sessionId } = use(params)
+  const [selectedExerciseType, setSelectedExerciseType] = useState<'multiple_choice' | 'fill_blank'>('multiple_choice')
 
   const {
     session,
@@ -142,7 +143,7 @@ export default function SetupPage({ params }: SetupPageProps) {
   }, [permissions, broadcastQuizSessionStart, session?.quiz_title, navigateToLobby])
 
   // Question generation handlers
-  const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard') => {
+  const handleGenerateQuestions = async (difficulty: 'easy' | 'medium' | 'hard', exerciseType?: 'multiple_choice' | 'fill_blank') => {
     if (!loopData || loopError) {
       console.error('❌ Cannot generate questions: Loop data not available')
       alert('Cannot generate questions: The practice loop associated with this session is not available.')
@@ -152,11 +153,13 @@ export default function SetupPage({ params }: SetupPageProps) {
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('question-generation', {
         [difficulty]: true,
-        completed: false
+        completed: false,
+        exerciseType: exerciseType || selectedExerciseType
       })
     }
 
-    await generateQuestions(difficulty, loopData)
+    // Pass exercise type to generation
+    await generateQuestions(difficulty, loopData, exerciseType || selectedExerciseType)
 
     const newCounts = { ...generatedCounts, [difficulty]: generatedCounts[difficulty] + 1 }
     if (
@@ -169,7 +172,7 @@ export default function SetupPage({ params }: SetupPageProps) {
     }
   }
 
-  const handleGenerateAllQuestions = async () => {
+  const handleGenerateAllQuestions = async (exerciseType?: 'multiple_choice' | 'fill_blank') => {
     if (!loopData || loopError) {
       console.error('❌ Cannot generate questions: Loop data not available')
       alert('Cannot generate questions: The practice loop associated with this session is not available.')
@@ -177,10 +180,14 @@ export default function SetupPage({ params }: SetupPageProps) {
     }
 
     if (permissions.canManageQuiz()) {
-      broadcastPreparationUpdate('question-generation', { all: true, completed: false })
+      broadcastPreparationUpdate('question-generation', { 
+        all: true, 
+        completed: false,
+        exerciseType: exerciseType || selectedExerciseType
+      })
     }
 
-    await generateAllQuestions(loopData)
+    await generateAllQuestions(loopData, exerciseType || selectedExerciseType)
 
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('ready-to-start', { questionsReady: true })
@@ -189,7 +196,8 @@ export default function SetupPage({ params }: SetupPageProps) {
 
   const handleGenerateFromPreset = async (
     distribution: { easy: number; medium: number; hard: number },
-    presetInfo: { id: string; name: string }
+    presetInfo: { id: string; name: string },
+    exerciseType?: 'multiple_choice' | 'fill_blank'
   ) => {
     if (!loopData || loopError) {
       console.error('❌ Cannot generate questions: Loop data not available')
@@ -200,24 +208,29 @@ export default function SetupPage({ params }: SetupPageProps) {
     if (permissions.canManageQuiz()) {
       // First broadcast preset selection
       broadcastPreparationUpdate('preset-selection', {
-        selectedPreset: { ...presetInfo, distribution }
+        selectedPreset: { ...presetInfo, distribution, exerciseType: exerciseType || selectedExerciseType }
       })
       
       // Then broadcast question generation start
       setTimeout(() => {
         broadcastPreparationUpdate('question-generation', {
-          selectedPreset: { ...presetInfo, distribution },
+          selectedPreset: { ...presetInfo, distribution, exerciseType: exerciseType || selectedExerciseType },
           all: true,
           completed: false
         })
       }, 500)
     }
 
-    await generateFromPreset(loopData, distribution, presetInfo)
+    await generateFromPreset(loopData, distribution, presetInfo, exerciseType || selectedExerciseType)
 
     if (permissions.canManageQuiz()) {
       broadcastPreparationUpdate('ready-to-start', { questionsReady: true })
     }
+  }
+
+  const handleExerciseTypeChange = (exerciseType: 'multiple_choice' | 'fill_blank') => {
+    setSelectedExerciseType(exerciseType)
+    console.log('🎯 Exercise type changed to:', exerciseType)
   }
 
   // Show different views based on user role
@@ -264,6 +277,8 @@ export default function SetupPage({ params }: SetupPageProps) {
         onStartQuiz={handleStartQuiz}
         currentPreset={currentPreset}
         needsPresetReplacement={needsPresetReplacement}
+        selectedExerciseType={selectedExerciseType}
+        onExerciseTypeChange={handleExerciseTypeChange}
       />
     </div>
   )

@@ -139,6 +139,7 @@ export async function POST(request: NextRequest) {
         quiz_token: shareToken,
         quiz_title: options.title || `${loop.videoTitle} - Group Session`,
         video_title: loop.videoTitle,
+        video_url: loop.videoUrl,
         scheduled_at: options.scheduledAt || new Date().toISOString(),
         created_by: user.id,
         status: options.scheduledAt ? 'scheduled' : 'active',

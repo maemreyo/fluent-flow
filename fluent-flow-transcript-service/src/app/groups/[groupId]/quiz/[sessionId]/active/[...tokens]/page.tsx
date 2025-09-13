@@ -90,7 +90,8 @@ export default function ActiveWithTokensPage({ params }: ActiveWithTokensPagePro
     handleNavigatePrevious,
     handleNavigateNext,
     navigateToResults,
-    appState
+    appState,
+    videoUrl
   } = useQuizFlow({ groupId, sessionId })
 
   // Auto-navigate to results when quiz is completed
@@ -103,6 +104,7 @@ export default function ActiveWithTokensPage({ params }: ActiveWithTokensPagePro
 
   // Group settings
   const groupSettings = (group as any)?.settings || {}
+
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -132,6 +134,7 @@ export default function ActiveWithTokensPage({ params }: ActiveWithTokensPagePro
         onNavigatePrevious={handleNavigatePrevious}
         onNavigateNext={handleNavigateNext}
         totalQuestionsInCurrentSet={getCurrentQuestion()?.groupData?.questions?.length || 0}
+        videoUrl={videoUrl}
       />
     </div>
   )

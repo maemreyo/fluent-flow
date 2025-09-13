@@ -114,6 +114,7 @@ export async function POST(request: NextRequest) {
         quiz_token: sharedQuestionSet.share_token, // Link to shared question set
         quiz_title: sharedQuestionSet.title,
         video_title: loop.videoTitle,
+        video_url: loop.videoUrl,
         scheduled_at: options.scheduledAt || new Date().toISOString(),
         created_by: user.id,
         status: options.scheduledAt ? 'scheduled' : 'active',

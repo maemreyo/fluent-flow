@@ -11,6 +11,8 @@ import {
   TooltipTrigger
 } from '../../../../../../components/ui/tooltip'
 import { QuestionNavigationBar } from './QuestionNavigationBar'
+import { FillInTheBlankQuestion } from './FillInTheBlankQuestion'
+import { MultipleChoiceQuestion } from './MultipleChoiceQuestion'
 
 interface GroupQuizActiveViewProps {
   currentQuestion: {
@@ -18,8 +20,8 @@ interface GroupQuizActiveViewProps {
     questionIndex: number
     groupData: any
   } | null
-  responses: Array<{ questionIndex: number; answer: string }>
-  onAnswerSelect: (questionIndex: number, answer: string) => void
+  responses: Array<{ questionIndex: number; answer: string | Record<string, string> }>
+  onAnswerSelect: (questionIndex: number, answer: string | Record<string, string>) => void
   onNextQuestion: () => void
   onSubmitSet: () => void
   onMoveToNextSet: () => void
@@ -45,6 +47,7 @@ interface GroupQuizActiveViewProps {
   onNavigatePrevious?: () => void
   onNavigateNext?: () => void
   totalQuestionsInCurrentSet?: number
+  videoUrl?: string // Add videoUrl prop
 }
 
 export function GroupQuizActiveView({
@@ -68,9 +71,11 @@ export function GroupQuizActiveView({
   onNavigateToQuestion,
   onNavigatePrevious,
   onNavigateNext,
-  totalQuestionsInCurrentSet = 0
+  totalQuestionsInCurrentSet = 0,
+  videoUrl
 }: GroupQuizActiveViewProps) {
-  const [selectedAnswer, setSelectedAnswer] = useState<string>('')
+  const [selectedAnswer, setSelectedAnswer] = useState<string | Record<string, string>>('')
+  const [fillBlankAnswers, setFillBlankAnswers] = useState<Record<string, string>>({})
   const [setSubmitted, setSetSubmitted] = useState(false)
   const [timeRemaining, setTimeRemaining] = useState<number | null>(
     timeLimit ? timeLimit * 60 : null
@@ -143,9 +148,13 @@ export function GroupQuizActiveView({
     if (currentResponse) {
       // If there's already a response for this question, show it
       setSelectedAnswer(currentResponse.answer)
+      if (typeof currentResponse.answer === 'object') {
+        setFillBlankAnswers(currentResponse.answer as Record<string, string>)
+      }
     } else {
       // No response yet - clear selection
       setSelectedAnswer('')
+      setFillBlankAnswers({})
     }
   }, [currentQuestion?.questionIndex, currentSetIndex, responses])
 
@@ -173,9 +182,15 @@ export function GroupQuizActiveView({
     return 'text-red-600' // ≤ 1 minute
   }
 
-  const handleAnswerClick = (optionLetter: string) => {
-    setSelectedAnswer(optionLetter)
-    onAnswerSelect(currentQuestion?.questionIndex || 0, optionLetter)
+  const handleMultipleChoiceAnswer = (answer: string) => {
+    setSelectedAnswer(answer)
+    onAnswerSelect(currentQuestion?.questionIndex || 0, answer)
+  }
+
+  const handleFillBlankAnswer = (answers: Record<string, string>) => {
+    setFillBlankAnswers(answers)
+    setSelectedAnswer(answers)
+    onAnswerSelect(currentQuestion?.questionIndex || 0, answers)
   }
 
   const handleSkip = () => {
@@ -302,6 +317,7 @@ export function GroupQuizActiveView({
 
   const { question, questionIndex, groupData } = currentQuestion
   const currentResponse = responses.find(r => r.questionIndex === questionIndex)
+  
 
   // Calculate current question number within the set properly
   // currentQuestionIndex is 0-based within the current set, so add 1 for display
@@ -315,7 +331,10 @@ export function GroupQuizActiveView({
     response =>
       response.questionIndex >= currentSetStartIndex &&
       response.questionIndex <= currentSetEndIndex &&
-      response.answer
+      (
+        (typeof response.answer === 'string' && response.answer.trim() !== '') ||
+        (typeof response.answer === 'object' && Object.values(response.answer).some(val => val.trim() !== ''))
+      )
   ).length
 
   return (
@@ -414,95 +433,72 @@ export function GroupQuizActiveView({
       {/* Question Card */}
       <Card className="bg-white shadow-lg">
         <CardContent className="p-8">
-          <div className="space-y-6">
-            {/* Question */}
-            <div>
-              <h2 className="mb-6 text-xl font-semibold leading-relaxed text-gray-800">
-                {question?.question}
-              </h2>
-            </div>
+          {/* Render question based on type using modular components */}
+          {question?.type === 'fill_blank' ? (
+            <FillInTheBlankQuestion
+              question={question}
+              currentAnswers={fillBlankAnswers}
+              onAnswerChange={handleFillBlankAnswer}
+              disabled={submitting}
+              videoUrl={videoUrl}
+            />
+          ) : (
+            <MultipleChoiceQuestion
+              question={question}
+              currentAnswer={typeof selectedAnswer === 'string' ? selectedAnswer : ''}
+              onAnswerChange={handleMultipleChoiceAnswer}
+              disabled={submitting}
+            />
+          )}
 
-            {/* Answer Options */}
-            <div className="space-y-3">
-              {question?.options?.map((option: any, index: number) => {
-                const optionLetter = String.fromCharCode(65 + index) // A, B, C, D
-                const isSelected = selectedAnswer === optionLetter
-                // Remove wasAnswered logic - only use isSelected
+          {/* Action Buttons */}
+          <div className="flex gap-3 border-t border-gray-200 pt-6">
+            {allowQuestionSkipping && !isLastQuestion && (
+              <Button
+                onClick={handleSkip}
+                variant="outline"
+                className="flex-1 rounded-xl border-2 border-gray-300 py-3 font-semibold"
+              >
+                Skip Question
+              </Button>
+            )}
 
-                return (
-                  <button
-                    key={optionLetter}
-                    onClick={() => handleAnswerClick(optionLetter)}
-                    className={`w-full rounded-xl border-2 p-4 text-left transition-all hover:shadow-md ${
-                      isSelected
-                        ? 'border-indigo-300 bg-indigo-50 shadow-sm'
-                        : 'border-gray-200 hover:border-gray-300'
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <div
-                        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full border-2 font-semibold ${
-                          isSelected
-                            ? 'border-indigo-500 bg-indigo-100 text-indigo-700'
-                            : 'border-gray-300 text-gray-600'
-                        }`}
-                      >
-                        {optionLetter}
-                      </div>
-                      <span
-                        className={`leading-relaxed ${
-                          isSelected ? 'text-indigo-800' : 'text-gray-700'
-                        }`}
-                      >
-                        {option}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 border-t border-gray-200 pt-6">
-              {allowQuestionSkipping && !isLastQuestion && (
-                <Button
-                  onClick={handleSkip}
-                  variant="outline"
-                  className="flex-1 rounded-xl border-2 border-gray-300 py-3 font-semibold"
-                >
-                  Skip Question
-                </Button>
-              )}
-
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      onClick={handleNext}
-                      disabled={(() => {
-                        if (isLastQuestion) {
-                          // For submit set button: require all questions to be answered
-                          return answeredQuestionsInSet < totalQuestionsInSet
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={handleNext}
+                    disabled={(() => {
+                      if (isLastQuestion) {
+                        // For submit set button: require all questions to be answered
+                        return answeredQuestionsInSet < totalQuestionsInSet
+                      } else {
+                        // For next question button: check if current question is answered
+                        if (question?.type === 'fill_blank') {
+                          // For fill-in-the-blank, check if any blanks are filled
+                          const hasFilledBlanks = question.blanks && Object.keys(fillBlankAnswers).length > 0 
+                            && Object.values(fillBlankAnswers).some(answer => answer.trim() !== '')
+                          return !hasFilledBlanks && !currentResponse
                         } else {
-                          // For next question button: just require current question to be answered
+                          // For multiple choice, check if answer is selected
                           return !selectedAnswer && !currentResponse
                         }
-                      })()}
-                      className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
-                    >
-                      {isLastQuestion ? 'Submit Set' : 'Next Question'} →
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isLastQuestion && answeredQuestionsInSet < totalQuestionsInSet
-                      ? `Answer all questions to submit (${answeredQuestionsInSet}/${totalQuestionsInSet} answered)`
-                      : !selectedAnswer && !currentResponse && !isLastQuestion
-                        ? 'Select an answer to continue'
-                        : 'Ready to proceed'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
+                      }
+                    })()}
+                    className="flex-1 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 py-3 font-semibold text-white hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50"
+                  >
+                    {isLastQuestion ? 'Submit Set' : 'Next Question'} →
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isLastQuestion && answeredQuestionsInSet < totalQuestionsInSet
+                    ? `Answer all questions to submit (${answeredQuestionsInSet}/${totalQuestionsInSet} answered)`
+                    : !selectedAnswer && !currentResponse && !isLastQuestion
+                      ? 'Select an answer to continue'
+                      : 'Ready to proceed'}
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </CardContent>
       </Card>

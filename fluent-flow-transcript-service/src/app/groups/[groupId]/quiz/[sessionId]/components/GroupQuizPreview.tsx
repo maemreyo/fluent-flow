@@ -18,11 +18,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../../../../comp
 
 interface Question {
   id: string
-  question: string
-  options: string[]
-  correctAnswer: string
+  question?: string
+  options?: string[]
+  correctAnswer?: string
   difficulty: 'easy' | 'medium' | 'hard'
   explanation?: string
+  type?: 'main_idea' | 'specific_detail' | 'vocabulary_in_context' | 'inference' | 'speaker_tone' | 'language_function' | 'fill_blank'
+  // Fill-in-the-Blank specific fields
+  transcript?: string
+  blanks?: Array<{
+    position: number
+    answer: string
+    alternatives?: string[]
+    caseSensitive?: boolean
+  }>
+  audioSegment?: {
+    start: number
+    end: number
+  }
 }
 
 interface DifficultyGroup {
@@ -218,45 +231,112 @@ export function GroupQuizPreview({
                       </div>
 
                       <div className="p-4">
-                        <p className="mb-4 text-base text-gray-800">{question.question}</p>
-
-                        <div className="space-y-2">
-                          {question.options.map((option, optionIndex) => {
-                            const optionLetter = String.fromCharCode(65 + optionIndex)
-                            const isCorrect = showAnswers && optionLetter === question.correctAnswer
-
-                            return (
-                              <div
-                                key={optionIndex}
-                                className={`flex items-center justify-between rounded-md border p-3 transition-colors ${
-                                  isCorrect
-                                    ? 'border-green-300 bg-green-50/70'
-                                    : 'border-gray-200 bg-white'
-                                }`}
-                              >
-                                <div className="flex items-start gap-3">
-                                  <span
-                                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-sm font-semibold ${
-                                      isCorrect
-                                        ? 'border-green-500 bg-green-100 text-green-700'
-                                        : 'border-gray-300 text-gray-600'
-                                    }`}
-                                  >
-                                    {optionLetter}
-                                  </span>
-                                  <span
-                                    className={`flex-1 text-sm ${
-                                      isCorrect ? 'font-semibold text-green-900' : 'text-gray-700'
-                                    }`}
-                                  >
-                                    {option}
-                                  </span>
+                        {/* Render based on question type */}
+                        {question.type === 'fill_blank' ? (
+                          // Fill-in-the-Blank Question
+                          <div>
+                            <div className="mb-2 flex items-center gap-2">
+                              <span className="text-sm font-medium text-blue-600">Fill-in-the-Blank</span>
+                              <Badge variant="outline" className="text-xs">
+                                Audio Exercise
+                              </Badge>
+                            </div>
+                            
+                            {question.transcript && (
+                              <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                                <p className="mb-2 text-sm font-semibold text-gray-700">Transcript:</p>
+                                <div className="text-sm text-gray-800 leading-relaxed">
+                                  {question.transcript.split(/(\[BLANK_\d+\])/).map((part, index) => {
+                                    const blankMatch = part.match(/\[BLANK_(\d+)\]/)
+                                    if (blankMatch) {
+                                      const blankIndex = parseInt(blankMatch[1]) - 1
+                                      const blank = question.blanks?.[blankIndex]
+                                      return (
+                                        <span 
+                                          key={index}
+                                          className={`inline-block min-w-[60px] border-b-2 border-dashed px-2 py-1 text-center font-medium ${
+                                            showAnswers 
+                                              ? 'border-green-500 bg-green-100 text-green-800' 
+                                              : 'border-gray-400 bg-white'
+                                          }`}
+                                        >
+                                          {showAnswers ? blank?.answer || '___' : '___'}
+                                        </span>
+                                      )
+                                    }
+                                    return <span key={index}>{part}</span>
+                                  })}
                                 </div>
-                                {isCorrect && <Check className="h-5 w-5 text-green-600" />}
                               </div>
-                            )
-                          })}
-                        </div>
+                            )}
+
+                            {showAnswers && question.blanks && (
+                              <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-3">
+                                <p className="text-sm font-semibold text-green-800 mb-2">Answers:</p>
+                                <div className="space-y-1">
+                                  {question.blanks.map((blank, index) => (
+                                    <div key={index} className="flex items-center gap-2">
+                                      <span className="text-sm font-medium text-green-700">
+                                        Blank {index + 1}:
+                                      </span>
+                                      <span className="text-sm text-green-800 font-semibold">
+                                        {blank.answer}
+                                      </span>
+                                      {blank.alternatives && blank.alternatives.length > 0 && (
+                                        <span className="text-xs text-green-600">
+                                          (or: {blank.alternatives.join(', ')})
+                                        </span>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          // Multiple Choice Question
+                          <div>
+                            <p className="mb-4 text-base text-gray-800">{question.question}</p>
+
+                            <div className="space-y-2">
+                              {question.options?.map((option, optionIndex) => {
+                                const optionLetter = String.fromCharCode(65 + optionIndex)
+                                const isCorrect = showAnswers && optionLetter === question.correctAnswer
+
+                                return (
+                                  <div
+                                    key={optionIndex}
+                                    className={`flex items-center justify-between rounded-md border p-3 transition-colors ${
+                                      isCorrect
+                                        ? 'border-green-300 bg-green-50/70'
+                                        : 'border-gray-200 bg-white'
+                                    }`}
+                                  >
+                                    <div className="flex items-start gap-3">
+                                      <span
+                                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border text-sm font-semibold ${
+                                          isCorrect
+                                            ? 'border-green-500 bg-green-100 text-green-700'
+                                            : 'border-gray-300 text-gray-600'
+                                        }`}
+                                      >
+                                        {optionLetter}
+                                      </span>
+                                      <span
+                                        className={`flex-1 text-sm ${
+                                          isCorrect ? 'font-semibold text-green-900' : 'text-gray-700'
+                                        }`}
+                                      >
+                                        {option}
+                                      </span>
+                                    </div>
+                                    {isCorrect && <Check className="h-5 w-5 text-green-600" />}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         {showAnswers && question.explanation && (
                           <div className="mt-4 rounded-md border border-blue-200 bg-blue-50 p-3">

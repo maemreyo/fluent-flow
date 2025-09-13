@@ -52,6 +52,7 @@ export async function GET(
         id,
         quiz_title,
         video_title,
+        video_url,
         scheduled_at,
         started_at,
         ended_at,
@@ -119,6 +120,7 @@ export async function GET(
         id: session.id,
         title: session.quiz_title,
         video_title: session.video_title,
+        video_url: session.video_url,
         status: session.status,
         session_type: session.session_type,
         scheduled_at: session.scheduled_at,
@@ -371,6 +373,7 @@ export async function POST(
         quiz_token: finalShareToken || sessionId, // Use share token or session ID for backward compatibility
         quiz_title: title || 'Group Quiz Session',
         video_title: _loopData?.videoTitle || null,
+        video_url: _loopData?.videoUrl || null,
         scheduled_at: scheduledAt || new Date().toISOString(),
         created_by: user.id,
         status: initialStatus,

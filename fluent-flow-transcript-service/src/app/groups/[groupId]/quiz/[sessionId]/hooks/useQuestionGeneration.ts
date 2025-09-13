@@ -247,6 +247,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
   const handleGenerateQuestions = async (
     difficulty: 'easy' | 'medium' | 'hard', 
     loopData: any, 
+    exerciseType?: 'multiple_choice' | 'fill_blank',
     customCount?: number,
     customPromptId?: string
   ) => {
@@ -272,6 +273,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
       loop, 
       groupId, 
       sessionId,
+      exerciseType,
       ...(customCount && { customCount }),
       ...(customPromptId && { customPromptId })
     }
@@ -279,7 +281,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     await generateQuestionsMutation.mutateAsync(generationParams)
   }
 
-  const handleGenerateAllQuestions = async (loopData: any, presetCounts?: GeneratedCounts) => {
+  const handleGenerateAllQuestions = async (loopData: any, exerciseType?: 'multiple_choice' | 'fill_blank', presetCounts?: GeneratedCounts) => {
     if (!loopData) {
       toast.error('No loop data available for question generation')
       return
@@ -298,8 +300,8 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
     
     // Use preset counts if provided
     const generationParams = presetCounts 
-      ? { loop, groupId, sessionId, presetCounts }
-      : { loop, groupId, sessionId }
+      ? { loop, groupId, sessionId, exerciseType, presetCounts }
+      : { loop, groupId, sessionId, exerciseType }
       
     await generateAllQuestionsMutation.mutateAsync(generationParams)
   }
@@ -308,7 +310,8 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
   const handleGenerateFromPreset = async (
     loopData: any, 
     distribution: { easy: number; medium: number; hard: number },
-    presetInfo: { id: string; name: string; isCustom?: boolean }
+    presetInfo: { id: string; name: string; isCustom?: boolean },
+    exerciseType?: 'multiple_choice' | 'fill_blank'
   ) => {
     console.log('🎯 handleGenerateFromPreset called with:', {
       loopData: loopData ? `Loop ID: ${loopData.id}, hasTranscript: ${!!loopData.transcript}` : 'NULL/UNDEFINED',
@@ -365,7 +368,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         const batches = Math.ceil(easy / MAX_BATCH_SIZE)
         for (let i = 0; i < batches; i++) {
           const batchSize = Math.min(MAX_BATCH_SIZE, easy - (i * MAX_BATCH_SIZE))
-          promises.push(handleGenerateQuestions('easy', loopData, batchSize, customPromptId))
+          promises.push(handleGenerateQuestions('easy', loopData, exerciseType, batchSize, customPromptId))
         }
       }
 
@@ -373,7 +376,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         const batches = Math.ceil(medium / MAX_BATCH_SIZE)
         for (let i = 0; i < batches; i++) {
           const batchSize = Math.min(MAX_BATCH_SIZE, medium - (i * MAX_BATCH_SIZE))
-          promises.push(handleGenerateQuestions('medium', loopData, batchSize, customPromptId))
+          promises.push(handleGenerateQuestions('medium', loopData, exerciseType, batchSize, customPromptId))
         }
       }
 
@@ -381,7 +384,7 @@ export function useGroupQuestionGeneration(groupId: string, sessionId: string) {
         const batches = Math.ceil(hard / MAX_BATCH_SIZE)
         for (let i = 0; i < batches; i++) {
           const batchSize = Math.min(MAX_BATCH_SIZE, hard - (i * MAX_BATCH_SIZE))
-          promises.push(handleGenerateQuestions('hard', loopData, batchSize, customPromptId))
+          promises.push(handleGenerateQuestions('hard', loopData, exerciseType, batchSize, customPromptId))
         }
       }
 

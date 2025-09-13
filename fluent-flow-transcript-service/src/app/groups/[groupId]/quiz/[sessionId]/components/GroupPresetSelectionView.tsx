@@ -27,11 +27,12 @@ import type { QuestionPreset } from '../../../../../../components/questions/Pres
 interface GroupPresetSelectionViewProps {
   onPresetSelect: (preset: QuestionPreset) => void
   onlineParticipants: Array<{ user_id: string; user_email: string; is_online: boolean }>
-  onGenerateQuestions?: (difficulty: 'easy' | 'medium' | 'hard') => Promise<void>
-  onGenerateAllQuestions?: () => Promise<void>
+  onGenerateQuestions?: (difficulty: 'easy' | 'medium' | 'hard', exerciseType?: 'multiple_choice' | 'fill_blank') => Promise<void>
+  onGenerateAllQuestions?: (exerciseType?: 'multiple_choice' | 'fill_blank') => Promise<void>
   onGenerateFromPreset?: (
     distribution: { easy: number; medium: number; hard: number },
-    presetInfo: { id: string; name: string }
+    presetInfo: { id: string; name: string },
+    exerciseType?: 'multiple_choice' | 'fill_blank'
   ) => Promise<void>
   generatingState?: {
     easy: boolean
@@ -53,6 +54,8 @@ interface GroupPresetSelectionViewProps {
     createdAt: Date
   } | null
   needsPresetReplacement?: (presetId: string) => boolean
+  selectedExerciseType?: 'multiple_choice' | 'fill_blank'
+  onExerciseTypeChange?: (exerciseType: 'multiple_choice' | 'fill_blank') => void
 }
 
 export function GroupPresetSelectionView({
@@ -66,7 +69,9 @@ export function GroupPresetSelectionView({
   shareTokens = {},
   onStartQuiz,
   currentPreset,
-  needsPresetReplacement
+  needsPresetReplacement,
+  selectedExerciseType = 'multiple_choice',
+  onExerciseTypeChange
 }: GroupPresetSelectionViewProps) {
   const router = useRouter()
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null)
@@ -246,7 +251,7 @@ export function GroupPresetSelectionView({
         config: preset.config
       }
       
-      await onGenerateFromPreset(preset.distribution, presetInfo)
+      await onGenerateFromPreset(preset.distribution, presetInfo, selectedExerciseType)
       toast.success(`Generated ${preset.totalQuestions} questions from ${preset.name}!`)
     } catch (error) {
       console.error('Failed to generate from preset:', error)
@@ -275,7 +280,7 @@ export function GroupPresetSelectionView({
     }
 
     try {
-      await onGenerateQuestions(difficulty)
+      await onGenerateQuestions(difficulty, selectedExerciseType)
     } catch (error) {
       console.error(`Failed to generate ${difficulty} questions:`, error)
       toast.error(`Failed to generate ${difficulty} questions`)
@@ -298,6 +303,62 @@ export function GroupPresetSelectionView({
       {/* Header */}
       <PresetSelectionHeader onGoBack={handleGoBack} currentPreset={currentPreset} />
 
+      {/* Exercise Type Selector */}
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Exercise Type</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={() => onExerciseTypeChange?.('multiple_choice')}
+            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+              selectedExerciseType === 'multiple_choice'
+                ? 'border-blue-500 bg-blue-50 shadow-md'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <MessageSquare className={`h-6 w-6 ${
+                selectedExerciseType === 'multiple_choice' ? 'text-blue-600' : 'text-gray-500'
+              }`} />
+              <div className="text-left">
+                <h4 className={`font-semibold ${
+                  selectedExerciseType === 'multiple_choice' ? 'text-blue-900' : 'text-gray-900'
+                }`}>
+                  Multiple Choice
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Choose the correct answer from 4 options
+                </p>
+              </div>
+            </div>
+          </button>
+          
+          <button
+            onClick={() => onExerciseTypeChange?.('fill_blank')}
+            className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+              selectedExerciseType === 'fill_blank'
+                ? 'border-green-500 bg-green-50 shadow-md'
+                : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <div className="flex items-center space-x-3">
+              <BookOpen className={`h-6 w-6 ${
+                selectedExerciseType === 'fill_blank' ? 'text-green-600' : 'text-gray-500'
+              }`} />
+              <div className="text-left">
+                <h4 className={`font-semibold ${
+                  selectedExerciseType === 'fill_blank' ? 'text-green-900' : 'text-gray-900'
+                }`}>
+                  Fill-in-the-Blank
+                </h4>
+                <p className="text-sm text-gray-600">
+                  Complete the transcript with missing words
+                </p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
       {/* Presets Grid */}
       {customPromptsLoading ? (
         <div className="flex justify-center py-8">
@@ -307,7 +368,14 @@ export function GroupPresetSelectionView({
         <>
           {/* Standard Presets */}
           <div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Standard Question Types</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Standard Question Types
+              {selectedExerciseType === 'fill_blank' && (
+                <span className="ml-2 text-sm text-green-600 bg-green-100 px-2 py-1 rounded-full">
+                  Fill-in-the-Blank Mode
+                </span>
+              )}
+            </h3>
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {intelligentPresets.map(preset => (
                 <PresetCard

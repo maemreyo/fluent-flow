@@ -63,7 +63,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
   const [responses, setResponses] = useState<QuestionResponse[]>([])
   const [results, setResults] = useState<any>(null)
   const [videoUrl, setVideoUrl] = useState<string | undefined>()
-
+  
   const [showVocabulary, setShowVocabulary] = useState(false)
   const [showTranscript, setShowTranscript] = useState(false)
   const [showGridView, setShowGridView] = useState(false)
@@ -97,6 +97,13 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
   // Auth handling (similar to individual quiz)
   const [authToken, setAuthToken] = useState<string | undefined>()
+
+  // Set videoUrl from session when it loads
+  useEffect(() => {
+    if (session?.video_url && !videoUrl) {
+      setVideoUrl(session.video_url)
+    }
+  }, [session?.video_url, videoUrl])
   const {
     user: quizUser,
     isAuthenticated,
@@ -112,10 +119,6 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         throw new Error('No questions available')
       }
 
-      console.log(
-        '🔄 [loadQuestionsFromShareTokens] Loading questions with PERSISTENCE caching:',
-        shareTokens
-      )
 
       const questionPromises = availableTokens.map(async ([difficulty, shareToken]) => {
         // Check if data is already cached in React Query (including persistence)
@@ -123,14 +126,10 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         const cachedData = queryClient.getQueryData(cacheKey) as any
 
         if (cachedData) {
-          console.log(
-            `✅ [CACHE HIT] Using persistent cached ${difficulty} questions from sessionStorage`
-          )
           return cachedData
         }
 
         // If not cached, fetch and cache it
-        console.log(`🚨 [CACHE MISS] Fetching ${difficulty} questions from API - cache not found`)
         const response = await fetch(
           `/api/questions/${shareToken}?groupId=${groupId}&sessionId=${sessionId}`
         )
@@ -140,6 +139,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         }
 
         const questionData = await response.json()
+        
         const result = {
           difficulty,
           questions: questionData.questions || [],
@@ -150,9 +150,6 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
         // Cache the result with React Query (will be persisted automatically)
         queryClient.setQueryData(cacheKey, result)
 
-        console.log(
-          `💾 [CACHED] Stored ${difficulty} questions in persistent cache: ${result.questions.length}`
-        )
         return result
       })
 
@@ -501,8 +498,14 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
 
           // Store the video URL from the first available question set
           const firstQuestionSetWithVideo = loadedQuestions.find((q: any) => q.questionSet.videoUrl)
+          
           if (firstQuestionSetWithVideo) {
             setVideoUrl(firstQuestionSetWithVideo.questionSet.videoUrl)
+          } else {
+            // Fallback: Try to get videoUrl from session data
+            if (session?.video_url) {
+              setVideoUrl(session.video_url)
+            }
           }
         } else {
           // Try to get questions from existing cache (fallback)
@@ -868,6 +871,7 @@ export function useGroupQuiz({ groupId, sessionId }: UseGroupQuizProps) {
     isAuthenticated,
     signOut,
     loadQuestionsFromShareTokens, // Expose for external use
+    videoUrl, // Add videoUrl to return
     // Navigation methods
     navigateToQuestion,
     navigateToPrevious,

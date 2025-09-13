@@ -74,7 +74,8 @@ export default function ActivePage({ params }: ActivePageProps) {
     handleNavigatePrevious,
     handleNavigateNext,
     navigateToResults,
-    appState
+    appState,
+    videoUrl
   } = useQuizFlow({ groupId, sessionId })
 
   // Auto-navigate to results when quiz is completed
@@ -87,6 +88,7 @@ export default function ActivePage({ params }: ActivePageProps) {
 
   // Group settings
   const groupSettings = (group as any)?.settings || {}
+
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -116,6 +118,7 @@ export default function ActivePage({ params }: ActivePageProps) {
         onNavigatePrevious={handleNavigatePrevious}
         onNavigateNext={handleNavigateNext}
         totalQuestionsInCurrentSet={getCurrentQuestion()?.groupData?.questions?.length || 0}
+        videoUrl={videoUrl}
       />
     </div>
   )
